@@ -25,9 +25,7 @@ const RelatedProducts = ({ products, category }: RelatedProductProps) => {
             className="mt-12 sm:mt-16"
         >
             <div className="flex items-center justify-between mb-6">
-                {/* fixed: was text-slate=900 (invalid, = instead of -) */}
                 <h2 className="text-xl font-bold text-slate-900">You Might Also Like</h2>
-                {/* fixed: was font-semibol (typo) */}
                 <Link
                     href={`/category/${category}`}
                     className="text-sm text-orange-500 hover:text-orange-600 font-semibold transition-colors flex items-center gap-1"

@@ -35,7 +35,7 @@ const ProductTabs = ({ product, defaultTab = 'description', onTabChange }: Produ
             transition={{ duration: 0.5, delay: 0.3 }}
             className="mt-12 sm:mt-16"
         >
-            {/* TAB NAVIGATION — was missing entirely before */}
+            {/* TAB NAVIGATION */}
             <div className="flex border-b border-gray-200 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
                 {tabs.map(tab => (
                     <button

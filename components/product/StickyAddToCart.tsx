@@ -15,7 +15,7 @@ const StickyAddToCart = ({ product }: StickyAddToCartProps) => {
     const { addToCart } = useCart();
 
     useEffect(() => {
-        const handler = () => setVisible(window.scrollY > 500); // fixed: was window.screenY (always 0)
+        const handler = () => setVisible(window.scrollY > 500);
         window.addEventListener('scroll', handler);
         return () => window.removeEventListener('scroll', handler);
     }, []);

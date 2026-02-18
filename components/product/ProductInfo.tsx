@@ -83,7 +83,6 @@ const ProductInfo = ({ product, onReviewsClick }: ProductInfoProps) => {
                 </button>
             </div>
 
-            {/* fixed: was text-slate-300 (invisible on white bg) */}
             <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 leading-tight">{product.name}</h1>
 
             {/* Rating */}
@@ -132,7 +131,7 @@ const ProductInfo = ({ product, onReviewsClick }: ProductInfoProps) => {
                 </div>
             </div>
 
-            {/* Stock Status — fixed: "In Stock" text was inside the dot span */}
+            {/* Stock Status */}
             <div className="flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse inline-block shrink-0" />
                 <span className="text-sm font-semibold text-green-600">In Stock</span>
@@ -153,7 +152,7 @@ const ProductInfo = ({ product, onReviewsClick }: ProductInfoProps) => {
                 ))}
             </div>
 
-            {/* Payment Methods — fixed: added key prop */}
+            {/* Payment Methods */}
             <div>
                 <p className="text-xs text-gray-400 mb-2 font-medium">We accept:</p>
                 <div className="flex items-center gap-2 flex-wrap">
@@ -165,7 +164,7 @@ const ProductInfo = ({ product, onReviewsClick }: ProductInfoProps) => {
                 </div>
             </div>
 
-            {/* Quantity — fixed: was "flex items gap-4" missing -center */}
+            {/* Quantity */}
             <div className="flex items-center gap-4">
                 <span className="text-sm font-semibold text-slate-700">Quantity:</span>
                 <div className="flex items-center border border-gray-200 rounded-xl overflow-hidden">
