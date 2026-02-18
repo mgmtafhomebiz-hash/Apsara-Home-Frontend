@@ -73,7 +73,7 @@ const ProductInfo = ({ product, onReviewsClick }: ProductInfoProps) => {
                     size={16}
                 />
                 <span className="text-sm font-bold text-slate-700">{avgRating}</span>
-                <button className="text-sm text-gray-400 hover:text-orange-500 transition-colors">
+                <button onClick={onReviewsClick} className="text-sm text-gray-400 hover:text-orange-500 transition-colors">
                     ({mockReviews.length} reviews)
                 </button>
             </div>
@@ -115,10 +115,9 @@ const ProductInfo = ({ product, onReviewsClick }: ProductInfoProps) => {
             {/* STOCK STATUS */}
             <div className="flex items-center gap-2">
                 <span className="flex items-center gap-1.5 text-sm font-semibold text-green-600">
-                    <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse">
-                        In Stock
-                    </span>
-                    <span>- Only 8 left</span>
+                    <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse shrink-0" />
+                    In Stock
+                    <span className="font-normal text-gray-400">- Only 8 left</span>
                 </span>
             </div>
 
@@ -141,7 +140,7 @@ const ProductInfo = ({ product, onReviewsClick }: ProductInfoProps) => {
                 <p className="text-xs text-gray-400 mb-2 font-medium">We accept:</p>
                 <div className="flex items-center gap-2 flex-wrap">
                     {['GCash', 'Maya', 'Visa', 'Mastercard', 'COD'].map(method => (
-                        <span className="text-xs font-semibold bg-white border border-gray-200 rounded-lg px-2.5 py-1.5 text-slate-600 shadow-sm">
+                        <span key={method} className="text-xs font-semibold bg-white border border-gray-200 rounded-lg px-2.5 py-1.5 text-slate-600 shadow-sm">
                             {method}
                         </span>
                     ))}
@@ -149,7 +148,7 @@ const ProductInfo = ({ product, onReviewsClick }: ProductInfoProps) => {
             </div>
 
             {/* QUANTITY */}
-            <div className="flex items gap-4">
+            <div className="flex items-center gap-4">
                 <span className="text-sm font-semibold text-slate-700">Quantity:</span>
                 <div className="flex items-center border border-gray-200 rounded-xl overflow-hidden">
                     <button onClick={() => setQuantity(qty => Math.max(1, qty - 1))} className="px-4 py-2.5 text-gray-500 hover:bg-gray-50 hover:text-orange-500 transition-colors text-lg font-medium">-</button>
