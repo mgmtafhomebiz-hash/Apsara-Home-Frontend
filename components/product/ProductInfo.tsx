@@ -43,6 +43,20 @@ const colors = [
     { name: 'Green', color: 'bg-emerald-700 border-emerald-800' },
 ];
 
+const productTypes = [
+    { id: 'fabric', label: 'Fabric', icon: '🧵', desc: 'Soft & breathable' },
+    { id: 'leather', label: 'Leather', icon: '🪑', desc: 'Premium & durable' },
+    { id: 'velvet', label: 'Velvet', icon: '✨', desc: 'Luxurious feel' },
+    { id: 'wood', label: 'Wood Frame', icon: '🪵', desc: 'Classic & sturdy' },
+];
+
+const CheckIcon = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+        <polyline points="20 6 9 17 4 12" />
+    </svg>
+);
+const sizes = ['Small', 'Medium', 'Large', 'XL']
+
 interface ProductInfoProps {
     product: CategoryProduct
     onReviewsClick: () => void;
@@ -52,6 +66,9 @@ const ProductInfo = ({ product, onReviewsClick }: ProductInfoProps) => {
     const { addToCart } = useCart();
     const [quantity, setQuantity] = useState(1);
     const [selectedColor, setSelectedColor] = useState('Beige');
+    const [added, setAdded] = useState(false);
+    const [selectedType, setSelectedType] = useState('fabric');
+
 
     const avgRating = (mockReviews.reduce((s, r) => s + r.rating, 0) / mockReviews.length).toFixed(1);
 
@@ -64,6 +81,9 @@ const ProductInfo = ({ product, onReviewsClick }: ProductInfoProps) => {
                 image: product.image,
             });
         }
+        setAdded(true);
+        setTimeout(() => setAdded(false), 2000);
+
     };
 
     return (
@@ -73,6 +93,7 @@ const ProductInfo = ({ product, onReviewsClick }: ProductInfoProps) => {
             transition={{ duration: 0.5, delay: 0.1 }}
             className="flex flex-col gap-5"
         >
+            {/* BRAND & SHARE */}
             <div className="flex items-center justify-between">
                 {product.brand && (
                     <span className="text-xs font-bold text-orange-500 uppercase tracking-widest">{product.brand}</span>
@@ -82,8 +103,10 @@ const ProductInfo = ({ product, onReviewsClick }: ProductInfoProps) => {
                 </button>
             </div>
 
+            {/* TITLE */}
             <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 leading-tight">{product.name}</h1>
 
+            {/* RATING ROW */}
             <div className="flex items-center gap-3 flex-wrap">
                 <StarRating rating={Math.round(Number(avgRating))} size={16} />
                 <span className="text-sm font-bold text-slate-700">{avgRating}</span>
@@ -94,6 +117,7 @@ const ProductInfo = ({ product, onReviewsClick }: ProductInfoProps) => {
                 <span className="text-xs text-green-600 font-semibold">✓ Verified Product</span>
             </div>
 
+            {/* PRICE */}
             <div className="flex items-baseline gap-3 flex-wrap">
                 <span className="text-3xl sm:text-4xl font-bold text-orange-500">₱{product.price.toLocaleString()}</span>
                 {product.originalPrice && (
@@ -107,6 +131,35 @@ const ProductInfo = ({ product, onReviewsClick }: ProductInfoProps) => {
             </div>
 
             <div className="h-px bg-gray-100" />
+
+            {/* PRODUCT TYPE SELECTOR */}
+            <div className="flex flex-col gap-2.5">
+                <span className="text-sm font-semibold text-slate-700">
+                    Type: <span className="text-orange-500">{productTypes.find(t => t.id === selectedType)?.label}</span>
+                </span>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    {productTypes.map(type => (
+                        <button
+                            key={type.id}
+                            onClick={() => setSelectedType(type.id)}
+                            className={`relative flex flex-col items-center gap-1 px-2 py-2.5 rounded-xl border-2 text-center transition-all duration-200 ${
+                                selectedType === type.id
+                                    ? 'border-orange-400 bg-orange-50 shadow-sm'
+                                    : 'border-gray-200 bg-white hover:border-orange-200 hover:bg-orange-50/30'
+                            }`}
+                        >
+                            {selectedType === type.id && (
+                                <span className="absolute top-1.5 right-1.5 w-4 h-4 bg-orange-500 rounded-full flex items-center justify-center text-white">
+                                    <CheckIcon />
+                                </span>
+                            )}
+                            <span className="text-lg">{type.icon}</span>
+                            <span className={`text-xs font-semibold ${selectedType === type.id ? 'text-orange-600' : 'text-slate-700'}`}>{type.label}</span>
+                            <span className="text-[10px] text-gray-400 leading-tight">{type.desc}</span>
+                        </button>
+                    ))}
+                </div>
+            </div>
 
             <div className="flex flex-col gap-2">
                 <span className="text-sm font-semibold text-slate-700">
