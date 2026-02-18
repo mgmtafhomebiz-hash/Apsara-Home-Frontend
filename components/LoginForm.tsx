@@ -35,7 +35,7 @@ const LoginForm = ({ onSwitchToSignUp }: LoginFormProps) => {
 
         <div className="space-y-4">
             <div>
-                <label className="block text-xs font-semibold text-white/70 mb-1.5">
+                <label className="block text-xs font-semibold text-white mb-1.5">
                     Email / Username 
                 </label>
                 <input 
@@ -46,7 +46,7 @@ const LoginForm = ({ onSwitchToSignUp }: LoginFormProps) => {
             </div>
 
             <div className="">
-                <label className="block text-xs font-semibold text-white/70 mb-1.5">
+                <label className="block text-xs font-semibold text-white mb-1.5">
                     Password
                 </label>
                 <div className="relative">
