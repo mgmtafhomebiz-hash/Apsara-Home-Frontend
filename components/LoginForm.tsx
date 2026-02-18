@@ -31,7 +31,7 @@ const LoginForm = ({ onSwitchToSignUp }: LoginFormProps) => {
         transition={{ duration: 0.25 }}
     >   
         <h2 className="text-2xl font-bold text-white mb-1">Welcome back!</h2>
-        <p className="text-white/50 text-sm mb-7">Sign in to your AF Home account</p>
+        <p className="text-white/70 text-sm mb-7">Sign in to your AF Home account</p>
 
         <div className="space-y-4">
             <div>
@@ -41,7 +41,7 @@ const LoginForm = ({ onSwitchToSignUp }: LoginFormProps) => {
                 <input 
                     type="text"
                     placeholder="Your username or email"
-                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-orange-400/60 focus:bg-white/15 transition-all"
+                    className="w-full px-4 py-3 bg-white/15 border border-white/25 rounded-xl text-sm text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-orange-400/60 focus:bg-white/20 transition-all"
                 />
             </div>
 
@@ -53,12 +53,12 @@ const LoginForm = ({ onSwitchToSignUp }: LoginFormProps) => {
                     <input 
                         type={ showPass ? 'text' : 'password'} 
                         placeholder="Enter your password"
-                        className="w-full px-4 py-3 pr-11 bg-white/10 border border-white/20 rounded-xl text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-orange-400/60 focus:bg-white/15 transition-all"
+                        className="w-full px-4 py-3 pr-11 bg-white/15 border border-white/25 rounded-xl text-sm text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-orange-400/60 focus:bg-white/20 transition-all"
                     />
                     <button 
                         type="button"
                         onClick={() => setShowPass(p => !p)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-white/4- hover:text-white/80 transition-colors"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-white/60 hover:text-white/80 transition-colors"
                     >
                         <EyeIcon open={showPass} />
                     </button>
@@ -66,7 +66,7 @@ const LoginForm = ({ onSwitchToSignUp }: LoginFormProps) => {
             </div>
 
             <div className="flex items-center justify-between text-xs">
-                <label className="flex items-center gap-2 text-white/50 cursor-pointer">
+                <label className="flex items-center gap-2 text-white/70 cursor-pointer">
                     <input type="checkbox" className="accent-orange-500 w-3.5"  />
                     Remember me
                 </label>
@@ -83,7 +83,7 @@ const LoginForm = ({ onSwitchToSignUp }: LoginFormProps) => {
                 SIGN IN
             </button>
 
-            <p className="text-center text-xs text-white/40">
+            <p className="text-center text-xs text-white/60">
                 Don&apos;t have an account?{' '}
                 <button
                     onClick={onSwitchToSignUp}

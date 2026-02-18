@@ -112,6 +112,8 @@ export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false)
   const [mobileExpanded, setMobileExpanded] = useState<string | null>(null)
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null)
+  const [megaSearch, setMegaSearch] = useState('')
+  const [mobileSearch, setMobileSearch] = useState('')
   const { cartCount, setIsOpen } = useCart()
   const { isLoggedIn } = useAuth()
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -121,6 +123,14 @@ export default function Navbar() {
     window.addEventListener('scroll', handler)
     return () => window.removeEventListener('scroll', handler)
   }, [])
+
+  useEffect(() => {
+    if (!activeDropdown) setMegaSearch('')
+  }, [activeDropdown])
+
+  useEffect(() => {
+    setMobileSearch('')
+  }, [mobileExpanded])
 
   const open = (label: string) => {
     if (closeTimer.current) clearTimeout(closeTimer.current)
@@ -310,33 +320,82 @@ export default function Navbar() {
             onMouseEnter={() => open(activeLink.label)}
             onMouseLeave={close}
           >
-            <div className="container mx-auto px-4 py-6">
-              <div className="grid grid-cols-4 gap-8">
-                {Object.entries(activeLink.mega).map(([room, items]) => (
-                  <div key={room}>
-                    <div className="flex items-center gap-2 mb-3 pb-2 border-b border-gray-100">
-                      <span className="text-orange-500">
-                        {roomIcons[room]}
-                      </span>
-                      <h3 className="text-xs font-bold tracking-wider text-gray-800">
-                        {room}
-                      </h3>
-                    </div>
-                    <ul className="space-y-0.5">
-                      {items.map((item) => (
-                        <li key={item}>
-                          <Link
-                            href={`/by-room/${room.toLowerCase().replace(/\s+/g, '-')}/${item.toLowerCase().replace(/\s+/g, '-')}`}
-                            className="block px-2 py-1.5 rounded-lg text-sm text-gray-500 hover:text-orange-600 hover:bg-orange-50/60 transition-all duration-150"
-                          >
-                            {item}
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
+            <div className="container mx-auto px-4 pt-4 pb-5">
+              {/* Search bar */}
+              <div className="relative mb-4 max-w-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                  <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
+                </svg>
+                <input
+                  type="text"
+                  value={megaSearch}
+                  onChange={(e) => setMegaSearch(e.target.value)}
+                  placeholder="Search rooms & items..."
+                  className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-400/50 focus:bg-white transition-all"
+                />
+                {megaSearch && (
+                  <button
+                    onClick={() => setMegaSearch('')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                  </button>
+                )}
               </div>
+
+              {/* Columns */}
+              {(() => {
+                const q = megaSearch.trim().toLowerCase();
+                const filtered = Object.entries(activeLink.mega!).map(([room, items]) => ({
+                  room,
+                  items: q ? items.filter(i => i.toLowerCase().includes(q)) : items.slice(0, 6),
+                  hasMore: !q && items.length > 6,
+                })).filter(col => col.items.length > 0);
+
+                if (filtered.length === 0) return (
+                  <div className="py-6 text-center text-sm text-gray-400">
+                    No items found for &quot;<span className="text-orange-500">{megaSearch}</span>&quot;
+                  </div>
+                );
+
+                return (
+                  <div className="grid grid-cols-4 gap-6">
+                    {filtered.map(({ room, items, hasMore }) => {
+                      const roomSlug = room.toLowerCase().replace(/\s+/g, '-');
+                      return (
+                        <div key={room}>
+                          <div className="flex items-center gap-2 bg-orange-50 rounded-xl px-3 py-2 mb-3">
+                            <span className="text-orange-500">{roomIcons[room]}</span>
+                            <h3 className="text-xs font-bold tracking-wider text-orange-600">{room}</h3>
+                          </div>
+                          <ul className="space-y-0.5">
+                            {items.map((item) => (
+                              <li key={item}>
+                                <Link
+                                  href={`/by-room/${roomSlug}/${item.toLowerCase().replace(/\s+/g, '-')}`}
+                                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm text-gray-500 hover:text-orange-600 hover:bg-orange-50/60 transition-all duration-150 group"
+                                >
+                                  <span className="w-1 h-1 rounded-full bg-gray-300 group-hover:bg-orange-400 transition-colors shrink-0" />
+                                  {item}
+                                </Link>
+                              </li>
+                            ))}
+                          </ul>
+                          {hasMore && (
+                            <Link
+                              href={`/by-room/${roomSlug}`}
+                              className="flex items-center gap-1 mt-2 px-3 py-1.5 text-xs font-semibold text-orange-500 hover:text-orange-600 transition-colors"
+                            >
+                              View all {room.toLowerCase()}
+                              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6" /></svg>
+                            </Link>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
             </div>
           </motion.div>
         )}
@@ -359,12 +418,7 @@ export default function Navbar() {
 
                 const subItems = link.dropdown
                   ? link.dropdown.map((item) => ({ label: item, href: `${link.href}/${item.toLowerCase().replace(/\s+/g, '-')}` }))
-                  : link.mega
-                    ? Object.entries(link.mega).flatMap(([room, items]) => [
-                        { label: room, href: '', isHeader: true },
-                        ...items.map((item) => ({ label: item, href: `/by-room/${room.toLowerCase().replace(/\s+/g, '-')}/${item.toLowerCase().replace(/\s+/g, '-')}` })),
-                      ])
-                    : []
+                  : []
 
                 return (
                   <div key={link.label}>
@@ -405,16 +459,79 @@ export default function Navbar() {
                       style={{ gridTemplateRows: isExpanded ? '1fr' : '0fr' }}
                     >
                       <div className="overflow-hidden">
-                        <div className="ml-4 pl-4 border-l-2 border-orange-200 py-1">
-                          {subItems.map((item, i) =>
-                            'isHeader' in item && item.isHeader ? (
-                              <p
-                                key={item.label}
-                                className={`px-3 py-1.5 text-xs font-bold tracking-wider text-orange-500 ${i > 0 ? 'mt-2' : ''}`}
-                              >
-                                {item.label}
-                              </p>
-                            ) : (
+                        {link.mega ? (
+                          /* Mega menu — search + grouped rooms */
+                          <div className="ml-4 pl-4 border-l-2 border-orange-200 py-2 space-y-1">
+                            {/* Search */}
+                            <div className="relative mb-3">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                                <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
+                              </svg>
+                              <input
+                                type="text"
+                                value={mobileSearch}
+                                onChange={(e) => setMobileSearch(e.target.value)}
+                                placeholder="Search items..."
+                                className="w-full pl-8 pr-8 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-400/50 focus:bg-white transition-all"
+                              />
+                              {mobileSearch && (
+                                <button onClick={() => setMobileSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400">
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                                </button>
+                              )}
+                            </div>
+
+                            {/* Rooms */}
+                            {(() => {
+                              const q = mobileSearch.trim().toLowerCase();
+                              const rooms = Object.entries(link.mega!).map(([room, items]) => ({
+                                room,
+                                items: q ? items.filter(i => i.toLowerCase().includes(q)) : items.slice(0, 5),
+                                hasMore: !q && items.length > 5,
+                              })).filter(r => r.items.length > 0);
+
+                              if (rooms.length === 0) return (
+                                <p className="px-3 py-3 text-xs text-gray-400 text-center">
+                                  No results for &quot;<span className="text-orange-500">{mobileSearch}</span>&quot;
+                                </p>
+                              );
+
+                              return rooms.map(({ room, items, hasMore }) => {
+                                const roomSlug = room.toLowerCase().replace(/\s+/g, '-');
+                                return (
+                                  <div key={room} className="mb-2">
+                                    <div className="flex items-center gap-1.5 px-2 py-1.5 mb-0.5">
+                                      <span className="text-orange-500">{roomIcons[room]}</span>
+                                      <span className="text-xs font-bold tracking-wider text-orange-600">{room}</span>
+                                    </div>
+                                    {items.map(item => (
+                                      <Link
+                                        key={item}
+                                        href={`/by-room/${roomSlug}/${item.toLowerCase().replace(/\s+/g, '-')}`}
+                                        className="block px-3 py-1.5 text-sm text-gray-500 hover:text-orange-500 rounded-lg transition-colors"
+                                        onClick={() => setMobileOpen(false)}
+                                      >
+                                        {item}
+                                      </Link>
+                                    ))}
+                                    {hasMore && (
+                                      <Link
+                                        href={`/by-room/${roomSlug}`}
+                                        className="flex items-center gap-1 px-3 py-1 text-xs font-semibold text-orange-500"
+                                        onClick={() => setMobileOpen(false)}
+                                      >
+                                        View all →
+                                      </Link>
+                                    )}
+                                  </div>
+                                );
+                              });
+                            })()}
+                          </div>
+                        ) : (
+                          /* Regular dropdown */
+                          <div className="ml-4 pl-4 border-l-2 border-orange-200 py-1">
+                            {subItems.map((item) => (
                               <Link
                                 key={item.label}
                                 href={item.href}
@@ -423,9 +540,9 @@ export default function Navbar() {
                               >
                                 {item.label}
                               </Link>
-                            )
-                          )}
-                        </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>

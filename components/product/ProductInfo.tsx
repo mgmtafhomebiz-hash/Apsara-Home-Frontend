@@ -35,6 +35,14 @@ const ShareIcon = () => (
         <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
     </svg>
 );
+const HeartIcon = ({ filled }: { filled: boolean }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24"
+        fill={filled ? '#f97316' : 'none'}
+        stroke={filled ? '#f97316' : 'currentColor'}
+        strokeWidth="2">
+        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+    </svg>
+);
 
 const colors = [
     { name: 'Beige', color: 'bg-amber-100 border-amber-300' },
@@ -68,6 +76,8 @@ const ProductInfo = ({ product, onReviewsClick }: ProductInfoProps) => {
     const [selectedColor, setSelectedColor] = useState('Beige');
     const [added, setAdded] = useState(false);
     const [selectedType, setSelectedType] = useState('fabric');
+    const [selectedSize, setSelectedSize] = useState('Medium');
+    const [wishlisted, setWishlisted] = useState(false);
 
 
     const avgRating = (mockReviews.reduce((s, r) => s + r.rating, 0) / mockReviews.length).toFixed(1);
@@ -98,9 +108,20 @@ const ProductInfo = ({ product, onReviewsClick }: ProductInfoProps) => {
                 {product.brand && (
                     <span className="text-xs font-bold text-orange-500 uppercase tracking-widest">{product.brand}</span>
                 )}
-                <button className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-orange-500 transition-colors ml-auto">
-                    <ShareIcon /> Share
-                </button>
+                <div className="flex items-center gap-3 ml-auto">
+                    <motion.button
+                        onClick={() => setWishlisted(w => !w)}
+                        whileTap={{ scale: 0.8 }}
+                        className={`flex items-center gap-1 text-xs transition-colors ${wishlisted ? 'text-orange-500' : 'text-gray-400 hover:text-orange-400'}`}
+                        title={wishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
+                    >
+                        <HeartIcon filled={wishlisted} />
+                        <span>{wishlisted ? 'Saved' : 'Save'}</span>
+                    </motion.button>
+                    <button className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-orange-500 transition-colors">
+                        <ShareIcon /> Share
+                    </button>
+                </div>
             </div>
 
             {/* TITLE */}
@@ -177,6 +198,28 @@ const ProductInfo = ({ product, onReviewsClick }: ProductInfoProps) => {
                 </div>
             </div>
 
+            {/* SIZE SELECTOR */}
+            <div className="flex flex-col gap-2">
+                <span className="text-sm font-semibold text-slate-700">
+                    Size: <span className="text-orange-500">{selectedSize}</span>
+                </span>
+                <div className="flex gap-2 flex-wrap">
+                    {sizes.map(size => (
+                        <button
+                            key={size}
+                            onClick={() => setSelectedSize(size)}
+                            className={`px-4 py-1.5 text-sm rounded-xl border-2 font-medium transition-all duration-200 ${
+                                selectedSize === size
+                                    ? 'border-orange-400 bg-orange-50 text-orange-600'
+                                    : 'border-gray-200 text-slate-600 hover:border-orange-200'
+                            }`}
+                        >
+                            {size}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
             <div className="flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse inline-block shrink-0" />
                 <span className="text-sm font-semibold text-green-600">In Stock</span>
@@ -199,11 +242,44 @@ const ProductInfo = ({ product, onReviewsClick }: ProductInfoProps) => {
             <div>
                 <p className="text-xs text-gray-400 mb-2 font-medium">We accept:</p>
                 <div className="flex items-center gap-2 flex-wrap">
-                    {['GCash', 'Maya', 'Visa', 'Mastercard', 'COD'].map(method => (
-                        <span key={method} className="text-xs font-semibold bg-white border border-gray-200 rounded-lg px-2.5 py-1.5 text-slate-600 shadow-sm">
-                            {method}
-                        </span>
-                    ))}
+                    {/* GCash */}
+                    <div className="flex items-center justify-center bg-white border border-gray-200 rounded-lg px-2.5 py-1.5 shadow-sm h-8">
+                        <svg width="52" height="16" viewBox="0 0 52 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="8" cy="8" r="8" fill="#007DFF"/>
+                            <text x="8" y="12" textAnchor="middle" fill="white" fontSize="9" fontWeight="bold" fontFamily="Arial">G</text>
+                            <text x="28" y="12" textAnchor="middle" fill="#007DFF" fontSize="9" fontWeight="bold" fontFamily="Arial">GCash</text>
+                        </svg>
+                    </div>
+                    {/* Maya */}
+                    <div className="flex items-center justify-center bg-white border border-gray-200 rounded-lg px-2.5 py-1.5 shadow-sm h-8">
+                        <svg width="42" height="16" viewBox="0 0 42 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <rect width="42" height="16" rx="3" fill="#14A44D"/>
+                            <text x="21" y="12" textAnchor="middle" fill="white" fontSize="9" fontWeight="bold" fontFamily="Arial" letterSpacing="0.5">maya</text>
+                        </svg>
+                    </div>
+                    {/* Visa */}
+                    <div className="flex items-center justify-center bg-white border border-gray-200 rounded-lg px-2.5 py-1.5 shadow-sm h-8">
+                        <svg width="38" height="14" viewBox="0 0 38 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <text x="1" y="12" fill="#1A1F71" fontSize="13" fontWeight="900" fontFamily="Arial" fontStyle="italic" letterSpacing="-0.5">VISA</text>
+                        </svg>
+                    </div>
+                    {/* Mastercard */}
+                    <div className="flex items-center justify-center bg-white border border-gray-200 rounded-lg px-2.5 py-1.5 shadow-sm h-8">
+                        <svg width="34" height="22" viewBox="0 0 34 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="12" cy="11" r="10" fill="#EB001B"/>
+                            <circle cx="22" cy="11" r="10" fill="#F79E1B"/>
+                            <path d="M17 4.8a10 10 0 0 1 0 12.4A10 10 0 0 1 17 4.8z" fill="#FF5F00"/>
+                        </svg>
+                    </div>
+                    {/* COD */}
+                    <div className="flex items-center justify-center gap-1 bg-white border border-gray-200 rounded-lg px-2.5 py-1.5 shadow-sm h-8">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2">
+                            <rect x="2" y="6" width="20" height="12" rx="2"/>
+                            <circle cx="12" cy="12" r="3"/>
+                            <path d="M6 12h.01M18 12h.01"/>
+                        </svg>
+                        <span className="text-[10px] font-bold text-green-700">COD</span>
+                    </div>
                 </div>
             </div>
 
@@ -220,9 +296,13 @@ const ProductInfo = ({ product, onReviewsClick }: ProductInfoProps) => {
                 <motion.button
                     whileTap={{ scale: 0.97 }}
                     onClick={handleAddToCart}
-                    className="flex-1 flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white py-3.5 rounded-2xl font-semibold text-sm transition-colors shadow-lg shadow-orange-200 cursor-pointer"
+                    className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl font-semibold text-sm transition-all shadow-lg cursor-pointer ${
+                        added
+                            ? 'bg-green-500 hover:bg-green-600 shadow-green-200 text-white'
+                            : 'bg-orange-500 hover:bg-orange-600 active:bg-orange-700 shadow-orange-200 text-white'
+                    }`}
                 >
-                    <CartIcon /> Add to Cart
+                    {added ? '✓ Added!' : <><CartIcon /> Add to Cart</>}
                 </motion.button>
                 <motion.button
                     whileTap={{ scale: 0.97 }}

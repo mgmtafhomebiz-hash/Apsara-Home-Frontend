@@ -1,7 +1,6 @@
 'use client';
 
 import { use, useRef } from 'react';
-import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import TopBar from '@/components/layout/TopBar';
@@ -13,6 +12,9 @@ import ProductTabs from '@/components/product/ProductTabs';
 import { categoryProducts, categoryMeta, getProductBySlug } from '@/libs/CategoryData';
 import RelatedProducts from '@/components/product/RelatedProduct';
 import StickyAddToCart from '@/components/product/StickyAddToCart';
+import ProductQA from '@/components/product/ProductQA';
+import CompleteTheLook from '@/components/product/CompleteTheLook';
+// import CompleteTheLook from '@/components/product/CompleteTheLook';
 
 const ChevronRight = () => (
     <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6" /></svg>
@@ -68,8 +70,14 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
                         <ProductTabs product={product} />
                     </div>
 
+                    {/* Q&A */}
+                    <ProductQA />
+
                     {/* Related */}
                     <RelatedProducts products={relatedProducts} category={category} />
+
+                    {/* Complete the Look */}
+                    <CompleteTheLook currentCategory={category} />
                 </div>
             </main>
 
