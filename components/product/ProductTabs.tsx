@@ -35,7 +35,6 @@ const ProductTabs = ({ product, defaultTab = 'description', onTabChange }: Produ
             transition={{ duration: 0.5, delay: 0.3 }}
             className="mt-12 sm:mt-16"
         >
-            {/* TAB NAVIGATION */}
             <div className="flex border-b border-gray-200 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
                 {tabs.map(tab => (
                     <button
@@ -63,7 +62,6 @@ const ProductTabs = ({ product, defaultTab = 'description', onTabChange }: Produ
                 ))}
             </div>
 
-            {/* TAB CONTENT */}
             <AnimatePresence mode="wait">
                 <motion.div
                     key={activeTab}
@@ -73,7 +71,6 @@ const ProductTabs = ({ product, defaultTab = 'description', onTabChange }: Produ
                     transition={{ duration: 0.25 }}
                     className="py-6 sm:py-8"
                 >
-                    {/* DESCRIPTION */}
                     {activeTab === 'description' && (
                         <div className="max-w-2xl space-y-4 text-gray-600 text-sm leading-relaxed">
                             <p>
@@ -106,7 +103,6 @@ const ProductTabs = ({ product, defaultTab = 'description', onTabChange }: Produ
                         </div>
                     )}
 
-                    {/* SPECIFICATIONS */}
                     {activeTab === 'specs' && (
                         <div className="max-w-lg">
                             <div className="border border-gray-100 rounded-2xl overflow-hidden">
@@ -125,10 +121,8 @@ const ProductTabs = ({ product, defaultTab = 'description', onTabChange }: Produ
                         </div>
                     )}
 
-                    {/* REVIEWS */}
                     {activeTab === 'reviews' && (
                         <div className="space-y-4 max-w-2xl">
-                            {/* Rating Summary */}
                             <div className="flex items-center gap-4 sm:gap-6 bg-orange-50 rounded-2xl p-4 sm:p-5 mb-6">
                                 <div className="text-center shrink-0">
                                     <div className="text-4xl sm:text-5xl font-bold text-orange-500">{avgRating}</div>
@@ -160,7 +154,6 @@ const ProductTabs = ({ product, defaultTab = 'description', onTabChange }: Produ
                                 </div>
                             </div>
 
-                            {/* Review Cards */}
                             {mockReviews.map((review, index) => (
                                 <motion.div
                                     key={index}

@@ -31,7 +31,6 @@ const ProductImageGallery = ({ product }: ProductImageGalleryProps) => {
 
     return (
         <>
-            {/* Zoom Modal */}
             <AnimatePresence>
                 {isZoomed && (
                     <motion.div
@@ -49,13 +48,7 @@ const ProductImageGallery = ({ product }: ProductImageGalleryProps) => {
                             className="relative w-full max-w-xl aspect-square"
                             onClick={(e) => e.stopPropagation()}
                         >
-                            <Image
-                                src={product.image}
-                                alt={product.name}
-                                fill
-                                className="object-contain"
-                                priority
-                            />
+                            <Image src={product.image} alt={product.name} fill className="object-contain" priority />
                         </motion.div>
                         <button
                             onClick={() => setIsZoomed(false)}
@@ -73,7 +66,6 @@ const ProductImageGallery = ({ product }: ProductImageGalleryProps) => {
                 transition={{ duration: 0.5 }}
                 className="md:sticky md:top-4"
             >
-                {/* Main Image */}
                 <div
                     className="relative aspect-square rounded-2xl sm:rounded-3xl overflow-hidden bg-gray-50 shadow-sm cursor-zoom-in group"
                     onClick={() => setIsZoomed(true)}
@@ -87,24 +79,16 @@ const ProductImageGallery = ({ product }: ProductImageGalleryProps) => {
                             transition={{ duration: 0.2 }}
                             className="absolute inset-0"
                         >
-                            <Image
-                                src={product.image}
-                                alt={product.name}
-                                fill
-                                className="object-cover"
-                                priority
-                            />
+                            <Image src={product.image} alt={product.name} fill className="object-cover" priority />
                         </motion.div>
                     </AnimatePresence>
 
-                    {/* Badge */}
                     {product.badge && (
                         <span className="absolute top-3 left-3 sm:top-4 sm:left-4 bg-orange-500 text-white text-[10px] sm:text-xs font-bold px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full z-10">
                             {product.badge}
                         </span>
                     )}
 
-                    {/* Wishlist Button */}
                     <button
                         onClick={(e) => { e.stopPropagation(); setIsWishlisted(w => !w); }}
                         className="absolute top-3 right-3 sm:top-4 sm:right-4 bg-white/90 backdrop-blur-sm p-2 sm:p-2.5 rounded-full shadow-md hover:scale-110 transition-all z-10"
@@ -113,8 +97,7 @@ const ProductImageGallery = ({ product }: ProductImageGalleryProps) => {
                         <HeartIcon filled={isWishlisted} />
                     </button>
 
-                    {/* Zoom hint — desktop only */}
-                    <div className="absolute bottom-3 right-3 bg-black/30 text-white text-[10px] px-2.5 py-1 rounded-full backdrop-blur-sm hidden group-hover:flex items-center gap-1 transition-opacity">
+                    <div className="absolute bottom-3 right-3 bg-black/30 text-white text-[10px] px-2.5 py-1 rounded-full backdrop-blur-sm hidden group-hover:flex items-center gap-1">
                         <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                             <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
                             <line x1="11" y1="8" x2="11" y2="14" /><line x1="8" y1="11" x2="14" y2="11" />
@@ -122,7 +105,6 @@ const ProductImageGallery = ({ product }: ProductImageGalleryProps) => {
                         Zoom
                     </div>
 
-                    {/* Mobile dot indicators */}
                     <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 sm:hidden z-10">
                         {Array.from({ length: THUMBNAIL_COUNT }).map((_, i) => (
                             <button
@@ -134,29 +116,20 @@ const ProductImageGallery = ({ product }: ProductImageGalleryProps) => {
                     </div>
                 </div>
 
-                {/* Desktop Thumbnails */}
                 <div className="hidden sm:flex gap-3 mt-4">
                     {Array.from({ length: THUMBNAIL_COUNT }).map((_, index) => (
                         <button
                             key={index}
                             onClick={() => setActiveImage(index)}
                             className={`relative flex-1 aspect-square rounded-xl overflow-hidden bg-gray-50 border-2 transition-all duration-200 ${
-                                activeImage === index
-                                    ? 'border-orange-400 shadow-sm shadow-orange-100'
-                                    : 'border-transparent hover:border-orange-200'
+                                activeImage === index ? 'border-orange-400 shadow-sm shadow-orange-100' : 'border-transparent hover:border-orange-200'
                             }`}
                         >
-                            <Image
-                                src={product.image}
-                                alt={`View ${index + 1}`}
-                                fill
-                                className="object-cover"
-                            />
+                            <Image src={product.image} alt={`View ${index + 1}`} fill className="object-cover" />
                         </button>
                     ))}
                 </div>
 
-                {/* Mobile Thumbnails — horizontal scroll */}
                 <div className="flex sm:hidden gap-2 mt-3 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
                     {Array.from({ length: THUMBNAIL_COUNT }).map((_, index) => (
                         <button
@@ -166,12 +139,7 @@ const ProductImageGallery = ({ product }: ProductImageGalleryProps) => {
                                 activeImage === index ? 'border-orange-400' : 'border-gray-100'
                             }`}
                         >
-                            <Image
-                                src={product.image}
-                                alt={`View ${index + 1}`}
-                                fill
-                                className="object-cover"
-                            />
+                            <Image src={product.image} alt={`View ${index + 1}`} fill className="object-cover" />
                         </button>
                     ))}
                 </div>

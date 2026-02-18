@@ -73,7 +73,6 @@ const ProductInfo = ({ product, onReviewsClick }: ProductInfoProps) => {
             transition={{ duration: 0.5, delay: 0.1 }}
             className="flex flex-col gap-5"
         >
-            {/* Brand + Share */}
             <div className="flex items-center justify-between">
                 {product.brand && (
                     <span className="text-xs font-bold text-orange-500 uppercase tracking-widest">{product.brand}</span>
@@ -85,21 +84,16 @@ const ProductInfo = ({ product, onReviewsClick }: ProductInfoProps) => {
 
             <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 leading-tight">{product.name}</h1>
 
-            {/* Rating */}
             <div className="flex items-center gap-3 flex-wrap">
                 <StarRating rating={Math.round(Number(avgRating))} size={16} />
                 <span className="text-sm font-bold text-slate-700">{avgRating}</span>
-                <button
-                    onClick={onReviewsClick}
-                    className="text-sm text-gray-400 hover:text-orange-500 transition-colors"
-                >
+                <button onClick={onReviewsClick} className="text-sm text-gray-400 hover:text-orange-500 transition-colors">
                     ({mockReviews.length} reviews)
                 </button>
                 <span className="text-xs text-gray-300">|</span>
                 <span className="text-xs text-green-600 font-semibold">✓ Verified Product</span>
             </div>
 
-            {/* Price */}
             <div className="flex items-baseline gap-3 flex-wrap">
                 <span className="text-3xl sm:text-4xl font-bold text-orange-500">₱{product.price.toLocaleString()}</span>
                 {product.originalPrice && (
@@ -114,7 +108,6 @@ const ProductInfo = ({ product, onReviewsClick }: ProductInfoProps) => {
 
             <div className="h-px bg-gray-100" />
 
-            {/* Color */}
             <div className="flex flex-col gap-2">
                 <span className="text-sm font-semibold text-slate-700">
                     Color: <span className="text-orange-500">{selectedColor}</span>
@@ -131,14 +124,12 @@ const ProductInfo = ({ product, onReviewsClick }: ProductInfoProps) => {
                 </div>
             </div>
 
-            {/* Stock Status */}
             <div className="flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse inline-block shrink-0" />
                 <span className="text-sm font-semibold text-green-600">In Stock</span>
                 <span className="text-sm text-gray-400">— Only 8 left</span>
             </div>
 
-            {/* Delivery Info */}
             <div className="bg-gray-50 rounded-2xl p-4 space-y-2.5">
                 {[
                     { icon: '📦', text: 'Ships within 1–3 business days' },
@@ -152,7 +143,6 @@ const ProductInfo = ({ product, onReviewsClick }: ProductInfoProps) => {
                 ))}
             </div>
 
-            {/* Payment Methods */}
             <div>
                 <p className="text-xs text-gray-400 mb-2 font-medium">We accept:</p>
                 <div className="flex items-center gap-2 flex-wrap">
@@ -164,29 +154,15 @@ const ProductInfo = ({ product, onReviewsClick }: ProductInfoProps) => {
                 </div>
             </div>
 
-            {/* Quantity */}
             <div className="flex items-center gap-4">
                 <span className="text-sm font-semibold text-slate-700">Quantity:</span>
                 <div className="flex items-center border border-gray-200 rounded-xl overflow-hidden">
-                    <button
-                        onClick={() => setQuantity(qty => Math.max(1, qty - 1))}
-                        className="px-4 py-2.5 text-gray-500 hover:bg-gray-50 hover:text-orange-500 transition-colors text-lg font-medium"
-                    >
-                        −
-                    </button>
-                    <span className="px-5 py-2.5 text-sm font-bold text-slate-800 min-w-12 text-center border-x border-gray-200">
-                        {quantity}
-                    </span>
-                    <button
-                        onClick={() => setQuantity(qty => qty + 1)}
-                        className="px-4 py-2.5 text-gray-500 hover:bg-gray-50 hover:text-orange-500 transition-colors text-lg font-medium"
-                    >
-                        +
-                    </button>
+                    <button onClick={() => setQuantity(qty => Math.max(1, qty - 1))} className="px-4 py-2.5 text-gray-500 hover:bg-gray-50 hover:text-orange-500 transition-colors text-lg font-medium">−</button>
+                    <span className="px-5 py-2.5 text-sm font-bold text-slate-800 min-w-12 text-center border-x border-gray-200">{quantity}</span>
+                    <button onClick={() => setQuantity(qty => qty + 1)} className="px-4 py-2.5 text-gray-500 hover:bg-gray-50 hover:text-orange-500 transition-colors text-lg font-medium">+</button>
                 </div>
             </div>
 
-            {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-3">
                 <motion.button
                     whileTap={{ scale: 0.97 }}
@@ -203,7 +179,6 @@ const ProductInfo = ({ product, onReviewsClick }: ProductInfoProps) => {
                 </motion.button>
             </div>
 
-            {/* Trust Badges */}
             <div className="grid grid-cols-3 gap-2 sm:gap-3">
                 {[
                     { icon: <TruckIcon />, label: 'Free Shipping', sub: 'On orders ₱5k+' },

@@ -40,23 +40,13 @@ const StickyAddToCart = ({ product }: StickyAddToCartProps) => {
                     className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 shadow-md"
                 >
                     <div className="container mx-auto px-4 py-2.5 flex items-center gap-3">
-                        {/* Product Thumbnail */}
                         <div className="relative w-10 h-10 rounded-lg overflow-hidden bg-gray-50 shrink-0">
-                            <Image
-                                src={product.image}
-                                alt={product.name}
-                                fill
-                                className="object-cover"
-                            />
+                            <Image src={product.image} alt={product.name} fill className="object-cover" />
                         </div>
-
-                        {/* Product Info */}
                         <div className="flex-1 min-w-0">
                             <p className="text-sm font-bold text-slate-800 truncate">{product.name}</p>
                             <p className="text-orange-500 font-bold text-sm">₱{product.price.toLocaleString()}</p>
                         </div>
-
-                        {/* Action Buttons */}
                         <div className="flex gap-2 shrink-0">
                             <button
                                 onClick={handleAddToCart}
