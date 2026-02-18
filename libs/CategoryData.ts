@@ -52,3 +52,11 @@ export const categoryMeta: Record<string, { label: string; image: string }> = {
 export const CATEGORY_BRANDS = ['AfroniaHome', 'MediaIndia', 'Bonnevie', 'MEDFORM'];
 
 export const PRICE_MAX = 50000;
+
+export function getProductBySlug(slug: string): { product: CategoryProduct; category: string } | null {
+    for (const [categorySlug, products] of Object.entries(categoryProducts)) {
+        const product = products.find(p => p.name.toLowerCase().replace(/\s+/g, '-') === slug);
+        if (product) return { product, category: categorySlug };
+    }
+    return null;
+}
