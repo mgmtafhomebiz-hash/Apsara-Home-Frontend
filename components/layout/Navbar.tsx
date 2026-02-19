@@ -5,7 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useCart } from '@/context/CartContext'
-import { useAuth } from '@/context/AuthContext'
+import { useSession, signOut } from 'next-auth/react'
+import { useLogoutMutation } from '@/store/api/authApi'
 
 type NavLink = {
   label: string;
@@ -94,16 +95,16 @@ const navLinks: NavLink[] = [
 
 const roomIcons: Record<string, React.ReactNode> = {
   BEDROOM: (
-    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 7v11a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V7"/><path d="M21 10H3V7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v3z"/><path d="M6 19v2"/><path d="M18 19v2"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 7v11a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V7" /><path d="M21 10H3V7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v3z" /><path d="M6 19v2" /><path d="M18 19v2" /></svg>
   ),
   KITCHEN: (
-    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3zm0 0v7"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2" /><path d="M7 2v20" /><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3zm0 0v7" /></svg>
   ),
   'LIVING ROOM': (
-    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M20 9V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v3"/><path d="M2 11v5a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-5a2 2 0 0 0-4 0v2H6v-2a2 2 0 0 0-4 0z"/><path d="M4 18v2"/><path d="M20 18v2"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M20 9V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v3" /><path d="M2 11v5a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-5a2 2 0 0 0-4 0v2H6v-2a2 2 0 0 0-4 0z" /><path d="M4 18v2" /><path d="M20 18v2" /></svg>
   ),
   OUTDOOR: (
-    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M17 14h.01"/><path d="M7 7h12a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14"/><circle cx="12" cy="12" r="3"/><path d="m16 16 2 2"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M17 14h.01" /><path d="M7 7h12a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14" /><circle cx="12" cy="12" r="3" /><path d="m16 16 2 2" /></svg>
   ),
 }
 
@@ -112,11 +113,18 @@ export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false)
   const [mobileExpanded, setMobileExpanded] = useState<string | null>(null)
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null)
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false)
   const [megaSearch, setMegaSearch] = useState('')
   const [mobileSearch, setMobileSearch] = useState('')
   const { cartCount, setIsOpen } = useCart()
-  const { isLoggedIn } = useAuth()
+  const { data: session, status } = useSession();
+  const [logoutApi] = useLogoutMutation();
+
+  const isLoggedIn = status === 'authenticated'
+  const user = session?.user
+
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const profileMenuRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 20)
@@ -132,6 +140,31 @@ export default function Navbar() {
     setMobileSearch('')
   }, [mobileExpanded])
 
+  useEffect(() => {
+    if (!isLoggedIn) setProfileMenuOpen(false)
+  }, [isLoggedIn])
+
+  useEffect(() => {
+    const onPointerDown = (event: MouseEvent) => {
+      if (!profileMenuRef.current) return
+      if (!profileMenuRef.current.contains(event.target as Node)) {
+        setProfileMenuOpen(false)
+      }
+    }
+
+    const onEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setProfileMenuOpen(false)
+    }
+
+    document.addEventListener('mousedown', onPointerDown)
+    document.addEventListener('keydown', onEscape)
+
+    return () => {
+      document.removeEventListener('mousedown', onPointerDown)
+      document.removeEventListener('keydown', onEscape)
+    }
+  }, [])
+
   const open = (label: string) => {
     if (closeTimer.current) clearTimeout(closeTimer.current)
     setActiveDropdown(label)
@@ -142,6 +175,15 @@ export default function Navbar() {
   }
 
   const activeLink = navLinks.find((l) => l.label === activeDropdown)
+
+  const handleLogout = async () => {
+    try {
+      await logoutApi().unwrap()
+    } catch(error) {
+      console.log(error)
+    }
+    await signOut({ callbackUrl: '/' })
+  }
 
   return (
     <motion.header
@@ -180,34 +222,92 @@ export default function Navbar() {
 
           {/* Icons */}
           <div className="flex items-center gap-1">
-            {/* User icon — always visible, goes to login if not logged in */}
-            <Link href="/login" className="p-2 rounded-xl hover:bg-gray-100 transition-colors">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
-            </Link>
-
-            {/* Wishlist + Cart — only visible when logged in */}
-            {isLoggedIn && (
+            {/* Auth actions */}
+            {isLoggedIn ? (
               <>
-                <button className="p-2 rounded-xl hover:bg-gray-100 transition-colors">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" /></svg>
-                </button>
+                <Link
+                  href="/wishlist"
+                  className="p-2 rounded-xl hover:bg-gray-100 transition-colors"
+                  title="Wishlist"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="m12 21-1.45-1.32C5.4 15.36 2 12.28 2 8.5A4.5 4.5 0 0 1 6.5 4 5 5 0 0 1 12 6.09 5 5 0 0 1 17.5 4 4.5 4.5 0 0 1 22 8.5c0 3.78-3.4 6.86-8.55 11.18z" />
+                  </svg>
+                </Link>
+                <button
+                  onClick={() => setIsOpen(true)}
+                  className="relative p-2 rounded-xl hover:bg-gray-100 transition-colors"
+                  title="Cart"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="9" cy="21" r="1" />
+                    <circle cx="20" cy="21" r="1" />
+                    <path d="M1 1h4l2.68 12.39a2 2 0 0 0 2 1.61h7.72a2 2 0 0 0 2-1.61L23 6H6" />
+                  </svg>
 
-                <button onClick={() => setIsOpen(true)} className="relative p-2 rounded-xl hover:bg-orange-50 transition-colors group">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="group-hover:text-orange-500 transition-colors"><circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" /><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" /></svg>
                   {cartCount > 0 && (
-                    <motion.span
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      className="absolute -top-1 -right-1 bg-orange-500 text-white text-[10px] font-bold min-w-4.5 h-4.5 rounded-full flex items-center justify-center px-1"
-                    >
+                    <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-[10px] rounded-full min-w-[16px] h-4 px-1 flex items-center justify-center">
                       {cartCount}
-                    </motion.span>
+                    </span>
                   )}
                 </button>
+
+                <div className="relative hidden md:block" ref={profileMenuRef}>
+                  <button
+                    onClick={() => setProfileMenuOpen((prev) => !prev)}
+                    className="flex items-center gap-2 p-2 rounded-xl hover:bg-gray-100 transition-colors"
+                    title="Profile menu"
+                  >
+                    <span className="flex items-center justify-center h-8 w-8 rounded-full bg-orange-100 text-orange-600 text-xs font-semibold uppercase">
+                      {user?.name?.charAt(0) ?? 'U'}
+                    </span>
+                  </button>
+
+                  <AnimatePresence>
+                    {profileMenuOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 6 }}
+                        transition={{ duration: 0.15 }}
+                        className="absolute right-0 mt-2 w-44 rounded-xl border border-gray-100 bg-white shadow-lg shadow-black/10 overflow-hidden z-50"
+                      >
+                        <Link
+                          href="/profile"
+                          onClick={() => setProfileMenuOpen(false)}
+                          className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                        >
+                          My Profile
+                        </Link>
+                        <button
+                          onClick={handleLogout}
+                          className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                        >
+                          Logout
+                        </button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
               </>
+            ) : (
+              <Link
+                href="/login"
+                className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-gray-100 transition-colors text-gray-700"
+                title="Sign in"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+                <span className="text-sm font-medium">Sign in</span>
+              </Link>
             )}
 
-            <button onClick={() => setMobileOpen(!mobileOpen)} className="md:hidden p-2 rounded-xl hover:bg-gray-100 transition-colors ml-1">
+            <button
+              onClick={() => setMobileOpen(!mobileOpen)}
+              className="md:hidden p-2 rounded-xl hover:bg-gray-100 transition-colors ml-1"
+            >
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 {mobileOpen
                   ? <><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></>
@@ -247,11 +347,10 @@ export default function Navbar() {
                 >
                   <Link
                     href={link.href}
-                    className={`relative px-4 h-full flex items-center text-sm font-medium transition-colors duration-200 group ${
-                      activeDropdown === link.label
-                        ? 'text-orange-500'
-                        : 'text-gray-600 hover:text-orange-500'
-                    }`}
+                    className={`relative px-4 h-full flex items-center text-sm font-medium transition-colors duration-200 group ${activeDropdown === link.label
+                      ? 'text-orange-500'
+                      : 'text-gray-600 hover:text-orange-500'
+                      }`}
                   >
                     {link.label}
                     {hasDropdown && (
@@ -412,6 +511,34 @@ export default function Navbar() {
             className="md:hidden border-t border-gray-100 bg-white max-h-[70vh] overflow-y-auto"
           >
             <nav className="container mx-auto px-4 py-3 flex flex-col gap-0.5">
+              {isLoggedIn && (
+                <div className="mb-2 rounded-xl border border-gray-100 p-2">
+                  <Link
+                    href="/profile"
+                    className="block px-3 py-2 text-sm font-medium text-gray-700 hover:text-orange-500 hover:bg-orange-50 rounded-lg transition-colors"
+                    onClick={() => setMobileOpen(false)}
+                  >
+                    My Profile
+                  </Link>
+                  <button
+                    onClick={handleLogout}
+                    className="w-full text-left px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                  >
+                    Logout
+                  </button>
+                </div>
+              )}
+              {!isLoggedIn && (
+                <div className="mb-2 rounded-xl border border-gray-100 p-2">
+                  <Link
+                    href="/login"
+                    className="block px-3 py-2 text-sm font-medium text-gray-700 hover:text-orange-500 hover:bg-orange-50 rounded-lg transition-colors"
+                    onClick={() => setMobileOpen(false)}
+                  >
+                    Sign in
+                  </Link>
+                </div>
+              )}
               {navLinks.map((link) => {
                 const hasChildren = link.dropdown || link.mega
                 const isExpanded = mobileExpanded === link.label
