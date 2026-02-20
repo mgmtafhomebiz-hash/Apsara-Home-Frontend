@@ -8,6 +8,12 @@ export interface MeResponse {
     phone?: string
 }
 
+export interface UpdateProfilePayload {
+    name: string;
+    username?: string;
+    phone?: string;
+}
+
 export const userApi = baseApi.injectEndpoints({
     endpoints:  (builder) => ({
         me: builder.query<MeResponse, void>({
@@ -16,8 +22,17 @@ export const userApi = baseApi.injectEndpoints({
                 method: 'GET'
             }),
             providesTags: ['User'],
+        }),
+
+        updateProfile: builder.mutation<MeResponse, UpdateProfilePayload>({
+            query: (body) => ({
+                url: '/api/auth/me',
+                method: 'PUT',
+                body,
+            }),
+            invalidatesTags: ['User'],
         })
     })
 })
 
-export const { useMeQuery } = userApi
+export const { useMeQuery, useUpdateProfileMutation } = userApi
