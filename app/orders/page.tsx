@@ -1,11 +1,11 @@
 'use client';
 
-import OrderCard from "@/components/orders/OrderCard";
+import OrdersPageMain from "@/components/orders/OrdersPageMain";
 
 const OrdersPage = () => {
-//   return (
-//     <OrderCard order={}/>
-//   )
+  return (
+    <OrdersPageMain />
+  )
 }
 
 export default OrdersPage
