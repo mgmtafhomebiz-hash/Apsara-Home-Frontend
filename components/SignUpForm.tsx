@@ -66,10 +66,10 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
         })
 
         if ('error' in result) {
-            const err = result.error as any
-            const firstError = err.data?.errors
-                ? Object.values(err.data.errors as Record<string, string[]>)[0][0]
-                : err.data?.message || 'Registration failed. Please try again.'
+            const errorData = (result.error as { data?: { errors?: Record<string, string[]>; message?: string } }).data
+            const firstError = errorData?.errors
+                ? Object.values(errorData.errors)[0][0]
+                : errorData?.message || 'Registration failed. Please try again.'
             setError(firstError)
             return
         }

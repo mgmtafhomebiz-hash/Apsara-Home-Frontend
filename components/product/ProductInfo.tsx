@@ -29,8 +29,6 @@ const ReturnIcon = () => (
         <polyline points="1 4 1 10 7 10" /><path d="M3.51 15a9 9 0 1 0 .49-3.51" />
     </svg>
 );
-<<<<<<< HEAD
-=======
 const ShareIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
@@ -66,7 +64,6 @@ const CheckIcon = () => (
     </svg>
 );
 const sizes = ['Small', 'Medium', 'Large', 'XL']
->>>>>>> c6498253b282f9b5a2088dec2effa6db1b836c57
 
 interface ProductInfoProps {
     product: CategoryProduct
@@ -74,11 +71,6 @@ interface ProductInfoProps {
 }
 
 const ProductInfo = ({ product, onReviewsClick }: ProductInfoProps) => {
-<<<<<<< HEAD
-
-    const { addToCart } = useCart();
-    const [quantity, setQuantity] = useState(1);
-=======
     const { addToCart } = useCart();
     const [quantity, setQuantity] = useState(1);
     const [selectedColor, setSelectedColor] = useState('Beige');
@@ -87,7 +79,6 @@ const ProductInfo = ({ product, onReviewsClick }: ProductInfoProps) => {
     const [selectedSize, setSelectedSize] = useState('Medium');
     const [wishlisted, setWishlisted] = useState(false);
 
->>>>>>> c6498253b282f9b5a2088dec2effa6db1b836c57
 
     const avgRating = (mockReviews.reduce((s, r) => s + r.rating, 0) / mockReviews.length).toFixed(1);
 
@@ -97,12 +88,6 @@ const ProductInfo = ({ product, onReviewsClick }: ProductInfoProps) => {
                 id: product.name.toLocaleLowerCase().replace(/\s+/g, '-'),
                 name: product.name,
                 price: product.price,
-<<<<<<< HEAD
-                image: product.image
-            })
-        }
-    }
-=======
                 image: product.image,
             });
         }
@@ -110,7 +95,6 @@ const ProductInfo = ({ product, onReviewsClick }: ProductInfoProps) => {
         setTimeout(() => setAdded(false), 2000);
 
     };
->>>>>>> c6498253b282f9b5a2088dec2effa6db1b836c57
 
     return (
         <motion.div
@@ -119,33 +103,6 @@ const ProductInfo = ({ product, onReviewsClick }: ProductInfoProps) => {
             transition={{ duration: 0.5, delay: 0.1 }}
             className="flex flex-col gap-5"
         >
-<<<<<<< HEAD
-            {product.brand && (
-                <span className="text-xs font-bold text-orange-500 uppercase tracking-widest">{product.brand}</span>
-            )}
-
-            <h1 className="text-3xl font-bold text-slate-300 leading-tight">{product.name}</h1>
-
-            {/* Rating */}
-            <div className="flex items-center gap-3">
-                <StarRating
-                    rating={Math.round(Number(avgRating))}
-                    size={16}
-                />
-                <span className="text-sm font-bold text-slate-700">{avgRating}</span>
-                <button className="text-sm text-gray-400 hover:text-orange-500 transition-colors">
-                    ({mockReviews.length} reviews)
-                </button>
-            </div>
-
-            {/* PRICE */}
-            <div className="flex items-baseline gap-3">
-                <span className="text-4xl font-bold text-orange-500">₱{product.price.toLocaleString()}</span>
-                {product.originalPrice && (
-                    <>
-                        <span className="text-lg text-gray-400 line-through">₱{product.originalPrice.toLocaleString()}</span>
-                        <span>Save ₱{(product.originalPrice - product.price).toLocaleString()}</span>
-=======
             {/* BRAND & SHARE */}
             <div className="flex items-center justify-between">
                 {product.brand && (
@@ -190,32 +147,12 @@ const ProductInfo = ({ product, onReviewsClick }: ProductInfoProps) => {
                         <span className="text-sm font-semibold text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
                             Save ₱{(product.originalPrice - product.price).toLocaleString()}
                         </span>
->>>>>>> c6498253b282f9b5a2088dec2effa6db1b836c57
                     </>
                 )}
             </div>
 
             <div className="h-px bg-gray-100" />
 
-<<<<<<< HEAD
-            {/* COLOR VARIANTS  */}
-            <div className="flex flex-col gap-2">
-                <span className="text-sm font-semibold text-slate-700">
-                    Color: <span>Beige</span>
-                </span>
-                <div className="flex gap-2">
-                    {[
-                        { name: 'Beige', color: 'bg-amber-100 border-amber-300' },
-                        { name: 'Gray', color: 'bg-gray-300 border-gray-400' },
-                        { name: 'Navy', color: 'bg-blue-900 border-blue-800' },
-                        { name: 'Green', color: 'bg-emerald-700 border-emerald-800' }
-                    ].map(c => (
-                        <button
-                            key={c.name}
-                            title={c.name}
-                            className={`w-8 h-8 rounded-full border-2 ${c.color} hover:scale-110 transition-transform`}
-                        ></button>
-=======
             {/* PRODUCT TYPE SELECTOR */}
             <div className="flex flex-col gap-2.5">
                 <span className="text-sm font-semibold text-slate-700">
@@ -241,24 +178,10 @@ const ProductInfo = ({ product, onReviewsClick }: ProductInfoProps) => {
                             <span className={`text-xs font-semibold ${selectedType === type.id ? 'text-orange-600' : 'text-slate-700'}`}>{type.label}</span>
                             <span className="text-[10px] text-gray-400 leading-tight">{type.desc}</span>
                         </button>
->>>>>>> c6498253b282f9b5a2088dec2effa6db1b836c57
                     ))}
                 </div>
             </div>
 
-<<<<<<< HEAD
-            {/* STOCK STATUS */}
-            <div className="flex items-center gap-2">
-                <span className="flex items-center gap-1.5 text-sm font-semibold text-green-600">
-                    <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse">
-                        In Stock
-                    </span>
-                    <span>- Only 8 left</span>
-                </span>
-            </div>
-
-            {/* DELIVERY INFO */}
-=======
             <div className="flex flex-col gap-2">
                 <span className="text-sm font-semibold text-slate-700">
                     Color: <span className="text-orange-500">{selectedColor}</span>
@@ -303,7 +226,6 @@ const ProductInfo = ({ product, onReviewsClick }: ProductInfoProps) => {
                 <span className="text-sm text-gray-400">— Only 8 left</span>
             </div>
 
->>>>>>> c6498253b282f9b5a2088dec2effa6db1b836c57
             <div className="bg-gray-50 rounded-2xl p-4 space-y-2.5">
                 {[
                     { icon: '📦', text: 'Ships within 1–3 business days' },
@@ -317,25 +239,6 @@ const ProductInfo = ({ product, onReviewsClick }: ProductInfoProps) => {
                 ))}
             </div>
 
-<<<<<<< HEAD
-            {/* PAYMENT METHOD */}
-            <div>
-                <p className="text-xs text-gray-400 mb-2 font-medium">We accept:</p>
-                <div className="flex items-center gap-2 flex-wrap">
-                    {['GCash', 'Maya', 'Visa', 'Mastercard', 'COD'].map(method => (
-                        <span className="text-xs font-semibold bg-white border border-gray-200 rounded-lg px-2.5 py-1.5 text-slate-600 shadow-sm">
-                            {method}
-                        </span>
-                    ))}
-                </div>
-            </div>
-
-            {/* QUANTITY */}
-            <div className="flex items gap-4">
-                <span className="text-sm font-semibold text-slate-700">Quantity:</span>
-                <div className="flex items-center border border-gray-200 rounded-xl overflow-hidden">
-                    <button onClick={() => setQuantity(qty => Math.max(1, qty - 1))} className="px-4 py-2.5 text-gray-500 hover:bg-gray-50 hover:text-orange-500 transition-colors text-lg font-medium">-</button>
-=======
             <div>
                 <p className="text-xs text-gray-400 mb-2 font-medium">We accept:</p>
                 <div className="flex items-center gap-2 flex-wrap">
@@ -384,33 +287,11 @@ const ProductInfo = ({ product, onReviewsClick }: ProductInfoProps) => {
                 <span className="text-sm font-semibold text-slate-700">Quantity:</span>
                 <div className="flex items-center border border-gray-200 rounded-xl overflow-hidden">
                     <button onClick={() => setQuantity(qty => Math.max(1, qty - 1))} className="px-4 py-2.5 text-gray-500 hover:bg-gray-50 hover:text-orange-500 transition-colors text-lg font-medium">−</button>
->>>>>>> c6498253b282f9b5a2088dec2effa6db1b836c57
                     <span className="px-5 py-2.5 text-sm font-bold text-slate-800 min-w-12 text-center border-x border-gray-200">{quantity}</span>
                     <button onClick={() => setQuantity(qty => qty + 1)} className="px-4 py-2.5 text-gray-500 hover:bg-gray-50 hover:text-orange-500 transition-colors text-lg font-medium">+</button>
                 </div>
             </div>
 
-<<<<<<< HEAD
-            {/* CTA BUTTONS */}
-            <div className="flex flex-col sm:flex-row gap-3">
-                <motion.div
-                    whileTap={{ scale: 0.97 }}
-                    onClick={handleAddToCart}
-                    className="flex-1 flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 text-white py-3.5 rounded-2xl font-semibold text-sm transition-colors shadow-lg shadow-orange-200"
-                >
-                    <CartIcon /> Add to Cart
-                </motion.div>
-                <motion.div
-                    whileTap={{ scale: 0.97 }}
-                    className="flex-1 flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-900 text-white py-3.5 rounded-2xl font-semibold transition-colors shadow-lg shadow-orange-200"
-                >
-                    Buy Now
-                </motion.div>
-            </div>
-
-            {/* TRUST BADGES */}
-            <div className="grid grid-cols-3 gap-3">
-=======
             <div className="flex flex-col sm:flex-row gap-3">
                 <motion.button
                     whileTap={{ scale: 0.97 }}
@@ -432,35 +313,20 @@ const ProductInfo = ({ product, onReviewsClick }: ProductInfoProps) => {
             </div>
 
             <div className="grid grid-cols-3 gap-2 sm:gap-3">
->>>>>>> c6498253b282f9b5a2088dec2effa6db1b836c57
                 {[
                     { icon: <TruckIcon />, label: 'Free Shipping', sub: 'On orders ₱5k+' },
                     { icon: <ShieldIcon />, label: '1 Year Warranty', sub: 'Manufacturer' },
                     { icon: <ReturnIcon />, label: '30-Day Returns', sub: 'Easy returns' },
                 ].map(b => (
-<<<<<<< HEAD
-                    <div key={b.label} className="flex flex-col items-center gap-1 bg-gray-50 rounded-2xl p-3 text-center">
-                        <span className="text-orange-500">{b.icon}</span>
-                        <span className="text-xs font-semibold text-slate-700">{b.label}</span>
-                        <span className="text-[10px]">{b.sub}</span>
-=======
                     <div key={b.label} className="flex flex-col items-center gap-1 bg-gray-50 rounded-2xl p-2.5 sm:p-3 text-center">
                         <span className="text-orange-500">{b.icon}</span>
                         <span className="text-[10px] sm:text-xs font-semibold text-slate-700 leading-tight">{b.label}</span>
                         <span className="text-[9px] sm:text-[10px] text-gray-400">{b.sub}</span>
->>>>>>> c6498253b282f9b5a2088dec2effa6db1b836c57
                     </div>
                 ))}
             </div>
         </motion.div>
-<<<<<<< HEAD
-    )
-}
-
-export default ProductInfo
-=======
     );
 };
 
 export default ProductInfo;
->>>>>>> c6498253b282f9b5a2088dec2effa6db1b836c57

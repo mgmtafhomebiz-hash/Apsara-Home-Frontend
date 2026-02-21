@@ -5,8 +5,9 @@ const baseQuery = fetchBaseQuery({
     baseUrl: process.env.NEXT_PUBLIC_LARAVEL_API_URL, 
     prepareHeaders: async (headers) => {
         const session = await getSession()
-        if ((session?.user as any)?.accessToken) {
-            headers.set('Authorization', `Bearer ${(session?.user as any).accessToken}`)
+        const user = session?.user as { accessToken?: string } | undefined
+        if (user?.accessToken) {
+            headers.set('Authorization', `Bearer ${user.accessToken}`)
         }
         headers.set('Accept', 'application/json')
         headers.set('Content-Type', 'application/json')

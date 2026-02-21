@@ -133,18 +133,6 @@ export default function Navbar() {
   }, [])
 
   useEffect(() => {
-    if (!activeDropdown) setMegaSearch('')
-  }, [activeDropdown])
-
-  useEffect(() => {
-    setMobileSearch('')
-  }, [mobileExpanded])
-
-  useEffect(() => {
-    if (!isLoggedIn) setProfileMenuOpen(false)
-  }, [isLoggedIn])
-
-  useEffect(() => {
     const onPointerDown = (event: MouseEvent) => {
       if (!profileMenuRef.current) return
       if (!profileMenuRef.current.contains(event.target as Node)) {
@@ -171,7 +159,10 @@ export default function Navbar() {
   }
 
   const close = () => {
-    closeTimer.current = setTimeout(() => setActiveDropdown(null), 150)
+    closeTimer.current = setTimeout(() => {
+      setActiveDropdown(null)
+      setMegaSearch('')
+    }, 150)
   }
 
   const activeLink = navLinks.find((l) => l.label === activeDropdown)
@@ -179,9 +170,10 @@ export default function Navbar() {
   const handleLogout = async () => {
     try {
       await logoutApi().unwrap()
-    } catch(error) {
+    } catch (error) {
       console.log(error)
     }
+    setProfileMenuOpen(false)
     await signOut({ callbackUrl: '/' })
   }
 
@@ -558,9 +550,10 @@ export default function Navbar() {
                   <div key={link.label}>
                     {hasChildren ? (
                       <button
-                        onClick={() =>
+                        onClick={() => {
                           setMobileExpanded(isExpanded ? null : link.label)
-                        }
+                          setMobileSearch('')
+                        }}
                         className="w-full flex items-center justify-between px-4 py-2.5 text-sm font-medium text-gray-700 hover:text-orange-500 hover:bg-orange-50 rounded-xl transition-colors"
                       >
                         {link.label}

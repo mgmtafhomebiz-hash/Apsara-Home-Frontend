@@ -1,10 +1,6 @@
 'use client';
 
 import { use, useRef } from 'react';
-<<<<<<< HEAD
-import { motion } from 'framer-motion';
-=======
->>>>>>> c6498253b282f9b5a2088dec2effa6db1b836c57
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import TopBar from '@/components/layout/TopBar';
@@ -16,12 +12,8 @@ import ProductTabs from '@/components/product/ProductTabs';
 import { categoryProducts, categoryMeta, getProductBySlug } from '@/libs/CategoryData';
 import RelatedProducts from '@/components/product/RelatedProduct';
 import StickyAddToCart from '@/components/product/StickyAddToCart';
-<<<<<<< HEAD
-=======
 import ProductQA from '@/components/product/ProductQA';
 import CompleteTheLook from '@/components/product/CompleteTheLook';
-// import CompleteTheLook from '@/components/product/CompleteTheLook';
->>>>>>> c6498253b282f9b5a2088dec2effa6db1b836c57
 
 const ChevronRight = () => (
     <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6" /></svg>
@@ -45,12 +37,11 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
 
     return (
         <div className="min-h-screen bg-white flex flex-col">
-            <StickyAddToCart product={product}/>
+            <StickyAddToCart product={product} />
             <TopBar />
             <Navbar />
 
             <main className="flex-1">
-                {/* Breadcrumb */}
                 <div className="bg-gray-50 border-b border-gray-100">
                     <div className="container mx-auto px-4 py-3">
                         <nav className="flex items-center gap-1.5 text-xs text-gray-400">
@@ -66,30 +57,18 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
                 </div>
 
                 <div className="container mx-auto px-4 py-10">
-                    {/* Product Main */}
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
                         <ProductImageGallery product={product} />
                         <ProductInfo product={product} onReviewsClick={scrollToReviews} />
                     </div>
 
-                    {/* Tabs */}
                     <div ref={tabsRef}>
                         <ProductTabs product={product} />
                     </div>
 
-<<<<<<< HEAD
-                    {/* Related */}
                     <RelatedProducts products={relatedProducts} category={category} />
-=======
-                    {/* Q&A */}
                     <ProductQA />
-
-                    {/* Related */}
-                    <RelatedProducts products={relatedProducts} category={category} />
-
-                    {/* Complete the Look */}
                     <CompleteTheLook currentCategory={category} />
->>>>>>> c6498253b282f9b5a2088dec2effa6db1b836c57
                 </div>
             </main>
 

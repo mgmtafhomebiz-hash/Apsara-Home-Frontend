@@ -2,6 +2,11 @@
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 
+type TokenUser = {
+    id?: string;
+    accessToken?: string;
+};
+
 export const authOptions: NextAuthOptions = {
     providers: [
         CredentialsProvider({
@@ -71,15 +76,18 @@ export const authOptions: NextAuthOptions = {
     callbacks: {
         async jwt({ token, user }) {
             if (user) {
-                token.id = user.id;
-                token.accessToken = (user as any).accessToken;
+                const authUser = user as TokenUser;
+                token.id = authUser.id;
+                token.accessToken = authUser.accessToken;
             }
             return token;
         },
         async session({ session, token }) {
             if (session.user) {
-                (session.user as any).id = token.id;
-                (session.user as any).accessToken = token.accessToken
+                const sessionUser = session.user as TokenUser;
+                const authToken = token as TokenUser;
+                sessionUser.id = authToken.id;
+                sessionUser.accessToken = authToken.accessToken;
             }
             return session
         }

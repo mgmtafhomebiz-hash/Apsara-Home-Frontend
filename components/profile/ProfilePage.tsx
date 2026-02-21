@@ -67,6 +67,7 @@ const ProfilePage = () => {
 
   useEffect(() => {
     if (data || session) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setForm({
         name: data?.name ?? session?.user?.name ?? '',
         email: data?.email ?? session?.user?.email ?? '',
@@ -119,8 +120,9 @@ const ProfilePage = () => {
         phone: form.phone.trim() || undefined,
       }).unwrap();
       setProfileMsg({ type: 'success', text: 'Profile updated successfully.' });
-    } catch (err: any) {
-      setProfileMsg({ type: 'error', text: err?.data?.message || 'Failed to update profile.' });
+    } catch (err: unknown) {
+      const apiError = err as { data?: { message?: string } };
+      setProfileMsg({ type: 'error', text: apiError?.data?.message || 'Failed to update profile.' });
     }
   };
 
@@ -683,7 +685,7 @@ const ProfilePage = () => {
                   <div className="rounded-2xl border border-gray-200 bg-white p-5 md:p-6">
                     <div className="mb-5">
                       <h3 className="text-base font-bold text-gray-900">Notifications</h3>
-                      <p className="text-xs text-gray-500 mt-0.5">Choose how you'd like to be updated.</p>
+                      <p className="text-xs text-gray-500 mt-0.5">Choose how you&apos;d like to be updated.</p>
                     </div>
                     <div className="space-y-3">
                       {[
