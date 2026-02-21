@@ -80,16 +80,46 @@ const Header = ({ onMenuClick }: HeaderProps) => {
                                 </div>
                                 {mockNotifs.map((n => (
                                     <div key={n.id} className={`flex items-start gap-3 px-4 py-3 hover:bg-slate-50 transition-colors cursor-pointer ${n.unread ? 'bg-teal-50/50' : ''}`}>
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-sm text-slate-700 font-medium">{n.text}</p>
-                                            <p className="text-xs text-slate-400 mt-0.5">{n.time}</p>
-                                        </div>
+                                       <div className={`mt-1 h-2 w-2 rounded-full shrink-0 ${n.unread ? 'bg-teal-500' : 'bg-transparent'}`} />
+                                       <div className="flex-1 min-w-0">
+                                        <p className="text-sm text-slate-700 font-medium">{n.text}</p>
+                                        <p className="text-xs text-slate-400 mt-0.5">{n.time}</p>
+                                       </div>
                                     </div>
                                 )))}
+                                <div className="px-4 py-2.5 border-t botder-slate-100 text-center">
+                                    <span className="text-xs text-teal-600 font-medium cursor-pointer hover:underline">View all notifications</span>
+                                </div>
                             </motion.div>
                         )}
                     </AnimatePresence>
                 </div>
+                                                {/* USER */}
+                                <div className="relative">
+                                    <button onClick={() => {setUserOpen(!userOpen); setNotifOpen(false)}}
+                                        className="flex items-center gap-2 pl-1 pr-3 py-1 rounded-xl hover:bg-slate-100 transition-colors"
+                                        >
+                                            <div className="h-8 w-8 rounded-full bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center">
+                                                <span className="text-white font-bold text-xs">SA</span>
+                                            </div>
+                                            <div className="hidden sm:block text-left">
+                                                <p className="text-xs font-semibold text-slate-800 leading-none">Super Admin</p>
+                                                <p className="text-xs text-slate-400 mt-0">Administrator</p>
+                                            </div>
+                                                        <svg className="w-4 h-4 text-slate-400 hidden sm:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7"/></svg>
+
+                                    </button>
+                                    <AnimatePresence>
+                                        {userOpen && (
+                                            <motion.div
+                                                initial={{ opacity: 0, y: 8, scale: 0.95}}
+                                                animate={{ opacity: 1, y: 0, scale: 1}}
+                                            >
+                                                {}
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </div>
             </div>
         </header>
     )
