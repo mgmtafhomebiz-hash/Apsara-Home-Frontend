@@ -7,7 +7,7 @@ import Header from "./Header";
 interface DashboardLayoutProps {
     children: React.ReactNode;
 }
-const DashboardLayout = ({ children}: DashboardLayoutProps) => {
+const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
