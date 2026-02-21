@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 
 const links = {
   Information: ['About Us', 'Careers', 'Press', 'Sustainability'],
@@ -12,9 +13,14 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-10">
           {/* Brand */}
           <div>
-            <div className="flex items-center gap-2 mb-4">
-              <div className="bg-orange-500 text-white font-black text-xl px-3 py-1.5 rounded-xl leading-none">AF</div>
-              <span className="font-bold text-xl tracking-tight">HOME</span>
+            <div className="mb-4">
+              <Image
+                src="/Images/af_home_logo.png"
+                alt="AF Home"
+                width={120}
+                height={40}
+                className="object-contain"
+              />
             </div>
             <p className="text-white/50 text-sm leading-relaxed mb-5">
               Your trusted partner for premium furniture and home appliances. Making every house a home since 2018.

@@ -1,16 +1,20 @@
 'use client'
 
 import { CartProvider } from '@/context/CartContext'
-import { AuthProvider } from '@/context/AuthContext'
 import CartDrawer from '@/components/ui/CartDrawer'
+import { Provider as ReduxProvider } from 'react-redux'
+import { SessionProvider } from 'next-auth/react'
+import { store } from '@/store/store'
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <AuthProvider>
-      <CartProvider>
-        {children}
-        <CartDrawer />
-      </CartProvider>
-    </AuthProvider>
+    <SessionProvider> 
+        <ReduxProvider store={store}>
+          <CartProvider>
+          {children}
+          <CartDrawer />
+          </CartProvider>
+        </ReduxProvider>
+    </SessionProvider>
   )
 }
