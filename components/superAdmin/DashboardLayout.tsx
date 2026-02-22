@@ -15,7 +15,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     <div className="flex h-screen bg-slate-100 overflow-hidden">
       <Sidebar 
           isOpen={sidebarOpen}
-          onClose={() => setSidebarCollapsed(false)}
+          onClose={() => setSidebarOpen(false)}
           isCollapsed={sidebarCollapsed}
           onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
       />

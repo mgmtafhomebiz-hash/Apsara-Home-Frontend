@@ -6,6 +6,7 @@ import { mockReviews } from "@/libs/MockProductData";
 import { motion } from "framer-motion"
 import { useState } from "react";
 import StarRating from "../ui/StarRating";
+import BuyNowOptionsModal from "./BuyNowOptionsModal";
 
 const CartIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -78,6 +79,7 @@ const ProductInfo = ({ product, onReviewsClick }: ProductInfoProps) => {
     const [selectedType, setSelectedType] = useState('fabric');
     const [selectedSize, setSelectedSize] = useState('Medium');
     const [wishlisted, setWishlisted] = useState(false);
+    const [buyOptionsOpen, setBuyOptionsOpen] = useState(false);
 
 
     const avgRating = (mockReviews.reduce((s, r) => s + r.rating, 0) / mockReviews.length).toFixed(1);
@@ -163,11 +165,10 @@ const ProductInfo = ({ product, onReviewsClick }: ProductInfoProps) => {
                         <button
                             key={type.id}
                             onClick={() => setSelectedType(type.id)}
-                            className={`relative flex flex-col items-center gap-1 px-2 py-2.5 rounded-xl border-2 text-center transition-all duration-200 ${
-                                selectedType === type.id
+                            className={`relative flex flex-col items-center gap-1 px-2 py-2.5 rounded-xl border-2 text-center transition-all duration-200 ${selectedType === type.id
                                     ? 'border-orange-400 bg-orange-50 shadow-sm'
                                     : 'border-gray-200 bg-white hover:border-orange-200 hover:bg-orange-50/30'
-                            }`}
+                                }`}
                         >
                             {selectedType === type.id && (
                                 <span className="absolute top-1.5 right-1.5 w-4 h-4 bg-orange-500 rounded-full flex items-center justify-center text-white">
@@ -208,11 +209,10 @@ const ProductInfo = ({ product, onReviewsClick }: ProductInfoProps) => {
                         <button
                             key={size}
                             onClick={() => setSelectedSize(size)}
-                            className={`px-4 py-1.5 text-sm rounded-xl border-2 font-medium transition-all duration-200 ${
-                                selectedSize === size
+                            className={`px-4 py-1.5 text-sm rounded-xl border-2 font-medium transition-all duration-200 ${selectedSize === size
                                     ? 'border-orange-400 bg-orange-50 text-orange-600'
                                     : 'border-gray-200 text-slate-600 hover:border-orange-200'
-                            }`}
+                                }`}
                         >
                             {size}
                         </button>
@@ -245,7 +245,7 @@ const ProductInfo = ({ product, onReviewsClick }: ProductInfoProps) => {
                     {/* GCash */}
                     <div className="flex items-center justify-center bg-white border border-gray-200 rounded-lg px-2.5 py-1.5 shadow-sm h-8">
                         <svg width="52" height="16" viewBox="0 0 52 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <circle cx="8" cy="8" r="8" fill="#007DFF"/>
+                            <circle cx="8" cy="8" r="8" fill="#007DFF" />
                             <text x="8" y="12" textAnchor="middle" fill="white" fontSize="9" fontWeight="bold" fontFamily="Arial">G</text>
                             <text x="28" y="12" textAnchor="middle" fill="#007DFF" fontSize="9" fontWeight="bold" fontFamily="Arial">GCash</text>
                         </svg>
@@ -253,7 +253,7 @@ const ProductInfo = ({ product, onReviewsClick }: ProductInfoProps) => {
                     {/* Maya */}
                     <div className="flex items-center justify-center bg-white border border-gray-200 rounded-lg px-2.5 py-1.5 shadow-sm h-8">
                         <svg width="42" height="16" viewBox="0 0 42 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <rect width="42" height="16" rx="3" fill="#14A44D"/>
+                            <rect width="42" height="16" rx="3" fill="#14A44D" />
                             <text x="21" y="12" textAnchor="middle" fill="white" fontSize="9" fontWeight="bold" fontFamily="Arial" letterSpacing="0.5">maya</text>
                         </svg>
                     </div>
@@ -266,17 +266,17 @@ const ProductInfo = ({ product, onReviewsClick }: ProductInfoProps) => {
                     {/* Mastercard */}
                     <div className="flex items-center justify-center bg-white border border-gray-200 rounded-lg px-2.5 py-1.5 shadow-sm h-8">
                         <svg width="34" height="22" viewBox="0 0 34 22" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <circle cx="12" cy="11" r="10" fill="#EB001B"/>
-                            <circle cx="22" cy="11" r="10" fill="#F79E1B"/>
-                            <path d="M17 4.8a10 10 0 0 1 0 12.4A10 10 0 0 1 17 4.8z" fill="#FF5F00"/>
+                            <circle cx="12" cy="11" r="10" fill="#EB001B" />
+                            <circle cx="22" cy="11" r="10" fill="#F79E1B" />
+                            <path d="M17 4.8a10 10 0 0 1 0 12.4A10 10 0 0 1 17 4.8z" fill="#FF5F00" />
                         </svg>
                     </div>
                     {/* COD */}
                     <div className="flex items-center justify-center gap-1 bg-white border border-gray-200 rounded-lg px-2.5 py-1.5 shadow-sm h-8">
                         <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2">
-                            <rect x="2" y="6" width="20" height="12" rx="2"/>
-                            <circle cx="12" cy="12" r="3"/>
-                            <path d="M6 12h.01M18 12h.01"/>
+                            <rect x="2" y="6" width="20" height="12" rx="2" />
+                            <circle cx="12" cy="12" r="3" />
+                            <path d="M6 12h.01M18 12h.01" />
                         </svg>
                         <span className="text-[10px] font-bold text-green-700">COD</span>
                     </div>
@@ -296,17 +296,17 @@ const ProductInfo = ({ product, onReviewsClick }: ProductInfoProps) => {
                 <motion.button
                     whileTap={{ scale: 0.97 }}
                     onClick={handleAddToCart}
-                    className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl font-semibold text-sm transition-all shadow-lg cursor-pointer ${
-                        added
+                    className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl font-semibold text-sm transition-all shadow-lg cursor-pointer ${added
                             ? 'bg-green-500 hover:bg-green-600 shadow-green-200 text-white'
                             : 'bg-orange-500 hover:bg-orange-600 active:bg-orange-700 shadow-orange-200 text-white'
-                    }`}
+                        }`}
                 >
                     {added ? '✓ Added!' : <><CartIcon /> Add to Cart</>}
                 </motion.button>
                 <motion.button
                     whileTap={{ scale: 0.97 }}
                     className="flex-1 flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 text-white py-3.5 rounded-2xl font-semibold text-sm transition-colors shadow-lg shadow-slate-200 cursor-pointer"
+                    onClick={() => setBuyOptionsOpen(true)}
                 >
                     Buy Now
                 </motion.button>
@@ -325,6 +325,17 @@ const ProductInfo = ({ product, onReviewsClick }: ProductInfoProps) => {
                     </div>
                 ))}
             </div>
+
+            <BuyNowOptionsModal
+                isOpen={buyOptionsOpen}
+                onClose={() => setBuyOptionsOpen(false)}
+                product={product}
+                quantity={quantity}
+                selectedColor={selectedColor}
+                selectedSize={selectedSize}
+                selectedType={productTypes.find(t => t.id === selectedType)?.label}
+
+            />
         </motion.div>
     );
 };
