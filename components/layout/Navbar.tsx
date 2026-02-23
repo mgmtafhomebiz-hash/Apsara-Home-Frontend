@@ -5,7 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useCart } from '@/context/CartContext'
-import { useAuth } from '@/context/AuthContext'
+import { useSession, signOut } from 'next-auth/react'
+import { useLogoutMutation } from '@/store/api/authApi'
 
 type NavLink = {
   label: string;
@@ -94,16 +95,16 @@ const navLinks: NavLink[] = [
 
 const roomIcons: Record<string, React.ReactNode> = {
   BEDROOM: (
-    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 7v11a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V7"/><path d="M21 10H3V7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v3z"/><path d="M6 19v2"/><path d="M18 19v2"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 7v11a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V7" /><path d="M21 10H3V7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v3z" /><path d="M6 19v2" /><path d="M18 19v2" /></svg>
   ),
   KITCHEN: (
-    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3zm0 0v7"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2" /><path d="M7 2v20" /><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3zm0 0v7" /></svg>
   ),
   'LIVING ROOM': (
-    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M20 9V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v3"/><path d="M2 11v5a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-5a2 2 0 0 0-4 0v2H6v-2a2 2 0 0 0-4 0z"/><path d="M4 18v2"/><path d="M20 18v2"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M20 9V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v3" /><path d="M2 11v5a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-5a2 2 0 0 0-4 0v2H6v-2a2 2 0 0 0-4 0z" /><path d="M4 18v2" /><path d="M20 18v2" /></svg>
   ),
   OUTDOOR: (
-    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M17 14h.01"/><path d="M7 7h12a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14"/><circle cx="12" cy="12" r="3"/><path d="m16 16 2 2"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M17 14h.01" /><path d="M7 7h12a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14" /><circle cx="12" cy="12" r="3" /><path d="m16 16 2 2" /></svg>
   ),
 }
 
@@ -112,14 +113,44 @@ export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false)
   const [mobileExpanded, setMobileExpanded] = useState<string | null>(null)
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null)
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false)
+  const [megaSearch, setMegaSearch] = useState('')
+  const [mobileSearch, setMobileSearch] = useState('')
   const { cartCount, setIsOpen } = useCart()
-  const { isLoggedIn } = useAuth()
+  const { data: session, status } = useSession();
+  const [logoutApi] = useLogoutMutation();
+
+  const isLoggedIn = status === 'authenticated'
+  const user = session?.user
+
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const profileMenuRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 20)
     window.addEventListener('scroll', handler)
     return () => window.removeEventListener('scroll', handler)
+  }, [])
+
+  useEffect(() => {
+    const onPointerDown = (event: MouseEvent) => {
+      if (!profileMenuRef.current) return
+      if (!profileMenuRef.current.contains(event.target as Node)) {
+        setProfileMenuOpen(false)
+      }
+    }
+
+    const onEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setProfileMenuOpen(false)
+    }
+
+    document.addEventListener('mousedown', onPointerDown)
+    document.addEventListener('keydown', onEscape)
+
+    return () => {
+      document.removeEventListener('mousedown', onPointerDown)
+      document.removeEventListener('keydown', onEscape)
+    }
   }, [])
 
   const open = (label: string) => {
@@ -128,10 +159,23 @@ export default function Navbar() {
   }
 
   const close = () => {
-    closeTimer.current = setTimeout(() => setActiveDropdown(null), 150)
+    closeTimer.current = setTimeout(() => {
+      setActiveDropdown(null)
+      setMegaSearch('')
+    }, 150)
   }
 
   const activeLink = navLinks.find((l) => l.label === activeDropdown)
+
+  const handleLogout = async () => {
+    try {
+      await logoutApi().unwrap()
+    } catch (error) {
+      console.log(error)
+    }
+    setProfileMenuOpen(false)
+    await signOut({ callbackUrl: '/' })
+  }
 
   return (
     <motion.header
@@ -170,34 +214,99 @@ export default function Navbar() {
 
           {/* Icons */}
           <div className="flex items-center gap-1">
-            {/* User icon — always visible, goes to login if not logged in */}
-            <Link href="/login" className="p-2 rounded-xl hover:bg-gray-100 transition-colors">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
-            </Link>
-
-            {/* Wishlist + Cart — only visible when logged in */}
-            {isLoggedIn && (
+            {/* Auth actions */}
+            {isLoggedIn ? (
               <>
-                <button className="p-2 rounded-xl hover:bg-gray-100 transition-colors">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" /></svg>
-                </button>
+                <Link
+                  href="/wishlist"
+                  className="p-2 rounded-xl hover:bg-gray-100 transition-colors"
+                  title="Wishlist"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="m12 21-1.45-1.32C5.4 15.36 2 12.28 2 8.5A4.5 4.5 0 0 1 6.5 4 5 5 0 0 1 12 6.09 5 5 0 0 1 17.5 4 4.5 4.5 0 0 1 22 8.5c0 3.78-3.4 6.86-8.55 11.18z" />
+                  </svg>
+                </Link>
+                <button
+                  onClick={() => setIsOpen(true)}
+                  className="relative p-2 rounded-xl hover:bg-gray-100 transition-colors"
+                  title="Cart"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="9" cy="21" r="1" />
+                    <circle cx="20" cy="21" r="1" />
+                    <path d="M1 1h4l2.68 12.39a2 2 0 0 0 2 1.61h7.72a2 2 0 0 0 2-1.61L23 6H6" />
+                  </svg>
 
-                <button onClick={() => setIsOpen(true)} className="relative p-2 rounded-xl hover:bg-orange-50 transition-colors group">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="group-hover:text-orange-500 transition-colors"><circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" /><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" /></svg>
                   {cartCount > 0 && (
-                    <motion.span
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      className="absolute -top-1 -right-1 bg-orange-500 text-white text-[10px] font-bold min-w-4.5 h-4.5 rounded-full flex items-center justify-center px-1"
-                    >
+                    <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-[10px] rounded-full min-w-[16px] h-4 px-1 flex items-center justify-center">
                       {cartCount}
-                    </motion.span>
+                    </span>
                   )}
                 </button>
+
+                <div className="relative hidden md:block" ref={profileMenuRef}>
+                  <button
+                    onClick={() => setProfileMenuOpen((prev) => !prev)}
+                    className="flex items-center gap-2 p-2 rounded-xl hover:bg-gray-100 transition-colors"
+                    title="Profile menu"
+                  >
+                    <span className="flex items-center justify-center h-8 w-8 rounded-full bg-orange-100 text-orange-600 text-xs font-semibold uppercase">
+                      {user?.name?.charAt(0) ?? 'U'}
+                    </span>
+                  </button>
+
+                  <AnimatePresence>
+                    {profileMenuOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 6 }}
+                        transition={{ duration: 0.15 }}
+                        className="absolute right-0 mt-2 w-44 rounded-xl border border-gray-100 bg-white shadow-lg shadow-black/10 overflow-hidden z-50"
+                      >
+                        <Link
+                          href="/profile"
+                          onClick={() => setProfileMenuOpen(false)}
+                          className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                        >
+                          My Profile
+                        </Link>
+                        <Link
+                          href="/orders"
+                          onClick={() => setProfileMenuOpen(false)}
+                          className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                        >
+                          My Orders
+                        </Link>
+                        <button
+                          onClick={handleLogout}
+                          className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                        >
+                          Logout
+                        </button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
               </>
+            ) : (
+              <Link
+                href="/login"
+                className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-gray-100 transition-colors text-gray-700"
+                title="Sign in"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+                <span className="text-sm font-medium">Sign in</span>
+              </Link>
             )}
 
-            <button onClick={() => setMobileOpen(!mobileOpen)} className="md:hidden p-2 rounded-xl hover:bg-gray-100 transition-colors ml-1">
+            <button
+              onClick={() => setMobileOpen(!mobileOpen)}
+              className="md:hidden p-2 rounded-xl hover:bg-gray-100 transition-colors ml-1"
+            >
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 {mobileOpen
                   ? <><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></>
@@ -237,11 +346,10 @@ export default function Navbar() {
                 >
                   <Link
                     href={link.href}
-                    className={`relative px-4 h-full flex items-center text-sm font-medium transition-colors duration-200 group ${
-                      activeDropdown === link.label
-                        ? 'text-orange-500'
-                        : 'text-gray-600 hover:text-orange-500'
-                    }`}
+                    className={`relative px-4 h-full flex items-center text-sm font-medium transition-colors duration-200 group ${activeDropdown === link.label
+                      ? 'text-orange-500'
+                      : 'text-gray-600 hover:text-orange-500'
+                      }`}
                   >
                     {link.label}
                     {hasDropdown && (
@@ -310,33 +418,82 @@ export default function Navbar() {
             onMouseEnter={() => open(activeLink.label)}
             onMouseLeave={close}
           >
-            <div className="container mx-auto px-4 py-6">
-              <div className="grid grid-cols-4 gap-8">
-                {Object.entries(activeLink.mega).map(([room, items]) => (
-                  <div key={room}>
-                    <div className="flex items-center gap-2 mb-3 pb-2 border-b border-gray-100">
-                      <span className="text-orange-500">
-                        {roomIcons[room]}
-                      </span>
-                      <h3 className="text-xs font-bold tracking-wider text-gray-800">
-                        {room}
-                      </h3>
-                    </div>
-                    <ul className="space-y-0.5">
-                      {items.map((item) => (
-                        <li key={item}>
-                          <Link
-                            href={`/by-room/${room.toLowerCase().replace(/\s+/g, '-')}/${item.toLowerCase().replace(/\s+/g, '-')}`}
-                            className="block px-2 py-1.5 rounded-lg text-sm text-gray-500 hover:text-orange-600 hover:bg-orange-50/60 transition-all duration-150"
-                          >
-                            {item}
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
+            <div className="container mx-auto px-4 pt-4 pb-5">
+              {/* Search bar */}
+              <div className="relative mb-4 max-w-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                  <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
+                </svg>
+                <input
+                  type="text"
+                  value={megaSearch}
+                  onChange={(e) => setMegaSearch(e.target.value)}
+                  placeholder="Search rooms & items..."
+                  className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-400/50 focus:bg-white transition-all"
+                />
+                {megaSearch && (
+                  <button
+                    onClick={() => setMegaSearch('')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                  </button>
+                )}
               </div>
+
+              {/* Columns */}
+              {(() => {
+                const q = megaSearch.trim().toLowerCase();
+                const filtered = Object.entries(activeLink.mega!).map(([room, items]) => ({
+                  room,
+                  items: q ? items.filter(i => i.toLowerCase().includes(q)) : items.slice(0, 6),
+                  hasMore: !q && items.length > 6,
+                })).filter(col => col.items.length > 0);
+
+                if (filtered.length === 0) return (
+                  <div className="py-6 text-center text-sm text-gray-400">
+                    No items found for &quot;<span className="text-orange-500">{megaSearch}</span>&quot;
+                  </div>
+                );
+
+                return (
+                  <div className="grid grid-cols-4 gap-6">
+                    {filtered.map(({ room, items, hasMore }) => {
+                      const roomSlug = room.toLowerCase().replace(/\s+/g, '-');
+                      return (
+                        <div key={room}>
+                          <div className="flex items-center gap-2 bg-orange-50 rounded-xl px-3 py-2 mb-3">
+                            <span className="text-orange-500">{roomIcons[room]}</span>
+                            <h3 className="text-xs font-bold tracking-wider text-orange-600">{room}</h3>
+                          </div>
+                          <ul className="space-y-0.5">
+                            {items.map((item) => (
+                              <li key={item}>
+                                <Link
+                                  href={`/by-room/${roomSlug}/${item.toLowerCase().replace(/\s+/g, '-')}`}
+                                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm text-gray-500 hover:text-orange-600 hover:bg-orange-50/60 transition-all duration-150 group"
+                                >
+                                  <span className="w-1 h-1 rounded-full bg-gray-300 group-hover:bg-orange-400 transition-colors shrink-0" />
+                                  {item}
+                                </Link>
+                              </li>
+                            ))}
+                          </ul>
+                          {hasMore && (
+                            <Link
+                              href={`/by-room/${roomSlug}`}
+                              className="flex items-center gap-1 mt-2 px-3 py-1.5 text-xs font-semibold text-orange-500 hover:text-orange-600 transition-colors"
+                            >
+                              View all {room.toLowerCase()}
+                              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6" /></svg>
+                            </Link>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
             </div>
           </motion.div>
         )}
@@ -353,26 +510,50 @@ export default function Navbar() {
             className="md:hidden border-t border-gray-100 bg-white max-h-[70vh] overflow-y-auto"
           >
             <nav className="container mx-auto px-4 py-3 flex flex-col gap-0.5">
+              {isLoggedIn && (
+                <div className="mb-2 rounded-xl border border-gray-100 p-2">
+                  <Link
+                    href="/profile"
+                    className="block px-3 py-2 text-sm font-medium text-gray-700 hover:text-orange-500 hover:bg-orange-50 rounded-lg transition-colors"
+                    onClick={() => setMobileOpen(false)}
+                  >
+                    My Profile
+                  </Link>
+                  <button
+                    onClick={handleLogout}
+                    className="w-full text-left px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                  >
+                    Logout
+                  </button>
+                </div>
+              )}
+              {!isLoggedIn && (
+                <div className="mb-2 rounded-xl border border-gray-100 p-2">
+                  <Link
+                    href="/login"
+                    className="block px-3 py-2 text-sm font-medium text-gray-700 hover:text-orange-500 hover:bg-orange-50 rounded-lg transition-colors"
+                    onClick={() => setMobileOpen(false)}
+                  >
+                    Sign in
+                  </Link>
+                </div>
+              )}
               {navLinks.map((link) => {
                 const hasChildren = link.dropdown || link.mega
                 const isExpanded = mobileExpanded === link.label
 
                 const subItems = link.dropdown
                   ? link.dropdown.map((item) => ({ label: item, href: `${link.href}/${item.toLowerCase().replace(/\s+/g, '-')}` }))
-                  : link.mega
-                    ? Object.entries(link.mega).flatMap(([room, items]) => [
-                        { label: room, href: '', isHeader: true },
-                        ...items.map((item) => ({ label: item, href: `/by-room/${room.toLowerCase().replace(/\s+/g, '-')}/${item.toLowerCase().replace(/\s+/g, '-')}` })),
-                      ])
-                    : []
+                  : []
 
                 return (
                   <div key={link.label}>
                     {hasChildren ? (
                       <button
-                        onClick={() =>
+                        onClick={() => {
                           setMobileExpanded(isExpanded ? null : link.label)
-                        }
+                          setMobileSearch('')
+                        }}
                         className="w-full flex items-center justify-between px-4 py-2.5 text-sm font-medium text-gray-700 hover:text-orange-500 hover:bg-orange-50 rounded-xl transition-colors"
                       >
                         {link.label}
@@ -405,16 +586,79 @@ export default function Navbar() {
                       style={{ gridTemplateRows: isExpanded ? '1fr' : '0fr' }}
                     >
                       <div className="overflow-hidden">
-                        <div className="ml-4 pl-4 border-l-2 border-orange-200 py-1">
-                          {subItems.map((item, i) =>
-                            'isHeader' in item && item.isHeader ? (
-                              <p
-                                key={item.label}
-                                className={`px-3 py-1.5 text-xs font-bold tracking-wider text-orange-500 ${i > 0 ? 'mt-2' : ''}`}
-                              >
-                                {item.label}
-                              </p>
-                            ) : (
+                        {link.mega ? (
+                          /* Mega menu — search + grouped rooms */
+                          <div className="ml-4 pl-4 border-l-2 border-orange-200 py-2 space-y-1">
+                            {/* Search */}
+                            <div className="relative mb-3">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                                <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
+                              </svg>
+                              <input
+                                type="text"
+                                value={mobileSearch}
+                                onChange={(e) => setMobileSearch(e.target.value)}
+                                placeholder="Search items..."
+                                className="w-full pl-8 pr-8 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-400/50 focus:bg-white transition-all"
+                              />
+                              {mobileSearch && (
+                                <button onClick={() => setMobileSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400">
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                                </button>
+                              )}
+                            </div>
+
+                            {/* Rooms */}
+                            {(() => {
+                              const q = mobileSearch.trim().toLowerCase();
+                              const rooms = Object.entries(link.mega!).map(([room, items]) => ({
+                                room,
+                                items: q ? items.filter(i => i.toLowerCase().includes(q)) : items.slice(0, 5),
+                                hasMore: !q && items.length > 5,
+                              })).filter(r => r.items.length > 0);
+
+                              if (rooms.length === 0) return (
+                                <p className="px-3 py-3 text-xs text-gray-400 text-center">
+                                  No results for &quot;<span className="text-orange-500">{mobileSearch}</span>&quot;
+                                </p>
+                              );
+
+                              return rooms.map(({ room, items, hasMore }) => {
+                                const roomSlug = room.toLowerCase().replace(/\s+/g, '-');
+                                return (
+                                  <div key={room} className="mb-2">
+                                    <div className="flex items-center gap-1.5 px-2 py-1.5 mb-0.5">
+                                      <span className="text-orange-500">{roomIcons[room]}</span>
+                                      <span className="text-xs font-bold tracking-wider text-orange-600">{room}</span>
+                                    </div>
+                                    {items.map(item => (
+                                      <Link
+                                        key={item}
+                                        href={`/by-room/${roomSlug}/${item.toLowerCase().replace(/\s+/g, '-')}`}
+                                        className="block px-3 py-1.5 text-sm text-gray-500 hover:text-orange-500 rounded-lg transition-colors"
+                                        onClick={() => setMobileOpen(false)}
+                                      >
+                                        {item}
+                                      </Link>
+                                    ))}
+                                    {hasMore && (
+                                      <Link
+                                        href={`/by-room/${roomSlug}`}
+                                        className="flex items-center gap-1 px-3 py-1 text-xs font-semibold text-orange-500"
+                                        onClick={() => setMobileOpen(false)}
+                                      >
+                                        View all →
+                                      </Link>
+                                    )}
+                                  </div>
+                                );
+                              });
+                            })()}
+                          </div>
+                        ) : (
+                          /* Regular dropdown */
+                          <div className="ml-4 pl-4 border-l-2 border-orange-200 py-1">
+                            {subItems.map((item) => (
                               <Link
                                 key={item.label}
                                 href={item.href}
@@ -423,9 +667,9 @@ export default function Navbar() {
                               >
                                 {item.label}
                               </Link>
-                            )
-                          )}
-                        </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>

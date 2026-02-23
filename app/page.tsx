@@ -6,7 +6,6 @@ import FeaturedSections from "@/components/sections/FeaturedSections";
 import HeroSection from "@/components/sections/HeroSection";
 import NewsLetter from "@/components/sections/NewsLetter";
 import PromoBenners from "@/components/sections/PromoBenners";
-import ProductCard from "@/components/ui/ProductCard";
 
 export default function Home() {
   return (

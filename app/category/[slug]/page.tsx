@@ -89,11 +89,12 @@ export default function CategoryPage({ params }: { params: Promise<{ slug: strin
 
     const meta = categoryMeta[slug];
     const products = categoryProducts[slug];
-
-    if (!meta || !products) return notFound();
+    const hasValidCategory = Boolean(meta && products);
+    const safeProducts = useMemo(() => products ?? [], [products]);
+    const categoryLabel = meta?.label ?? '';
 
     // Compute price bounds from actual products
-    const minProductPrice = Math.min(...products.map(p => p.price));
+    const minProductPrice = safeProducts.length > 0 ? Math.min(...safeProducts.map(p => p.price)) : 0;
 
     // Filter state
     const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
@@ -111,7 +112,7 @@ export default function CategoryPage({ params }: { params: Promise<{ slug: strin
     };
 
     const filteredProducts = useMemo(() => {
-        let result = products.filter(p => {
+        let result = safeProducts.filter(p => {
             const passPrice = p.price <= maxPrice;
             const passBrand = selectedBrands.length === 0 || (p.brand && selectedBrands.includes(p.brand));
             return passPrice && passBrand;
@@ -120,9 +121,11 @@ export default function CategoryPage({ params }: { params: Promise<{ slug: strin
         if (sortBy === 'price-desc') result = [...result].sort((a, b) => b.price - a.price);
         if (sortBy === 'newest') result = [...result].reverse();
         return result;
-    }, [products, maxPrice, selectedBrands, sortBy]);
+    }, [safeProducts, maxPrice, selectedBrands, sortBy]);
 
     const hasActiveFilters = selectedBrands.length > 0 || maxPrice < PRICE_MAX;
+
+    if (!hasValidCategory) return notFound();
 
     return (
         <div className="min-h-screen bg-white flex flex-col">
@@ -133,11 +136,11 @@ export default function CategoryPage({ params }: { params: Promise<{ slug: strin
                 {/* Breadcrumb bar */}
                 <div className="bg-gray-50 border-b border-gray-100">
                     <div className="container mx-auto px-4 py-3 flex items-center justify-between">
-                        <h1 className="text-base font-bold text-slate-800">{meta.label}</h1>
+                        <h1 className="text-base font-bold text-slate-800">{categoryLabel}</h1>
                         <nav className="flex items-center gap-1.5 text-xs text-gray-400">
                             <Link href="/" className="hover:text-orange-500 transition-colors font-medium">Home</Link>
                             <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6" /></svg>
-                            <span className="text-slate-600 font-semibold">{meta.label}</span>
+                            <span className="text-slate-600 font-semibold">{categoryLabel}</span>
                         </nav>
                     </div>
                 </div>
@@ -169,9 +172,9 @@ export default function CategoryPage({ params }: { params: Promise<{ slug: strin
                                             <div className="w-4 h-4 rounded border-2 border-orange-500 bg-orange-500 flex items-center justify-center shrink-0">
                                                 <svg xmlns="http://www.w3.org/2000/svg" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12" /></svg>
                                             </div>
-                                            <span className="text-sm text-slate-700 group-hover:text-orange-500 transition-colors">{meta.label}</span>
+                                            <span className="text-sm text-slate-700 group-hover:text-orange-500 transition-colors">{categoryLabel}</span>
                                         </div>
-                                        <span className="text-xs text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full">{products.length}</span>
+                                        <span className="text-xs text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full">{safeProducts.length}</span>
                                     </label>
                                 </FilterSection>
 
@@ -208,7 +211,7 @@ export default function CategoryPage({ params }: { params: Promise<{ slug: strin
                                 <FilterSection title="Brands">
                                     <div className="flex flex-col gap-2.5">
                                         {CATEGORY_BRANDS.map(brand => {
-                                            const count = products.filter(p => p.brand === brand).length;
+                                            const count = safeProducts.filter(p => p.brand === brand).length;
                                             if (count === 0) return null;
                                             const checked = selectedBrands.includes(brand);
                                             return (

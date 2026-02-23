@@ -48,7 +48,7 @@ export function Loginpage() {
         transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1]}}
         className={`relative z-10 w-full mx-4 transition-all duration-300 ${mode === 'signup' ? 'max-w-xl' : 'max-w-md'}`}
       >
-        <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl p-8 shadow-2xl">
+        <div className="bg-slate-800/85 backdrop-blur-xl border border-white/10 rounded-3xl p-8 shadow-2xl">
           <AuthTabs mode={mode} setMode={setMode} />
           <AnimatePresence 
             mode="wait"
