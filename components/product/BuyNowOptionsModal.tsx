@@ -3,7 +3,8 @@
 import { CategoryProduct } from '@/libs/CategoryData';
 import { AnimatePresence, motion } from 'framer-motion';
 import Image from 'next/image';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
+import Loading from '../Loading';
 
 interface BuyNowOptionsModalProps {
   isOpen: boolean;
@@ -16,6 +17,8 @@ interface BuyNowOptionsModalProps {
 }
 
 type PaymentMethod = 'online_banking' | 'card' | 'gcash' | 'maya';
+const onlineBankingOptions = ['BPI', 'BDO', 'UnionBank', 'Landbank'];
+const cardOptions = ['Visa', 'Mastercard'];
 
 const paymentMethods: Array<{
   id: PaymentMethod;
@@ -23,11 +26,11 @@ const paymentMethods: Array<{
   note: string;
   badge: string;
 }> = [
-  { id: 'online_banking', label: 'Online Banking', note: 'Bank app or web banking', badge: 'Instapay / Pesonet' },
-  { id: 'card', label: 'Cards', note: 'Visa or Mastercard', badge: '3DS secured' },
-  { id: 'gcash', label: 'GCash', note: 'Pay via GCash wallet', badge: 'Popular' },
-  { id: 'maya', label: 'Maya', note: 'Pay via Maya wallet', badge: 'Fast checkout' },
-];
+    { id: 'online_banking', label: 'Online Banking', note: 'Bank app or web banking', badge: 'Instapay / Pesonet' },
+    { id: 'card', label: 'Cards', note: 'Visa or Mastercard', badge: '3DS secured' },
+    { id: 'gcash', label: 'GCash', note: 'Pay via GCash wallet', badge: 'Popular' },
+    { id: 'maya', label: 'Maya', note: 'Pay via Maya wallet', badge: 'Fast checkout' },
+  ];
 
 const CloseIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -66,6 +69,15 @@ const BuyNowOptionsModal = ({
   selectedType,
 }: BuyNowOptionsModalProps) => {
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>('gcash');
+  const [selectedOnlineBank, setSelectedOnlineBank] = useState(onlineBankingOptions[0]);
+  const [selectedCardBrand, setSelectedCardBrand] = useState(cardOptions[0]);
+  const [notice, setNotice] = useState('');
+
+  useEffect(() => {
+    setNotice('');
+  }, [selectedMethod, selectedOnlineBank, selectedCardBrand])
+
+
   const [loading, setLoading] = useState(false);
 
   const subtotal = useMemo(() => product.price * quantity, [product.price, quantity]);
@@ -73,6 +85,14 @@ const BuyNowOptionsModal = ({
   const total = subtotal + handlingFee;
 
   const handleProceed = async () => {
+    if (selectedMethod === 'online_banking') {
+      setNotice(`Online Banking (${selectedOnlineBank}) is coming soon.`)
+      return;
+    }
+
+    if (selectedMethod === 'card') {
+      setNotice(`${selectedCardBrand}`)
+    }
     try {
       setLoading(true);
       const res = await fetch('http://localhost:8000/api/payments/checkout-session', {
@@ -199,11 +219,10 @@ const BuyNowOptionsModal = ({
                           key={method.id}
                           type="button"
                           onClick={() => setSelectedMethod(method.id)}
-                          className={`text-left rounded-2xl border p-4 transition-all ${
-                            selected
-                              ? 'border-orange-300 ring-2 ring-orange-200 bg-orange-50/50'
-                              : 'border-gray-200 hover:border-orange-200 hover:bg-orange-50/30'
-                          }`}
+                          className={`text-left rounded-2xl border p-4 transition-all ${selected
+                            ? 'border-orange-300 ring-2 ring-orange-200 bg-orange-50/50'
+                            : 'border-gray-200 hover:border-orange-200 hover:bg-orange-50/30'
+                            }`}
                         >
                           <div className="flex items-center justify-between">
                             <span className="text-sm font-bold text-slate-800">{method.label}</span>
@@ -220,6 +239,48 @@ const BuyNowOptionsModal = ({
                         </button>
                       );
                     })}
+
+                    {selectedMethod === 'online_banking' && (
+                      <div className='mt-3 rounded-2xl border border-sky-100 bg-sky-50 p-3'>
+                        <p className='text-xs  font-semibold text-sky-700 mb-2'>Choose bank</p>
+                        <div className='flex flex-wrap gap-2'>
+                          {onlineBankingOptions.map((bank) => (
+                            <button
+                              key={bank}
+                              type='button'
+                              onClick={() => setSelectedOnlineBank(bank)}
+                              className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${selectedOnlineBank === bank
+                                ? 'bg-sky-600 text-white border-sky-600'
+                                : 'bg-white text-sky-700 border-sky-200 hover:border-sky-300'
+                                }`}
+                            >
+                              {bank}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {selectedMethod === 'card' && (
+                      <div className='mt-3 rounded-2xl border border-slate-200 bg-slate-50 p-3'>
+                        <p className='text-xs font-semibold text-slate-700 mb-2'>Choose card type</p>
+                        <div className='flex flex-wrap gap-2'>
+                          {cardOptions.map((brand) => (
+                            <button
+                              key={brand}
+                              type='button'
+                              onClick={() => setSelectedCardBrand(brand)}
+                              className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${selectedCardBrand === brand
+                                ? 'bg-slate-800 text-white border-slate-800'
+                                : 'bg-white text-slate-300 hover:border-slate-400'
+                                }`}
+                            >
+                              {brand}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div className="mt-5 rounded-2xl border border-gray-100 bg-gray-50 p-4">
@@ -231,6 +292,12 @@ const BuyNowOptionsModal = ({
                     </ul>
                   </div>
 
+                  {notice && (
+                    <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                      {notice}
+                    </div>
+                  )}
+
                   <div className="mt-6 flex flex-col sm:flex-row gap-2.5">
                     <button
                       onClick={onClose}
@@ -241,9 +308,14 @@ const BuyNowOptionsModal = ({
                     <button
                       onClick={handleProceed}
                       disabled={loading}
-                      className="sm:flex-1 rounded-xl bg-orange-500 hover:bg-orange-600 disabled:opacity-60 text-white py-3 text-sm font-semibold transition-colors shadow-lg shadow-orange-100"
+                      className="sm:flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-orange-500 hover:bg-orange-600 disabled:opacity-60 text-white py-3 text-sm font-semibold transition-colors shadow-lg shadow-orange-100"
                     >
-                      {loading ? 'Creating session...' : 'Continue to Checkout'}
+                      {loading ?
+                        <>
+                          <Loading size={16} />
+                          <span>Proceed to checkout</span>
+                        </>
+                        : 'Continue to Checkout'}
                     </button>
                   </div>
                 </div>
