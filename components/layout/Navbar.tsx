@@ -136,8 +136,8 @@ export default function Navbar() {
 
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const profileMenuRef = useRef<HTMLDivElement | null>(null)
-  const desktopSearchRef = useRef<HTMLDivElement | null>(null)
-  const mobileTopSearchRef = useRef<HTMLDivElement | null>(null)
+  const desktopSearchRef = useRef<HTMLFormElement | null>(null)
+  const mobileTopSearchRef = useRef<HTMLFormElement | null>(null)
 
   const allProducts = useMemo(
     () =>

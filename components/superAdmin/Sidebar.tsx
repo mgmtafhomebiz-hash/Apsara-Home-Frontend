@@ -161,7 +161,7 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
         transition-all duration-300 ease-in-out
         ${isOpen ? 'translate-x-0' : '-translate-x-full'}
         ${isCollapsed ? 'w-16' : 'w-64'}
-        lg:translate-x-0 lg:sticky lg:top-0
+        lg:translate-x-0 lg:sticky lg:top-0w
       `}>
         {/* Logo */}
         <div className={`flex items-center h-16 px-3 border-b border-slate-700/50 shrink-0 ${isCollapsed ? 'justify-center' : 'gap-2'}`}>
