@@ -1,12 +1,14 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useCart } from '@/context/CartContext'
 import { useSession, signOut } from 'next-auth/react'
 import { useLogoutMutation } from '@/store/api/authApi'
+import { useRouter } from 'next/navigation'
+import { categoryProducts } from '@/libs/CategoryData'
 
 type NavLink = {
   label: string;
@@ -114,11 +116,15 @@ const roomIcons: Record<string, React.ReactNode> = {
 }
 
 export default function Navbar() {
+  const router = useRouter()
   const [scrolled, setScrolled] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [mobileExpanded, setMobileExpanded] = useState<string | null>(null)
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null)
   const [profileMenuOpen, setProfileMenuOpen] = useState(false)
+  const [desktopSearchQuery, setDesktopSearchQuery] = useState('')
+  const [mobileTopSearchQuery, setMobileTopSearchQuery] = useState('')
+  const [activeSearchField, setActiveSearchField] = useState<'desktop' | 'mobile' | null>(null)
   const [megaSearch, setMegaSearch] = useState('')
   const [mobileSearch, setMobileSearch] = useState('')
   const { cartCount, setIsOpen } = useCart()
@@ -130,6 +136,33 @@ export default function Navbar() {
 
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const profileMenuRef = useRef<HTMLDivElement | null>(null)
+  const desktopSearchRef = useRef<HTMLDivElement | null>(null)
+  const mobileTopSearchRef = useRef<HTMLDivElement | null>(null)
+
+  const allProducts = useMemo(
+    () =>
+      Object.entries(categoryProducts).flatMap(([category, products]) =>
+        products.map((product) => ({
+          name: product.name,
+          image: product.image,
+          category,
+          slug: product.name.toLowerCase().replace(/\s+/g, '-'),
+        })),
+      ),
+    [],
+  )
+
+  const desktopSuggestions = useMemo(() => {
+    const q = desktopSearchQuery.trim().toLowerCase()
+    if (!q) return []
+    return allProducts.filter((p) => p.name.toLowerCase().includes(q)).slice(0, 8)
+  }, [desktopSearchQuery, allProducts])
+
+  const mobileSuggestions = useMemo(() => {
+    const q = mobileTopSearchQuery.trim().toLowerCase()
+    if (!q) return []
+    return allProducts.filter((p) => p.name.toLowerCase().includes(q)).slice(0, 8)
+  }, [mobileTopSearchQuery, allProducts])
 
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 20)
@@ -140,9 +173,15 @@ export default function Navbar() {
   useEffect(() => {
     const onPointerDown = (event: MouseEvent) => {
       if (!profileMenuRef.current) return
-      if (!profileMenuRef.current.contains(event.target as Node)) {
+      const target = event.target as Node
+      const clickedOutsideProfile = !profileMenuRef.current.contains(target)
+      const clickedOutsideDesktopSearch = !desktopSearchRef.current || !desktopSearchRef.current.contains(target)
+      const clickedOutsideMobileSearch = !mobileTopSearchRef.current || !mobileTopSearchRef.current.contains(target)
+
+      if (clickedOutsideProfile) {
         setProfileMenuOpen(false)
       }
+      if (clickedOutsideDesktopSearch && clickedOutsideMobileSearch) setActiveSearchField(null)
     }
 
     const onEscape = (event: KeyboardEvent) => {
@@ -182,6 +221,20 @@ export default function Navbar() {
     await signOut({ callbackUrl: '/' })
   }
 
+  const handleProductSearchSubmit = (query: string) => {
+    const q = query.trim().toLowerCase()
+    if (!q) return
+
+    const exactMatch = allProducts.find((p) => p.name.toLowerCase() === q)
+    const firstMatch = exactMatch ?? allProducts.find((p) => p.name.toLowerCase().includes(q))
+    if (!firstMatch) return
+
+    router.push(`/product/${firstMatch.slug}`)
+    setDesktopSearchQuery('')
+    setMobileTopSearchQuery('')
+    setActiveSearchField(null)
+  }
+
   return (
     <motion.header
       initial={{ y: -80 }}
@@ -205,16 +258,54 @@ export default function Navbar() {
 
           {/* Search */}
           <div className="flex-1 max-w-xl hidden md:block">
-            <div className="relative">
+            <form
+              className="relative"
+              ref={desktopSearchRef}
+              onSubmit={(e) => {
+                e.preventDefault()
+                handleProductSearchSubmit(desktopSearchQuery)
+              }}
+            >
               <input
                 type="text"
-                placeholder="Search furniture, appliances..."
+                value={desktopSearchQuery}
+                onChange={(e) => setDesktopSearchQuery(e.target.value)}
+                onFocus={() => setActiveSearchField('desktop')}
+                placeholder="Search products..."
                 className="w-full pl-4 pr-11 py-2.5 bg-gray-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 focus:bg-white transition-all duration-300 placeholder:text-gray-400"
               />
-              <button className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-orange-500 transition-colors">
+              <button type="submit" className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-orange-500 transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></svg>
               </button>
-            </div>
+
+              <AnimatePresence>
+                {activeSearchField === 'desktop' && desktopSuggestions.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 6 }}
+                    className="absolute left-0 right-0 mt-2 bg-white border border-gray-100 rounded-xl shadow-lg shadow-black/10 overflow-hidden z-50"
+                  >
+                    {desktopSuggestions.map((product) => (
+                      <Link
+                        key={`${product.category}-${product.slug}`}
+                        href={`/product/${product.slug}`}
+                        onClick={() => {
+                          setDesktopSearchQuery('')
+                          setActiveSearchField(null)
+                        }}
+                        className="flex items-center gap-3 px-3 py-2.5 hover:bg-orange-50 transition-colors"
+                      >
+                        <span className="relative h-10 w-10 rounded-md overflow-hidden bg-gray-100 shrink-0">
+                          <Image src={product.image} alt={product.name} fill className="object-cover" />
+                        </span>
+                        <span className="text-sm text-gray-700 truncate">{product.name}</span>
+                      </Link>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </form>
           </div>
 
           {/* Icons */}
@@ -323,16 +414,54 @@ export default function Navbar() {
 
         {/* Mobile search */}
         <div className="md:hidden pb-3">
-          <div className="relative">
+          <form
+            className="relative"
+            ref={mobileTopSearchRef}
+            onSubmit={(e) => {
+              e.preventDefault()
+              handleProductSearchSubmit(mobileTopSearchQuery)
+            }}
+          >
             <input
               type="text"
-              placeholder="Search furniture, appliances..."
+              value={mobileTopSearchQuery}
+              onChange={(e) => setMobileTopSearchQuery(e.target.value)}
+              onFocus={() => setActiveSearchField('mobile')}
+              placeholder="Search products..."
               className="w-full pl-4 pr-11 py-2.5 bg-gray-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 focus:bg-white transition-all duration-300 placeholder:text-gray-400"
             />
-            <button className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-orange-500 transition-colors">
+            <button type="submit" className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-orange-500 transition-colors">
               <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></svg>
             </button>
-          </div>
+
+            <AnimatePresence>
+              {activeSearchField === 'mobile' && mobileSuggestions.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 6 }}
+                  className="absolute left-0 right-0 mt-2 bg-white border border-gray-100 rounded-xl shadow-lg shadow-black/10 overflow-hidden z-50"
+                >
+                  {mobileSuggestions.map((product) => (
+                    <Link
+                      key={`${product.category}-${product.slug}`}
+                      href={`/product/${product.slug}`}
+                      onClick={() => {
+                        setMobileTopSearchQuery('')
+                        setActiveSearchField(null)
+                      }}
+                      className="flex items-center gap-3 px-3 py-2.5 hover:bg-orange-50 transition-colors"
+                    >
+                      <span className="relative h-10 w-10 rounded-md overflow-hidden bg-gray-100 shrink-0">
+                        <Image src={product.image} alt={product.name} fill className="object-cover" />
+                      </span>
+                      <span className="text-sm text-gray-700 truncate">{product.name}</span>
+                    </Link>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </form>
         </div>
       </div>
 
