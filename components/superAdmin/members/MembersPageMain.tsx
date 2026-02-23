@@ -4,27 +4,73 @@ import { motion } from "framer-motion"
 import MembersToolbar from "./MembersToolbar"
 import MembersStats from "./MembersStats"
 import MembersTable from "./MembersTable"
-import { useMemo, useState } from "react"
+import { useEffect, useState } from "react"
 import { MemberStatus, MemberTier } from "@/types/members/types"
-import { MOCK_MEMBERS } from "@/libs/members/mockMembers"
 import AddMemberModal from "./AddMemberModal"
+import { MembersResponse, useGetMembersQuery } from "@/store/api/membersApi"
+import { useSearchParams } from "next/navigation"
 
-const MembersPageMain = () => {
+interface MembersPageMainProps {
+    initialData?: MembersResponse | null
+}
+
+const MembersPageMain = ({ initialData = null }: MembersPageMainProps) => {
+    const searchParams = useSearchParams()
     const [search, setSearch] = useState('')
+    const [debouncedSearch, setDebouncedSearch] = useState('')
     const [status, setStatus] = useState<'all' | MemberStatus>('all')
     const [tier, setTier] = useState<'all' | MemberTier>('all');
     const [showModal, setShowModal] = useState(false);
+    const [page, setPage] = useState(1)
+    const [stableData, setStableData] = useState<MembersResponse | null>(initialData)
+    const perPage = 25
+    const urlSearch = (searchParams.get('q') ?? '').trim()
 
-    const filtered = useMemo(() => {
-        return MOCK_MEMBERS.filter((member) => {
-            const matchSearch =
-                member.name.toLowerCase().includes(search.toLowerCase()) ||
-                member.email.toLowerCase().includes(search.toLowerCase())
-            const matchStatus = status === 'all' ? true : member.status === status
-            const matchTier = tier === 'all' ? true : member.tier === tier
-            return matchSearch && matchStatus && matchTier
-        })
-    }, [search, status, tier])
+    useEffect(() => {
+        setSearch(urlSearch)
+        setPage(1)
+    }, [urlSearch])
+
+    useEffect(() => {
+        const timeout = setTimeout(() => {
+            setDebouncedSearch(search.trim())
+        }, 300)
+
+        return () => clearTimeout(timeout)
+    }, [search])
+
+    const { data, isLoading, isFetching, isError } = useGetMembersQuery({
+        page,
+        perPage,
+        search: debouncedSearch !== '' ? debouncedSearch : undefined,
+        status: status === 'all' ? undefined : status,
+        tier: tier === 'all' ? undefined : tier,
+    })
+
+    useEffect(() => {
+        if (data) {
+            setStableData(data)
+        }
+    }, [data])
+
+    const effectiveData = data ?? stableData ?? initialData ?? null
+    const members = effectiveData?.members ?? []
+    const meta = effectiveData?.meta
+
+    const handleSearch = (value: string) => {
+        setSearch(value)
+        setPage(1)
+    }
+
+    const handleStatus = (value: 'all' | MemberStatus) => {
+        setStatus(value)
+        setPage(1)
+    }
+
+    const handleTier = (value: 'all' | MemberTier) => {
+        setTier(value)
+        setPage(1)
+    }
 
     return (
         <div className="space-y-5">
@@ -47,19 +93,64 @@ const MembersPageMain = () => {
                 </button>
             </motion.div>
 
-            <MembersStats rows={filtered} />
+            <MembersStats rows={members} />
 
             <MembersToolbar
                 search={search}
-                onSearch={setSearch}
+                onSearch={handleSearch}
                 status={status}
-                onStatus={setStatus}
+                onStatus={handleStatus}
                 tier={tier}
-                onTier={setTier}
-                resultCount={filtered.length}
+                onTier={handleTier}
+                resultCount={meta?.total ?? members.length}
             />
 
-            <MembersTable rows={filtered} />
+            {isError ? (
+                <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                    Failed to load members list from customer data.
+                </div>
+            ) : isLoading && !effectiveData ? (
+                <div className="space-y-4 animate-pulse">
+                    <div className="rounded-2xl border border-slate-100 bg-white p-4">
+                        <div className="h-4 w-40 rounded bg-slate-200 mb-3" />
+                        <div className="h-10 w-full rounded-xl bg-slate-200" />
+                    </div>
+
+                    <div className="rounded-2xl border border-slate-100 bg-white p-4">
+                        <div className="grid grid-cols-9 gap-3 mb-3">
+                            {Array.from({ length: 9 }).map((_, index) => (
+                                <div key={index} className="h-3 rounded bg-slate-200" />
+                            ))}
+                        </div>
+                        <div className="space-y-3">
+                            {Array.from({ length: 8 }).map((_, rowIndex) => (
+                                <div key={rowIndex} className="grid grid-cols-9 gap-3">
+                                    {Array.from({ length: 9 }).map((_, colIndex) => (
+                                        <div key={colIndex} className="h-8 rounded bg-slate-100" />
+                                    ))}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            ) : (
+                <div className="space-y-2">
+                    {isFetching && (
+                        <div className="h-1 w-full overflow-hidden rounded-full bg-slate-200">
+                            <div className="h-full w-1/3 animate-pulse rounded-full bg-teal-500" />
+                        </div>
+                    )}
+                    <MembersTable
+                        rows={members}
+                        currentPage={meta?.current_page ?? 1}
+                        totalPages={meta?.last_page ?? 1}
+                        totalRecords={meta?.total ?? members.length}
+                        from={meta?.from ?? null}
+                        to={meta?.to ?? null}
+                        onPageChange={setPage}
+                    />
+                </div>
+            )}
 
             <AddMemberModal 
                 isOpen={showModal}

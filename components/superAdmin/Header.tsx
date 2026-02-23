@@ -1,7 +1,8 @@
 'use client';
 
 import { AnimatePresence, motion } from "framer-motion";
-import { useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 
 interface HeaderProps {
     onMenuClick: () => void;
@@ -16,7 +17,31 @@ const mockNotifs = [
 const Header = ({ onMenuClick }: HeaderProps) => {
     const [notifOpen, setNotifOpen] = useState(false);
     const [userOpen, setUserOpen] = useState(false);
+    const router = useRouter();
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
+    const [headerSearch, setHeaderSearch] = useState(searchParams.get('q') ?? '');
     const unreadCount = mockNotifs.filter(n => n.unread).length
+
+    useEffect(() => {
+        setHeaderSearch(searchParams.get('q') ?? '');
+    }, [searchParams]);
+
+    const handleHeaderSearchChange = (value: string) => {
+        setHeaderSearch(value);
+
+        const params = new URLSearchParams(searchParams.toString());
+
+        if (value.trim() === '') {
+            params.delete('q');
+        } else {
+            params.set('q', value);
+        }
+
+        const query = params.toString();
+        router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+    };
+
     return (
         <header className="h-16 bg-white border-b border-slate-100 flex items-center px-4 gap-4 shrink-0 sticky top-0 z-10">
             {/* FOR MOBILE ONLY */}
@@ -40,6 +65,8 @@ const Header = ({ onMenuClick }: HeaderProps) => {
                     <input
                         type="text"
                         placeholder="Search orders, members, products..."
+                        value={headerSearch}
+                        onChange={(e) => handleHeaderSearchChange(e.target.value)}
                         className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-400 transition-all"
                     />
                 </div>

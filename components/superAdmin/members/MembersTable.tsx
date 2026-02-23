@@ -18,7 +18,28 @@ const avatarColors = [
 const getAvatarColor = (name: string) => avatarColors[name.charCodeAt(0) % avatarColors.length]
 const getInitials = (name: string) => name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
 
-const MembersTable = ({ rows }: { rows: Member[] }) => {
+interface MembersTableProps {
+  rows: Member[]
+  currentPage: number
+  totalPages: number
+  totalRecords: number
+  from: number | null
+  to: number | null
+  onPageChange: (page: number) => void
+}
+
+const MembersTable = ({
+  rows,
+  currentPage,
+  totalPages,
+  totalRecords,
+  from,
+  to,
+  onPageChange,
+}: MembersTableProps) => {
+  const canGoPrev = currentPage > 1
+  const canGoNext = currentPage < totalPages
+
   if (rows.length === 0) {
     return (
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm flex flex-col items-center justify-center py-16 gap-3">
@@ -150,13 +171,25 @@ const MembersTable = ({ rows }: { rows: Member[] }) => {
 
       {/* Footer */}
       <div className="px-5 py-3 border-t border-slate-50 flex items-center justify-between bg-slate-50/50">
-        <p className="text-xs text-slate-400">{rows.length} record{rows.length !== 1 ? 's' : ''}</p>
+        <p className="text-xs text-slate-400">
+          {from && to ? `${from}-${to}` : rows.length} of {totalRecords} records
+        </p>
         <div className="flex items-center gap-1">
-          <button className="h-7 w-7 rounded-lg border border-slate-200 bg-white text-slate-400 hover:text-slate-700 hover:border-slate-300 transition-colors flex items-center justify-center">
+          <button
+            onClick={() => canGoPrev && onPageChange(currentPage - 1)}
+            disabled={!canGoPrev}
+            className="h-7 w-7 rounded-lg border border-slate-200 bg-white text-slate-400 hover:text-slate-700 hover:border-slate-300 transition-colors flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed"
+          >
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7"/></svg>
           </button>
-          <span className="px-3 h-7 rounded-lg bg-teal-600 text-white text-xs font-semibold flex items-center">1</span>
-          <button className="h-7 w-7 rounded-lg border border-slate-200 bg-white text-slate-400 hover:text-slate-700 hover:border-slate-300 transition-colors flex items-center justify-center">
+          <span className="px-3 h-7 rounded-lg bg-teal-600 text-white text-xs font-semibold flex items-center">
+            {currentPage} / {totalPages}
+          </span>
+          <button
+            onClick={() => canGoNext && onPageChange(currentPage + 1)}
+            disabled={!canGoNext}
+            className="h-7 w-7 rounded-lg border border-slate-200 bg-white text-slate-400 hover:text-slate-700 hover:border-slate-300 transition-colors flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed"
+          >
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7"/></svg>
           </button>
         </div>
