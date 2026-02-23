@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 
 interface SubItem { label: string; path: string }
@@ -163,13 +164,19 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
         lg:translate-x-0 lg:sticky lg:top-0
       `}>
         {/* Logo */}
-        <div className={`flex items-center h-16 px-3 border-b border-slate-700/50 shrink-0 ${isCollapsed ? 'justify-center' : 'gap-3'}`}>
-          <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center shadow-lg shrink-0">
-            <span className="text-white font-black text-sm">AF</span>
+        <div className={`flex items-center h-16 px-3 border-b border-slate-700/50 shrink-0 ${isCollapsed ? 'justify-center' : 'gap-2'}`}>
+          <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-lg">
+            <Image
+              src="/af_home_logo.png"
+              alt="AF Home"
+              fill
+              className="object-contain"
+              priority
+            />
           </div>
           {!isCollapsed && (
             <div className="flex-1 min-w-0">
-              <p className="text-white font-bold text-sm leading-none">AF Home</p>
+              <p className="text-white font-bold text-sm leading-none whitespace-nowrap">AF Home</p>
               <p className="text-teal-400 text-xs mt-0.5">Super Admin</p>
             </div>
           )}

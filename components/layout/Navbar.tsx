@@ -19,14 +19,12 @@ const navLinks: NavLink[] = [
   { label: 'Home', href: '/' },
   {
     label: 'Shop Category',
-    href: '/shop',
+    href: '/category',
     dropdown: [
-      'Home & Living',
-      'Appliances',
-      'AF Properties',
-      'Car and Motorcycles',
-      'Home Essentials',
-      'Services',
+      'Chairs & Stools',
+      'Dining Table',
+      'Sofas',
+      'TV Rack',
     ],
   },
   {
@@ -92,6 +90,13 @@ const navLinks: NavLink[] = [
   },
   { label: 'Blogs', href: '/blog' },
 ]
+
+const availableCategoryLinks: Record<string, string> = {
+  'chairs & stools': '/category/chairs-stools',
+  'dining table': '/category/dining-table',
+  sofas: '/category/sofas',
+  'tv rack': '/category/tv-rack',
+};
 
 const roomIcons: Record<string, React.ReactNode> = {
   BEDROOM: (
@@ -344,15 +349,16 @@ export default function Navbar() {
                   onMouseEnter={() => hasDropdown && open(link.label)}
                   onMouseLeave={close}
                 >
-                  <Link
-                    href={link.href}
-                    className={`relative px-4 h-full flex items-center text-sm font-medium transition-colors duration-200 group ${activeDropdown === link.label
-                      ? 'text-orange-500'
-                      : 'text-gray-600 hover:text-orange-500'
-                      }`}
-                  >
-                    {link.label}
-                    {hasDropdown && (
+                  {hasDropdown ? (
+                    <button
+                      type="button"
+                      onClick={() => open(link.label)}
+                      className={`relative px-4 h-full flex items-center text-sm font-medium transition-colors duration-200 group ${activeDropdown === link.label
+                        ? 'text-orange-500'
+                        : 'text-gray-600 hover:text-orange-500'
+                        }`}
+                    >
+                      {link.label}
                       <motion.svg
                         animate={{ rotate: activeDropdown === link.label ? 180 : 0 }}
                         transition={{ duration: 0.2 }}
@@ -367,9 +373,20 @@ export default function Navbar() {
                       >
                         <polyline points="6 9 12 15 18 9" />
                       </motion.svg>
-                    )}
-                    <span className="absolute bottom-0 left-4 right-4 h-0.5 bg-orange-500 scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
-                  </Link>
+                      <span className="absolute bottom-0 left-4 right-4 h-0.5 bg-orange-500 scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
+                    </button>
+                  ) : (
+                    <Link
+                      href={link.href}
+                      className={`relative px-4 h-full flex items-center text-sm font-medium transition-colors duration-200 group ${activeDropdown === link.label
+                        ? 'text-orange-500'
+                        : 'text-gray-600 hover:text-orange-500'
+                        }`}
+                    >
+                      {link.label}
+                      <span className="absolute bottom-0 left-4 right-4 h-0.5 bg-orange-500 scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
+                    </Link>
+                  )}
                 </div>
               )
             })}
@@ -394,7 +411,11 @@ export default function Navbar() {
                 {activeLink.dropdown.map((item) => (
                   <Link
                     key={item}
-                    href={`${activeLink.href}/${item.toLowerCase().replace(/\s+/g, '-')}`}
+                    href={
+                      activeLink.label === 'Shop Category'
+                        ? (availableCategoryLinks[item.toLowerCase()] ?? '#')
+                        : `${activeLink.href}/${item.toLowerCase().replace(/\s+/g, '-')}`
+                    }
                     className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-gray-600 hover:bg-orange-50 hover:text-orange-600 transition-all duration-200 group"
                   >
                     <span className="w-1.5 h-1.5 rounded-full bg-gray-300 group-hover:bg-orange-400 transition-colors" />
@@ -543,7 +564,12 @@ export default function Navbar() {
                 const isExpanded = mobileExpanded === link.label
 
                 const subItems = link.dropdown
-                  ? link.dropdown.map((item) => ({ label: item, href: `${link.href}/${item.toLowerCase().replace(/\s+/g, '-')}` }))
+                  ? link.dropdown.map((item) => ({
+                    label: item,
+                    href: link.label === 'Shop Category'
+                      ? (availableCategoryLinks[item.toLowerCase()] ?? '#')
+                      : `${link.href}/${item.toLowerCase().replace(/\s+/g, '-')}`,
+                  }))
                   : []
 
                 return (
