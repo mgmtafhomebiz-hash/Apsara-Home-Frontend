@@ -10,28 +10,51 @@ type VerifyResponse = {
 };
 
  function CheckoutSuccessPage() {
+  const apiBaseUrl = process.env.NEXT_PUBLIC_LARAVEL_API_URL?.replace(/\/$/, '');
   const [loading, setLoading] = useState(true);
   const [result, setResult] = useState<VerifyResponse | null>(null);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    const checkoutId = localStorage.getItem('last_checkout_id');
+    let isMounted = true;
 
-    if (!checkoutId) {
-      setError('No checkout reference found in local storage.');
-      setLoading(false);
-      return;
-    }
+    const verify = async () => {
+      const checkoutId = localStorage.getItem('last_checkout_id');
 
-    fetch(`http://localhost:8000/api/payments/checkout-session/${checkoutId}`)
-      .then(async (res) => {
+      if (!checkoutId) {
+        if (!isMounted) return;
+        setError('No checkout reference found in local storage.');
+        setLoading(false);
+        return;
+      }
+
+      if (!apiBaseUrl) {
+        if (!isMounted) return;
+        setError('Missing NEXT_PUBLIC_LARAVEL_API_URL environment variable.');
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const res = await fetch(`${apiBaseUrl}/api/payments/checkout-session/${checkoutId}`);
         const data = await res.json();
         if (!res.ok) throw new Error(data?.message || 'Verification failed');
+        if (!isMounted) return;
         setResult(data);
-      })
-      .catch((e: Error) => setError(e.message))
-      .finally(() => setLoading(false));
-  }, []);
+      } catch (e) {
+        if (!isMounted) return;
+        setError(e instanceof Error ? e.message : 'Verification failed');
+      } finally {
+        if (!isMounted) return;
+        setLoading(false);
+      }
+    };
+
+    verify();
+    return () => {
+      isMounted = false;
+    };
+  }, [apiBaseUrl]);
 
   return (
     <main className="min-h-screen bg-slate-50 flex items-center justify-center p-4">

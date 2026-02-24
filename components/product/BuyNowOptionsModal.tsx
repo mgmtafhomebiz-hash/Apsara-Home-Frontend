@@ -68,6 +68,7 @@ const BuyNowOptionsModal = ({
   selectedSize,
   selectedType,
 }: BuyNowOptionsModalProps) => {
+  const apiBaseUrl = process.env.NEXT_PUBLIC_LARAVEL_API_URL?.replace(/\/$/, '');
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>('gcash');
   const [selectedOnlineBank, setSelectedOnlineBank] = useState(onlineBankingOptions[0]);
   const [selectedCardBrand, setSelectedCardBrand] = useState(cardOptions[0]);
@@ -85,6 +86,11 @@ const BuyNowOptionsModal = ({
   const total = subtotal + handlingFee;
 
   const handleProceed = async () => {
+    if (!apiBaseUrl) {
+      alert('Missing NEXT_PUBLIC_LARAVEL_API_URL. Please set it in your environment variables.');
+      return;
+    }
+
     if (selectedMethod === 'online_banking') {
       setNotice(`Online Banking (${selectedOnlineBank}) is coming soon.`)
       return;
@@ -95,7 +101,7 @@ const BuyNowOptionsModal = ({
     }
     try {
       setLoading(true);
-      const res = await fetch('http://localhost:8000/api/payments/checkout-session', {
+      const res = await fetch(`${apiBaseUrl}/api/payments/checkout-session`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
