@@ -1,44 +1,32 @@
 'use client';
 
 import Link from 'next/link';
+import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
+import { useLazyVerifyCheckoutSessionQuery } from '@/store/api/paymentApi';
 
-type VerifyResponse = {
-  checkout_id: string;
-  status: string | null;
-  payment_intent_id: string | null;
-};
-
- function CheckoutSuccessPage() {
-  const apiBaseUrl = process.env.NEXT_PUBLIC_LARAVEL_API_URL?.replace(/\/$/, '');
+function CheckoutSuccessPage() {
+  const [verifyCheckoutSession] = useLazyVerifyCheckoutSessionQuery();
   const [loading, setLoading] = useState(true);
-  const [result, setResult] = useState<VerifyResponse | null>(null);
+  const [result, setResult] = useState<{
+    checkout_id: string;
+    status: string | null;
+    payment_intent_id: string | null;
+  } | null>(null);
   const [error, setError] = useState('');
 
   useEffect(() => {
     let isMounted = true;
-
     const verify = async () => {
       const checkoutId = localStorage.getItem('last_checkout_id');
-
       if (!checkoutId) {
         if (!isMounted) return;
         setError('No checkout reference found in local storage.');
         setLoading(false);
         return;
       }
-
-      if (!apiBaseUrl) {
-        if (!isMounted) return;
-        setError('Missing NEXT_PUBLIC_LARAVEL_API_URL environment variable.');
-        setLoading(false);
-        return;
-      }
-
       try {
-        const res = await fetch(`${apiBaseUrl}/api/payments/checkout-session/${checkoutId}`);
-        const data = await res.json();
-        if (!res.ok) throw new Error(data?.message || 'Verification failed');
+        const data = await verifyCheckoutSession(checkoutId).unwrap();
         if (!isMounted) return;
         setResult(data);
       } catch (e) {
@@ -49,40 +37,236 @@ type VerifyResponse = {
         setLoading(false);
       }
     };
-
     verify();
-    return () => {
-      isMounted = false;
-    };
-  }, [apiBaseUrl]);
+    return () => { isMounted = false; };
+  }, [verifyCheckoutSession]);
+
+  const isPaid    = result?.status?.toLowerCase().includes('paid') ?? false;
+  const isPending = !isPaid && (result?.status === 'unpaid' || result?.status === 'active');
+
+  // ── LOADING ──────────────────────────────────────────────────
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-gradient-to-br from-slate-50 to-orange-50/40 flex items-center justify-center p-4">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="text-center space-y-5"
+        >
+          {/* Spinner with logo */}
+          <div className="relative h-24 w-24 mx-auto">
+            <div className="absolute inset-0 rounded-full border-4 border-orange-100" />
+            <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-orange-500 animate-spin" />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center shadow-lg shadow-orange-200">
+                <span className="text-white font-black text-sm">AF</span>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <p className="text-slate-800 font-bold text-lg">Verifying Payment</p>
+            <p className="text-slate-400 text-sm mt-1">Please wait while we confirm your transaction...</p>
+          </div>
+
+          {/* Bouncing dots */}
+          <div className="flex items-center justify-center gap-1.5">
+            {[0, 1, 2].map(i => (
+              <div
+                key={i}
+                className="h-2 w-2 rounded-full bg-orange-400 animate-bounce"
+                style={{ animationDelay: `${i * 0.15}s` }}
+              />
+            ))}
+          </div>
+        </motion.div>
+      </main>
+    );
+  }
+
+  // ── ERROR ─────────────────────────────────────────────────────
+  if (error) {
+    return (
+      <main className="min-h-screen bg-gradient-to-br from-slate-50 to-red-50/30 flex items-center justify-center p-4">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35 }}
+          className="w-full max-w-md"
+        >
+          <div className="bg-white rounded-3xl border border-red-100 shadow-xl p-8 text-center">
+            <motion.div
+              initial={{ scale: 0 }} animate={{ scale: 1 }}
+              transition={{ type: 'spring', stiffness: 200, delay: 0.1 }}
+              className="h-20 w-20 rounded-full bg-red-100 flex items-center justify-center mx-auto"
+            >
+              <svg className="w-10 h-10 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+              </svg>
+            </motion.div>
+
+            <h1 className="text-xl font-black text-slate-800 mt-5">Verification Error</h1>
+            <p className="text-slate-400 text-sm mt-2 leading-relaxed">{error}</p>
+
+            <div className="mt-7 flex flex-col gap-2.5">
+              <Link href="/"
+                className="w-full py-3 rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold text-sm text-center transition-all shadow-md shadow-orange-100 flex items-center justify-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                </svg>
+                Back to Home
+              </Link>
+            </div>
+          </div>
+        </motion.div>
+      </main>
+    );
+  }
+
+  // ── RESULT ────────────────────────────────────────────────────
+  const bgClass = isPaid
+    ? 'from-green-50/60 to-teal-50/30'
+    : isPending
+    ? 'from-amber-50/60 to-orange-50/30'
+    : 'from-red-50/50 to-slate-50';
+
+  const iconBg = isPaid ? 'bg-green-500' : isPending ? 'bg-amber-500' : 'bg-red-500';
+  const headerBg = isPaid ? 'from-green-50 to-white' : isPending ? 'from-amber-50 to-white' : 'from-red-50 to-white';
+  const titleColor = isPaid ? 'text-green-700' : isPending ? 'text-amber-700' : 'text-red-700';
+  const badgeClass = isPaid ? 'bg-green-100 text-green-700' : isPending ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700';
+
+  const title = isPaid ? 'Payment Successful!' : isPending ? 'Payment Pending' : 'Payment Failed';
+  const subtitle = isPaid
+    ? 'Your order is confirmed and is now being prepared.'
+    : isPending
+    ? "Your payment is still being processed. We'll notify you soon."
+    : 'Something went wrong with your payment. Please try again.';
 
   return (
-    <main className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-xl rounded-2xl bg-white border border-gray-100 shadow-sm p-6">
-        <h1 className="text-2xl font-bold text-slate-900">Payment Result</h1>
+    <main className={`min-h-screen bg-gradient-to-br ${bgClass} flex items-center justify-center p-4`}>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="w-full max-w-md"
+      >
+        <div className="bg-white rounded-3xl border border-slate-100 shadow-xl overflow-hidden">
 
-        {loading && <p className="mt-3 text-sm text-gray-500">Verifying payment...</p>}
+          {/* Status Header */}
+          <div className={`px-8 py-8 text-center bg-gradient-to-b ${headerBg}`}>
+            <motion.div
+              initial={{ scale: 0 }} animate={{ scale: 1 }}
+              transition={{ type: 'spring', stiffness: 220, delay: 0.1 }}
+              className={`h-20 w-20 rounded-full mx-auto flex items-center justify-center shadow-lg ${iconBg}`}
+            >
+              {isPaid ? (
+                <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7"/>
+                </svg>
+              ) : isPending ? (
+                <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+              ) : (
+                <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+              )}
+            </motion.div>
 
-        {!loading && error && (
-          <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-            {error}
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+              <h1 className={`text-2xl font-black mt-4 ${titleColor}`}>{title}</h1>
+              <p className="text-slate-400 text-sm mt-1.5 leading-relaxed">{subtitle}</p>
+            </motion.div>
           </div>
-        )}
 
-        {!loading && result && (
-          <div className="mt-4 space-y-2 text-sm text-slate-700">
-            <p><span className="font-semibold">Checkout ID:</span> {result.checkout_id}</p>
-            <p><span className="font-semibold">Status:</span> {result.status ?? 'unknown'}</p>
-            <p><span className="font-semibold">Payment Intent:</span> {result.payment_intent_id ?? 'n/a'}</p>
-          </div>
-        )}
+          {/* Details */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3 }}
+            className="px-6 pb-6 space-y-4"
+          >
+            {/* Transaction details */}
+            <div className="rounded-2xl border border-slate-100 bg-slate-50 overflow-hidden divide-y divide-slate-100">
+              <div className="flex items-center justify-between px-4 py-3">
+                <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide">Checkout ID</span>
+                <span className="text-xs font-mono font-semibold text-slate-700 truncate max-w-[190px]">
+                  {result?.checkout_id ?? 'N/A'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between px-4 py-3">
+                <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide">Status</span>
+                <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${badgeClass}`}>
+                  {result?.status ?? 'Unknown'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between px-4 py-3">
+                <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide">Payment Intent</span>
+                <span className="text-xs font-mono font-semibold text-slate-700 truncate max-w-[190px]">
+                  {result?.payment_intent_id ?? 'N/A'}
+                </span>
+              </div>
+            </div>
 
-        <div className="mt-6">
-          <Link href="/" className="inline-block rounded-xl bg-orange-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-orange-600">
-            Back to Home
-          </Link>
+            {/* What's next — success only */}
+            {isPaid && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
+                transition={{ delay: 0.4 }}
+                className="rounded-2xl border border-green-100 bg-green-50/70 p-4"
+              >
+                <p className="text-xs font-bold text-green-700 mb-3">What happens next?</p>
+                <div className="space-y-2.5">
+                  {[
+                    'Order confirmation will be sent to your email',
+                    'Our team will prepare your items for delivery',
+                    "You'll receive a shipping update soon",
+                  ].map((step, i) => (
+                    <div key={i} className="flex items-start gap-2.5">
+                      <div className="h-4 w-4 rounded-full bg-green-500 flex items-center justify-center shrink-0 mt-0.5">
+                        <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7"/>
+                        </svg>
+                      </div>
+                      <p className="text-xs text-green-700 leading-relaxed">{step}</p>
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+
+            {/* Buttons */}
+            <div className="flex flex-col gap-2.5 pt-1">
+              <Link href="/"
+                className="w-full py-3 rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold text-sm text-center transition-all shadow-md shadow-orange-100 flex items-center justify-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                </svg>
+                Back to Home
+              </Link>
+              <Link href="/orders"
+                className="w-full py-3 rounded-xl border-2 border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 text-slate-600 font-semibold text-sm text-center transition-all flex items-center justify-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                </svg>
+                View My Orders
+              </Link>
+            </div>
+
+            {/* Footer */}
+            <p className="text-center text-[11px] text-slate-300 flex items-center justify-center gap-1.5 pt-1">
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+              </svg>
+              Secured by <span className="font-semibold text-slate-400 ml-0.5">PayMongo</span> · AF Home
+            </p>
+          </motion.div>
         </div>
-      </div>
+      </motion.div>
     </main>
   );
 }

@@ -1,22 +1,13 @@
 'use client';
 
-import { Member } from "@/types/members/types";
+import { MembersStatsResponse } from "@/store/api/membersApi";
 import { motion } from "framer-motion";
 
-const MembersStats = ({ rows }: { rows: Member[] }) => {
-
-    const active = rows.filter(m => m.status === 'active').length
-    const pending = rows.filter(m => m.status === 'pending' || m.status === 'kyc_review').length
-    const blocked = rows.filter(m => m.status === 'blocked').length
-    const totalSpent = rows.reduce((a, b) => a + b.totalSpent, 0)
-    const totalEarnings = rows.reduce((a, b) => a + b.earnings, 0)
-    const totalReferrals = rows.reduce((a, b) => a + b.referrals, 0)
-
-
+const MembersStats = ({ stats }: { stats?: MembersStatsResponse }) => {
     const cards = [
         {
             label: 'Total Members',
-            value: rows.length.toString(),
+            value: stats ? stats.total.toLocaleString() : '—',
             color: 'text-slate-800',
             iconBg: 'bg-slate-700',
             icon: (
@@ -27,7 +18,7 @@ const MembersStats = ({ rows }: { rows: Member[] }) => {
         },
         {
             label: 'Active',
-            value: active.toString(),
+            value: stats ? stats.active.toLocaleString() : '—',
             color: 'text-emerald-700',
             iconBg: 'bg-emerald-500',
             icon: (
@@ -38,7 +29,7 @@ const MembersStats = ({ rows }: { rows: Member[] }) => {
         },
         {
             label: 'Pending / KYC',
-            value: pending.toString(),
+            value: stats ? stats.pending.toLocaleString() : '—',
             color: 'text-amber-700',
             iconBg: 'bg-amber-500',
             icon: (
@@ -49,7 +40,7 @@ const MembersStats = ({ rows }: { rows: Member[] }) => {
         },
         {
             label: 'Blocked',
-            value: blocked.toString(),
+            value: stats ? stats.blocked.toLocaleString() : '—',
             color: 'text-red-700',
             iconBg: 'bg-red-500',
             icon: (
@@ -60,7 +51,7 @@ const MembersStats = ({ rows }: { rows: Member[] }) => {
         },
         {
             label: 'Total Spent',
-            value: `₱ ${totalSpent.toLocaleString()}`,
+            value: stats ? `₱ ${stats.totalSpent.toLocaleString()}` : '—',
             color: 'text-teal-700',
             iconBg: 'bg-teal-500',
             icon: (
@@ -71,7 +62,7 @@ const MembersStats = ({ rows }: { rows: Member[] }) => {
         },
         {
             label: 'Total Earnings',
-            value: `₱ ${totalEarnings.toLocaleString()}`,
+            value: stats ? `₱ ${stats.totalEarnings.toLocaleString()}` : '—',
             color: 'text-purple-700',
             iconBg: 'bg-purple-500',
             icon: (
@@ -82,7 +73,7 @@ const MembersStats = ({ rows }: { rows: Member[] }) => {
         },
         {
             label: 'Total Referrals',
-            value: totalReferrals.toString(),
+            value: stats ? stats.totalReferrals.toLocaleString() : '—',
             color: 'text-indigo-700',
             iconBg: 'bg-indigo-500',
             icon: (

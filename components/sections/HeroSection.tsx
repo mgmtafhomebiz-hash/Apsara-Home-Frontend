@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from "framer-motion";
-import CategoryCard from "../ui/CategoryCard";
+import CategoryCard from "../category/CategoryCard";
 
 const categories = [
     { name: 'Chairs & Stools', count: 14, image: '/Images/HeroSection/chairs_stools.jpg' },

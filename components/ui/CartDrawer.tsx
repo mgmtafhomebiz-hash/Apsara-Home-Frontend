@@ -3,9 +3,32 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
 import { useCart } from '@/context/CartContext'
+import { useRouter } from 'next/navigation'
 
 export default function CartDrawer() {
-  const { items, isOpen, setIsOpen, removeFromCart, updateQuantity, cartCount, total } = useCart()
+  const router = useRouter();
+  const { items, isOpen, setIsOpen, removeFromCart, updateQuantity, cartCount, total } = useCart();
+
+    const handleCustomerCheckout = () => {
+    const handlingFee = total >= 5000 ? 0 : 99;
+    localStorage.setItem('guest_checkout', JSON.stringify({
+      product: {
+        name: items.length === 1 ? items[0].name : `${cartCount} items from AF Home`,
+        image: items[0].image,
+        price: total,
+      },
+      quantity: cartCount,
+      selectedColor: null,
+      selectedSize: null,
+      selectedType: null,
+      subtotal: total,
+      handlingFee,
+      total: total + handlingFee,
+    }));
+    setIsOpen(false);
+    router.push('/checkout/customer');
+  }
+
 
   return (
     <AnimatePresence>
@@ -146,6 +169,7 @@ export default function CartDrawer() {
                 <motion.button
                   whileTap={{ scale: 0.98 }}
                   className="w-full bg-orange-500 hover:bg-orange-600 text-white py-3.5 rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
+                  onClick={handleCustomerCheckout}
                 >
                   Proceed to Checkout
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6" /></svg>

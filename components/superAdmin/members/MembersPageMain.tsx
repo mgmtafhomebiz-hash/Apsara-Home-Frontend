@@ -7,14 +7,16 @@ import MembersTable from "./MembersTable"
 import { useEffect, useState } from "react"
 import { MemberStatus, MemberTier } from "@/types/members/types"
 import AddMemberModal from "./AddMemberModal"
-import { MembersResponse, useGetMembersQuery } from "@/store/api/membersApi"
+import { MembersResponse, useGetMembersQuery, useGetMembersStatsQuery } from "@/store/api/membersApi"
 import { useSearchParams } from "next/navigation"
+import { useSession } from "next-auth/react"
 
 interface MembersPageMainProps {
     initialData?: MembersResponse | null
 }
 
 const MembersPageMain = ({ initialData = null }: MembersPageMainProps) => {
+    const { data: session, status: authStatus } = useSession()
     const searchParams = useSearchParams()
     const [search, setSearch] = useState('')
     const [debouncedSearch, setDebouncedSearch] = useState('')
@@ -39,13 +41,25 @@ const MembersPageMain = ({ initialData = null }: MembersPageMainProps) => {
         return () => clearTimeout(timeout)
     }, [search])
 
-    const { data, isLoading, isFetching, isError } = useGetMembersQuery({
-        page,
-        perPage,
-        search: debouncedSearch !== '' ? debouncedSearch : undefined,
-        status: status === 'all' ? undefined : status,
-        tier: tier === 'all' ? undefined : tier,
+    const hasAccessToken = Boolean(session?.user?.accessToken)
+    const shouldSkipMembersQuery = authStatus !== 'authenticated' || !hasAccessToken
+
+    const { data: statsData } = useGetMembersStatsQuery(undefined, {
+        skip: shouldSkipMembersQuery,
     })
+
+    const { data, isLoading, isFetching, isError } = useGetMembersQuery(
+        {
+            page,
+            perPage,
+            search: debouncedSearch !== '' ? debouncedSearch : undefined,
+            status: status === 'all' ? undefined : status,
+            tier: tier === 'all' ? undefined : tier,
+        },
+        {
+            skip: shouldSkipMembersQuery,
+        }
+    )
 
     useEffect(() => {
         if (data) {
@@ -93,7 +107,7 @@ const MembersPageMain = ({ initialData = null }: MembersPageMainProps) => {
                 </button>
             </motion.div>
 
-            <MembersStats rows={members} />
+            <MembersStats stats={statsData} />
 
             <MembersToolbar
                 search={search}
@@ -105,7 +119,15 @@ const MembersPageMain = ({ initialData = null }: MembersPageMainProps) => {
                 resultCount={meta?.total ?? members.length}
             />
 
-            {isError ? (
+            {authStatus === 'loading' ? (
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
+                    Loading your session...
+                </div>
+            ) : authStatus === 'unauthenticated' ? (
+                <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+                    Please sign in first to load the members list.
+                </div>
+            ) : isError ? (
                 <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
                     Failed to load members list from customer data.
                 </div>

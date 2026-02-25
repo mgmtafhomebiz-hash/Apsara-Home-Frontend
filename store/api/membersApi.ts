@@ -16,6 +16,16 @@ export interface MembersResponse {
   meta: MembersMeta
 }
 
+export interface MembersStatsResponse {
+  total: number
+  active: number
+  pending: number
+  blocked: number
+  totalSpent: number
+  totalEarnings: number
+  totalReferrals: number
+}
+
 interface MembersQueryParams {
   page?: number
   perPage?: number
@@ -40,7 +50,11 @@ export const membersApi = baseApi.injectEndpoints({
       }),
       providesTags: ['Members'],
     }),
+    getMembersStats: builder.query<MembersStatsResponse, void>({
+      query: () => '/api/admin/members/stats',
+      providesTags: ['Members'],
+    }),
   }),
 })
 
-export const { useGetMembersQuery } = membersApi
+export const { useGetMembersQuery, useGetMembersStatsQuery } = membersApi

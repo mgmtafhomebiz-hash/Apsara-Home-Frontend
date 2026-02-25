@@ -217,6 +217,9 @@ export default function Navbar() {
     } catch (error) {
       console.log(error)
     }
+    if (typeof window !== 'undefined') {
+      window.localStorage.removeItem('accessToken')
+    }
     setProfileMenuOpen(false)
     await signOut({ callbackUrl: '/' })
   }

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { signIn } from "next-auth/react";
+import { getSession, signIn } from "next-auth/react";
 import Loading from '@/components/Loading'
 
 const EyeIcon = ({ open }: { open: boolean }) => open
@@ -43,6 +43,11 @@ const LoginForm = ({ onSwitchToSignUp }: LoginFormProps) => {
         setIsLoading(false)
 
         if (result?.ok) {
+            const session = await getSession()
+            const accessToken = (session?.user as { accessToken?: string } | undefined)?.accessToken
+            if (accessToken) {
+                window.localStorage.setItem('accessToken', accessToken)
+            }
             router.push('/');
             router.refresh();
         } else {
