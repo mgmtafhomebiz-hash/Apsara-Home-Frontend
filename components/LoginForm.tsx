@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { getSession, signIn } from "next-auth/react";
+import { signIn } from "next-auth/react";
 import Loading from '@/components/Loading'
 
 const EyeIcon = ({ open }: { open: boolean }) => open
@@ -43,13 +43,7 @@ const LoginForm = ({ onSwitchToSignUp }: LoginFormProps) => {
         setIsLoading(false)
 
         if (result?.ok) {
-            const session = await getSession()
-            const accessToken = (session?.user as { accessToken?: string } | undefined)?.accessToken
-            if (accessToken) {
-                window.localStorage.setItem('accessToken', accessToken)
-            }
-            router.push('/');
-            router.refresh();
+            router.replace('/');
         } else {
             setError('Invalid email or password. Please try Again.')
         }
@@ -73,11 +67,11 @@ const LoginForm = ({ onSwitchToSignUp }: LoginFormProps) => {
                 )}
                 <div>
                     <label className="block text-xs font-semibold text-white mb-1.5">
-                        Email / Username
+                        Email
                     </label>
                     <input
                         type="text"
-                        placeholder="Your username or email"
+                        placeholder="Enter your email"
                         value={form.email}
                         onChange={set('email')}
                         className="w-full px-4 py-3 bg-white/15 border border-white/25 rounded-xl text-sm text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-orange-400/60 focus:bg-white/20 transition-all"

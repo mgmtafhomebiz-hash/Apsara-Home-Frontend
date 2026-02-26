@@ -16,7 +16,7 @@ export function Loginpage() {
 
 
   return (
-    <div className="relative min-h-screen w-full flex items-center justify-center overflow-hidden">
+    <div className="relative min-h-screen w-full overflow-x-hidden overflow-y-auto flex flex-col">
       <VideoBackground />
       <div className="absolute inset-0 bg-black/55 backdrop-blur-[2px]" />
 
@@ -32,7 +32,7 @@ export function Loginpage() {
 
       {/* Logo */}
       <div className="absolute top-5 left-1/2 -translate-x-1/2 z-20">
-        <Image 
+        <Image
           src={"/Images/af_home_logo.png"}
           alt="AF Home"
           width={110}
@@ -42,25 +42,27 @@ export function Loginpage() {
       </div>
 
       {/* CARD */}
-      <motion.div
-        initial={{ opacity: 0, y: 32, scale: 0.95 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1]}}
-        className={`relative z-10 w-full mx-4 transition-all duration-300 ${mode === 'signup' ? 'max-w-xl' : 'max-w-md'}`}
-      >
-        <div className="bg-slate-800/85 backdrop-blur-xl border border-white/10 rounded-3xl p-8 shadow-2xl">
-          <AuthTabs mode={mode} setMode={setMode} />
-          <AnimatePresence 
-            mode="wait"
-            initial={false}
-          >
-            {mode === 'login'
-              ? <LoginForm key="login" onSwitchToSignUp={() => setMode('signup')}/>
-              : <SignUpForm key="signup" onSwitchToLogin={() => setMode('login')}/>
-            }
-          </AnimatePresence>
-        </div>
-      </motion.div>
+      <div className={`relative z-10 flex justify-center w-full px-4 ${mode === 'signup' ? 'py-20 items-start' : 'min-h-screen items-center'}`}>
+        <motion.div
+          initial={{ opacity: 0, y: 32, scale: 0.95 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1]}}
+          className={`w-full transition-all duration-300 ${mode === 'signup' ? 'max-w-xl' : 'max-w-md'}`}
+        >
+          <div className="bg-slate-800/85 backdrop-blur-xl border border-white/10 rounded-3xl p-8 shadow-2xl">
+            <AuthTabs mode={mode} setMode={setMode} />
+            <AnimatePresence
+              mode="wait"
+              initial={false}
+            >
+              {mode === 'login'
+                ? <LoginForm key="login" onSwitchToSignUp={() => setMode('signup')}/>
+                : <SignUpForm key="signup" onSwitchToLogin={() => setMode('login')}/>
+              }
+            </AnimatePresence>
+          </div>
+        </motion.div>
+      </div>
     </div>
   )
 }

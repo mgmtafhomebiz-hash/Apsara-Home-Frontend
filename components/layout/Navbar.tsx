@@ -211,18 +211,21 @@ export default function Navbar() {
 
   const activeLink = navLinks.find((l) => l.label === activeDropdown)
 
-  const handleLogout = async () => {
-    try {
-      await logoutApi().unwrap()
-    } catch (error) {
-      console.log(error)
-    }
-    if (typeof window !== 'undefined') {
-      window.localStorage.removeItem('accessToken')
-    }
-    setProfileMenuOpen(false)
-    await signOut({ callbackUrl: '/' })
-  }
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
+
+  // const handleLogout = async () => {
+  //   setIsLoggingOut(true)
+  //   try {
+  //     await logoutApi().unwrap()
+  //   } catch (error) {
+  //     console.log(error)
+  //   }
+  //   if (typeof window !== 'undefined') {
+  //     window.localStorage.removeItem('accessToken')
+  //   }
+  //   setProfileMenuOpen(false)
+  //   await signOut({ callbackUrl: '/' })
+  // }
 
   const handleProductSearchSubmit = (query: string) => {
     const q = query.trim().toLowerCase()
@@ -378,10 +381,17 @@ export default function Navbar() {
                           My Orders
                         </Link>
                         <button
-                          onClick={handleLogout}
-                          className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                          onClick={() => signOut({ callbackUrl: '/'})}
+                          disabled={isLoggingOut}
+                          className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2 disabled:opacity-60"
                         >
-                          Logout
+                          {isLoggingOut && (
+                            <svg className="animate-spin h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                            </svg>
+                          )}
+                          {isLoggingOut ? 'Logging out...' : 'Logout'}
                         </button>
                       </motion.div>
                     )}
@@ -673,10 +683,17 @@ export default function Navbar() {
                     My Profile
                   </Link>
                   <button
-                    onClick={handleLogout}
-                    className="w-full text-left px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                    onClick={() => signOut({ callbackUrl: "/"})}
+                    disabled={isLoggingOut}
+                    className="w-full text-left px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-2 disabled:opacity-60"
                   >
-                    Logout
+                    {isLoggingOut && (
+                      <svg className="animate-spin h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                      </svg>
+                    )}
+                    {isLoggingOut ? 'Logging out...' : 'Logout'}
                   </button>
                 </div>
               )}

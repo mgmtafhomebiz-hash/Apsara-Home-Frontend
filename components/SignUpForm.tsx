@@ -6,13 +6,26 @@ import { useRouter } from 'next/navigation'
 import { useRegisterMutation } from '@/store/api/authApi'
 import { signIn } from 'next-auth/react'
 import Loading from './Loading'
+import { usePhAddress } from '@/hooks/usePhAddress'
 
 const EyeIcon = ({ open }: { open: boolean }) => open
     ? <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" /><line x1="1" y1="1" x2="23" y2="23" /></svg>
     : <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
 
 const inputClass = "w-full px-4 py-3 bg-white/15 border border-white/25 rounded-xl text-sm text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-orange-400/60 focus:bg-white/20 transition-all"
+const selectClass = "w-full px-4 py-3 bg-white/15 border border-white/25 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-orange-400/60 focus:bg-white/20 transition-all appearance-none cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
 const labelClass = "block text-xs font-semibold text-white/80 mb-1.5"
+
+const SelectWrapper = ({ children }: { children: React.ReactNode }) => (
+    <div className="relative">
+        {children}
+        <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-white/50">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <polyline points="6 9 12 15 18 9" />
+            </svg>
+        </div>
+    </div>
+)
 
 interface SignUpFormProps {
     onSwitchToLogin: () => void
@@ -25,6 +38,8 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
     const [showConfirm, setShowConfirm] = useState(false)
     const [error, setError] = useState('')
 
+    const ph = usePhAddress()
+
     const [form, setForm] = useState({
         firstName: '',
         lastName: '',
@@ -36,10 +51,11 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
         username: '',
         referredBy: '',
         birthDate: '',
+        address: '',
+        zipCode: '',
         agreeTerms: false,
     })
 
-    // Fix: check e.target.type for checkbox, not e.target.value
     const set = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) =>
         setForm(f => ({ ...f, [field]: e.target.type === 'checkbox' ? e.target.checked : e.target.value }))
 
@@ -49,7 +65,7 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
 
         if (!form.agreeTerms) return setError('You must agree to the Terms & Conditions.')
         if (form.password !== form.confirmPassword) return setError('Passwords do not match.')
-        if (form.password.length < 8) return setError('Password must be at least 8 characters.')  // Fix: was < 0
+        if (form.password.length < 8) return setError('Password must be at least 8 characters.')
 
         const result = await register({
             name: `${form.firstName} ${form.lastName}`,
@@ -58,11 +74,17 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
             middle_name: form.middleName,
             email: form.email,
             password: form.password,
-            password_confirmation: form.confirmPassword,  // Fix: was pasword_confirmation
+            password_confirmation: form.confirmPassword,
             phone: form.phone,
             username: form.username,
             referred_by: form.referredBy,
             birth_date: form.birthDate,
+            address: form.address,
+            barangay: ph.address.barangay,
+            city: ph.address.city,
+            province: ph.address.province,
+            region: ph.address.region,
+            zip_code: form.zipCode,
         })
 
         if ('error' in result) {
@@ -105,8 +127,14 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
                     </div>
                 )}
 
-                {/* Row 1 — First + Last Name */}
-                <div className="grid grid-cols-2 gap-3">
+                {/* ── Personal Information ── */}
+                <div className="space-y-1 pb-1">
+                    <p className="text-xs font-bold text-orange-400 uppercase tracking-widest">Personal Information</p>
+                    <div className="h-px bg-white/10" />
+                </div>
+
+                {/* First + Last Name */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                         <label className={labelClass}>First Name <span className="text-orange-400">*</span></label>
                         <input type="text" placeholder="First name" required
@@ -119,15 +147,15 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
                     </div>
                 </div>
 
-                {/* Row 2 — Middle Name */}
+                {/* Middle Name */}
                 <div>
                     <label className={labelClass}>Middle Name</label>
                     <input type="text" placeholder="Middle name"
                         value={form.middleName} onChange={set('middleName')} className={inputClass} />
                 </div>
 
-                {/* Row 3 — Birth Date + Email */}
-                <div className="grid grid-cols-2 gap-3">
+                {/* Birth Date + Email */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                         <label className={labelClass}>Birth Date <span className="text-orange-400">*</span></label>
                         <input type="date" required
@@ -140,7 +168,7 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
                     </div>
                 </div>
 
-                {/* Row 4 — Phone Number */}
+                {/* Phone Number */}
                 <div>
                     <label className={labelClass}>Phone Number <span className="text-orange-400">*</span></label>
                     <div className="flex gap-2">
@@ -152,8 +180,8 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
                     </div>
                 </div>
 
-                {/* Row 5 — Username + Referred By */}
-                <div className="grid grid-cols-2 gap-3">
+                {/* Username + Referred By */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                         <label className={labelClass}>Username <span className="text-orange-400">*</span></label>
                         <input type="text" placeholder="Username" required
@@ -166,8 +194,122 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
                     </div>
                 </div>
 
-                {/* Row 6 — Password + Confirm Password */}
-                <div className="grid grid-cols-2 gap-3">
+                {/* ── Address ── */}
+                <div className="space-y-1 pb-1 pt-2">
+                    <p className="text-xs font-bold text-orange-400 uppercase tracking-widest">Address</p>
+                    <div className="h-px bg-white/10" />
+                </div>
+
+                {/* Street */}
+                <div>
+                    <label className={labelClass}>Street / House No.</label>
+                    <input type="text" placeholder="e.g. 123 Rizal St."
+                        value={form.address} onChange={set('address')} className={inputClass} />
+                </div>
+
+                {/* Region */}
+                <div>
+                    <label className={labelClass}>Region</label>
+                    <SelectWrapper>
+                        <select
+                            className={selectClass}
+                            value={ph.regionCode}
+                            onChange={e => {
+                                const opt = e.target.options[e.target.selectedIndex]
+                                ph.setRegion(e.target.value, opt.text)
+                            }}
+                        >
+                            <option value="" className="bg-slate-800">— Select Region —</option>
+                            {ph.regions.map(r => (
+                                <option key={r.code} value={r.code} className="bg-slate-800">{r.name}</option>
+                            ))}
+                        </select>
+                    </SelectWrapper>
+                </div>
+
+                {/* Province — hidden for NCR and no-province regions */}
+                {!ph.noProvince && (
+                    <div>
+                        <label className={labelClass}>Province</label>
+                        <SelectWrapper>
+                            <select
+                                className={selectClass}
+                                value={ph.provinceCode}
+                                disabled={!ph.regionCode || ph.loadingProvinces}
+                                onChange={e => {
+                                    const opt = e.target.options[e.target.selectedIndex]
+                                    ph.setProvince(e.target.value, opt.text)
+                                }}
+                            >
+                                <option value="" className="bg-slate-800">
+                                    {ph.loadingProvinces ? 'Loading provinces...' : '— Select Province —'}
+                                </option>
+                                {ph.provinces.map(p => (
+                                    <option key={p.code} value={p.code} className="bg-slate-800">{p.name}</option>
+                                ))}
+                            </select>
+                        </SelectWrapper>
+                    </div>
+                )}
+
+                {/* City / Municipality */}
+                <div>
+                    <label className={labelClass}>City / Municipality</label>
+                    <SelectWrapper>
+                        <select
+                            className={selectClass}
+                            value={ph.cityCode}
+                            disabled={ph.noProvince ? !ph.regionCode : (!ph.provinceCode || ph.loadingCities)}
+                            onChange={e => {
+                                const opt = e.target.options[e.target.selectedIndex]
+                                ph.setCity(e.target.value, opt.text)
+                            }}
+                        >
+                            <option value="" className="bg-slate-800">
+                                {ph.loadingCities || ph.loadingProvinces ? 'Loading...' : '— Select City / Municipality —'}
+                            </option>
+                            {ph.cities.map(c => (
+                                <option key={c.code} value={c.code} className="bg-slate-800">{c.name}</option>
+                            ))}
+                        </select>
+                    </SelectWrapper>
+                </div>
+
+                {/* Barangay */}
+                <div>
+                    <label className={labelClass}>Barangay</label>
+                    <SelectWrapper>
+                        <select
+                            className={selectClass}
+                            value={ph.address.barangay}
+                            disabled={!ph.cityCode || ph.loadingBarangays}
+                            onChange={e => ph.setBarangay(e.target.value)}
+                        >
+                            <option value="" className="bg-slate-800">
+                                {ph.loadingBarangays ? 'Loading...' : '— Select Barangay —'}
+                            </option>
+                            {ph.barangays.map(b => (
+                                <option key={b.code} value={b.name} className="bg-slate-800">{b.name}</option>
+                            ))}
+                        </select>
+                    </SelectWrapper>
+                </div>
+
+                {/* ZIP Code */}
+                <div>
+                    <label className={labelClass}>ZIP Code</label>
+                    <input type="text" placeholder="ZIP code" maxLength={10}
+                        value={form.zipCode} onChange={set('zipCode')} className={inputClass} />
+                </div>
+
+                {/* ── Account Security ── */}
+                <div className="space-y-1 pb-1 pt-2">
+                    <p className="text-xs font-bold text-orange-400 uppercase tracking-widest">Account Security</p>
+                    <div className="h-px bg-white/10" />
+                </div>
+
+                {/* Password + Confirm */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                         <label className={labelClass}>Password <span className="text-orange-400">*</span></label>
                         <div className="relative">
@@ -227,7 +369,6 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
                         <span>REGISTER</span>
                     )}
                 </button>
-
             </form>
         </motion.div>
     )

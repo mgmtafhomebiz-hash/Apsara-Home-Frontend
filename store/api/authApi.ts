@@ -12,6 +12,12 @@ interface RegisterPayload {
   username: string
   referred_by?: string
   birth_date?: string
+  address?: string
+  barangay?: string
+  city?: string
+  province?: string
+  region?: string
+  zip_code?: string
 }
 
 interface RegisterResponse {
@@ -20,6 +26,25 @@ interface RegisterResponse {
 
 interface LogoutResponse {
   message: string
+}
+
+interface AdminLoginPayload {
+  login: string;
+  password: string;
+
+}
+
+interface AdminLoginResponse {
+  message?: string;
+  token: string;
+  role?: string;
+  user_level_id?: number;
+  user?: {
+    id?: number;
+    role?: string;
+    user_level_id?: number;
+    email?: string
+  }
 }
 
 export const authApi = baseApi.injectEndpoints({
@@ -39,7 +64,15 @@ export const authApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['User'],
     }),
+
+    adminLogin: builder.mutation<AdminLoginResponse, AdminLoginPayload>({
+        query: (body) => ({
+          url: '/api/admin/auth/login',
+          method: 'POST',
+          body,
+        })
+    })
   }),
 })
 
-export const { useRegisterMutation, useLogoutMutation } = authApi
+export const { useRegisterMutation, useLogoutMutation, useAdminLoginMutation } = authApi

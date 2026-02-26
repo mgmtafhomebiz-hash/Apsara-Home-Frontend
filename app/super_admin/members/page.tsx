@@ -1,14 +1,5 @@
-'use client';
+import { redirect } from "next/navigation";
 
-import DashboardLayout from "@/components/superAdmin/DashboardLayout";
-import MembersPageMain from "@/components/superAdmin/members/MembersPageMain";
-
-const MembersPage = () => {
-  return (
-    <DashboardLayout>
-        <MembersPageMain />
-    </DashboardLayout>
-  )
+export default function LegacySuperAdminMembersPage() {
+  redirect("/admin/members");
 }
-
-export default MembersPage

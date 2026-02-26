@@ -5,6 +5,8 @@ import CredentialsProvider from "next-auth/providers/credentials";
 type TokenUser = {
     id?: string;
     accessToken?: string;
+    role?: string;
+    userLevelId?: number;
 };
 
 export const authOptions: NextAuthOptions = {
@@ -55,13 +57,62 @@ export const authOptions: NextAuthOptions = {
                         name: data.user.name,
                         email: data.user.email,
                         accessToken: data.token,
+                        role: 'customer',
                     }
                 } catch (e) {
                     console.log('[Auth] Fetch error:', e)
                     return null
                 }
             }
-        })
+        }),
+        CredentialsProvider({
+            id: 'admin-credentials',
+            name: 'Admin Credentials',
+            credentials: {
+                login: { label: 'Email or Username', type: 'text' },
+                password: { label: 'Password', type: 'password' },
+            },
+            async authorize(credentials) {
+                if (!credentials?.login || !credentials?.password) {
+                    return null
+                }
+
+                try {
+                    const url = `${process.env.LARAVEL_API_URL}/api/admin/auth/login`
+                    const res = await fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            login: credentials.login,
+                            password: credentials.password,
+                        }),
+                    })
+
+                    if (!res.ok) {
+                        const errBody = await res.text()
+                        console.log('[AdminAuth] Laravel error body:', errBody)
+                        return null
+                    }
+
+                    const data = await res.json()
+                    if (!data.user || !data.token) return null
+
+                    return {
+                        id: String(data.user.id),
+                        name: data.user.name ?? data.user.email,
+                        email: data.user.email,
+                        accessToken: data.token,
+                        role: data.user.role,
+                        userLevelId: data.user.user_level_id,
+                    }
+                } catch {
+                    return null
+                }
+            }
+        }),
     ],
 
     pages: {
@@ -79,6 +130,8 @@ export const authOptions: NextAuthOptions = {
                 const authUser = user as TokenUser;
                 token.id = authUser.id;
                 token.accessToken = authUser.accessToken;
+                token.role = authUser.role;
+                token.userLevelId = authUser.userLevelId;
             }
             return token;
         },
@@ -88,6 +141,8 @@ export const authOptions: NextAuthOptions = {
                 const authToken = token as TokenUser;
                 sessionUser.id = authToken.id;
                 sessionUser.accessToken = authToken.accessToken;
+                sessionUser.role = authToken.role;
+                sessionUser.userLevelId = authToken.userLevelId;
             }
             return session
         }

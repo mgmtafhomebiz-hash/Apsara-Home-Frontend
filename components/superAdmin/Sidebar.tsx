@@ -5,6 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
+import { signOut, useSession } from 'next-auth/react'
+import { useLogoutMutation } from '@/store/api/authApi'
 
 interface SubItem { label: string; path: string }
 interface NavItem {
@@ -23,133 +25,167 @@ interface SidebarProps {
   onToggleCollapse: () => void
 }
 
+const getInitials = (name?: string | null) => {
+  const value = (name ?? '').trim()
+  if (!value) return 'AD'
+  const parts = value.split(/\s+/).filter(Boolean)
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
+  return `${parts[0][0] ?? ''}${parts[1][0] ?? ''}`.toUpperCase()
+}
+
+const formatRole = (role?: string | null) => {
+  if (!role) return 'Administrator'
+  return role.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase())
+}
+
 const navItems: NavItem[] = [
   {
-    id: 'dashboard', label: 'Dashboard', path: '/super_admin',
+    id: 'dashboard', label: 'Dashboard', path: '/admin/dashboard',
     icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M3 4h7v7H3V4zm11 0h7v4h-7V4zm0 7h7v9h-7v-9zM3 15h7v5H3v-5z" /></svg>,
   },
   {
     id: 'members', label: 'Members', badge: 3,
     icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>,
     children: [
-      { label: 'All Members', path: '/super_admin/members' },
-      { label: 'Member Tiers / Levels', path: '/super_admin/members/tiers' },
-      { label: 'KYC / Verifications', path: '/super_admin/members/kyc' },
-      { label: 'Wallet / Credits', path: '/super_admin/members/wallet' },
-      { label: 'Commission / Referral Tree', path: '/super_admin/members/referrals' },
-      { label: 'Top Earners', path: '/super_admin/members/top-earners' },
-      { label: 'Members Activity Logs', path: '/super_admin/members/activity-logs' },
-      { label: 'Exports', path: '/super_admin/members/exports' },
+      { label: 'All Members', path: '/admin/members' },
+      { label: 'Member Tiers / Levels', path: '/admin/members/tiers' },
+      { label: 'KYC / Verifications', path: '/admin/members/kyc' },
+      { label: 'Wallet / Credits', path: '/admin/members/wallet' },
+      { label: 'Commission / Referral Tree', path: '/admin/members/referrals' },
+      { label: 'Top Earners', path: '/admin/members/top-earners' },
+      { label: 'Members Activity Logs', path: '/admin/members/activity-logs' },
+      { label: 'Exports', path: '/admin/members/exports' },
     ],
   },
   {
     id: 'orders', label: 'Orders', badge: 12,
     icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>,
     children: [
-      { label: 'All Orders', path: '/super_admin/orders' },
-      { label: 'Pending', path: '/super_admin/orders/pending' },
-      { label: 'Processing', path: '/super_admin/orders/processing' },
-      { label: 'Paid', path: '/super_admin/orders/processing' },
-      { label: 'Packed', path: '/super_admin/orders/processing' },
-      { label: 'Shipped', path: '/super_admin/orders/processing' },
-      { label: 'Out for Delivery', path: '/super_admin/orders/processing' },
-      { label: 'Delivered', path: '/super_admin/orders/processing' },
-      { label: 'Cancelled', path: '/super_admin/orders/cancelled' },
-      { label: 'Returned / Refunded', path: '/super_admin/orders/processing' },
-      { label: 'Failed Payments', path: '/super_admin/orders/processing' },
-      { label: 'Order History', path: '/super_admin/orders/completed' },
+      { label: 'All Orders', path: '/admin/orders' },
+      { label: 'Pending', path: '/admin/orders/pending' },
+      { label: 'Processing', path: '/admin/orders/processing' },
+      { label: 'Paid', path: '/admin/orders/processing' },
+      { label: 'Packed', path: '/admin/orders/processing' },
+      { label: 'Shipped', path: '/admin/orders/processing' },
+      { label: 'Out for Delivery', path: '/admin/orders/processing' },
+      { label: 'Delivered', path: '/admin/orders/processing' },
+      { label: 'Cancelled', path: '/admin/orders/cancelled' },
+      { label: 'Returned / Refunded', path: '/admin/orders/processing' },
+      { label: 'Failed Payments', path: '/admin/orders/processing' },
+      { label: 'Order History', path: '/admin/orders/completed' },
     ],
   },
   {
     id: 'encashment', label: 'Encashment',
     icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" /></svg>,
     children: [
-      { label: 'All Requests', path: '/super_admin/encashment' },
-      { label: 'Pending', path: '/super_admin/encashment/pending' },
-      { label: 'Released', path: '/super_admin/encashment/released' },
+      { label: 'All Requests', path: '/admin/encashment' },
+      { label: 'Pending', path: '/admin/encashment/pending' },
+      { label: 'Released', path: '/admin/encashment/released' },
     ],
   },
   {
     id: 'reports', label: 'Reports',
     icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>,
     children: [
-      { label: 'Sales Report', path: '/super_admin/reports/sales' },
-      { label: 'Member Report', path: '/super_admin/reports/members' },
-      { label: 'Product Report', path: '/super_admin/reports/products' },
-      { label: 'Financial Report', path: '/super_admin/reports/financial' },
+      { label: 'Sales Report', path: '/admin/reports/sales' },
+      { label: 'Member Report', path: '/admin/reports/members' },
+      { label: 'Product Report', path: '/admin/reports/products' },
+      { label: 'Financial Report', path: '/admin/reports/financial' },
     ],
   },
   {
     id: 'products', label: 'Products',
     icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>,
     children: [
-      { label: 'All Products', path: '/super_admin/products' },
-      { label: 'Categories', path: '/super_admin/products/categories' },
-      { label: 'Inventory', path: '/super_admin/products/inventory' },
-      { label: 'Reviews', path: '/super_admin/products/reviews' },
+      { label: 'All Products', path: '/admin/products' },
+      { label: 'Categories', path: '/admin/products/categories' },
+      { label: 'Inventory', path: '/admin/products/inventory' },
+      { label: 'Reviews', path: '/admin/products/reviews' },
     ],
   },
   {
     id: 'shipping', label: 'Shipping',
     icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" /></svg>,
     children: [
-      { label: 'Shipping Rates', path: '/super_admin/shipping/rates' },
-      { label: 'Couriers', path: '/super_admin/shipping/couriers' },
-      { label: 'Tracking', path: '/super_admin/shipping/tracking' },
+      { label: 'Shipping Rates', path: '/admin/shipping/rates' },
+      { label: 'Couriers', path: '/admin/shipping/couriers' },
+      { label: 'Tracking', path: '/admin/shipping/tracking' },
     ],
   },
   {
-    id: 'suppliers', label: 'Suppliers', path: '/super_admin/suppliers',
+    id: 'suppliers', label: 'Suppliers', path: '/admin/suppliers',
     icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>,
   },
   {
-    id: 'project', label: 'Project', path: '/super_admin/project',
+    id: 'project', label: 'Project', path: '/admin/project',
     icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" /></svg>,
   },
   {
     id: 'webpages', label: 'Web Pages',
     icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9" /></svg>,
     children: [
-      { label: 'Home Page', path: '/super_admin/webpages/home' },
-      { label: 'Banners', path: '/super_admin/webpages/banners' },
-      { label: 'Announcements', path: '/super_admin/webpages/announcements' },
+      { label: 'Home Page', path: '/admin/webpages/home' },
+      { label: 'Banners', path: '/admin/webpages/banners' },
+      { label: 'Announcements', path: '/admin/webpages/announcements' },
     ],
   },
   {
     id: 'expenses', label: 'Expenses',
     icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>,
     children: [
-      { label: 'All Expenses', path: '/super_admin/expenses' },
-      { label: 'Categories', path: '/super_admin/expenses/categories' },
+      { label: 'All Expenses', path: '/admin/expenses' },
+      { label: 'Categories', path: '/admin/expenses/categories' },
     ],
   },
   {
     id: 'payments', label: "Payment's",
     icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>,
     children: [
-      { label: 'Transactions', path: '/super_admin/payments' },
-      { label: 'E-Wallet', path: '/super_admin/payments/ewallet' },
-      { label: 'Gift Cards', path: '/super_admin/payments/giftcards' },
+      { label: 'Transactions', path: '/admin/payments' },
+      { label: 'E-Wallet', path: '/admin/payments/ewallet' },
+      { label: 'Gift Cards', path: '/admin/payments/giftcards' },
     ],
   },
   {
     id: 'settings', label: 'Settings',
     icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>,
     children: [
-      { label: 'General', path: '/super_admin/settings/general' },
-      { label: 'Users & Roles', path: '/super_admin/settings/users' },
-      { label: 'Security', path: '/super_admin/settings/security' },
-      { label: 'Notifications', path: '/super_admin/settings/notifications' },
+      { label: 'General', path: '/admin/settings/general' },
+      { label: 'Users & Roles', path: '/admin/settings/users' },
+      { label: 'Security', path: '/admin/settings/security' },
+      { label: 'Notifications', path: '/admin/settings/notifications' },
     ],
   },
 ]
 
 export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: SidebarProps) {
   const pathname = usePathname()
+  const { data: session } = useSession()
   const [openMenus, setOpenMenus] = useState<string[]>([])
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
+  const [logoutApi] = useLogoutMutation()
+  const displayName = session?.user?.name?.trim() || 'Admin'
+  const displayEmail = session?.user?.email?.trim() || 'admin@afhome.com'
+  const displayRole = formatRole(session?.user?.role)
+  const displayInitials = getInitials(displayName)
+  const avatarSrc = session?.user?.image
 
   const toggleMenu = (id: string) =>
     setOpenMenus(prev => prev.includes(id) ? prev.filter(m => m !== id) : [...prev, id])
+
+  const handleLogout = async () => {
+    setIsLoggingOut(true)
+    try {
+      await logoutApi().unwrap()
+    } catch (error) {
+      console.log(error)
+    }
+    if (typeof window !== 'undefined') {
+      window.localStorage.removeItem('accessToken')
+    }
+    await signOut({ callbackUrl: '/' })
+  }
 
   const isActive = (path: string) => pathname === path
   const isChildActive = (children?: SubItem[]) => children?.some(c => pathname === c.path) ?? false
@@ -189,7 +225,7 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
           {!isCollapsed && (
             <div className="flex-1 min-w-0">
               <p className="text-white font-bold text-sm leading-none whitespace-nowrap">AF Home</p>
-              <p className="text-teal-400 text-xs mt-0.5">Super Admin</p>
+              <p className="text-teal-400 text-xs mt-0.5">{displayRole}</p>
             </div>
           )}
           {!isCollapsed && (
@@ -287,21 +323,39 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
         <div className={`shrink-0 p-3 border-t border-slate-700/50`}>
           {!isCollapsed && (
             <div className="flex items-center gap-3 px-3 py-2.5 mb-2 rounded-xl bg-slate-800">
-              <div className="h-8 w-8 rounded-full bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center shrink-0">
-                <span className="text-white font-bold text-xs">SA</span>
-              </div>
+              {avatarSrc ? (
+                <Image
+                  src={avatarSrc}
+                  alt={displayName}
+                  width={32}
+                  height={32}
+                  className="h-8 w-8 rounded-full object-cover shrink-0"
+                />
+              ) : (
+                <div className="h-8 w-8 rounded-full bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center shrink-0">
+                  <span className="text-white font-bold text-xs">{displayInitials}</span>
+                </div>
+              )}
               <div className="flex-1 min-w-0">
-                <p className="text-white text-xs font-semibold truncate">Super Admin</p>
-                <p className="text-slate-400 text-xs truncate">admin@afhome.com</p>
+                <p className="text-white text-xs font-semibold truncate">{displayName}</p>
+                <p className="text-slate-400 text-xs truncate">{displayEmail}</p>
               </div>
             </div>
           )}
-          <button className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-all duration-200 w-full ${isCollapsed ? 'justify-center' : ''}`}>
-            <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
-            {!isCollapsed && <span className="font-medium">Logout</span>}
+          <button
+            onClick={handleLogout}
+            disabled={isLoggingOut}
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-all duration-200 w-full disabled:opacity-60 ${isCollapsed ? 'justify-center' : ''}`}
+          >
+            {isLoggingOut
+              ? <svg className="w-5 h-5 shrink-0 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+              : <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+            }
+            {!isCollapsed && <span className="font-medium">{isLoggingOut ? 'Logging out...' : 'Logout'}</span>}
           </button>
         </div>
       </aside>
     </>
   )
 }
+
