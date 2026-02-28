@@ -40,6 +40,7 @@ const ProductCard = ({ name, price, originalPrice, image, badge }: ProductCardPr
                         src={image}
                         alt={name}
                         fill
+                        unoptimized
                         className='object-cover transition-transform duration-700 group-hover:scale-110'
                     />
 

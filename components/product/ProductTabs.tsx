@@ -73,17 +73,23 @@ const ProductTabs = ({ product, defaultTab = 'description', onTabChange }: Produ
                 >
                     {activeTab === 'description' && (
                         <div className="max-w-2xl space-y-4 text-gray-600 text-sm leading-relaxed">
-                            <p>
-                                Experience the perfect blend of comfort and style with the{' '}
-                                <strong className="text-slate-800">{product.name}</strong>. Crafted with
-                                premium materials and built to last, this piece is designed to elevate any
-                                space in your home.
-                            </p>
-                            <p>
-                                Whether you&apos;re furnishing your living room, bedroom, or dining area,
-                                this piece fits seamlessly into modern, Scandinavian, and contemporary
-                                design styles.
-                            </p>
+                            {product.description ? (
+                                <p>{product.description}</p>
+                            ) : (
+                                <>
+                                    <p>
+                                        Experience the perfect blend of comfort and style with the{' '}
+                                        <strong className="text-slate-800">{product.name}</strong>. Crafted with
+                                        premium materials and built to last, this piece is designed to elevate any
+                                        space in your home.
+                                    </p>
+                                    <p>
+                                        Whether you&apos;re furnishing your living room, bedroom, or dining area,
+                                        this piece fits seamlessly into modern, Scandinavian, and contemporary
+                                        design styles.
+                                    </p>
+                                </>
+                            )}
                             <ul className="space-y-2.5 mt-4">
                                 {[
                                     'Premium quality materials for long-lasting durability',

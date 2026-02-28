@@ -205,7 +205,7 @@ export default function CategoriesPageMain() {
   const skip = authStatus !== 'authenticated' || !hasToken
 
   const { data, isLoading, isFetching, isError } = useGetCategoriesQuery(
-    { search: debouncedSearch || undefined },
+    { search: debouncedSearch || undefined, page: 1, per_page: 500 },
     { skip },
   )
 
@@ -239,11 +239,17 @@ export default function CategoriesPageMain() {
     if (!someSelected) return
     setIsBulkDeleting(true)
     const ids = Array.from(selectedIds)
-    for (const id of ids) {
-      setDeletingIds(prev => new Set(prev).add(id))
-      try { await deleteCategory(id).unwrap() } catch { /* silent */ }
-      finally { setDeletingIds(prev => { const n = new Set(prev); n.delete(id); return n }) }
-    }
+    setDeletingIds(prev => {
+      const next = new Set(prev)
+      ids.forEach((id) => next.add(id))
+      return next
+    })
+    await Promise.allSettled(ids.map((id) => deleteCategory(id).unwrap()))
+    setDeletingIds(prev => {
+      const next = new Set(prev)
+      ids.forEach((id) => next.delete(id))
+      return next
+    })
     setSelectedIds(new Set())
     setIsBulkDeleting(false)
   }

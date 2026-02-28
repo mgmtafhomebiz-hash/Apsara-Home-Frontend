@@ -14,6 +14,12 @@ export interface CategoriesResponse {
   total: number
 }
 
+export interface GetCategoriesParams {
+  search?: string
+  page?: number
+  per_page?: number
+}
+
 export interface CreateCategoryPayload {
   cat_name: string
   cat_description?: string
@@ -23,11 +29,15 @@ export interface CreateCategoryPayload {
 
 export const categoriesApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    getCategories: builder.query<CategoriesResponse, { search?: string } | void>({
+    getCategories: builder.query<CategoriesResponse, GetCategoriesParams | void>({
       query: (params) => ({
         url: '/api/admin/categories',
         method: 'GET',
-        params: { q: params?.search },
+        params: {
+          q: params?.search,
+          page: params?.page,
+          per_page: params?.per_page,
+        },
       }),
       providesTags: ['Categories'],
     }),

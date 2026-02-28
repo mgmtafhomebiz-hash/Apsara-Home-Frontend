@@ -1,15 +1,19 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { useSession } from 'next-auth/react'
-import { Product, useGetProductsQuery, useDeleteProductMutation } from '@/store/api/productsApi'
+import { Product, useGetProductsQuery, useDeleteProductMutation, ProductsResponse } from '@/store/api/productsApi'
 import ProductsToolbar from './ProductsToolbar'
 import ProductsTable from './ProductsTable'
 import AddProductModal from './AddProductModal'
 import EditProductModal from './EditProductModal'
 
-export default function ProductsPageMain() {
+interface ProductsPageMainProps {
+  initialData?: ProductsResponse | null
+}
+
+export default function ProductsPageMain({ initialData = null }: ProductsPageMainProps) {
   const { data: session, status: authStatus } = useSession()
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
@@ -17,7 +21,8 @@ export default function ProductsPageMain() {
   const [page, setPage] = useState(1)
   const [showAddModal, setShowAddModal] = useState(false)
   const [editProduct, setEditProduct] = useState<Product | null>(null)
-  const [deletingId, setDeletingId] = useState<number | null>(null)
+  const [deletingIds, setDeletingIds] = useState<number[]>([])
+  const [selectedIds, setSelectedIds] = useState<number[]>([])
   const perPage = 25
 
   useEffect(() => {
@@ -35,26 +40,59 @@ export default function ProductsPageMain() {
 
   const [deleteProduct] = useDeleteProductMutation()
 
-  const products = data?.products ?? []
-  const meta = data?.meta
+  const products = useMemo(() => data?.products ?? initialData?.products ?? [], [data?.products, initialData?.products])
+  const meta = useMemo(() => data?.meta ?? initialData?.meta, [data?.meta, initialData?.meta])
 
   const handleSearch = (v: string) => { setSearch(v); setPage(1) }
   const handleStatus = (v: string) => { setStatus(v); setPage(1) }
 
+  useEffect(() => {
+    const rowIds = new Set(products.map((p) => p.id))
+    setSelectedIds((prev) => prev.filter((id) => rowIds.has(id)))
+  }, [products])
+
   const handleDelete = async (id: number) => {
-    setDeletingId(id)
+    setDeletingIds((prev) => [...prev, id])
     try {
       await deleteProduct(id).unwrap()
+      setSelectedIds((prev) => prev.filter((item) => item !== id))
     } catch {
-      // error handled silently — table will not change
+      // fail silently
     } finally {
-      setDeletingId(null)
+      setDeletingIds((prev) => prev.filter((item) => item !== id))
+    }
+  }
+
+  const handleToggleSelect = (id: number) => {
+    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
+  }
+
+  const handleToggleSelectAll = () => {
+    const currentPageIds = products.map((p) => p.id)
+    const allInPageSelected = currentPageIds.length > 0 && currentPageIds.every((id) => selectedIds.includes(id))
+    if (allInPageSelected) {
+      setSelectedIds((prev) => prev.filter((id) => !currentPageIds.includes(id)))
+    } else {
+      setSelectedIds((prev) => Array.from(new Set([...prev, ...currentPageIds])))
+    }
+  }
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.length === 0) return
+    const idsToDelete = [...selectedIds]
+    setDeletingIds((prev) => Array.from(new Set([...prev, ...idsToDelete])))
+    try {
+      await Promise.all(idsToDelete.map((id) => deleteProduct(id).unwrap()))
+      setSelectedIds([])
+    } catch {
+      // fail silently
+    } finally {
+      setDeletingIds((prev) => prev.filter((id) => !idsToDelete.includes(id)))
     }
   }
 
   return (
     <div className="space-y-5">
-      {/* Header */}
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
         className="flex items-start justify-between gap-4">
         <div>
@@ -70,21 +108,19 @@ export default function ProductsPageMain() {
         </button>
       </motion.div>
 
-      {/* Toolbar */}
       <ProductsToolbar
         search={search} onSearch={handleSearch}
         status={status} onStatus={handleStatus}
         resultCount={meta?.total ?? products.length}
       />
 
-      {/* Content */}
       {authStatus === 'loading' ? (
         <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">Loading your session...</div>
       ) : authStatus === 'unauthenticated' ? (
         <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">Please sign in first to load products.</div>
       ) : isError ? (
         <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">Failed to load products. Please try again.</div>
-      ) : isLoading && !data ? (
+      ) : isLoading && !data && !initialData ? (
         <div className="space-y-4 animate-pulse">
           <div className="rounded-2xl border border-slate-100 bg-white p-4">
             <div className="grid grid-cols-9 gap-3 mb-3">
@@ -106,6 +142,20 @@ export default function ProductsPageMain() {
               <div className="h-full w-1/3 animate-pulse rounded-full bg-teal-500"/>
             </div>
           )}
+          {selectedIds.length > 0 && (
+            <div className="flex items-center justify-between rounded-xl border border-red-200 bg-red-50 px-4 py-2.5">
+              <p className="text-sm text-red-700">
+                <span className="font-semibold">{selectedIds.length}</span> selected
+              </p>
+              <button
+                onClick={handleBulkDelete}
+                disabled={deletingIds.length > 0}
+                className="inline-flex items-center gap-2 rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700 disabled:opacity-60"
+              >
+                {deletingIds.length > 0 ? 'Deleting...' : 'Delete Selected'}
+              </button>
+            </div>
+          )}
           <ProductsTable
             rows={products}
             currentPage={meta?.current_page ?? 1}
@@ -116,7 +166,10 @@ export default function ProductsPageMain() {
             onPageChange={setPage}
             onEdit={setEditProduct}
             onDelete={handleDelete}
-            isDeleting={deletingId}
+            isDeletingIds={deletingIds}
+            selectedIds={selectedIds}
+            onToggleSelect={handleToggleSelect}
+            onToggleSelectAll={handleToggleSelectAll}
           />
         </div>
       )}

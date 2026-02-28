@@ -14,7 +14,10 @@ interface ProductsTableProps {
   onPageChange: (page: number) => void
   onEdit: (product: Product) => void
   onDelete: (id: number) => void
-  isDeleting?: number | null
+  isDeletingIds?: number[]
+  selectedIds: number[]
+  onToggleSelect: (id: number) => void
+  onToggleSelectAll: () => void
 }
 
 const statusBadge = (status: number) =>
@@ -27,9 +30,11 @@ const formatPrice = (v: number) =>
 
 export default function ProductsTable({
   rows, currentPage, totalPages, totalRecords, from, to,
-  onPageChange, onEdit, onDelete, isDeleting,
+  onPageChange, onEdit, onDelete, isDeletingIds = [], selectedIds, onToggleSelect, onToggleSelectAll,
 }: ProductsTableProps) {
   const [confirmId, setConfirmId] = useState<number | null>(null)
+  const allSelected = rows.length > 0 && rows.every((row) => selectedIds.includes(row.id))
+  const isDeleting = (id: number) => isDeletingIds.includes(id)
 
   const handleDeleteClick = (id: number) => {
     if (confirmId === id) {
@@ -46,6 +51,15 @@ export default function ProductsTable({
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-slate-100 bg-slate-50">
+              <th className="text-left px-3 py-3 w-10">
+                <input
+                  type="checkbox"
+                  checked={allSelected}
+                  onChange={onToggleSelectAll}
+                  className="h-4 w-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+                  aria-label="Select all products in current page"
+                />
+              </th>
               <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide w-12">Img</th>
               <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Product Name</th>
               <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">SKU</th>
@@ -60,7 +74,7 @@ export default function ProductsTable({
           <tbody className="divide-y divide-slate-50">
             {rows.length === 0 ? (
               <tr>
-                <td colSpan={9} className="text-center py-16 text-slate-400 text-sm">
+                <td colSpan={10} className="text-center py-16 text-slate-400 text-sm">
                   No products found.
                 </td>
               </tr>
@@ -71,6 +85,15 @@ export default function ProductsTable({
                   className="hover:bg-slate-50/60 transition-colors group"
                   onClick={() => confirmId === p.id && setConfirmId(null)}
                 >
+                  <td className="px-3 py-2" onClick={(e) => e.stopPropagation()}>
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.includes(p.id)}
+                      onChange={() => onToggleSelect(p.id)}
+                      className="h-4 w-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+                      aria-label={`Select product ${p.name}`}
+                    />
+                  </td>
                   {/* Image */}
                   <td className="px-3 py-2">
                     <div className="relative h-10 w-10 rounded-lg overflow-hidden bg-slate-100 border border-slate-200 shrink-0">
@@ -139,10 +162,10 @@ export default function ProductsTable({
                       {confirmId === p.id ? (
                         <button
                           onClick={(e) => { e.stopPropagation(); handleDeleteClick(p.id) }}
-                          disabled={isDeleting === p.id}
+                          disabled={isDeleting(p.id)}
                           className="flex items-center gap-1 px-2 py-1 rounded-lg bg-red-500 hover:bg-red-600 text-white text-xs font-semibold transition-colors disabled:opacity-60"
                         >
-                          {isDeleting === p.id ? (
+                          {isDeleting(p.id) ? (
                             <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
                               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
                               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>

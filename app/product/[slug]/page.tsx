@@ -1,78 +1,308 @@
-'use client';
-
-import { use, useRef } from 'react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { getServerSession } from 'next-auth';
 import TopBar from '@/components/layout/TopBar';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
-import ProductImageGallery from '@/components/product/ProductImageGallery';
-import ProductInfo from '@/components/product/ProductInfo';
+import ProductPageClient from '@/components/product/ProductPageClient';
 import ProductTabs from '@/components/product/ProductTabs';
-import { categoryProducts, categoryMeta, getProductBySlug } from '@/libs/CategoryData';
+import { categoryProducts, categoryMeta, getProductBySlug, type CategoryProduct } from '@/libs/CategoryData';
 import RelatedProducts from '@/components/product/RelatedProduct';
 import StickyAddToCart from '@/components/product/StickyAddToCart';
 import ProductQA from '@/components/product/ProductQA';
 import CompleteTheLook from '@/components/product/CompleteTheLook';
+import { authOptions } from '@/libs/auth';
+import type { Category } from '@/store/api/categoriesApi';
+import type { Product } from '@/store/api/productsApi';
+
+type LooseRecord = Record<string, unknown>;
+const toLooseRecord = (value: unknown): LooseRecord => value as LooseRecord;
+
+interface ApiCategoriesResponse {
+  categories?: Category[];
+  data?: Category[];
+}
+
+interface ApiProductsResponse {
+  products?: Product[];
+  data?: Product[];
+}
+
+interface ProductPageData {
+  product: CategoryProduct;
+  categorySlug: string;
+  categoryLabel: string;
+  relatedProducts: CategoryProduct[];
+}
 
 const ChevronRight = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6" /></svg>
+  <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+    <polyline points="9 18 15 12 9 6" />
+  </svg>
 );
 
-export default function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
-    const { slug } = use(params);
-    const tabsRef = useRef<HTMLDivElement>(null);
+const slugify = (value: string) => value.toLowerCase().trim().replace(/\s+/g, '-');
 
-    const result = getProductBySlug(slug);
-    if (!result) return notFound();
+const normalizeCategorySlug = (rawUrl: string | null | undefined, fallbackName: string) => {
+  const source = (rawUrl ?? '').trim();
+  if (!source || source === '0') return slugify(fallbackName);
+  const withoutDomain = source.replace(/^https?:\/\/[^/]+/i, '');
+  const cleaned = withoutDomain.replace(/^\/+/, '').replace(/^category\//i, '').replace(/\/+$/, '');
+  return cleaned || slugify(fallbackName);
+};
 
-    const { product, category } = result;
-    const relatedProducts = categoryProducts[category]
-        .filter(p => p.name.toLowerCase().replace(/\s+/g, '-') !== slug)
-        .slice(0, 4);
+const resolveImageUrl = (rawImage: string | null | undefined, apiUrl?: string) => {
+  if (!rawImage) return '/Images/HeroSection/chairs_stools.jpg';
+  if (rawImage.startsWith('http://') || rawImage.startsWith('https://')) return rawImage;
+  if (rawImage.startsWith('/')) return rawImage;
+  if (!apiUrl) return `/${rawImage}`;
+  return `${apiUrl.replace(/\/$/, '')}/${rawImage.replace(/^\/+/, '')}`;
+};
 
-    const scrollToReviews = () => {
-        tabsRef.current?.scrollIntoView({ behavior: 'smooth' });
+const asArray = <T,>(value: unknown): T[] => (Array.isArray(value) ? (value as T[]) : []);
+
+const toNumber = (value: unknown): number => {
+  if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
+  if (typeof value === 'string') {
+    const normalized = value.replace(/[^0-9.-]/g, '');
+    const parsed = Number(normalized);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+  const parsed = Number(value ?? 0);
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const toStringArray = (value: unknown): string[] => {
+  if (Array.isArray(value)) {
+    return value.filter((item): item is string => typeof item === 'string' && item.trim().length > 0);
+  }
+
+  if (typeof value === 'string' && value.trim().length > 0) {
+    try {
+      const parsed = JSON.parse(value) as unknown;
+      if (Array.isArray(parsed)) {
+        return parsed.filter((item): item is string => typeof item === 'string' && item.trim().length > 0);
+      }
+    } catch {
+      // fallback below
+    }
+    return [value];
+  }
+
+  return [];
+};
+
+const extractCategories = (json: unknown): Category[] => {
+  const source = json as ApiCategoriesResponse;
+  return asArray<Category>(source.categories ?? source.data);
+};
+
+const extractProducts = (json: unknown): Product[] => {
+  const source = json as ApiProductsResponse;
+  return asArray<Product>(source.products ?? source.data);
+};
+
+const toCategoryProduct = (row: LooseRecord, apiUrl?: string): CategoryProduct => {
+  const name = String(row.name ?? row.pd_name ?? 'Untitled Product');
+  const srp = toNumber(row.priceSrp ?? row.pd_price_srp ?? 0);
+  const dp = toNumber(row.priceDp ?? row.pd_price_dp ?? 0);
+  const isOnSale = Boolean(row.salespromo ?? row.pd_salespromo);
+  const price = isOnSale && dp > 0 ? dp : srp;
+  const rawImage = (row.image ?? row.pd_image) as string | null | undefined;
+  const images = toStringArray(row.images ?? row.pd_images).map((item) => resolveImageUrl(item, apiUrl));
+
+  let badge: string | undefined;
+  if (Boolean(row.salespromo ?? row.pd_salespromo)) badge = 'SALE';
+  else if (Boolean(row.bestseller ?? row.pd_bestseller)) badge = 'BEST SELLER';
+  else if (Boolean(row.musthave ?? row.pd_musthave)) badge = 'MUST HAVE';
+
+  const rawVariants = Array.isArray(row.variants)
+    ? row.variants
+    : Array.isArray(row.pd_variants)
+      ? row.pd_variants
+      : (row.variants && typeof row.variants === 'object')
+        ? Object.values(row.variants as Record<string, unknown>)
+        : [];
+
+  const variants = rawVariants.length > 0
+    ? rawVariants.map((item) => {
+      const variant = toLooseRecord(item);
+      const statusRaw = variant.status ?? variant.pv_status;
+      return {
+        id: typeof variant.id === 'number' ? variant.id : undefined,
+        sku: typeof (variant.sku ?? variant.pv_sku) === 'string' ? String(variant.sku ?? variant.pv_sku) : undefined,
+        color: typeof (variant.color ?? variant.pv_color) === 'string' ? String(variant.color ?? variant.pv_color) : undefined,
+        colorHex: typeof (variant.colorHex ?? variant.pv_color_hex) === 'string' ? String(variant.colorHex ?? variant.pv_color_hex) : undefined,
+        size: typeof (variant.size ?? variant.pv_size) === 'string' ? String(variant.size ?? variant.pv_size) : undefined,
+        priceSrp: toNumber(variant.priceSrp ?? variant.pv_price_srp),
+        priceDp: toNumber(variant.priceDp ?? variant.pv_price_dp),
+        qty: toNumber(variant.qty ?? variant.pv_qty),
+        status: typeof statusRaw === 'number' ? statusRaw : Number(statusRaw),
+        images: toStringArray(variant.images ?? variant.pv_images).map((img) => resolveImageUrl(img, apiUrl)),
+      };
+    })
+    : undefined;
+
+  return {
+    name,
+    type: toNumber(row.type ?? row.pd_type),
+    price,
+    originalPrice: isOnSale && dp > 0 && srp > dp ? srp : undefined,
+    image: resolveImageUrl(rawImage, apiUrl),
+    images,
+    description: (row.description ?? row.pd_description) as string | undefined,
+    sku: String(row.sku ?? row.pd_parent_sku ?? '').trim() || undefined,
+    stock: Number(row.qty ?? row.pd_qty ?? 0),
+    variants,
+    badge,
+    brand: (row.brand ?? row.brand_name) as string | undefined,
+    verified: Boolean(row.verified ?? row.pd_verified),
+  };
+};
+
+const getCategorySlugFromProduct = (row: LooseRecord, categories: Category[]) => {
+  const catId = Number(
+    row.catid ??
+    row.pd_catid ??
+    row.cat_id ??
+    row.category_id ??
+    ((row.category as LooseRecord | undefined)?.id) ??
+    -1,
+  );
+  const matchedById = categories.find((c) => Number(c.id) === catId);
+  if (matchedById) return normalizeCategorySlug(matchedById.url, matchedById.name);
+
+  const categoryName =
+    (row.categoryName as string | undefined) ??
+    (row.category_name as string | undefined) ??
+    (row.cat_name as string | undefined) ??
+    ((row.category as LooseRecord | undefined)?.name as string | undefined);
+
+  if (categoryName) return slugify(categoryName);
+  return '';
+};
+
+async function getProductPageData(slug: string): Promise<ProductPageData | null> {
+  const apiUrl = process.env.LARAVEL_API_URL ?? process.env.NEXT_PUBLIC_LARAVEL_API_URL;
+  if (!apiUrl) return null;
+
+  const session = await getServerSession(authOptions);
+  const accessToken = (session?.user as { accessToken?: string } | undefined)?.accessToken;
+  const headers: HeadersInit = { Accept: 'application/json' };
+  if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
+
+  try {
+    const [categoriesRes, productsRes] = await Promise.all([
+      fetch(`${apiUrl}/api/admin/categories?page=1&per_page=500`, { method: 'GET', headers, cache: 'no-store' }),
+      fetch(`${apiUrl}/api/admin/products?page=1&per_page=500`, { method: 'GET', headers, cache: 'no-store' }),
+    ]);
+
+    if (!categoriesRes.ok || !productsRes.ok) return null;
+
+    const categories = extractCategories(await categoriesRes.json());
+    const products = extractProducts(await productsRes.json()).map((p) => toLooseRecord(p));
+
+    const target = products.find((p) => slugify(String(p.name ?? p.pd_name ?? '')) === slug);
+    if (!target) return null;
+
+    const categorySlug = getCategorySlugFromProduct(target, categories);
+    const matchedCategory = categories.find((c) => normalizeCategorySlug(c.url, c.name) === categorySlug);
+    const categoryLabel = matchedCategory?.name ?? categoryMeta[categorySlug]?.label ?? 'Category';
+
+    const relatedProducts = products
+      .filter((row) => {
+        const rowSlug = slugify(String(row.name ?? row.pd_name ?? ''));
+        if (rowSlug === slug) return false;
+        const rowCategorySlug = getCategorySlugFromProduct(row, categories);
+        return rowCategorySlug === categorySlug;
+      })
+      .slice(0, 4)
+      .map((row) => toCategoryProduct(row, apiUrl));
+
+    return {
+      product: toCategoryProduct(target, apiUrl),
+      categorySlug,
+      categoryLabel,
+      relatedProducts,
     };
+  } catch {
+    return null;
+  }
+}
+
+export default async function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+
+  const dynamicData = await getProductPageData(slug);
+
+  if (!dynamicData) {
+    const fallback = getProductBySlug(slug);
+    if (!fallback) return notFound();
+
+    const { product, category } = fallback;
+    const categoryLabel = categoryMeta[category]?.label ?? category;
+    const relatedProducts = categoryProducts[category]
+      .filter((p) => p.name.toLowerCase().replace(/\s+/g, '-') !== slug)
+      .slice(0, 4);
 
     return (
-        <div className="min-h-screen bg-white flex flex-col">
-            <StickyAddToCart product={product} />
-            <TopBar />
-            <Navbar />
-
-            <main className="flex-1">
-                <div className="bg-gray-50 border-b border-gray-100">
-                    <div className="container mx-auto px-4 py-3">
-                        <nav className="flex items-center gap-1.5 text-xs text-gray-400">
-                            <Link href="/" className="hover:text-orange-500 transition-colors font-medium">Home</Link>
-                            <ChevronRight />
-                            <Link href={`/category/${category}`} className="hover:text-orange-500 transition-colors">
-                                {categoryMeta[category]?.label}
-                            </Link>
-                            <ChevronRight />
-                            <span className="text-slate-600 font-semibold truncate max-w-48">{product.name}</span>
-                        </nav>
-                    </div>
-                </div>
-
-                <div className="container mx-auto px-4 py-10">
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
-                        <ProductImageGallery product={product} />
-                        <ProductInfo product={product} onReviewsClick={scrollToReviews} />
-                    </div>
-
-                    <div ref={tabsRef}>
-                        <ProductTabs product={product} />
-                    </div>
-
-                    <RelatedProducts products={relatedProducts} category={category} />
-                    <ProductQA />
-                    <CompleteTheLook currentCategory={category} />
-                </div>
-            </main>
-
-            <Footer />
-        </div>
+      <div className="min-h-screen bg-white flex flex-col">
+        <StickyAddToCart product={product} />
+        <TopBar />
+        <Navbar />
+        <main className="flex-1">
+          <div className="bg-gray-50 border-b border-gray-100">
+            <div className="container mx-auto px-4 py-3">
+              <nav className="flex items-center gap-1.5 text-xs text-gray-400">
+                <Link href="/" className="hover:text-orange-500 transition-colors font-medium">Home</Link>
+                <ChevronRight />
+                <Link href={`/category/${category}`} className="hover:text-orange-500 transition-colors">{categoryLabel}</Link>
+                <ChevronRight />
+                <span className="text-slate-600 font-semibold truncate max-w-48">{product.name}</span>
+              </nav>
+            </div>
+          </div>
+          <div className="container mx-auto px-4 py-10">
+            <ProductPageClient product={product} categoryLabel={categoryLabel} />
+            <ProductTabs product={product} />
+            <RelatedProducts products={relatedProducts} category={category} />
+            <ProductQA />
+            <CompleteTheLook currentCategory={category} />
+          </div>
+        </main>
+        <Footer />
+      </div>
     );
+  }
+
+  return (
+    <div className="min-h-screen bg-white flex flex-col">
+      <StickyAddToCart product={dynamicData.product} />
+      <TopBar />
+      <Navbar />
+      <main className="flex-1">
+        <div className="bg-gray-50 border-b border-gray-100">
+          <div className="container mx-auto px-4 py-3">
+            <nav className="flex items-center gap-1.5 text-xs text-gray-400">
+              <Link href="/" className="hover:text-orange-500 transition-colors font-medium">Home</Link>
+              <ChevronRight />
+              <Link href={`/category/${dynamicData.categorySlug}`} className="hover:text-orange-500 transition-colors">
+                {dynamicData.categoryLabel}
+              </Link>
+              <ChevronRight />
+              <span className="text-slate-600 font-semibold truncate max-w-48">{dynamicData.product.name}</span>
+            </nav>
+          </div>
+        </div>
+        <div className="container mx-auto px-4 py-10">
+          <ProductPageClient product={dynamicData.product} categoryLabel={dynamicData.categoryLabel} />
+          <ProductTabs product={dynamicData.product} />
+          <RelatedProducts products={dynamicData.relatedProducts} category={dynamicData.categorySlug} />
+          <ProductQA />
+          <CompleteTheLook currentCategory={dynamicData.categorySlug} />
+        </div>
+      </main>
+      <Footer />
+    </div>
+  );
 }

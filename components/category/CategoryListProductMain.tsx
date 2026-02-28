@@ -2,13 +2,12 @@
 
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
-import { use, useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import Footer from '@/components/layout/Footer';
 import TopBar from '@/components/layout/TopBar';
 import Navbar from '@/components/layout/Navbar';
 import ProductCard from '@/components/ui/ProductCard';
-import { categoryMeta, categoryProducts, CATEGORY_BRANDS } from '@/libs/CategoryData';
+import { CategoryProduct, categoryMeta, categoryProducts, CATEGORY_BRANDS } from '@/libs/CategoryData';
 
 const containerVariants = {
     hidden: {},
@@ -88,14 +87,33 @@ function FilterSection({ title, children, defaultOpen = true }: FilterSectionPro
     );
 }
 
-export default function CategoryListProductMain({ params }: { params: Promise<{ slug: string }> }) {
-    const { slug } = use(params);
+interface CategoryListProductMainProps {
+    slug: string;
+    initialCategoryLabel?: string;
+    initialProducts?: CategoryProduct[];
+}
 
+const titleFromSlug = (slug: string) =>
+    slug
+        .split('-')
+        .filter(Boolean)
+        .map((chunk) => chunk.charAt(0).toUpperCase() + chunk.slice(1))
+        .join(' ');
+
+export default function CategoryListProductMain({
+    slug,
+    initialCategoryLabel,
+    initialProducts,
+}: CategoryListProductMainProps) {
     const meta = categoryMeta[slug];
-    const products = categoryProducts[slug];
-    const hasValidCategory = Boolean(meta && products);
-    const safeProducts = useMemo(() => products ?? [], [products]);
-    const categoryLabel = meta?.label ?? '';
+    const staticProducts = categoryProducts[slug];
+    const hasDynamicProducts = Array.isArray(initialProducts);
+    const safeProducts = useMemo(
+        () => (hasDynamicProducts ? (initialProducts ?? []) : (staticProducts ?? [])),
+        [hasDynamicProducts, initialProducts, staticProducts],
+    );
+
+    const categoryLabel = initialCategoryLabel ?? meta?.label ?? titleFromSlug(slug);
 
     const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
     const [selectedPriceBracket, setSelectedPriceBracket] = useState<string | null>(null);
@@ -128,8 +146,6 @@ export default function CategoryListProductMain({ params }: { params: Promise<{ 
 
     const hasActiveFilters = selectedBrands.length > 0 || selectedPriceBracket !== null;
     const activeFilterCount = selectedBrands.length + (selectedPriceBracket ? 1 : 0);
-
-    if (!hasValidCategory) return notFound();
 
     const renderFilters = () => (
         <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
@@ -456,3 +472,4 @@ export default function CategoryListProductMain({ params }: { params: Promise<{ 
         </div>
     );
 }
+

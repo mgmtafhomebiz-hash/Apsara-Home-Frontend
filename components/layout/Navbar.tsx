@@ -7,6 +7,7 @@ import Image from 'next/image'
 import { useCart } from '@/context/CartContext'
 import { useSession, signOut } from 'next-auth/react'
 import { useLogoutMutation } from '@/store/api/authApi'
+import { useGetCategoriesQuery } from '@/store/api/categoriesApi'
 import { useRouter } from 'next/navigation'
 import { categoryProducts } from '@/libs/CategoryData'
 
@@ -93,11 +94,19 @@ const navLinks: NavLink[] = [
   { label: 'Blogs', href: '/blog' },
 ]
 
-const availableCategoryLinks: Record<string, string> = {
-  'chairs & stools': '/category/chairs-stools',
-  'dining table': '/category/dining-table',
-  sofas: '/category/sofas',
-  'tv rack': '/category/tv-rack',
+const toSlug = (value: string) => value.toLowerCase().trim().replace(/\s+/g, '-');
+
+const normalizeCategorySlug = (rawUrl: string | null | undefined, fallbackName: string) => {
+  const source = (rawUrl ?? '').trim();
+  if (!source || source === '0') return toSlug(fallbackName);
+
+  const withoutDomain = source.replace(/^https?:\/\/[^/]+/i, '');
+  const cleaned = withoutDomain
+    .replace(/^\/+/, '')
+    .replace(/^category\//i, '')
+    .replace(/\/+$/, '');
+
+  return cleaned || toSlug(fallbackName);
 };
 
 const roomIcons: Record<string, React.ReactNode> = {
@@ -130,6 +139,11 @@ export default function Navbar() {
   const { cartCount, setIsOpen } = useCart()
   const { data: session, status } = useSession();
   const [logoutApi] = useLogoutMutation();
+  const {
+    data: categoriesData,
+    isLoading: isCategoriesLoading,
+    isFetching: isCategoriesFetching,
+  } = useGetCategoriesQuery({ page: 1, per_page: 500 }, { refetchOnMountOrArgChange: true })
 
   const isLoggedIn = status === 'authenticated'
   const user = session?.user
@@ -210,6 +224,13 @@ export default function Navbar() {
   }
 
   const activeLink = navLinks.find((l) => l.label === activeDropdown)
+  const shopCategoryItems = useMemo(() => {
+    const fetched = categoriesData?.categories ?? []
+    return fetched.map((category) => {
+      const urlPart = normalizeCategorySlug(category.url, category.name)
+      return { label: category.name, href: `/category/${urlPart}` }
+    })
+  }, [categoriesData?.categories])
 
   const [isLoggingOut, setIsLoggingOut] = useState(false)
 
@@ -550,18 +571,26 @@ export default function Navbar() {
           >
             <div className="container mx-auto px-4 py-4">
               <div className="grid grid-cols-3 gap-1">
-                {activeLink.dropdown.map((item) => (
+                {(activeLink.label === 'Shop Category'
+                  ? (
+                      isCategoriesLoading || isCategoriesFetching
+                        ? [{ label: 'Loading categories...', href: '#' }]
+                        : shopCategoryItems.length > 0
+                          ? shopCategoryItems
+                          : [{ label: 'No categories found', href: '#' }]
+                    )
+                  : activeLink.dropdown.map((item) => ({
+                      label: item,
+                      href: `${activeLink.href}/${item.toLowerCase().replace(/\s+/g, '-')}`,
+                    }))
+                ).map((item) => (
                   <Link
-                    key={item}
-                    href={
-                      activeLink.label === 'Shop Category'
-                        ? (availableCategoryLinks[item.toLowerCase()] ?? '#')
-                        : `${activeLink.href}/${item.toLowerCase().replace(/\s+/g, '-')}`
-                    }
+                    key={`${activeLink.label}-${item.label}`}
+                    href={item.href}
                     className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-gray-600 hover:bg-orange-50 hover:text-orange-600 transition-all duration-200 group"
                   >
                     <span className="w-1.5 h-1.5 rounded-full bg-gray-300 group-hover:bg-orange-400 transition-colors" />
-                    {item}
+                    {item.label}
                   </Link>
                 ))}
               </div>
@@ -713,12 +742,20 @@ export default function Navbar() {
                 const isExpanded = mobileExpanded === link.label
 
                 const subItems = link.dropdown
-                  ? link.dropdown.map((item) => ({
-                    label: item,
-                    href: link.label === 'Shop Category'
-                      ? (availableCategoryLinks[item.toLowerCase()] ?? '#')
-                      : `${link.href}/${item.toLowerCase().replace(/\s+/g, '-')}`,
-                  }))
+                  ? (
+                    link.label === 'Shop Category'
+                      ? (
+                          isCategoriesLoading || isCategoriesFetching
+                            ? [{ label: 'Loading categories...', href: '#' }]
+                            : shopCategoryItems.length > 0
+                              ? shopCategoryItems
+                              : [{ label: 'No categories found', href: '#' }]
+                        )
+                      : link.dropdown.map((item) => ({
+                          label: item,
+                          href: `${link.href}/${item.toLowerCase().replace(/\s+/g, '-')}`,
+                        }))
+                  )
                   : []
 
                 return (

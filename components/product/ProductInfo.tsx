@@ -4,7 +4,7 @@ import { useCart } from "@/context/CartContext";
 import { CategoryProduct } from "@/libs/CategoryData";
 import { mockReviews } from "@/libs/MockProductData";
 import { motion } from "framer-motion"
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import StarRating from "../ui/StarRating";
 import BuyNowOptionsModal from "./BuyNowOptionsModal";
 
@@ -45,41 +45,146 @@ const HeartIcon = ({ filled }: { filled: boolean }) => (
     </svg>
 );
 
-const colors = [
-    { name: 'Beige', color: 'bg-amber-100 border-amber-300' },
-    { name: 'Gray', color: 'bg-gray-300 border-gray-400' },
-    { name: 'Navy', color: 'bg-blue-900 border-blue-800' },
-    { name: 'Green', color: 'bg-emerald-700 border-emerald-800' },
-];
-
-const productTypes = [
-    { id: 'fabric', label: 'Fabric', icon: '🧵', desc: 'Soft & breathable' },
-    { id: 'leather', label: 'Leather', icon: '🪑', desc: 'Premium & durable' },
-    { id: 'velvet', label: 'Velvet', icon: '✨', desc: 'Luxurious feel' },
-    { id: 'wood', label: 'Wood Frame', icon: '🪵', desc: 'Classic & sturdy' },
-];
-
-const CheckIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-        <polyline points="20 6 9 17 4 12" />
-    </svg>
-);
-const sizes = ['Small', 'Medium', 'Large', 'XL']
+const PRODUCT_TYPE_LABELS: Record<number, string> = {
+    0: 'Regular',
+    1: 'Variant',
+    2: 'Bundle',
+}
 
 interface ProductInfoProps {
     product: CategoryProduct
-    onReviewsClick: () => void;
+    categoryLabel?: string
+    onReviewsClick?: () => void;
+    onVariantChange?: (images: string[]) => void;
 }
 
-const ProductInfo = ({ product, onReviewsClick }: ProductInfoProps) => {
+type VariantOption = NonNullable<CategoryProduct['variants']>[number];
+type VariantGroup = {
+    key: string;
+    variants: VariantOption[];
+};
+
+const buildVariantGroupKey = (variant: VariantOption, index: number) => {
+    const sku = (variant.sku ?? '').trim();
+    if (sku) return `sku:${sku}`;
+    if (typeof variant.id === 'number') return `id:${variant.id}`;
+    return `row:${index}`;
+};
+
+const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange }: ProductInfoProps) => {
     const { addToCart } = useCart();
     const [quantity, setQuantity] = useState(1);
-    const [selectedColor, setSelectedColor] = useState('Beige');
+    const [selectedColor, setSelectedColor] = useState('');
     const [added, setAdded] = useState(false);
-    const [selectedType, setSelectedType] = useState('fabric');
-    const [selectedSize, setSelectedSize] = useState('Medium');
+    const [selectedSize, setSelectedSize] = useState('');
+    const [selectedGroupKey, setSelectedGroupKey] = useState('');
+    const [variantClicked, setVariantClicked] = useState(false);
     const [wishlisted, setWishlisted] = useState(false);
     const [buyOptionsOpen, setBuyOptionsOpen] = useState(false);
+
+    const variantOptions = useMemo(
+        () =>
+            (product.variants ?? []).filter((variant) =>
+                Boolean(
+                    variant.color ||
+                    variant.size ||
+                    variant.sku ||
+                    (variant.images && variant.images.length > 0) ||
+                    typeof variant.priceDp === 'number' ||
+                    typeof variant.priceSrp === 'number',
+                ),
+            ),
+        [product.variants],
+    );
+
+    const variantGroups = useMemo<VariantGroup[]>(() => {
+        const map = new Map<string, VariantOption[]>();
+        variantOptions.forEach((variant, index) => {
+            const key = buildVariantGroupKey(variant, index);
+            const current = map.get(key) ?? [];
+            map.set(key, [...current, variant]);
+        });
+        return Array.from(map.entries()).map(([key, variants]) => ({ key, variants }));
+    }, [variantOptions]);
+
+    const selectedGroup = useMemo(() => {
+        if (variantGroups.length === 0) return undefined;
+        return variantGroups.find((group) => group.key === selectedGroupKey) ?? variantGroups[0];
+    }, [variantGroups, selectedGroupKey]);
+
+    useEffect(() => {
+        if (variantGroups.length === 0) {
+            setSelectedGroupKey('');
+            setSelectedColor('');
+            setSelectedSize('');
+            setVariantClicked(false);
+            return;
+        }
+        const exists = variantGroups.some((group) => group.key === selectedGroupKey);
+        if (!exists) {
+            setSelectedGroupKey(variantGroups[0].key);
+            setSelectedColor('');
+            setSelectedSize('');
+        }
+    }, [variantGroups, selectedGroupKey]);
+
+    const colorOptions = useMemo(() => {
+        const map = new Map<string, string | undefined>();
+        (selectedGroup?.variants ?? []).forEach((variant) => {
+            if (!variant.color) return;
+            map.set(variant.color, variant.colorHex);
+        });
+        return Array.from(map.entries()).map(([name, hex]) => ({ name, hex }));
+    }, [selectedGroup]);
+
+    const sizeOptions = useMemo(() => {
+        return Array.from(
+            new Set((selectedGroup?.variants ?? []).map((variant) => variant.size).filter((size): size is string => Boolean(size)))
+        );
+    }, [selectedGroup]);
+
+    const effectiveSelectedColor = selectedColor || colorOptions[0]?.name || '';
+    const effectiveSelectedSize = selectedSize || sizeOptions[0] || '';
+
+    const selectedVariant = useMemo(() => {
+        const scopedVariants = selectedGroup?.variants ?? [];
+        if (scopedVariants.length === 0) return undefined;
+        return (
+            scopedVariants.find((variant) => variant.color === effectiveSelectedColor && variant.size === effectiveSelectedSize)
+            ?? scopedVariants.find((variant) => variant.color === effectiveSelectedColor)
+            ?? scopedVariants.find((variant) => variant.size === effectiveSelectedSize)
+            ?? scopedVariants[0]
+        );
+    }, [selectedGroup, effectiveSelectedColor, effectiveSelectedSize]);
+
+    const getVariantLabel = (variant: VariantOption, index: number) => {
+        if (variant.sku && variant.sku.trim().length > 0) return variant.sku;
+        const parts = [variant.color, variant.size].filter(Boolean);
+        if (parts.length > 0) return parts.join(' / ');
+        return `Variant ${index + 1}`;
+    };
+
+    useEffect(() => {
+        onVariantChange?.(selectedVariant?.images ?? []);
+    }, [selectedVariant, onVariantChange]);
+
+    const displayPrice = (selectedVariant?.priceDp ?? 0) > 0
+        ? Number(selectedVariant?.priceDp)
+        : (selectedVariant?.priceSrp ?? product.price);
+    const displayOriginalPrice = (selectedVariant?.priceDp ?? 0) > 0 && (selectedVariant?.priceSrp ?? 0) > (selectedVariant?.priceDp ?? 0)
+        ? Number(selectedVariant?.priceSrp)
+        : product.originalPrice;
+    const displayStock = typeof selectedVariant?.qty === 'number'
+        ? selectedVariant.qty
+        : product.stock;
+    const productType = Number(product.type ?? 0);
+    const isVariantProduct = productType === 1;
+    const hasRealVariants = isVariantProduct && variantOptions.length > 0;
+    const productTypeLabel = PRODUCT_TYPE_LABELS[productType] ?? 'Regular';
+    const displaySku = (selectedVariant?.sku && selectedVariant.sku.trim().length > 0)
+        ? selectedVariant.sku
+        : (product.sku && product.sku.trim().length > 0 ? product.sku : '');
+    const isInStock = typeof displayStock !== 'number' || displayStock > 0;
 
 
     const avgRating = (mockReviews.reduce((s, r) => s + r.rating, 0) / mockReviews.length).toFixed(1);
@@ -89,7 +194,7 @@ const ProductInfo = ({ product, onReviewsClick }: ProductInfoProps) => {
             addToCart({
                 id: product.name.toLocaleLowerCase().replace(/\s+/g, '-'),
                 name: product.name,
-                price: product.price,
+                price: displayPrice,
                 image: product.image,
             });
         }
@@ -128,26 +233,60 @@ const ProductInfo = ({ product, onReviewsClick }: ProductInfoProps) => {
 
             {/* TITLE */}
             <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 leading-tight">{product.name}</h1>
+            {categoryLabel && (
+                <div className="inline-flex items-center gap-2 self-start rounded-full border border-orange-200 bg-orange-50 px-3 py-1">
+                    <span className="text-[11px] font-semibold uppercase tracking-wide text-orange-600">Category</span>
+                    <span className="text-sm font-semibold text-orange-700">{categoryLabel}</span>
+                </div>
+            )}
 
             {/* RATING ROW */}
             <div className="flex items-center gap-3 flex-wrap">
                 <StarRating rating={Math.round(Number(avgRating))} size={16} />
                 <span className="text-sm font-bold text-slate-700">{avgRating}</span>
-                <button onClick={onReviewsClick} className="text-sm text-gray-400 hover:text-orange-500 transition-colors">
+                <button
+                    onClick={() => onReviewsClick?.()}
+                    className="text-sm text-gray-400 hover:text-orange-500 transition-colors"
+                >
                     ({mockReviews.length} reviews)
                 </button>
-                <span className="text-xs text-gray-300">|</span>
-                <span className="text-xs text-green-600 font-semibold">✓ Verified Product</span>
+                {product.verified !== false && (
+                    <>
+                        <span className="text-xs text-gray-300">|</span>
+                        <span className="text-xs text-green-600 font-semibold">✓ Verified Product</span>
+                    </>
+                )}
             </div>
+
+            {/* PRODUCT BADGES */}
+            {(product.musthave || product.bestseller || product.salespromo) && (
+                <div className="flex flex-wrap gap-2">
+                    {product.musthave && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-orange-50 border border-orange-200 px-2.5 py-0.5 text-xs font-semibold text-orange-600">
+                            ★ Must Have
+                        </span>
+                    )}
+                    {product.bestseller && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 border border-amber-200 px-2.5 py-0.5 text-xs font-semibold text-amber-600">
+                            🔥 Best Seller
+                        </span>
+                    )}
+                    {product.salespromo && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-rose-50 border border-rose-200 px-2.5 py-0.5 text-xs font-semibold text-rose-600">
+                            🏷 On Sale
+                        </span>
+                    )}
+                </div>
+            )}
 
             {/* PRICE */}
             <div className="flex items-baseline gap-3 flex-wrap">
-                <span className="text-3xl sm:text-4xl font-bold text-orange-500">₱{product.price.toLocaleString()}</span>
-                {product.originalPrice && (
+                <span className="text-3xl sm:text-4xl font-bold text-orange-500">₱{displayPrice.toLocaleString()}</span>
+                {displayOriginalPrice && (
                     <>
-                        <span className="text-base sm:text-lg text-gray-400 line-through">₱{product.originalPrice.toLocaleString()}</span>
+                        <span className="text-base sm:text-lg text-gray-400 line-through">₱{displayOriginalPrice.toLocaleString()}</span>
                         <span className="text-sm font-semibold text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
-                            Save ₱{(product.originalPrice - product.price).toLocaleString()}
+                            Save ₱{(displayOriginalPrice - displayPrice).toLocaleString()}
                         </span>
                     </>
                 )}
@@ -155,75 +294,131 @@ const ProductInfo = ({ product, onReviewsClick }: ProductInfoProps) => {
 
             <div className="h-px bg-gray-100" />
 
-            {/* PRODUCT TYPE SELECTOR */}
+            {/* DESCRIPTION */}
+            {product.description && (
+                <p className="text-sm text-slate-600 leading-relaxed">{product.description}</p>
+            )}
+
+            {(displaySku || typeof displayStock === 'number') && (
+                <div className="flex flex-wrap items-center gap-4 text-sm text-slate-600">
+                    {displaySku && (
+                        <span>
+                            SKU: <span className="font-semibold text-slate-800">{displaySku}</span>
+                        </span>
+                    )}
+                    {typeof displayStock === 'number' && (
+                        <span>
+                            Stock: <span className="font-semibold text-slate-800">{displayStock}</span>
+                        </span>
+                    )}
+                </div>
+            )}
+
             <div className="flex flex-col gap-2.5">
                 <span className="text-sm font-semibold text-slate-700">
-                    Type: <span className="text-orange-500">{productTypes.find(t => t.id === selectedType)?.label}</span>
+                    Type: <span className="text-orange-500">{productTypeLabel}</span>
                 </span>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                    {productTypes.map(type => (
-                        <button
-                            key={type.id}
-                            onClick={() => setSelectedType(type.id)}
-                            className={`relative flex flex-col items-center gap-1 px-2 py-2.5 rounded-xl border-2 text-center transition-all duration-200 ${selectedType === type.id
-                                    ? 'border-orange-400 bg-orange-50 shadow-sm'
-                                    : 'border-gray-200 bg-white hover:border-orange-200 hover:bg-orange-50/30'
-                                }`}
-                        >
-                            {selectedType === type.id && (
-                                <span className="absolute top-1.5 right-1.5 w-4 h-4 bg-orange-500 rounded-full flex items-center justify-center text-white">
-                                    <CheckIcon />
-                                </span>
-                            )}
-                            <span className="text-lg">{type.icon}</span>
-                            <span className={`text-xs font-semibold ${selectedType === type.id ? 'text-orange-600' : 'text-slate-700'}`}>{type.label}</span>
-                            <span className="text-[10px] text-gray-400 leading-tight">{type.desc}</span>
-                        </button>
-                    ))}
-                </div>
             </div>
 
-            <div className="flex flex-col gap-2">
-                <span className="text-sm font-semibold text-slate-700">
-                    Color: <span className="text-orange-500">{selectedColor}</span>
-                </span>
-                <div className="flex gap-2.5">
-                    {colors.map(c => (
-                        <button
-                            key={c.name}
-                            title={c.name}
-                            onClick={() => setSelectedColor(c.name)}
-                            className={`w-8 h-8 rounded-full border-2 ${c.color} hover:scale-110 transition-all duration-200 ${selectedColor === c.name ? 'ring-2 ring-orange-400 ring-offset-2' : ''}`}
-                        />
-                    ))}
-                </div>
-            </div>
+            {hasRealVariants && (
+                <div className="flex flex-col gap-2">
+                    <span className="text-sm font-semibold text-slate-700">Variants:</span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {variantGroups.map((group, index) => {
+                            const variant = group.variants[0];
+                            const label = getVariantLabel(variant, index);
+                            const variantPrice = (variant.priceDp ?? 0) > 0 ? variant.priceDp : variant.priceSrp;
+                            const variantThumb = variant.images && variant.images.length > 0 ? variant.images[0] : null;
+                            const isActive = selectedGroup?.key === group.key;
 
-            {/* SIZE SELECTOR */}
-            <div className="flex flex-col gap-2">
-                <span className="text-sm font-semibold text-slate-700">
-                    Size: <span className="text-orange-500">{selectedSize}</span>
-                </span>
-                <div className="flex gap-2 flex-wrap">
-                    {sizes.map(size => (
-                        <button
-                            key={size}
-                            onClick={() => setSelectedSize(size)}
-                            className={`px-4 py-1.5 text-sm rounded-xl border-2 font-medium transition-all duration-200 ${selectedSize === size
+                            return (
+                                <button
+                                    key={`${group.key}-${index}`}
+                                    onClick={() => {
+                                        setVariantClicked(true);
+                                        setSelectedGroupKey(group.key);
+                                        setSelectedColor('');
+                                        setSelectedSize('');
+                                    }}
+                                    className={`rounded-xl border px-3 py-2 text-left transition-colors ${isActive
+                                        ? 'border-orange-400 bg-orange-50 text-orange-600'
+                                        : 'border-gray-200 bg-white text-slate-600 hover:border-orange-200'
+                                        }`}
+                                >
+                                    <div className="flex gap-2.5">
+                                        {variantThumb ? (
+                                            <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg border border-slate-200 bg-slate-100">
+                                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                <img src={variantThumb} alt={`${label} image`} className="h-full w-full object-cover" />
+                                            </div>
+                                        ) : (
+                                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50 text-[10px] text-slate-400">
+                                                No Img
+                                            </div>
+                                        )}
+                                        <div className="min-w-0">
+                                            <p className="text-xs font-semibold">{label}</p>
+                                            <p className="mt-1 text-[11px] text-slate-500">
+                                                Size: {variant.size || '-'} · Price: {typeof variantPrice === 'number' ? `₱${variantPrice.toLocaleString()}` : '-'}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
+
+            {hasRealVariants && variantClicked && colorOptions.length > 0 && (
+                <div className="flex flex-col gap-2">
+                    <span className="text-sm font-semibold text-slate-700">
+                        Color: <span className="text-orange-500">{effectiveSelectedColor}</span>
+                    </span>
+                    <div className="flex gap-2.5">
+                        {colorOptions.map(c => (
+                            <button
+                                key={c.name}
+                                title={c.name}
+                                onClick={() => setSelectedColor(c.name)}
+                                className={`w-8 h-8 rounded-full border-2 border-white shadow-[0_0_0_1px_rgba(15,23,42,0.14)] hover:scale-110 transition-all duration-200 ${effectiveSelectedColor === c.name ? 'ring-2 ring-orange-400 ring-offset-2' : ''}`}
+                                style={{ backgroundColor: c.hex ?? '#E5E7EB' }}
+                            />
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {hasRealVariants && sizeOptions.length > 0 && (
+                <div className="flex flex-col gap-2">
+                    <span className="text-sm font-semibold text-slate-700">
+                        Size: <span className="text-orange-500">{effectiveSelectedSize}</span>
+                    </span>
+                    <div className="flex gap-2 flex-wrap">
+                        {sizeOptions.map(size => (
+                            <button
+                                key={size}
+                                onClick={() => setSelectedSize(size)}
+                                className={`px-4 py-1.5 text-sm rounded-xl border-2 font-medium transition-all duration-200 ${effectiveSelectedSize === size
                                     ? 'border-orange-400 bg-orange-50 text-orange-600'
                                     : 'border-gray-200 text-slate-600 hover:border-orange-200'
-                                }`}
-                        >
-                            {size}
-                        </button>
-                    ))}
+                                    }`}
+                            >
+                                {size}
+                            </button>
+                        ))}
+                    </div>
                 </div>
-            </div>
+            )}
 
             <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse inline-block shrink-0" />
-                <span className="text-sm font-semibold text-green-600">In Stock</span>
-                <span className="text-sm text-gray-400">— Only 8 left</span>
+                <span className={`w-2 h-2 rounded-full inline-block shrink-0 ${isInStock ? 'bg-green-500 animate-pulse' : 'bg-red-400'}`} />
+                <span className={`text-sm font-semibold ${isInStock ? 'text-green-600' : 'text-red-500'}`}>
+                    {isInStock ? 'In Stock' : 'Out of Stock'}
+                </span>
+                {isInStock && typeof displayStock === 'number' && (
+                    <span className="text-sm text-gray-400">— Only {displayStock} left</span>
+                )}
             </div>
 
             <div className="bg-gray-50 rounded-2xl p-4 space-y-2.5">
@@ -331,9 +526,9 @@ const ProductInfo = ({ product, onReviewsClick }: ProductInfoProps) => {
                 onClose={() => setBuyOptionsOpen(false)}
                 product={product}
                 quantity={quantity}
-                selectedColor={selectedColor}
-                selectedSize={selectedSize}
-                selectedType={productTypes.find(t => t.id === selectedType)?.label}
+                selectedColor={effectiveSelectedColor}
+                selectedSize={effectiveSelectedSize}
+                selectedType={productTypeLabel}
 
             />
         </motion.div>
@@ -341,3 +536,4 @@ const ProductInfo = ({ product, onReviewsClick }: ProductInfoProps) => {
 };
 
 export default ProductInfo;
+

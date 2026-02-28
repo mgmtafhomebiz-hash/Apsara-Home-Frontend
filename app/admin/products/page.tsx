@@ -1,12 +1,39 @@
-'use client'
-
 import DashboardLayout from '@/components/superAdmin/DashboardLayout'
 import ProductsPageMain from '@/components/superAdmin/products/ProductsPageMain'
+import { authOptions } from '@/libs/auth'
+import { normalizeProductsResponse, ProductsResponse } from '@/store/api/productsApi'
+import { getServerSession } from 'next-auth'
 
-export default function AdminProductsPage() {
+export const dynamic = 'force-dynamic'
+
+async function getInitialProducts(): Promise<ProductsResponse | null> {
+  const session = await getServerSession(authOptions)
+  const accessToken = (session?.user as { accessToken?: string } | undefined)?.accessToken
+
+  if (!accessToken) return null
+
+  const apiUrl = process.env.LARAVEL_API_URL ?? process.env.NEXT_PUBLIC_LARAVEL_API_URL
+  if (!apiUrl) return null
+
+  const res = await fetch(`${apiUrl}/api/admin/products?page=1&per_page=25`, {
+    method: 'GET',
+    headers: {
+      Accept: 'application/json',
+      Authorization: `Bearer ${accessToken}`,
+    },
+    cache: 'no-store',
+  })
+
+  if (!res.ok) return null
+  return normalizeProductsResponse((await res.json()) as ProductsResponse)
+}
+
+export default async function AdminProductsPage() {
+  const initialData = await getInitialProducts()
+
   return (
     <DashboardLayout>
-      <ProductsPageMain />
+      <ProductsPageMain initialData={initialData} />
     </DashboardLayout>
   )
 }

@@ -1,10 +1,32 @@
 export interface CategoryProduct {
     name: string;
+    type?: number;
     price: number;
     originalPrice?: number;
     image: string;
+    images?: string[];
+    description?: string;
+    sku?: string;
+    stock?: number;
+    variants?: Array<{
+        id?: number;
+        sku?: string;
+        color?: string;
+        colorHex?: string;
+        size?: string;
+        priceSrp?: number;
+        priceDp?: number;
+        qty?: number;
+        status?: number;
+        images?: string[];
+    }>;
     badge?: string;
     brand?: string;
+    verified?: boolean;
+    musthave?: boolean;
+    bestseller?: boolean;
+    salespromo?: boolean;
+    weight?: number;
 }
 
 export const categoryProducts: Record<string, CategoryProduct[]> = {
