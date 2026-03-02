@@ -31,7 +31,7 @@ export const categoriesApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getCategories: builder.query<CategoriesResponse, GetCategoriesParams | void>({
       query: (params) => ({
-        url: '/api/admin/categories',
+        url: '/api/categories',
         method: 'GET',
         params: {
           q: params?.search,
