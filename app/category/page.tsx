@@ -1,7 +1,5 @@
 import { redirect } from 'next/navigation';
-import { authOptions } from '@/libs/auth';
 import type { Category } from '@/store/api/categoriesApi';
-import { getServerSession } from 'next-auth';
 
 interface ApiCategoriesResponse {
   categories?: Category[];
@@ -25,16 +23,12 @@ const normalizeCategorySlug = (rawUrl: string | null | undefined, fallbackName: 
 async function getFirstCategorySlug(): Promise<string> {
   const apiUrl = process.env.LARAVEL_API_URL ?? process.env.NEXT_PUBLIC_LARAVEL_API_URL;
   if (!apiUrl) return 'chairs-stools';
-  const session = await getServerSession(authOptions);
-  const accessToken = (session?.user as { accessToken?: string } | undefined)?.accessToken;
-  const headers: HeadersInit = { Accept: 'application/json' };
-  if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
 
   try {
-    const res = await fetch(`${apiUrl}/api/admin/categories`, {
+    const res = await fetch(`${apiUrl}/api/categories`, {
       method: 'GET',
-      headers,
-      cache: 'no-store',
+      headers: { Accept: 'application/json' },
+      next: { revalidate: 300 },
     });
 
     if (!res.ok) return 'chairs-stools';

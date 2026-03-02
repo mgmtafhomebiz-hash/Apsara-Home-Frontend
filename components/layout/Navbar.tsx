@@ -143,7 +143,7 @@ export default function Navbar() {
     data: categoriesData,
     isLoading: isCategoriesLoading,
     isFetching: isCategoriesFetching,
-  } = useGetCategoriesQuery({ page: 1, per_page: 500 }, { refetchOnMountOrArgChange: true })
+  } = useGetCategoriesQuery({ page: 1, per_page: 100 })
 
   const isLoggedIn = status === 'authenticated'
   const user = session?.user

@@ -1,8 +1,6 @@
 import CategoryListProductMain from '@/components/category/CategoryListProductMain';
-import { authOptions } from '@/libs/auth';
 import type { Category } from '@/store/api/categoriesApi';
 import type { Product, ProductsResponse } from '@/store/api/productsApi';
-import { getServerSession } from 'next-auth';
 
 interface ApiCategoriesResponse {
   categories?: Category[];
@@ -155,22 +153,18 @@ const mapProductToDisplay = (product: Product | LooseRecord, apiUrl?: string): D
 async function getCategoryProducts(slug: string): Promise<{ label?: string; products?: DisplayProduct[] }> {
   const apiUrl = process.env.LARAVEL_API_URL ?? process.env.NEXT_PUBLIC_LARAVEL_API_URL;
   if (!apiUrl) return { label: titleFromSlug(slug), products: [] };
-  const session = await getServerSession(authOptions);
-  const accessToken = (session?.user as { accessToken?: string } | undefined)?.accessToken;
-  const headers: HeadersInit = { Accept: 'application/json' };
-  if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
 
   try {
     const [categoriesRes, productsRes] = await Promise.all([
-      fetch(`${apiUrl}/api/admin/categories`, {
+      fetch(`${apiUrl}/api/categories`, {
         method: 'GET',
-        headers,
-        cache: 'no-store',
+        headers: { Accept: 'application/json' },
+        next: { revalidate: 300 },
       }),
-      fetch(`${apiUrl}/api/admin/products?page=1&per_page=500`, {
+      fetch(`${apiUrl}/api/products?page=1&per_page=100&status=1`, {
         method: 'GET',
-        headers,
-        cache: 'no-store',
+        headers: { Accept: 'application/json' },
+        next: { revalidate: 120 },
       }),
     ]);
 

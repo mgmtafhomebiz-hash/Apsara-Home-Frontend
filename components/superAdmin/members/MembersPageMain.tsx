@@ -7,15 +7,16 @@ import MembersTable from "./MembersTable"
 import { useEffect, useState } from "react"
 import { MemberStatus, MemberTier } from "@/types/members/types"
 import AddMemberModal from "./AddMemberModal"
-import { MembersResponse, useGetMembersQuery, useGetMembersStatsQuery } from "@/store/api/membersApi"
+import { MembersResponse, MembersStatsResponse, useGetMembersQuery, useGetMembersStatsQuery } from "@/store/api/membersApi"
 import { useSearchParams } from "next/navigation"
 import { useSession } from "next-auth/react"
 
 interface MembersPageMainProps {
     initialData?: MembersResponse | null
+    initialStats?: MembersStatsResponse | null
 }
 
-const MembersPageMain = ({ initialData = null }: MembersPageMainProps) => {
+const MembersPageMain = ({ initialData = null, initialStats = null }: MembersPageMainProps) => {
     const { data: session, status: authStatus } = useSession()
     const searchParams = useSearchParams()
     const [search, setSearch] = useState('')
@@ -25,6 +26,7 @@ const MembersPageMain = ({ initialData = null }: MembersPageMainProps) => {
     const [showModal, setShowModal] = useState(false);
     const [page, setPage] = useState(1)
     const [stableData, setStableData] = useState<MembersResponse | null>(initialData)
+    const [stableStats, setStableStats] = useState<MembersStatsResponse | null>(initialStats)
     const perPage = 25
     const urlSearch = (searchParams.get('q') ?? '').trim()
 
@@ -43,9 +45,16 @@ const MembersPageMain = ({ initialData = null }: MembersPageMainProps) => {
 
     const hasAccessToken = Boolean(session?.user?.accessToken)
     const shouldSkipMembersQuery = authStatus !== 'authenticated' || !hasAccessToken
+    const isUsingDefaultView =
+        page === 1 &&
+        debouncedSearch === '' &&
+        status === 'all' &&
+        tier === 'all'
+
+    const shouldSkipInitialMembersRefetch = Boolean(initialData && isUsingDefaultView)
 
     const { data: statsData } = useGetMembersStatsQuery(undefined, {
-        skip: shouldSkipMembersQuery,
+        skip: shouldSkipMembersQuery || Boolean(initialStats),
     })
 
     const { data, isLoading, isFetching, isError } = useGetMembersQuery(
@@ -57,7 +66,7 @@ const MembersPageMain = ({ initialData = null }: MembersPageMainProps) => {
             tier: tier === 'all' ? undefined : tier,
         },
         {
-            skip: shouldSkipMembersQuery,
+            skip: shouldSkipMembersQuery || shouldSkipInitialMembersRefetch,
         }
     )
 
@@ -67,7 +76,14 @@ const MembersPageMain = ({ initialData = null }: MembersPageMainProps) => {
         }
     }, [data])
 
+    useEffect(() => {
+        if (statsData) {
+            setStableStats(statsData)
+        }
+    }, [statsData])
+
     const effectiveData = data ?? stableData ?? initialData ?? null
+    const effectiveStats = statsData ?? stableStats ?? initialStats ?? null
     const members = effectiveData?.members ?? []
     const meta = effectiveData?.meta
 
@@ -107,7 +123,7 @@ const MembersPageMain = ({ initialData = null }: MembersPageMainProps) => {
                 </button>
             </motion.div>
 
-            <MembersStats stats={statsData} />
+            <MembersStats stats={effectiveStats ?? undefined} />
 
             <MembersToolbar
                 search={search}
@@ -119,11 +135,11 @@ const MembersPageMain = ({ initialData = null }: MembersPageMainProps) => {
                 resultCount={meta?.total ?? members.length}
             />
 
-            {authStatus === 'loading' ? (
+            {authStatus === 'loading' && !effectiveData ? (
                 <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
                     Loading your session...
                 </div>
-            ) : authStatus === 'unauthenticated' ? (
+            ) : authStatus === 'unauthenticated' && !effectiveData ? (
                 <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
                     Please sign in first to load the members list.
                 </div>

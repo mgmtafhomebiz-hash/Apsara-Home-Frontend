@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { getServerSession } from 'next-auth';
 import TopBar from '@/components/layout/TopBar';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
@@ -11,7 +10,6 @@ import RelatedProducts from '@/components/product/RelatedProduct';
 import StickyAddToCart from '@/components/product/StickyAddToCart';
 import ProductQA from '@/components/product/ProductQA';
 import CompleteTheLook from '@/components/product/CompleteTheLook';
-import { authOptions } from '@/libs/auth';
 import type { Category } from '@/store/api/categoriesApi';
 import type { Product } from '@/store/api/productsApi';
 
@@ -186,15 +184,18 @@ async function getProductPageData(slug: string): Promise<ProductPageData | null>
   const apiUrl = process.env.LARAVEL_API_URL ?? process.env.NEXT_PUBLIC_LARAVEL_API_URL;
   if (!apiUrl) return null;
 
-  const session = await getServerSession(authOptions);
-  const accessToken = (session?.user as { accessToken?: string } | undefined)?.accessToken;
-  const headers: HeadersInit = { Accept: 'application/json' };
-  if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
-
   try {
     const [categoriesRes, productsRes] = await Promise.all([
-      fetch(`${apiUrl}/api/admin/categories?page=1&per_page=500`, { method: 'GET', headers, cache: 'no-store' }),
-      fetch(`${apiUrl}/api/admin/products?page=1&per_page=500`, { method: 'GET', headers, cache: 'no-store' }),
+      fetch(`${apiUrl}/api/categories?page=1&per_page=100`, {
+        method: 'GET',
+        headers: { Accept: 'application/json' },
+        next: { revalidate: 300 },
+      }),
+      fetch(`${apiUrl}/api/products?page=1&per_page=100&status=1`, {
+        method: 'GET',
+        headers: { Accept: 'application/json' },
+        next: { revalidate: 120 },
+      }),
     ]);
 
     if (!categoriesRes.ok || !productsRes.ok) return null;
