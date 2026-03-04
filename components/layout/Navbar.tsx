@@ -147,7 +147,6 @@ export default function Navbar() {
   const {
     data: categoriesData,
     isLoading: isCategoriesLoading,
-    isFetching: isCategoriesFetching,
   } = useGetCategoriesQuery({ page: 1, per_page: 100 })
 
   const isLoggedIn = status === 'authenticated'
@@ -259,6 +258,14 @@ export default function Navbar() {
       return { label: category.name, href: `/category/${urlPart}` }
     })
   }, [categoriesData?.categories])
+
+  const shopCategoryFallbackItems = useMemo(() => {
+    const dropdown = navLinks.find((link) => link.label === 'Shop Category')?.dropdown ?? []
+    return dropdown.map((item) => ({
+      label: item,
+      href: `/category/${toSlug(item)}`,
+    }))
+  }, [])
 
   const [isLoggingOut, setIsLoggingOut] = useState(false)
 
@@ -685,11 +692,11 @@ export default function Navbar() {
               <div className="grid grid-cols-3 gap-1">
                 {(activeLink.label === 'Shop Category'
                   ? (
-                      isCategoriesLoading || isCategoriesFetching
-                        ? [{ label: 'Loading categories...', href: '#' }]
-                        : shopCategoryItems.length > 0
-                          ? shopCategoryItems
-                          : [{ label: 'No categories found', href: '#' }]
+                      shopCategoryItems.length > 0
+                        ? shopCategoryItems
+                        : (isCategoriesLoading
+                            ? shopCategoryFallbackItems
+                            : [{ label: 'No categories found', href: '#' }])
                     )
                   : activeLink.dropdown.map((item) => ({
                       label: item,
@@ -857,11 +864,11 @@ export default function Navbar() {
                   ? (
                     link.label === 'Shop Category'
                       ? (
-                          isCategoriesLoading || isCategoriesFetching
-                            ? [{ label: 'Loading categories...', href: '#' }]
-                            : shopCategoryItems.length > 0
-                              ? shopCategoryItems
-                              : [{ label: 'No categories found', href: '#' }]
+                          shopCategoryItems.length > 0
+                            ? shopCategoryItems
+                            : (isCategoriesLoading
+                                ? shopCategoryFallbackItems
+                                : [{ label: 'No categories found', href: '#' }])
                         )
                       : link.dropdown.map((item) => ({
                           label: item,

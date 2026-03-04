@@ -15,6 +15,19 @@ const EyeIcon = ({ open }: { open: boolean }) => open
 const inputClass = "w-full px-4 py-3 bg-white/15 border border-white/25 rounded-xl text-sm text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-orange-400/60 focus:bg-white/20 transition-all"
 const selectClass = "w-full px-4 py-3 bg-white/15 border border-white/25 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-orange-400/60 focus:bg-white/20 transition-all appearance-none cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
 const labelClass = "block text-xs font-semibold text-white/80 mb-1.5"
+const blockedWords = ['fuck', 'shit', 'bitch', 'asshole', 'puta', 'gago', 'ulol', 'tanga', 'tarantado', 'nigger', 'nigga', 'faggot', 'porn', 'sex']
+
+const containsBlockedWord = (value: string) => {
+    const lower = value.toLowerCase()
+    const normalized = lower.replace(/[^a-z0-9]+/g, ' ')
+    const compact = lower.replace(/[^a-z0-9]+/g, '')
+
+    return blockedWords.some((word) => {
+        const needle = word.toLowerCase()
+        const needleCompact = needle.replace(/[^a-z0-9]+/g, '')
+        return normalized.includes(needle) || (needleCompact.length > 0 && compact.includes(needleCompact))
+    })
+}
 
 const SelectWrapper = ({ children }: { children: React.ReactNode }) => (
     <div className="relative">
@@ -70,6 +83,13 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
         if (!form.agreeTerms) return setError('You must agree to the Terms & Conditions.')
         if (form.password !== form.confirmPassword) return setError('Passwords do not match.')
         if (form.password.length < 8) return setError('Password must be at least 8 characters.')
+        if (!/[A-Z]/.test(form.password)) return setError('Password must include at least one uppercase letter.')
+        if (!/[a-z]/.test(form.password)) return setError('Password must include at least one lowercase letter.')
+        if (!/[0-9]/.test(form.password)) return setError('Password must include at least one number.')
+        if (!/[^A-Za-z0-9]/.test(form.password)) return setError('Password must include at least one special character.')
+        if (containsBlockedWord(form.firstName) || containsBlockedWord(form.lastName) || containsBlockedWord(form.username) || containsBlockedWord(form.middleName)) {
+            return setError('Account details contain prohibited words. Please use appropriate name/username.')
+        }
 
         const result = await register({
             name: `${form.firstName} ${form.lastName}`,
@@ -394,6 +414,9 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
                         </div>
                     </div>
                 </div>
+                <p className="text-[11px] text-white/60 -mt-1">
+                    Use at least 8 characters with uppercase, lowercase, number, and special character.
+                </p>
 
                 {/* Sign In link */}
                 <p className="text-xs text-white/60">
