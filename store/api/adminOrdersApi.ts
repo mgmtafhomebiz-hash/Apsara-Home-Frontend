@@ -90,7 +90,7 @@ export const adminOrdersApi = baseApi.injectEndpoints({
         method: 'PATCH',
         body: { notes },
       }),
-      invalidatesTags: ['Orders'],
+      invalidatesTags: ['Orders', 'AdminNotifications'],
     }),
     rejectAdminOrder: builder.mutation<{ message: string }, { id: number; notes?: string }>({
       query: ({ id, notes }) => ({
@@ -98,7 +98,7 @@ export const adminOrdersApi = baseApi.injectEndpoints({
         method: 'PATCH',
         body: { notes },
       }),
-      invalidatesTags: ['Orders'],
+      invalidatesTags: ['Orders', 'AdminNotifications'],
     }),
     updateAdminOrderStatus: builder.mutation<{ message: string }, { id: number; status: AdminFulfillmentStatus }>({
       query: ({ id, status }) => ({
@@ -106,7 +106,7 @@ export const adminOrdersApi = baseApi.injectEndpoints({
         method: 'PATCH',
         body: { status },
       }),
-      invalidatesTags: ['Orders'],
+      invalidatesTags: ['Orders', 'AdminNotifications'],
     }),
   }),
 })

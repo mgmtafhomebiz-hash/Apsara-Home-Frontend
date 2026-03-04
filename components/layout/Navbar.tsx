@@ -9,6 +9,7 @@ import { useSession, signOut } from 'next-auth/react'
 import { useLogoutMutation } from '@/store/api/authApi'
 import { useGetCategoriesQuery } from '@/store/api/categoriesApi'
 import { useMeQuery } from '@/store/api/userApi'
+import { useGetCustomerNotificationsQuery } from '@/store/api/customerNotificationsApi'
 import { useRouter } from 'next/navigation'
 import { categoryProducts } from '@/libs/CategoryData'
 
@@ -132,6 +133,8 @@ export default function Navbar() {
   const [mobileExpanded, setMobileExpanded] = useState<string | null>(null)
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null)
   const [profileMenuOpen, setProfileMenuOpen] = useState(false)
+  const [notifMenuOpen, setNotifMenuOpen] = useState(false)
+  const [notifMuted, setNotifMuted] = useState(false)
   const [desktopSearchQuery, setDesktopSearchQuery] = useState('')
   const [mobileTopSearchQuery, setMobileTopSearchQuery] = useState('')
   const [activeSearchField, setActiveSearchField] = useState<'desktop' | 'mobile' | null>(null)
@@ -150,9 +153,21 @@ export default function Navbar() {
   const isLoggedIn = status === 'authenticated'
   const user = session?.user
   const avatarUrl = meData?.avatar_url || user?.image || null
+  const {
+    data: notificationsData,
+    isLoading: isNotificationsLoading,
+    isError: isNotificationsError,
+    refetch: refetchNotifications,
+  } = useGetCustomerNotificationsQuery(undefined, {
+    skip: !isLoggedIn,
+    pollingInterval: 30000,
+    refetchOnFocus: true,
+  })
+  const unreadNotificationCount = notifMuted ? 0 : (notificationsData?.unread_count ?? 0)
 
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const profileMenuRef = useRef<HTMLDivElement | null>(null)
+  const notifMenuRef = useRef<HTMLDivElement | null>(null)
   const desktopSearchRef = useRef<HTMLFormElement | null>(null)
   const mobileTopSearchRef = useRef<HTMLFormElement | null>(null)
 
@@ -189,20 +204,24 @@ export default function Navbar() {
 
   useEffect(() => {
     const onPointerDown = (event: MouseEvent) => {
-      if (!profileMenuRef.current) return
       const target = event.target as Node
-      const clickedOutsideProfile = !profileMenuRef.current.contains(target)
+      const clickedOutsideProfile = !profileMenuRef.current || !profileMenuRef.current.contains(target)
+      const clickedOutsideNotifications = !notifMenuRef.current || !notifMenuRef.current.contains(target)
       const clickedOutsideDesktopSearch = !desktopSearchRef.current || !desktopSearchRef.current.contains(target)
       const clickedOutsideMobileSearch = !mobileTopSearchRef.current || !mobileTopSearchRef.current.contains(target)
 
       if (clickedOutsideProfile) {
         setProfileMenuOpen(false)
       }
+      if (clickedOutsideNotifications) {
+        setNotifMenuOpen(false)
+      }
       if (clickedOutsideDesktopSearch && clickedOutsideMobileSearch) setActiveSearchField(null)
     }
 
     const onEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') setProfileMenuOpen(false)
+      if (event.key === 'Escape') setNotifMenuOpen(false)
     }
 
     document.addEventListener('mousedown', onPointerDown)
@@ -213,6 +232,12 @@ export default function Navbar() {
       document.removeEventListener('keydown', onEscape)
     }
   }, [])
+
+  useEffect(() => {
+    if ((notificationsData?.unread_count ?? 0) > 0) {
+      setNotifMuted(false)
+    }
+  }, [notificationsData?.generated_at, notificationsData?.unread_count])
 
   const open = (label: string) => {
     if (closeTimer.current) clearTimeout(closeTimer.current)
@@ -352,6 +377,79 @@ export default function Navbar() {
                     <path d="m12 21-1.45-1.32C5.4 15.36 2 12.28 2 8.5A4.5 4.5 0 0 1 6.5 4 5 5 0 0 1 12 6.09 5 5 0 0 1 17.5 4 4.5 4.5 0 0 1 22 8.5c0 3.78-3.4 6.86-8.55 11.18z" />
                   </svg>
                 </Link>
+                <div className="relative" ref={notifMenuRef}>
+                  <button
+                    onClick={() => {
+                      setNotifMenuOpen((prev) => !prev)
+                      setProfileMenuOpen(false)
+                      if (!notifMenuOpen) {
+                        refetchNotifications()
+                      }
+                    }}
+                    className="relative p-2 rounded-xl hover:bg-gray-100 transition-colors"
+                    title="Notifications"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M15 17h5l-1.4-1.4a2 2 0 0 1-.6-1.4V11a6 6 0 1 0-12 0v3.2a2 2 0 0 1-.6 1.4L4 17h5" />
+                      <path d="M9 17a3 3 0 0 0 6 0" />
+                    </svg>
+                    {unreadNotificationCount > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-[10px] rounded-full min-w-[16px] h-4 px-1 flex items-center justify-center">
+                        {unreadNotificationCount > 99 ? '99+' : unreadNotificationCount}
+                      </span>
+                    )}
+                  </button>
+
+                  <AnimatePresence>
+                    {notifMenuOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 6 }}
+                        transition={{ duration: 0.15 }}
+                        className="absolute right-0 mt-2 w-[320px] rounded-xl border border-gray-100 bg-white shadow-lg shadow-black/10 overflow-hidden z-50"
+                      >
+                        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+                          <p className="text-sm font-semibold text-gray-800">Notifications</p>
+                          <button
+                            onClick={() => setNotifMuted(true)}
+                            className="text-xs font-medium text-orange-600 hover:underline"
+                          >
+                            Mark all read
+                          </button>
+                        </div>
+
+                        {isNotificationsLoading ? (
+                          <div className="px-4 py-3 text-sm text-gray-500">Loading notifications...</div>
+                        ) : isNotificationsError ? (
+                          <div className="px-4 py-3 text-sm text-red-600">Failed to load notifications.</div>
+                        ) : notificationsData?.items?.length ? (
+                          notificationsData.items.map((item) => (
+                            <Link
+                              key={item.id}
+                              href={item.href}
+                              onClick={() => setNotifMenuOpen(false)}
+                              className={`flex items-start gap-3 px-4 py-3 hover:bg-orange-50 transition-colors ${item.count > 0 ? 'bg-orange-50/40' : ''}`}
+                            >
+                              <span className={`mt-1 h-2 w-2 rounded-full shrink-0 ${item.count > 0 ? 'bg-orange-500' : 'bg-gray-300'}`} />
+                              <div className="min-w-0 flex-1">
+                                <p className="text-sm font-medium text-gray-800">{item.title}</p>
+                                <p className="text-xs text-gray-500 mt-0.5">{item.description}</p>
+                              </div>
+                              <span className="text-xs font-semibold text-gray-500">{item.count}</span>
+                            </Link>
+                          ))
+                        ) : (
+                          <div className="px-4 py-3 text-sm text-gray-500">No notifications right now.</div>
+                        )}
+
+                        <div className="px-4 py-2 border-t border-gray-100">
+                          <p className="text-[11px] text-gray-400">Auto-refresh every 30 seconds</p>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
                 <button
                   onClick={() => setIsOpen(true)}
                   className="relative p-2 rounded-xl hover:bg-gray-100 transition-colors"
@@ -372,7 +470,10 @@ export default function Navbar() {
 
                 <div className="relative hidden md:block" ref={profileMenuRef}>
                   <button
-                    onClick={() => setProfileMenuOpen((prev) => !prev)}
+                    onClick={() => {
+                      setProfileMenuOpen((prev) => !prev)
+                      setNotifMenuOpen(false)
+                    }}
                     className="flex items-center gap-2 p-2 rounded-xl hover:bg-gray-100 transition-colors"
                     title="Profile menu"
                   >

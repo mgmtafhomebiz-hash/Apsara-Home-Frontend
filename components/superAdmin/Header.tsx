@@ -2,20 +2,15 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import Image from "next/image";
+import Link from "next/link";
 import { signOut, useSession } from "next-auth/react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useGetAdminNotificationsQuery } from "@/store/api/adminNotificationsApi";
 
 interface HeaderProps {
     onMenuClick: () => void;
 }
-
-const mockNotifs = [
-    { id: 1, text: 'New member registered', time: '2m ago', unread: true },
-    { id: 2, text: '12 orders pending approval', time: '15m ago', unread: true },
-    { id: 3, text: 'Withdrawal request P4,620', time: '1h ago', unread: true },
-    { id: 4, text: 'Low stock: Product #1042', time: '3h ago', unread: false },
-];
 
 const getInitials = (name?: string | null) => {
     const value = (name ?? '').trim();
@@ -33,12 +28,22 @@ const formatRole = (role?: string | null) => {
 const Header = ({ onMenuClick }: HeaderProps) => {
     const [notifOpen, setNotifOpen] = useState(false);
     const [userOpen, setUserOpen] = useState(false);
+    const [muted, setMuted] = useState(false);
     const { data: session } = useSession();
     const router = useRouter();
     const pathname = usePathname();
     const searchParams = useSearchParams();
     const [headerSearch, setHeaderSearch] = useState(searchParams.get('q') ?? '');
-    const unreadCount = mockNotifs.filter((notif) => notif.unread).length;
+    const {
+        data: notifications,
+        isLoading: isNotifLoading,
+        isError: isNotifError,
+        refetch: refetchNotifs,
+    } = useGetAdminNotificationsQuery(undefined, {
+        pollingInterval: 30000,
+        refetchOnFocus: true,
+    });
+    const unreadCount = muted ? 0 : (notifications?.unread_count ?? 0);
     const displayName = session?.user?.name?.trim() || 'Admin';
     const displayRole = formatRole(session?.user?.role);
     const displayInitials = getInitials(displayName);
@@ -47,6 +52,12 @@ const Header = ({ onMenuClick }: HeaderProps) => {
     useEffect(() => {
         setHeaderSearch(searchParams.get('q') ?? '');
     }, [searchParams]);
+
+    useEffect(() => {
+        if ((notifications?.unread_count ?? 0) > 0) {
+            setMuted(false);
+        }
+    }, [notifications?.generated_at, notifications?.unread_count]);
 
     const handleHeaderSearchChange = (value: string) => {
         setHeaderSearch(value);
@@ -108,6 +119,9 @@ const Header = ({ onMenuClick }: HeaderProps) => {
                         onClick={() => {
                             setNotifOpen(!notifOpen);
                             setUserOpen(false);
+                            if (!notifOpen) {
+                                refetchNotifs();
+                            }
                         }}
                         className="relative flex items-center justify-center h-9 w-9 rounded-xl text-slate-500 hover:bg-slate-100 transition-colors"
                     >
@@ -129,19 +143,45 @@ const Header = ({ onMenuClick }: HeaderProps) => {
                             >
                                 <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 z-10 overflow-hidden">
                                     <span className="font-semibold text-slate-800 text-sm">Notifications</span>
-                                    <span className="text-xs text-teal-600 font-medium cursor-pointer hover:underline">Mark all read</span>
+                                    <button
+                                        onClick={() => setMuted(true)}
+                                        className="text-xs text-teal-600 font-medium hover:underline"
+                                    >
+                                        Mark all read
+                                    </button>
                                 </div>
-                                {mockNotifs.map((notif) => (
-                                    <div key={notif.id} className={`flex items-start gap-3 px-4 py-3 hover:bg-slate-50 transition-colors cursor-pointer ${notif.unread ? 'bg-teal-50/50' : ''}`}>
-                                        <div className={`mt-1 h-2 w-2 rounded-full shrink-0 ${notif.unread ? 'bg-teal-500' : 'bg-transparent'}`} />
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-sm text-slate-700 font-medium">{notif.text}</p>
-                                            <p className="text-xs text-slate-400 mt-0.5">{notif.time}</p>
-                                        </div>
-                                    </div>
-                                ))}
+                                {isNotifLoading ? (
+                                    <div className="px-4 py-3 text-sm text-slate-500">Loading notifications...</div>
+                                ) : isNotifError ? (
+                                    <div className="px-4 py-3 text-sm text-red-600">Failed to load notifications.</div>
+                                ) : notifications?.items?.length ? (
+                                    notifications.items.map((notif) => (
+                                        <Link
+                                            key={notif.id}
+                                            href={notif.href}
+                                            onClick={() => setNotifOpen(false)}
+                                            className={`flex items-start gap-3 px-4 py-3 hover:bg-slate-50 transition-colors cursor-pointer ${notif.count > 0 ? 'bg-teal-50/40' : ''}`}
+                                        >
+                                            <div className={`mt-1 h-2 w-2 rounded-full shrink-0 ${notif.count > 0 ? 'bg-teal-500' : 'bg-slate-200'}`} />
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-sm text-slate-700 font-medium">{notif.title}</p>
+                                                <p className="text-xs text-slate-500 mt-0.5">{notif.description}</p>
+                                            </div>
+                                            <span className="text-xs font-semibold text-slate-500">{notif.count}</span>
+                                        </Link>
+                                    ))
+                                ) : (
+                                    <div className="px-4 py-3 text-sm text-slate-500">No notifications right now.</div>
+                                )}
                                 <div className="px-4 py-2.5 border-t border-slate-100 text-center">
-                                    <span className="text-xs text-teal-600 font-medium cursor-pointer hover:underline">View all notifications</span>
+                                    <p className="text-[11px] text-slate-400">
+                                        Auto-refresh every 30 seconds
+                                    </p>
+                                    {notifications?.generated_at ? (
+                                        <p className="text-[11px] text-slate-400 mt-0.5">
+                                            Updated: {notifications.generated_at}
+                                        </p>
+                                    ) : null}
                                 </div>
                             </motion.div>
                         )}

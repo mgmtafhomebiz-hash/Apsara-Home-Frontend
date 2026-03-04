@@ -2,6 +2,27 @@ import { baseApi } from './baseApi';
 
 export type EncashmentStatus = 'pending' | 'approved' | 'approved_by_admin' | 'rejected' | 'released' | 'on_hold';
 export type EncashmentChannel = 'bank' | 'gcash' | 'maya';
+export type PayoutMethodType = 'gcash' | 'maya' | 'online_banking' | 'card';
+
+export interface EncashmentPayoutMethodItem {
+  id: number;
+  label: string;
+  method_type: PayoutMethodType;
+  channel: EncashmentChannel;
+  account_name?: string | null;
+  account_number?: string | null;
+  mobile_number?: string | null;
+  email_address?: string | null;
+  bank_name?: string | null;
+  bank_code?: string | null;
+  account_type?: '' | 'savings' | 'checking' | null;
+  card_holder_name?: string | null;
+  card_brand?: '' | 'visa' | 'mastercard' | 'jcb' | 'amex' | 'other' | null;
+  card_last4?: string | null;
+  is_default: boolean;
+  created_at?: string | null;
+  updated_at?: string | null;
+}
 
 export interface EncashmentRequestItem {
   id: number;
@@ -23,6 +44,7 @@ export interface EncashmentRequestItem {
 
 export interface EncashmentListResponse {
   requests: EncashmentRequestItem[];
+  payout_methods?: EncashmentPayoutMethodItem[];
   meta: {
     current_page: number;
     last_page: number;
@@ -62,11 +84,32 @@ export interface CreateEncashmentPayload {
   notes?: string;
 }
 
+export interface CreateEncashmentPayoutMethodPayload {
+  label: string;
+  method_type: PayoutMethodType;
+  account_name?: string;
+  account_number?: string;
+  mobile_number?: string;
+  email_address?: string;
+  bank_name?: string;
+  bank_code?: string;
+  account_type?: '' | 'savings' | 'checking';
+  card_holder_name?: string;
+  card_brand?: '' | 'visa' | 'mastercard' | 'jcb' | 'amex' | 'other';
+  card_last4?: string;
+  is_default?: boolean;
+}
+
 export interface CreateEncashmentResponse {
   message: string;
   request: EncashmentRequestItem;
   eligibility?: EncashmentListResponse['eligibility'];
   policy?: EncashmentListResponse['policy'];
+}
+
+export interface CreateEncashmentPayoutMethodResponse {
+  message: string;
+  method: EncashmentPayoutMethodItem;
 }
 
 export interface VerificationRequestResponse {
@@ -207,6 +250,21 @@ export const encashmentApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['Encashment'],
     }),
+    createEncashmentPayoutMethod: builder.mutation<CreateEncashmentPayoutMethodResponse, CreateEncashmentPayoutMethodPayload>({
+      query: (body) => ({
+        url: '/api/encashment/payout-methods',
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: ['Encashment'],
+    }),
+    deleteEncashmentPayoutMethod: builder.mutation<{ message: string }, { id: number }>({
+      query: ({ id }) => ({
+        url: `/api/encashment/payout-methods/${id}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['Encashment'],
+    }),
     submitEncashmentVerificationRequest: builder.mutation<VerificationRequestResponse, VerificationRequestPayload>({
       query: (body) => ({
         url: '/api/encashment/verification-request',
@@ -270,6 +328,8 @@ export const encashmentApi = baseApi.injectEndpoints({
 export const {
   useGetEncashmentRequestsQuery,
   useCreateEncashmentRequestMutation,
+  useCreateEncashmentPayoutMethodMutation,
+  useDeleteEncashmentPayoutMethodMutation,
   useSubmitEncashmentVerificationRequestMutation,
   useGetWalletOverviewQuery,
   useGetAdminEncashmentRequestsQuery,

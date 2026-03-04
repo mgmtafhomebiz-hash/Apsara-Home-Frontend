@@ -43,10 +43,10 @@ const ChevronDown = () => (
 );
 
 const PRICE_BRACKETS = [
-    { id: 'under10', label: 'Under ₱10k', min: 0, max: 9999 },
-    { id: '10to25', label: '₱10k – ₱25k', min: 10000, max: 25000 },
-    { id: '25to50', label: '₱25k – ₱50k', min: 25000, max: 50000 },
-    { id: 'above50', label: '₱50k+', min: 50000, max: Infinity },
+    { id: 'under10', label: 'Under PHP 10k', min: 0, max: 9999 },
+    { id: '10to25', label: 'PHP 10k - PHP 25k', min: 10000, max: 25000 },
+    { id: '25to50', label: 'PHP 25k - PHP 50k', min: 25000, max: 50000 },
+    { id: 'above50', label: 'PHP 50k+', min: 50000, max: Infinity },
 ] as const;
 
 interface FilterSectionProps {
@@ -116,7 +116,11 @@ export default function CategoryListProductMain({
     const categoryLabel = initialCategoryLabel ?? meta?.label ?? titleFromSlug(slug);
 
     const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
-    const [selectedPriceBracket, setSelectedPriceBracket] = useState<string | null>(null);
+    const [selectedPriceBrackets, setSelectedPriceBrackets] = useState<string[]>([]);
+    const [priceMinInput, setPriceMinInput] = useState('');
+    const [priceMaxInput, setPriceMaxInput] = useState('');
+    const [customPriceMin, setCustomPriceMin] = useState<number | null>(null);
+    const [customPriceMax, setCustomPriceMax] = useState<number | null>(null);
     const [sortBy, setSortBy] = useState('best-selling');
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
     const [showCount, setShowCount] = useState(32);
@@ -124,17 +128,47 @@ export default function CategoryListProductMain({
 
     const toggleBrand = (brand: string) =>
         setSelectedBrands(prev => prev.includes(brand) ? prev.filter(b => b !== brand) : [...prev, brand]);
+    const togglePriceBracket = (id: string) =>
+        setSelectedPriceBrackets((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]));
 
     const resetFilters = () => {
         setSelectedBrands([]);
-        setSelectedPriceBracket(null);
+        setSelectedPriceBrackets([]);
+        setPriceMinInput('');
+        setPriceMaxInput('');
+        setCustomPriceMin(null);
+        setCustomPriceMax(null);
     };
+    const applyCustomPriceRange = () => {
+        const parsedMin = priceMinInput.trim() === '' ? null : Number(priceMinInput);
+        const parsedMax = priceMaxInput.trim() === '' ? null : Number(priceMaxInput);
 
-    const activeBracket = PRICE_BRACKETS.find(b => b.id === selectedPriceBracket) ?? null;
+        const min = parsedMin != null && Number.isFinite(parsedMin) && parsedMin >= 0 ? parsedMin : null;
+        const max = parsedMax != null && Number.isFinite(parsedMax) && parsedMax >= 0 ? parsedMax : null;
+
+        if (min != null && max != null && min > max) {
+            setCustomPriceMin(max);
+            setCustomPriceMax(min);
+            return;
+        }
+
+        setCustomPriceMin(min);
+        setCustomPriceMax(max);
+    };
 
     const filteredProducts = useMemo(() => {
         let result = safeProducts.filter(p => {
-            const passPrice = !activeBracket || (p.price >= activeBracket.min && p.price <= activeBracket.max);
+            const passBracket =
+                selectedPriceBrackets.length === 0 ||
+                selectedPriceBrackets.some((id) => {
+                    const bracket = PRICE_BRACKETS.find((item) => item.id === id);
+                    if (!bracket) return false;
+                    return p.price >= bracket.min && p.price <= bracket.max;
+                });
+            const passCustom =
+                (customPriceMin == null || p.price >= customPriceMin) &&
+                (customPriceMax == null || p.price <= customPriceMax);
+            const passPrice = passBracket && passCustom;
             const passBrand = selectedBrands.length === 0 || (p.brand && selectedBrands.includes(p.brand));
             return passPrice && passBrand;
         });
@@ -142,10 +176,11 @@ export default function CategoryListProductMain({
         if (sortBy === 'price-desc') result = [...result].sort((a, b) => b.price - a.price);
         if (sortBy === 'newest') result = [...result].reverse();
         return result;
-    }, [safeProducts, activeBracket, selectedBrands, sortBy]);
+    }, [safeProducts, selectedPriceBrackets, customPriceMin, customPriceMax, selectedBrands, sortBy]);
 
-    const hasActiveFilters = selectedBrands.length > 0 || selectedPriceBracket !== null;
-    const activeFilterCount = selectedBrands.length + (selectedPriceBracket ? 1 : 0);
+    const hasActivePriceRange = selectedPriceBrackets.length > 0 || customPriceMin !== null || customPriceMax !== null;
+    const hasActiveFilters = selectedBrands.length > 0 || hasActivePriceRange;
+    const activeFilterCount = selectedBrands.length + selectedPriceBrackets.length + (customPriceMin !== null || customPriceMax !== null ? 1 : 0);
 
     const renderFilters = () => (
         <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
@@ -175,24 +210,81 @@ export default function CategoryListProductMain({
             </FilterSection>
 
             {/* Price Range — bracket chips */}
-            <FilterSection title="Price Range">
-                <div className="grid grid-cols-2 gap-2">
+                        <FilterSection title="Price Range">
+                <div className="space-y-2.5">
                     {PRICE_BRACKETS.map(bracket => {
-                        const isActive = selectedPriceBracket === bracket.id;
+                        const checked = selectedPriceBrackets.includes(bracket.id);
                         return (
-                            <button
+                            <label
                                 key={bracket.id}
-                                onClick={() => setSelectedPriceBracket(isActive ? null : bracket.id)}
-                                className={`px-2.5 py-2 rounded-xl text-xs font-semibold border transition-all text-left leading-tight ${
-                                    isActive
-                                        ? 'bg-orange-500 border-orange-500 text-white shadow-md shadow-orange-100'
-                                        : 'bg-gray-50 border-gray-200 text-gray-600 hover:border-orange-300 hover:text-orange-500 hover:bg-orange-50'
-                                }`}
+                                className="flex items-center justify-between gap-2 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-700 hover:border-orange-300 hover:bg-orange-50 transition-colors cursor-pointer"
                             >
-                                {bracket.label}
-                            </button>
+                                <span className="flex items-center gap-2">
+                                    <span className={`h-4 w-4 rounded border flex items-center justify-center transition-colors ${checked ? 'border-orange-500 bg-orange-500' : 'border-gray-300 bg-white'}`}>
+                                        {checked && (
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12" /></svg>
+                                        )}
+                                    </span>
+                                    <span className="font-medium">{bracket.label}</span>
+                                </span>
+                                <input
+                                    type="checkbox"
+                                    className="sr-only"
+                                    checked={checked}
+                                    onChange={() => togglePriceBracket(bracket.id)}
+                                />
+                            </label>
                         );
                     })}
+
+                    <div className="mt-3 rounded-xl border border-gray-200 bg-white p-3">
+                        <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500 mb-2">Custom range</p>
+                        <div className="grid grid-cols-2 gap-2">
+                            <input
+                                type="number"
+                                min={0}
+                                step={1}
+                                inputMode="numeric"
+                                value={priceMinInput}
+                                onChange={(e) => setPriceMinInput(e.target.value)}
+                                placeholder="Min (PHP)"
+                                className="w-full rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-2 text-xs text-gray-700 placeholder:text-gray-400 focus:border-orange-300 focus:bg-white focus:outline-none"
+                            />
+                            <input
+                                type="number"
+                                min={0}
+                                step={1}
+                                inputMode="numeric"
+                                value={priceMaxInput}
+                                onChange={(e) => setPriceMaxInput(e.target.value)}
+                                placeholder="Max (PHP)"
+                                className="w-full rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-2 text-xs text-gray-700 placeholder:text-gray-400 focus:border-orange-300 focus:bg-white focus:outline-none"
+                            />
+                        </div>
+                        <div className="mt-2 flex items-center gap-2">
+                            <button
+                                type="button"
+                                onClick={applyCustomPriceRange}
+                                className="rounded-lg bg-orange-500 px-3 py-1.5 text-[11px] font-semibold text-white hover:bg-orange-600 transition-colors"
+                            >
+                                Apply
+                            </button>
+                            {(customPriceMin !== null || customPriceMax !== null) && (
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setPriceMinInput('');
+                                        setPriceMaxInput('');
+                                        setCustomPriceMin(null);
+                                        setCustomPriceMax(null);
+                                    }}
+                                    className="rounded-lg border border-gray-200 px-3 py-1.5 text-[11px] font-semibold text-gray-600 hover:border-gray-300 hover:bg-gray-50 transition-colors"
+                                >
+                                    Reset
+                                </button>
+                            )}
+                        </div>
+                    </div>
                 </div>
             </FilterSection>
 
@@ -413,10 +505,26 @@ export default function CategoryListProductMain({
                                             </button>
                                         </span>
                                     ))}
-                                    {selectedPriceBracket && (
+                                    {selectedPriceBrackets.map((id) => (
+                                        <span key={id} className="flex items-center gap-1.5 bg-orange-50 border border-orange-200 text-orange-600 text-xs font-medium px-2.5 py-1 rounded-full">
+                                            {PRICE_BRACKETS.find((b) => b.id === id)?.label}
+                                            <button onClick={() => togglePriceBracket(id)} className="hover:text-orange-800 transition-colors">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                                            </button>
+                                        </span>
+                                    ))}
+                                    {(customPriceMin !== null || customPriceMax !== null) && (
                                         <span className="flex items-center gap-1.5 bg-orange-50 border border-orange-200 text-orange-600 text-xs font-medium px-2.5 py-1 rounded-full">
-                                            {PRICE_BRACKETS.find(b => b.id === selectedPriceBracket)?.label}
-                                            <button onClick={() => setSelectedPriceBracket(null)} className="hover:text-orange-800 transition-colors">
+                                            {`PHP ${customPriceMin ?? 0} - PHP ${customPriceMax ?? 'Any'}`}
+                                            <button
+                                                onClick={() => {
+                                                    setPriceMinInput('');
+                                                    setPriceMaxInput('');
+                                                    setCustomPriceMin(null);
+                                                    setCustomPriceMax(null);
+                                                }}
+                                                className="hover:text-orange-800 transition-colors"
+                                            >
                                                 <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
                                             </button>
                                         </span>
@@ -472,4 +580,6 @@ export default function CategoryListProductMain({
         </div>
     );
 }
+
+
 

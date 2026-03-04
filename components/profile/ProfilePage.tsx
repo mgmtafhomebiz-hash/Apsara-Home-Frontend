@@ -17,7 +17,6 @@ import getActivityIcon from './GetActivityIcon';
 import EncashmentTab from './EncashmentTab';
 import WalletTab from './WalletTab';
 
-// â”€â”€â”€ Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 type ProfileFormState = {
   name: string;
@@ -67,6 +66,7 @@ const ProfilePage = () => {
 
   const [profileMsg, setProfileMsg] = useState<AlertMsg | null>(null);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [isAvatarPreviewOpen, setIsAvatarPreviewOpen] = useState(false);
   const msgTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mainContentRef = useRef<HTMLDivElement | null>(null);
 
@@ -89,6 +89,15 @@ const ProfilePage = () => {
     msgTimer.current = setTimeout(() => setProfileMsg(null), 5000);
     return () => { if (msgTimer.current) clearTimeout(msgTimer.current); };
   }, [profileMsg]);
+
+  useEffect(() => {
+    if (!isAvatarPreviewOpen) return;
+    const handleEsc = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setIsAvatarPreviewOpen(false);
+    };
+    document.addEventListener('keydown', handleEsc);
+    return () => document.removeEventListener('keydown', handleEsc);
+  }, [isAvatarPreviewOpen]);
 
   const hasChanges = useMemo(
     () =>
@@ -331,6 +340,12 @@ const ProfilePage = () => {
               <div className="flex flex-col items-center text-center gap-3">
                 {/* Avatar */}
                 <div className="relative group">
+                  {isUploadingAvatar && (
+                    <span className="pointer-events-none absolute -inset-1 rounded-full border-2 border-orange-200" />
+                  )}
+                  {isUploadingAvatar && (
+                    <span className="pointer-events-none absolute -inset-1 rounded-full border-2 border-transparent border-t-orange-500 border-r-orange-400 animate-spin" />
+                  )}
                   {data?.avatar_url ? (
                     <img
                       src={data.avatar_url}
@@ -357,6 +372,15 @@ const ProfilePage = () => {
                 </div>
                 {isUploadingAvatar && (
                   <p className="text-[11px] text-orange-600 font-medium">Uploading profile photo...</p>
+                )}
+                {data?.avatar_url && (
+                  <button
+                    type="button"
+                    onClick={() => setIsAvatarPreviewOpen(true)}
+                    className="text-[11px] font-semibold text-orange-600 hover:text-orange-700 hover:underline"
+                  >
+                    View Profile Photo
+                  </button>
                 )}
 
                 <div>
@@ -986,6 +1010,45 @@ const ProfilePage = () => {
           </div>
         </div>
       </div>
+
+      <AnimatePresence>
+        {isAvatarPreviewOpen && data?.avatar_url && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] bg-black/70 backdrop-blur-sm p-4"
+            onClick={() => setIsAvatarPreviewOpen(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96, y: 8 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.96, y: 8 }}
+              transition={{ duration: 0.18 }}
+              className="mx-auto mt-12 max-w-xl rounded-2xl bg-white p-4 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="mb-3 flex items-center justify-between">
+                <p className="text-sm font-bold text-gray-900">Profile Photo Preview</p>
+                <button
+                  type="button"
+                  onClick={() => setIsAvatarPreviewOpen(false)}
+                  className="rounded-lg border border-gray-200 px-2.5 py-1 text-xs font-semibold text-gray-600 hover:bg-gray-50"
+                >
+                  Close
+                </button>
+              </div>
+              <div className="relative mx-auto aspect-square w-full max-w-md overflow-hidden rounded-xl border border-gray-100 bg-gray-50">
+                <img
+                  src={data.avatar_url}
+                  alt={form.name || 'Profile photo preview'}
+                  className="h-full w-full object-cover"
+                />
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.section>
   );
 };

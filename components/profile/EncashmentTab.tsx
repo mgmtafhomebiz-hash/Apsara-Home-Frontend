@@ -1,11 +1,14 @@
 'use client';
 
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { FormEvent, useMemo, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useMeQuery } from '@/store/api/userApi';
 import {
   EncashmentChannel,
+  PayoutMethodType as PaymentMethodType,
+  useCreateEncashmentPayoutMethodMutation,
   useCreateEncashmentRequestMutation,
+  useDeleteEncashmentPayoutMethodMutation,
   useGetEncashmentRequestsQuery,
   useSubmitEncashmentVerificationRequestMutation,
 } from '@/store/api/encashmentApi';
@@ -35,31 +38,58 @@ const statusStyle: Record<string, string> = {
 
 type FormState = {
   amount: string;
+  methodType: PaymentMethodType;
   channel: EncashmentChannel;
   accountName: string;
   accountNumber: string;
+  mobileNumber: string;
+  emailAddress: string;
+  bankName: string;
+  bankCode: string;
+  accountType: '' | 'savings' | 'checking';
+  cardHolderName: string;
+  cardBrand: '' | 'visa' | 'mastercard' | 'jcb' | 'amex' | 'other';
+  cardLast4: string;
   notes: string;
 };
 
 type PaymentMethod = {
-  id: string;
+  id: number;
   label: string;
+  methodType: PaymentMethodType;
   channel: EncashmentChannel;
   accountName: string;
   accountNumber: string;
+  mobileNumber?: string;
+  emailAddress?: string;
+  bankName?: string;
+  bankCode?: string;
+  accountType?: '' | 'savings' | 'checking';
+  cardHolderName?: string;
+  cardBrand?: '' | 'visa' | 'mastercard' | 'jcb' | 'amex' | 'other';
+  cardLast4?: string;
 };
 
 const initialForm: FormState = {
   amount: '',
+  methodType: 'gcash',
   channel: 'gcash',
   accountName: '',
   accountNumber: '',
+  mobileNumber: '',
+  emailAddress: '',
+  bankName: '',
+  bankCode: '',
+  accountType: '',
+  cardHolderName: '',
+  cardBrand: '',
+  cardLast4: '',
   notes: '',
 };
 
-const STORAGE_KEY = 'afhome_encashment_methods_v1';
 const VERIFICATION_ID_TYPES = [
   'National ID',
+  'TIN ID',
   'Passport',
   'Driver License',
   'UMID',
@@ -78,17 +108,41 @@ const EncashmentTab = () => {
     skip: !isCustomerSession,
   });
   const [createRequest, { isLoading: isSubmitting }] = useCreateEncashmentRequestMutation();
+  const [createPayoutMethod, { isLoading: isSavingPayoutMethod }] = useCreateEncashmentPayoutMethodMutation();
+  const [deletePayoutMethod, { isLoading: isDeletingPayoutMethod }] = useDeleteEncashmentPayoutMethodMutation();
   const [submitVerificationRequest, { isLoading: isSubmittingVerification }] = useSubmitEncashmentVerificationRequestMutation();
 
   const [form, setForm] = useState<FormState>(initialForm);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  const [methods, setMethods] = useState<PaymentMethod[]>([]);
   const [selectedMethodId, setSelectedMethodId] = useState<string>('');
-  const [methodForm, setMethodForm] = useState<{ label: string; channel: EncashmentChannel; accountName: string; accountNumber: string }>({
+  const [methodForm, setMethodForm] = useState<{
+    label: string;
+    methodType: PaymentMethodType;
+    channel: EncashmentChannel;
+    accountName: string;
+    accountNumber: string;
+    mobileNumber: string;
+    emailAddress: string;
+    bankName: string;
+    bankCode: string;
+    accountType: '' | 'savings' | 'checking';
+    cardHolderName: string;
+    cardBrand: '' | 'visa' | 'mastercard' | 'jcb' | 'amex' | 'other';
+    cardLast4: string;
+  }>({
     label: '',
+    methodType: 'gcash',
     channel: 'gcash',
     accountName: '',
     accountNumber: '',
+    mobileNumber: '',
+    emailAddress: '',
+    bankName: '',
+    bankCode: '',
+    accountType: '',
+    cardHolderName: '',
+    cardBrand: '',
+    cardLast4: '',
   });
   const [verificationForm, setVerificationForm] = useState({
     fullName: '',
@@ -112,7 +166,27 @@ const EncashmentTab = () => {
     selfie: boolean;
   }>({ idFront: false, idBack: false, selfie: false });
 
-  const rows = data?.requests ?? [];
+  const rows = useMemo(() => data?.requests ?? [], [data?.requests]);
+  const methods = useMemo<PaymentMethod[]>(
+    () =>
+      (data?.payout_methods ?? []).map((method) => ({
+        id: method.id,
+        label: method.label,
+        methodType: method.method_type,
+        channel: method.channel,
+        accountName: method.account_name ?? '',
+        accountNumber: method.account_number ?? '',
+        mobileNumber: method.mobile_number ?? '',
+        emailAddress: method.email_address ?? '',
+        bankName: method.bank_name ?? '',
+        bankCode: method.bank_code ?? '',
+        accountType: method.account_type ?? '',
+        cardHolderName: method.card_holder_name ?? '',
+        cardBrand: method.card_brand ?? '',
+        cardLast4: method.card_last4 ?? '',
+      })),
+    [data?.payout_methods],
+  );
   const policy = data?.policy;
   const eligibility = data?.eligibility;
   const verification = data?.verification;
@@ -133,55 +207,179 @@ const EncashmentTab = () => {
     );
   }, [rows]);
 
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return;
-      const parsed = JSON.parse(raw) as PaymentMethod[];
-      if (Array.isArray(parsed)) {
-        setMethods(parsed);
-      }
-    } catch {
-      // ignore malformed local cache
-    }
-  }, []);
+  const mapMethodTypeToChannel = (methodType: PaymentMethodType): EncashmentChannel => {
+    if (methodType === 'gcash') return 'gcash';
+    if (methodType === 'maya') return 'maya';
+    return 'bank';
+  };
 
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(methods));
-  }, [methods]);
+  const buildPayoutMeta = (values: {
+    methodType: PaymentMethodType;
+    mobileNumber?: string;
+    emailAddress?: string;
+    bankName?: string;
+    bankCode?: string;
+    accountType?: string;
+    cardHolderName?: string;
+    cardBrand?: string;
+    cardLast4?: string;
+  }) => {
+    if (values.methodType === 'gcash' || values.methodType === 'maya') {
+      return {
+        method_type: values.methodType,
+        mobile_number: values.mobileNumber || null,
+        email: values.emailAddress || null,
+      };
+    }
+    if (values.methodType === 'online_banking') {
+      return {
+        method_type: values.methodType,
+        bank_name: values.bankName || null,
+        bank_code: values.bankCode || null,
+        account_type: values.accountType || null,
+      };
+    }
+    return {
+      method_type: values.methodType,
+      card_holder_name: values.cardHolderName || null,
+      card_brand: values.cardBrand || null,
+      card_last4: values.cardLast4 || null,
+    };
+  };
 
   const applyMethodToForm = (id: string) => {
     setSelectedMethodId(id);
-    const method = methods.find((item) => item.id === id);
-    if (!method) return;
+    const method = methods.find((item) => String(item.id) === id);
+    if (!method) {
+      setForm((prev) => ({
+        ...prev,
+        methodType: 'gcash',
+        channel: 'gcash',
+        accountName: '',
+        accountNumber: '',
+        mobileNumber: '',
+        emailAddress: '',
+        bankName: '',
+        bankCode: '',
+        accountType: '',
+        cardHolderName: '',
+        cardBrand: '',
+        cardLast4: '',
+      }));
+      return;
+    }
     setForm((prev) => ({
       ...prev,
+      methodType: method.methodType,
       channel: method.channel,
       accountName: method.accountName,
       accountNumber: method.accountNumber,
+      mobileNumber: method.mobileNumber || '',
+      emailAddress: method.emailAddress || '',
+      bankName: method.bankName || '',
+      bankCode: method.bankCode || '',
+      accountType: method.accountType || '',
+      cardHolderName: method.cardHolderName || '',
+      cardBrand: method.cardBrand || '',
+      cardLast4: method.cardLast4 || '',
     }));
   };
 
-  const addMethod = () => {
+  const addMethod = async () => {
     const label = methodForm.label.trim();
-    const accountName = methodForm.accountName.trim();
-    const accountNumber = methodForm.accountNumber.trim();
-    if (!label || !accountName || !accountNumber) {
-      setMessage({ type: 'error', text: 'Please complete label, account name, and account number to save payment method.' });
+    if (!label) {
+      setMessage({ type: 'error', text: 'Please provide a label for the saved payment method.' });
       return;
     }
 
-    const next: PaymentMethod = {
-      id: `${Date.now()}`,
-      label,
-      channel: methodForm.channel,
-      accountName,
-      accountNumber,
-    };
+    let accountName = methodForm.accountName.trim();
+    let accountNumber = methodForm.accountNumber.trim();
 
-    setMethods((prev) => [next, ...prev]);
-    setMethodForm({ label: '', channel: 'gcash', accountName: '', accountNumber: '' });
-    setMessage({ type: 'success', text: 'Payment method saved. You can use it for your next requests.' });
+    if (methodForm.methodType === 'gcash' || methodForm.methodType === 'maya') {
+      if (!accountName || !methodForm.mobileNumber.trim()) {
+        setMessage({ type: 'error', text: 'Please provide account name and mobile number for e-wallet payout.' });
+        return;
+      }
+      accountNumber = methodForm.mobileNumber.trim();
+    }
+
+    if (methodForm.methodType === 'online_banking') {
+      if (!accountName || !accountNumber || !methodForm.bankName.trim()) {
+        setMessage({ type: 'error', text: 'Please complete bank name, account name, and account number.' });
+        return;
+      }
+    }
+
+    if (methodForm.methodType === 'card') {
+      if (!methodForm.cardHolderName.trim() || !methodForm.cardLast4.trim() || !methodForm.cardBrand) {
+        setMessage({ type: 'error', text: 'Please complete card holder, card brand, and last 4 digits.' });
+        return;
+      }
+      accountName = methodForm.cardHolderName.trim();
+      accountNumber = `****${methodForm.cardLast4.trim()}`;
+    }
+
+    try {
+      await createPayoutMethod({
+        label,
+        method_type: methodForm.methodType,
+        account_name: accountName || undefined,
+        account_number: accountNumber || undefined,
+        mobile_number: methodForm.mobileNumber.trim() || undefined,
+        email_address: methodForm.emailAddress.trim() || undefined,
+        bank_name: methodForm.bankName.trim() || undefined,
+        bank_code: methodForm.bankCode.trim() || undefined,
+        account_type: methodForm.accountType || undefined,
+        card_holder_name: methodForm.cardHolderName.trim() || undefined,
+        card_brand: methodForm.cardBrand || undefined,
+        card_last4: methodForm.cardLast4.trim() || undefined,
+      }).unwrap();
+
+      setMethodForm({
+        label: '',
+        methodType: 'gcash',
+        channel: 'gcash',
+        accountName: '',
+        accountNumber: '',
+        mobileNumber: '',
+        emailAddress: '',
+        bankName: '',
+        bankCode: '',
+        accountType: '',
+        cardHolderName: '',
+        cardBrand: '',
+        cardLast4: '',
+      });
+      await refetch();
+      setMessage({ type: 'success', text: 'Payment method saved to your account.' });
+    } catch (err: unknown) {
+      const apiErr = err as { data?: { message?: string; errors?: Record<string, string[]> } };
+      const firstValidation = apiErr?.data?.errors ? Object.values(apiErr.data.errors)[0]?.[0] : undefined;
+      setMessage({
+        type: 'error',
+        text: firstValidation || apiErr?.data?.message || 'Failed to save payout method.',
+      });
+    }
+  };
+
+  const removeSelectedMethod = async () => {
+    if (!selectedMethodId) {
+      setMessage({ type: 'error', text: 'Please select a saved method to delete.' });
+      return;
+    }
+
+    try {
+      await deletePayoutMethod({ id: Number(selectedMethodId) }).unwrap();
+      setSelectedMethodId('');
+      setMessage({ type: 'success', text: 'Saved payout method deleted.' });
+      await refetch();
+    } catch (err: unknown) {
+      const apiErr = err as { data?: { message?: string } };
+      setMessage({
+        type: 'error',
+        text: apiErr?.data?.message || 'Failed to delete payout method.',
+      });
+    }
   };
 
   const handleVerificationImageUpload = async (field: 'idFrontUrl' | 'idBackUrl' | 'selfieUrl', file: File) => {
@@ -278,13 +476,56 @@ const EncashmentTab = () => {
       return;
     }
 
+    const mappedChannel = mapMethodTypeToChannel(form.methodType);
+    let accountName = form.accountName.trim();
+    let accountNumber = form.accountNumber.trim();
+
+    if (form.methodType === 'gcash' || form.methodType === 'maya') {
+      if (!accountName || !form.mobileNumber.trim()) {
+        setMessage({ type: 'error', text: 'Please provide account name and mobile number.' });
+        return;
+      }
+      accountNumber = form.mobileNumber.trim();
+    }
+
+    if (form.methodType === 'online_banking') {
+      if (!accountName || !accountNumber || !form.bankName.trim()) {
+        setMessage({ type: 'error', text: 'Please complete bank name, account name, and account number.' });
+        return;
+      }
+    }
+
+    if (form.methodType === 'card') {
+      if (!form.cardHolderName.trim() || !form.cardLast4.trim() || !form.cardBrand) {
+        setMessage({ type: 'error', text: 'Please complete card holder, card brand, and last 4 digits.' });
+        return;
+      }
+      accountName = form.cardHolderName.trim();
+      accountNumber = `****${form.cardLast4.trim()}`;
+    }
+
+    const payoutMeta = buildPayoutMeta({
+      methodType: form.methodType,
+      mobileNumber: form.mobileNumber.trim(),
+      emailAddress: form.emailAddress.trim(),
+      bankName: form.bankName.trim(),
+      bankCode: form.bankCode.trim(),
+      accountType: form.accountType,
+      cardHolderName: form.cardHolderName.trim(),
+      cardBrand: form.cardBrand,
+      cardLast4: form.cardLast4.trim(),
+    });
+    const appendedNotes = [form.notes.trim(), `PAYOUT_META:${JSON.stringify(payoutMeta)}`]
+      .filter(Boolean)
+      .join('\n');
+
     try {
       const res = await createRequest({
         amount: numericAmount,
-        channel: form.channel,
-        account_name: form.accountName.trim() || undefined,
-        account_number: form.accountNumber.trim() || undefined,
-        notes: form.notes.trim() || undefined,
+        channel: mappedChannel,
+        account_name: accountName || undefined,
+        account_number: accountNumber || undefined,
+        notes: appendedNotes || undefined,
       }).unwrap();
 
       setMessage({
@@ -416,38 +657,106 @@ const EncashmentTab = () => {
                 <option value="">Manual entry (no saved method)</option>
                 {methods.map((method) => (
                   <option key={method.id} value={method.id}>
-                    {method.label} - {method.channel.toUpperCase()} - {method.accountNumber}
+                    {method.label} - {method.methodType.replace('_', ' ').toUpperCase()} - {method.accountNumber}
                   </option>
                 ))}
               </select>
             </div>
+            <div className="flex items-end justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => applyMethodToForm('')}
+                className="rounded-xl border border-gray-200 px-3 py-2.5 text-xs font-semibold text-gray-600 hover:bg-gray-50"
+              >
+                Clear Selection
+              </button>
+              <button
+                type="button"
+                onClick={() => void removeSelectedMethod()}
+                disabled={!selectedMethodId || isDeletingPayoutMethod}
+                className="rounded-xl border border-red-200 px-3 py-2.5 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:opacity-60"
+              >
+                {isDeletingPayoutMethod ? 'Deleting...' : 'Delete Selected'}
+              </button>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <input
               type="text"
               value={methodForm.label}
               onChange={(e) => setMethodForm((prev) => ({ ...prev, label: e.target.value }))}
               className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300"
-              placeholder="Label (ex: Main GCash)"
+              placeholder="Label (ex: Main GCash / Payroll Bank)"
             />
             <select
-              value={methodForm.channel}
-              onChange={(e) => setMethodForm((prev) => ({ ...prev, channel: e.target.value as EncashmentChannel }))}
+              value={methodForm.methodType}
+              onChange={(e) => {
+                const methodType = e.target.value as PaymentMethodType;
+                setMethodForm((prev) => ({
+                  ...prev,
+                  methodType,
+                  channel: mapMethodTypeToChannel(methodType),
+                }));
+              }}
               className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300"
             >
               <option value="gcash">GCash</option>
               <option value="maya">Maya</option>
-              <option value="bank">Bank</option>
+              <option value="online_banking">Online Banking</option>
+              <option value="card">Card</option>
             </select>
-            <input
-              type="text"
-              value={methodForm.accountName}
-              onChange={(e) => setMethodForm((prev) => ({ ...prev, accountName: e.target.value }))}
-              className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300"
-              placeholder="Account Name"
-            />
-            <div className="flex gap-2">
+          </div>
+
+          {(methodForm.methodType === 'gcash' || methodForm.methodType === 'maya') && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <input
+                type="text"
+                value={methodForm.accountName}
+                onChange={(e) => setMethodForm((prev) => ({ ...prev, accountName: e.target.value }))}
+                className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300"
+                placeholder="Account Name"
+              />
+              <input
+                type="text"
+                value={methodForm.mobileNumber}
+                onChange={(e) => setMethodForm((prev) => ({ ...prev, mobileNumber: e.target.value }))}
+                className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300"
+                placeholder="Mobile Number (09xxxxxxxxx)"
+              />
+              <input
+                type="email"
+                value={methodForm.emailAddress}
+                onChange={(e) => setMethodForm((prev) => ({ ...prev, emailAddress: e.target.value }))}
+                className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300"
+                placeholder="Email (optional)"
+              />
+            </div>
+          )}
+
+          {methodForm.methodType === 'online_banking' && (
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+              <input
+                type="text"
+                value={methodForm.bankName}
+                onChange={(e) => setMethodForm((prev) => ({ ...prev, bankName: e.target.value }))}
+                className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300"
+                placeholder="Bank Name"
+              />
+              <input
+                type="text"
+                value={methodForm.bankCode}
+                onChange={(e) => setMethodForm((prev) => ({ ...prev, bankCode: e.target.value }))}
+                className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300"
+                placeholder="Bank Code (optional)"
+              />
+              <input
+                type="text"
+                value={methodForm.accountName}
+                onChange={(e) => setMethodForm((prev) => ({ ...prev, accountName: e.target.value }))}
+                className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300"
+                placeholder="Account Name"
+              />
               <input
                 type="text"
                 value={methodForm.accountNumber}
@@ -455,15 +764,71 @@ const EncashmentTab = () => {
                 className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300"
                 placeholder="Account Number"
               />
-              <button
-                type="button"
-                onClick={addMethod}
-                className="rounded-xl border border-orange-200 px-3 py-2.5 text-xs font-semibold text-orange-700 hover:bg-orange-50"
+              <select
+                value={methodForm.accountType}
+                onChange={(e) => setMethodForm((prev) => ({ ...prev, accountType: e.target.value as '' | 'savings' | 'checking' }))}
+                className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300"
               >
-                Add
-              </button>
+                <option value="">Account Type</option>
+                <option value="savings">Savings</option>
+                <option value="checking">Checking</option>
+              </select>
             </div>
+          )}
+
+          {methodForm.methodType === 'card' && (
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+              <input
+                type="text"
+                value={methodForm.cardHolderName}
+                onChange={(e) => setMethodForm((prev) => ({ ...prev, cardHolderName: e.target.value }))}
+                className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300"
+                placeholder="Card Holder Name"
+              />
+              <select
+                value={methodForm.cardBrand}
+                onChange={(e) => setMethodForm((prev) => ({ ...prev, cardBrand: e.target.value as FormState['cardBrand'] }))}
+                className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300"
+              >
+                <option value="">Card Brand</option>
+                <option value="visa">VISA</option>
+                <option value="mastercard">Mastercard</option>
+                <option value="jcb">JCB</option>
+                <option value="amex">Amex</option>
+                <option value="other">Other</option>
+              </select>
+              <input
+                type="text"
+                inputMode="numeric"
+                maxLength={4}
+                value={methodForm.cardLast4}
+                onChange={(e) => setMethodForm((prev) => ({ ...prev, cardLast4: e.target.value.replace(/\D/g, '').slice(0, 4) }))}
+                className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300"
+                placeholder="Last 4 Digits"
+              />
+              <input
+                type="text"
+                value={methodForm.accountNumber}
+                onChange={(e) => setMethodForm((prev) => ({ ...prev, accountNumber: e.target.value }))}
+                className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300"
+                placeholder="Reference Token (optional)"
+              />
+            </div>
+          )}
+
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={() => void addMethod()}
+              disabled={isSavingPayoutMethod}
+              className="rounded-xl border border-orange-200 px-3 py-2.5 text-xs font-semibold text-orange-700 hover:bg-orange-50 disabled:opacity-60"
+            >
+              {isSavingPayoutMethod ? 'Saving...' : 'Add Method'}
+            </button>
           </div>
+          <p className="text-[11px] text-gray-500">
+            Online Banking and Card are mapped to BANK channel in backend, with extra details saved in request notes.
+          </p>
       </div>
       )}
 
@@ -670,41 +1035,171 @@ const EncashmentTab = () => {
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Channel</label>
+            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Payout Method</label>
             <select
               required
-              value={form.channel}
-              onChange={(e) => setForm((prev) => ({ ...prev, channel: e.target.value as EncashmentChannel }))}
+              value={form.methodType}
+              onChange={(e) => {
+                const methodType = e.target.value as PaymentMethodType;
+                setForm((prev) => ({
+                  ...prev,
+                  methodType,
+                  channel: mapMethodTypeToChannel(methodType),
+                }));
+              }}
               className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300"
             >
               <option value="gcash">GCash</option>
               <option value="maya">Maya</option>
-              <option value="bank">Bank</option>
+              <option value="online_banking">Online Banking</option>
+              <option value="card">Card</option>
             </select>
           </div>
-
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Account Name</label>
-            <input
-              type="text"
-              value={form.accountName}
-              onChange={(e) => setForm((prev) => ({ ...prev, accountName: e.target.value }))}
-              className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300"
-              placeholder="Account holder name"
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Account Number</label>
-            <input
-              type="text"
-              value={form.accountNumber}
-              onChange={(e) => setForm((prev) => ({ ...prev, accountNumber: e.target.value }))}
-              className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300"
-              placeholder="0917xxxxxxx / bank account no."
-            />
-          </div>
         </div>
+
+        {(form.methodType === 'gcash' || form.methodType === 'maya') && (
+          <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Account Name</label>
+              <input
+                type="text"
+                value={form.accountName}
+                onChange={(e) => setForm((prev) => ({ ...prev, accountName: e.target.value }))}
+                className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300"
+                placeholder="E-wallet owner name"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Mobile Number</label>
+              <input
+                type="text"
+                value={form.mobileNumber}
+                onChange={(e) => setForm((prev) => ({ ...prev, mobileNumber: e.target.value }))}
+                className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300"
+                placeholder="09xxxxxxxxx"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Email (optional)</label>
+              <input
+                type="email"
+                value={form.emailAddress}
+                onChange={(e) => setForm((prev) => ({ ...prev, emailAddress: e.target.value }))}
+                className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300"
+                placeholder="you@email.com"
+              />
+            </div>
+          </div>
+        )}
+
+        {form.methodType === 'online_banking' && (
+          <div className="mt-4 grid grid-cols-1 md:grid-cols-5 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Bank Name</label>
+              <input
+                type="text"
+                value={form.bankName}
+                onChange={(e) => setForm((prev) => ({ ...prev, bankName: e.target.value }))}
+                className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300"
+                placeholder="Bank of example"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Bank Code (optional)</label>
+              <input
+                type="text"
+                value={form.bankCode}
+                onChange={(e) => setForm((prev) => ({ ...prev, bankCode: e.target.value }))}
+                className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300"
+                placeholder="BPI / BDO / PNB"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Account Name</label>
+              <input
+                type="text"
+                value={form.accountName}
+                onChange={(e) => setForm((prev) => ({ ...prev, accountName: e.target.value }))}
+                className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300"
+                placeholder="Account holder name"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Account Number</label>
+              <input
+                type="text"
+                value={form.accountNumber}
+                onChange={(e) => setForm((prev) => ({ ...prev, accountNumber: e.target.value }))}
+                className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300"
+                placeholder="Bank account number"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Account Type</label>
+              <select
+                value={form.accountType}
+                onChange={(e) => setForm((prev) => ({ ...prev, accountType: e.target.value as '' | 'savings' | 'checking' }))}
+                className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300"
+              >
+                <option value="">Select type</option>
+                <option value="savings">Savings</option>
+                <option value="checking">Checking</option>
+              </select>
+            </div>
+          </div>
+        )}
+
+        {form.methodType === 'card' && (
+          <div className="mt-4 grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Card Holder Name</label>
+              <input
+                type="text"
+                value={form.cardHolderName}
+                onChange={(e) => setForm((prev) => ({ ...prev, cardHolderName: e.target.value }))}
+                className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300"
+                placeholder="Name on card"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Card Brand</label>
+              <select
+                value={form.cardBrand}
+                onChange={(e) => setForm((prev) => ({ ...prev, cardBrand: e.target.value as FormState['cardBrand'] }))}
+                className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300"
+              >
+                <option value="">Select brand</option>
+                <option value="visa">VISA</option>
+                <option value="mastercard">Mastercard</option>
+                <option value="jcb">JCB</option>
+                <option value="amex">Amex</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Last 4 Digits</label>
+              <input
+                type="text"
+                inputMode="numeric"
+                maxLength={4}
+                value={form.cardLast4}
+                onChange={(e) => setForm((prev) => ({ ...prev, cardLast4: e.target.value.replace(/\D/g, '').slice(0, 4) }))}
+                className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300"
+                placeholder="1234"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Reference Token (optional)</label>
+              <input
+                type="text"
+                value={form.accountNumber}
+                onChange={(e) => setForm((prev) => ({ ...prev, accountNumber: e.target.value }))}
+                className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300"
+                placeholder="Processor token/ref"
+              />
+            </div>
+          </div>
+        )}
 
         <div className="mt-4 space-y-1.5">
           <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Notes (optional)</label>
