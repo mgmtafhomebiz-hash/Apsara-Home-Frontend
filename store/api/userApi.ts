@@ -5,13 +5,18 @@ export interface MeResponse {
     name: string;
     email: string;
     username?: string;
-    phone?: string
+    phone?: string;
+    avatar_url?: string;
+    account_status?: number;
+    lock_status?: number;
+    verification_status?: 'verified' | 'pending_review' | 'not_verified' | 'blocked';
 }
 
 export interface UpdateProfilePayload {
     name: string;
     username?: string;
     phone?: string;
+    avatar_url?: string;
 }
 
 export const userApi = baseApi.injectEndpoints({

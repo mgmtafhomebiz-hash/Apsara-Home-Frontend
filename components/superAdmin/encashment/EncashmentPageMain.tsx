@@ -69,6 +69,9 @@ type ActionModalState = {
   action: ActionType
   id: number | null
   notes: string
+  proofUrl: string
+  proofPublicId: string
+  proofFileName: string
 }
 
 export default function EncashmentPageMain({ initialFilter = 'all' }: Props) {
@@ -87,7 +90,11 @@ export default function EncashmentPageMain({ initialFilter = 'all' }: Props) {
     action: 'approve',
     id: null,
     notes: '',
+    proofUrl: '',
+    proofPublicId: '',
+    proofFileName: '',
   })
+  const [isUploadingProof, setIsUploadingProof] = useState(false)
 
   const effectiveFilter = useMemo(() => {
     const normalized = initialFilter
@@ -119,11 +126,28 @@ export default function EncashmentPageMain({ initialFilter = 'all' }: Props) {
   const [releaseRequest] = useReleaseAdminEncashmentMutation()
 
   const openActionModal = (action: ActionType, id: number) => {
-    setActionModal({ open: true, action, id, notes: '' })
+    setActionModal({
+      open: true,
+      action,
+      id,
+      notes: '',
+      proofUrl: '',
+      proofPublicId: '',
+      proofFileName: '',
+    })
   }
 
   const closeActionModal = () => {
-    setActionModal((prev) => ({ ...prev, open: false, id: null, notes: '' }))
+    setActionModal((prev) => ({
+      ...prev,
+      open: false,
+      id: null,
+      notes: '',
+      proofUrl: '',
+      proofPublicId: '',
+      proofFileName: '',
+    }))
+    setIsUploadingProof(false)
   }
 
   const getActionTitle = (action: ActionType) => {
@@ -152,6 +176,10 @@ export default function EncashmentPageMain({ initialFilter = 'all' }: Props) {
       setActionMessage({ type: 'error', text: 'Action note is required (minimum 5 characters).' })
       return
     }
+    if (actionModal.action === 'release' && !actionModal.proofUrl) {
+      setActionMessage({ type: 'error', text: 'Screenshot proof is required before release.' })
+      return
+    }
 
     setBusyId(id)
     try {
@@ -159,7 +187,12 @@ export default function EncashmentPageMain({ initialFilter = 'all' }: Props) {
         await approveRequest({ id, notes }).unwrap()
         setActionMessage({ type: 'success', text: 'Request approved successfully.' })
       } else if (actionModal.action === 'release') {
-        await releaseRequest({ id, notes }).unwrap()
+        await releaseRequest({
+          id,
+          notes,
+          proof_url: actionModal.proofUrl,
+          proof_public_id: actionModal.proofPublicId || undefined,
+        }).unwrap()
         setActionMessage({ type: 'success', text: 'Request released successfully.' })
       } else {
         await rejectRequest({ id, notes }).unwrap()
@@ -177,6 +210,38 @@ export default function EncashmentPageMain({ initialFilter = 'all' }: Props) {
       setActionMessage({ type: 'error', text: apiErr?.data?.message || fallback })
     } finally {
       setBusyId(null)
+    }
+  }
+
+  const handleProofUpload = async (file: File) => {
+    setActionMessage(null)
+    setIsUploadingProof(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('folder', 'encashment')
+
+      const response = await fetch('/api/admin/upload', {
+        method: 'POST',
+        body: formData,
+      })
+      const result = (await response.json()) as { url?: string; public_id?: string; error?: string }
+      if (!response.ok || !result?.url) {
+        throw new Error(result?.error || 'Upload failed.')
+      }
+
+      setActionModal((prev) => ({
+        ...prev,
+        proofUrl: result.url ?? '',
+        proofPublicId: result.public_id ?? '',
+        proofFileName: file.name,
+      }))
+      setActionMessage({ type: 'success', text: 'Proof uploaded successfully.' })
+    } catch (err: unknown) {
+      const error = err as { message?: string }
+      setActionMessage({ type: 'error', text: error?.message || 'Failed to upload proof.' })
+    } finally {
+      setIsUploadingProof(false)
     }
   }
 
@@ -263,13 +328,14 @@ export default function EncashmentPageMain({ initialFilter = 'all' }: Props) {
 
           <div className="rounded-2xl border border-slate-100 bg-white shadow-sm overflow-hidden">
             <div className="overflow-auto">
-              <table className="w-full min-w-[1080px]">
+              <table className="w-full min-w-[1240px]">
                 <thead className="bg-slate-50 border-b border-slate-100">
                   <tr className="text-left text-xs text-slate-500">
                     <th className="px-4 py-3 font-semibold">Reference</th>
                     <th className="px-4 py-3 font-semibold">Invoice</th>
                     <th className="px-4 py-3 font-semibold">Affiliate</th>
                     <th className="px-4 py-3 font-semibold">Amount</th>
+                    <th className="px-4 py-3 font-semibold">Wallet</th>
                     <th className="px-4 py-3 font-semibold">Requested</th>
                     <th className="px-4 py-3 font-semibold">Status</th>
                     <th className="px-4 py-3 font-semibold">Actions</th>
@@ -281,7 +347,7 @@ export default function EncashmentPageMain({ initialFilter = 'all' }: Props) {
                       const isBusy = busyId === row.id
                       const canApproveThis = canApprove && (row.status === 'pending' || row.status === 'on_hold')
                       const canRejectThis = canApprove && row.status !== 'released' && row.status !== 'rejected'
-                      const canReleaseThis = canRelease && row.status === 'approved_by_admin'
+                      const canReleaseThis = canRelease && row.status === 'approved_by_admin' && (row.can_release_by_balance ?? true)
 
                       return (
                         <tr key={row.id} className="border-b border-slate-50 last:border-b-0">
@@ -295,6 +361,16 @@ export default function EncashmentPageMain({ initialFilter = 'all' }: Props) {
                             <p className="text-xs text-slate-500">{row.affiliate_email || 'No email'}</p>
                           </td>
                           <td className="px-4 py-3 text-sm font-bold text-slate-800">{formatMoney(row.amount)}</td>
+                          <td className="px-4 py-3 text-xs text-slate-600">
+                            <p>Cash: <span className="font-semibold text-slate-800">{formatMoney(row.wallet_cash_balance ?? 0)}</span></p>
+                            <p className="mt-0.5">Locked: {formatMoney(row.wallet_locked_amount ?? 0)}</p>
+                            <p className="mt-0.5">Available: {formatMoney(row.wallet_available_amount ?? 0)}</p>
+                            {(row.can_release_by_balance === false) ? (
+                              <p className="mt-1 text-red-600 font-semibold">
+                                Shortfall: {formatMoney(row.balance_shortfall ?? 0)}
+                              </p>
+                            ) : null}
+                          </td>
                           <td className="px-4 py-3 text-xs text-slate-600">
                             <p>{formatDate(row.created_at)}</p>
                             <p className="mt-0.5">Approved: {formatDate(row.approved_at)}</p>
@@ -313,6 +389,16 @@ export default function EncashmentPageMain({ initialFilter = 'all' }: Props) {
                               >
                                 View
                               </button>
+                              {row.proof_url ? (
+                                <a
+                                  href={row.proof_url}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="px-2.5 py-1.5 rounded-lg text-xs font-semibold border border-emerald-200 text-emerald-700 hover:bg-emerald-50"
+                                >
+                                  Proof
+                                </a>
+                              ) : null}
                               <button
                                 disabled={isBusy || !canApproveThis}
                                 onClick={() => openActionModal('approve', row.id)}
@@ -323,6 +409,7 @@ export default function EncashmentPageMain({ initialFilter = 'all' }: Props) {
                               <button
                                 disabled={isBusy || !canReleaseThis}
                                 onClick={() => openActionModal('release', row.id)}
+                                title={row.can_release_by_balance === false ? 'Insufficient affiliate cash balance.' : undefined}
                                 className="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 text-white disabled:opacity-50"
                               >
                                 Release
@@ -341,7 +428,7 @@ export default function EncashmentPageMain({ initialFilter = 'all' }: Props) {
                     })
                   ) : (
                     <tr>
-                      <td colSpan={7} className="px-4 py-10 text-center text-sm text-slate-500">
+                      <td colSpan={8} className="px-4 py-10 text-center text-sm text-slate-500">
                         No encashment requests found.
                       </td>
                     </tr>
@@ -406,6 +493,22 @@ export default function EncashmentPageMain({ initialFilter = 'all' }: Props) {
                   <p className="text-[11px] uppercase tracking-wide text-slate-500">Amount</p>
                   <p className="mt-1 text-sm font-bold text-slate-800">{formatMoney(selectedRow.amount)}</p>
                 </div>
+                <div className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5">
+                  <p className="text-[11px] uppercase tracking-wide text-slate-500">Wallet Cash</p>
+                  <p className="mt-1 text-sm font-bold text-slate-800">{formatMoney(selectedRow.wallet_cash_balance ?? 0)}</p>
+                  <p className="mt-0.5 text-xs text-slate-600">Locked: {formatMoney(selectedRow.wallet_locked_amount ?? 0)}</p>
+                </div>
+                <div className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5">
+                  <p className="text-[11px] uppercase tracking-wide text-slate-500">Release Check</p>
+                  <p className={`mt-1 text-sm font-bold ${(selectedRow.can_release_by_balance ?? true) ? 'text-emerald-700' : 'text-red-700'}`}>
+                    {(selectedRow.can_release_by_balance ?? true) ? 'Ready' : 'Insufficient'}
+                  </p>
+                  {(selectedRow.can_release_by_balance === false) ? (
+                    <p className="mt-0.5 text-xs text-red-600">Shortfall: {formatMoney(selectedRow.balance_shortfall ?? 0)}</p>
+                  ) : (
+                    <p className="mt-0.5 text-xs text-slate-600">Available: {formatMoney(selectedRow.wallet_available_amount ?? 0)}</p>
+                  )}
+                </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
@@ -438,6 +541,16 @@ export default function EncashmentPageMain({ initialFilter = 'all' }: Props) {
                 <p className="mt-1 text-slate-700">{selectedRow.notes || 'No customer notes.'}</p>
                 {selectedRow.admin_notes ? <p className="mt-2 text-slate-700">Admin: {selectedRow.admin_notes}</p> : null}
                 {selectedRow.accounting_notes ? <p className="mt-1 text-slate-700">Accounting: {selectedRow.accounting_notes}</p> : null}
+                {selectedRow.proof_url ? (
+                  <a
+                    href={selectedRow.proof_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-2 inline-flex items-center rounded-lg border border-emerald-200 px-2.5 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-50"
+                  >
+                    View Release Proof
+                  </a>
+                ) : null}
               </div>
 
               <div className="rounded-xl border border-slate-100 px-3 py-2.5 text-xs text-slate-600 space-y-1">
@@ -476,6 +589,32 @@ export default function EncashmentPageMain({ initialFilter = 'all' }: Props) {
                 placeholder="Write clear reason/details (minimum 5 characters)..."
                 className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-400"
               />
+              {actionModal.action === 'release' ? (
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">Release Screenshot Proof (required)</label>
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp,image/gif"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      if (!file) return
+                      void handleProofUpload(file)
+                    }}
+                    className="block w-full rounded-xl border border-slate-200 px-3.5 py-2 text-sm text-slate-700 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-slate-700 hover:file:bg-slate-200"
+                  />
+                  {isUploadingProof ? <p className="text-xs text-slate-500">Uploading proof...</p> : null}
+                  {actionModal.proofUrl ? (
+                    <a
+                      href={actionModal.proofUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center rounded-lg border border-emerald-200 px-2.5 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-50"
+                    >
+                      Proof uploaded: {actionModal.proofFileName || 'View file'}
+                    </a>
+                  ) : null}
+                </div>
+              ) : null}
               <p className="text-xs text-slate-500">
                 Note is required. This will be visible in encashment details for audit and tracking.
               </p>
@@ -490,10 +629,10 @@ export default function EncashmentPageMain({ initialFilter = 'all' }: Props) {
               </button>
               <button
                 onClick={handleActionConfirm}
-                disabled={busyId === actionModal.id}
+                disabled={busyId === actionModal.id || isUploadingProof}
                 className={`rounded-lg px-3 py-2 text-xs font-semibold text-white disabled:opacity-60 ${getActionButtonClass(actionModal.action)}`}
               >
-                {busyId === actionModal.id ? 'Processing...' : getActionButtonLabel(actionModal.action)}
+                {isUploadingProof ? 'Uploading proof...' : busyId === actionModal.id ? 'Processing...' : getActionButtonLabel(actionModal.action)}
               </button>
             </div>
           </div>

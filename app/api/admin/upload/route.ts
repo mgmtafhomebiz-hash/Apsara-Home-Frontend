@@ -11,6 +11,7 @@ export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData()
     const file = formData.get('file') as File | null
+    const folderType = String(formData.get('folder') ?? 'products').toLowerCase()
 
     if (!file) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 })
@@ -30,8 +31,16 @@ export async function POST(req: NextRequest) {
     const buffer = Buffer.from(arrayBuffer)
     const base64 = `data:${file.type};base64,${buffer.toString('base64')}`
 
+    const folderMap: Record<string, string> = {
+      products: 'apsara/products',
+      encashment: 'apsara/encashment/proofs',
+      verification: 'apsara/verification',
+      profile: 'apsara/profile',
+    }
+    const folder = folderMap[folderType] ?? folderMap.products
+
     const result = await cloudinary.uploader.upload(base64, {
-      folder: 'apsara/products',
+      folder,
       transformation: [
         { width: 1200, height: 1200, crop: 'limit' },
         { quality: 'auto', fetch_format: 'auto' },

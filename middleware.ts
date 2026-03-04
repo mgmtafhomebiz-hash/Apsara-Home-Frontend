@@ -4,7 +4,7 @@ import { getToken } from "next-auth/jwt";
 
 const ADMIN_ALLOWED_ROLES = new Set(["admin", "super_admin", "accounting", "finance_officer", "csr", "web_content"]);
 const ACCOUNTING_ALLOWED_PREFIXES = ["/admin/accounting", "/admin/encashment"];
-const FINANCE_ALLOWED_PREFIXES = ["/admin/finance", "/admin/encashment"];
+const FINANCE_ALLOWED_PREFIXES = ["/admin/finance", "/admin/encashment", "/admin/accounting/invoices"];
 
 const getAdminRedirectPath = (role: string): string => {
     switch (role) {

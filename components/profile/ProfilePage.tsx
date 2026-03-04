@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useMeQuery, useUpdateProfileMutation } from '@/store/api/userApi';
 import { signOut, useSession } from 'next-auth/react';
@@ -17,7 +17,7 @@ import getActivityIcon from './GetActivityIcon';
 import EncashmentTab from './EncashmentTab';
 import WalletTab from './WalletTab';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 type ProfileFormState = {
   name: string;
@@ -66,7 +66,9 @@ const ProfilePage = () => {
   });
 
   const [profileMsg, setProfileMsg] = useState<AlertMsg | null>(null);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const msgTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const mainContentRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (data || session) {
@@ -96,7 +98,13 @@ const ProfilePage = () => {
     [data, form.name, form.phone, form.username, session?.user?.name],
   );
 
+  const verificationStatus = data?.verification_status ?? 'not_verified';
+  const isVerified = verificationStatus === 'verified' || data?.account_status === 1;
+  const isPendingVerification = verificationStatus === 'pending_review' || data?.account_status === 2;
+
   const completion = useMemo(() => {
+    if (isVerified) return 100;
+
     const checks = [
       Boolean(form.name.trim()),
       Boolean(form.email.trim()),
@@ -105,7 +113,28 @@ const ProfilePage = () => {
       Boolean(bio.trim()),
     ];
     return Math.round((checks.filter(Boolean).length / checks.length) * 100);
-  }, [bio, form]);
+  }, [bio, form, isVerified]);
+
+  const verificationChecklist = useMemo(() => {
+    return [
+      {
+        label: 'Complete profile basics (name + mobile number)',
+        done: Boolean(form.name.trim()) && Boolean(form.phone.trim()),
+      },
+      {
+        label: 'Upload profile photo',
+        done: Boolean(data?.avatar_url),
+      },
+      {
+        label: 'Submit KYC documents (ID front/back + selfie)',
+        done: isPendingVerification || isVerified,
+      },
+      {
+        label: 'Wait for admin KYC approval',
+        done: isVerified,
+      },
+    ];
+  }, [data?.avatar_url, form.name, form.phone, isPendingVerification, isVerified]);
 
   const onChange = (field: keyof ProfileFormState) => (e: ChangeEvent<HTMLInputElement>) =>
     setForm((prev) => ({ ...prev, [field]: e.target.value }));
@@ -126,6 +155,46 @@ const ProfilePage = () => {
     } catch (err: unknown) {
       const apiError = err as { data?: { message?: string } };
       setProfileMsg({ type: 'error', text: apiError?.data?.message || 'Failed to update profile.' });
+    }
+  };
+
+  const handleAvatarUpload = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setProfileMsg(null);
+    setIsUploadingAvatar(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('folder', 'profile');
+
+      const uploadResponse = await fetch('/api/admin/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      const uploadResult = (await uploadResponse.json()) as { url?: string; error?: string };
+      if (!uploadResponse.ok || !uploadResult?.url) {
+        throw new Error(uploadResult?.error || 'Failed to upload profile photo.');
+      }
+
+      await updateProfile({
+        name: form.name.trim() || data?.name || session?.user?.name || 'AF Home User',
+        username: form.username.trim() || undefined,
+        phone: form.phone.trim() || undefined,
+        avatar_url: uploadResult.url,
+      }).unwrap();
+
+      setProfileMsg({ type: 'success', text: 'Profile photo updated successfully.' });
+    } catch (err: unknown) {
+      const error = err as { message?: string; data?: { message?: string } };
+      setProfileMsg({
+        type: 'error',
+        text: error?.data?.message || error?.message || 'Failed to upload profile photo.',
+      });
+    } finally {
+      setIsUploadingAvatar(false);
+      e.target.value = '';
     }
   };
 
@@ -195,6 +264,16 @@ const ProfilePage = () => {
     .join('');
 
   const pwStrength = getPasswordStrength(security.newPassword);
+  const activeTabLabel = TABS.find((item) => item.key === activeTab)?.label ?? 'Profile';
+
+  const handleTabChange = (tab: Tab) => {
+    setActiveTab(tab);
+    if (typeof window !== 'undefined' && window.innerWidth < 1280) {
+      requestAnimationFrame(() => {
+        mainContentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    }
+  };
 
 
   return (
@@ -216,8 +295,30 @@ const ProfilePage = () => {
           <p className="mt-1 text-sm text-gray-500">Manage your personal info, security, and preferences.</p>
         </div>
 
+        {/* Mobile tab navigation */}
+        <div className="xl:hidden sticky top-16 z-20 -mx-1 mb-4 border-y border-orange-100 bg-white/95 px-1 py-2 backdrop-blur">
+          <nav className="flex gap-2 overflow-x-auto px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {TABS.map(({ key, label, Icon: TabIcon }) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => handleTabChange(key)}
+                className={`shrink-0 inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-semibold transition-all ${
+                  activeTab === key
+                    ? 'border-orange-500 bg-orange-500 text-white shadow-sm'
+                    : 'border-gray-200 bg-white text-gray-600'
+                }`}
+              >
+                <TabIcon className="h-3.5 w-3.5" />
+                {label}
+              </button>
+            ))}
+          </nav>
+          <p className="mt-2 px-2 text-[11px] font-semibold text-orange-700">Now viewing: {activeTabLabel}</p>
+        </div>
+
         <div className="grid grid-cols-1 xl:grid-cols-12 gap-5">
-          {/* ── Sidebar ─────────────────────────────────────────────────── */}
+          {/* â”€â”€ Sidebar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
           <aside className="xl:col-span-4 space-y-4">
             {/* Avatar card */}
             <motion.div
@@ -230,23 +331,39 @@ const ProfilePage = () => {
               <div className="flex flex-col items-center text-center gap-3">
                 {/* Avatar */}
                 <div className="relative group">
-                  <div className="h-20 w-20 rounded-full bg-linear-to-br from-orange-400 to-amber-500 text-white text-2xl font-extrabold flex items-center justify-center shadow-lg ring-4 ring-orange-100">
-                    {initials}
-                  </div>
-                  <button
-                    type="button"
-                    className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity"
+                  {data?.avatar_url ? (
+                    <img
+                      src={data.avatar_url}
+                      alt={form.name || 'Profile photo'}
+                      className="h-20 w-20 rounded-full object-cover shadow-lg ring-4 ring-orange-100"
+                    />
+                  ) : (
+                    <div className="h-20 w-20 rounded-full bg-linear-to-br from-orange-400 to-amber-500 text-white text-2xl font-extrabold flex items-center justify-center shadow-lg ring-4 ring-orange-100">
+                      {initials}
+                    </div>
+                  )}
+                  <label
+                    className="absolute inset-0 flex cursor-pointer items-center justify-center rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity"
                     title="Change photo"
                   >
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp,image/gif"
+                      className="hidden"
+                      onChange={handleAvatarUpload}
+                    />
                     <Icon.Camera className="h-5 w-5 text-white" />
-                  </button>
+                  </label>
                 </div>
+                {isUploadingAvatar && (
+                  <p className="text-[11px] text-orange-600 font-medium">Uploading profile photo...</p>
+                )}
 
                 <div>
                   <h2 className="text-base font-bold text-gray-900 leading-tight">
                     {form.name || 'AF Home User'}
                   </h2>
-                  <p className="text-xs text-gray-500 mt-0.5">{form.email || '—'}</p>
+                  <p className="text-xs text-gray-500 mt-0.5">{form.email || 'â€”'}</p>
                   {form.username && (
                     <span className="mt-1.5 inline-block text-xs px-2.5 py-0.5 rounded-full bg-orange-50 text-orange-600 font-medium">
                       @{form.username}
@@ -272,12 +389,45 @@ const ProfilePage = () => {
                     transition={{ duration: 0.6, ease: 'easeOut' }}
                   />
                 </div>
-                {completion < 100 && (
+                {completion < 100 ? (
                   <p className="mt-1.5 text-[11px] text-gray-400">
-                    {completion < 60 ? 'Fill in your details to unlock all features.' : 'Almost there — just a few fields left.'}
+                    {completion < 60 ? 'Fill in your details to unlock all features.' : 'Almost there - just a few fields left.'}
+                  </p>
+                ) : (
+                  <p className="mt-1.5 text-[11px] font-semibold text-emerald-600">
+                    Fully verified account.
                   </p>
                 )}
               </div>
+
+              {/* Verification reminder */}
+              {!isVerified && (
+                <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-3">
+                  <p className="text-[11px] font-bold uppercase tracking-wide text-amber-800">Verification Reminder</p>
+                  <p className="mt-1 text-[11px] text-amber-700">
+                    {isPendingVerification
+                      ? 'Your verification is under review. Complete pending items while waiting for admin approval.'
+                      : 'To get verified, complete all requirements below and submit KYC in Encashment tab.'}
+                  </p>
+                  <div className="mt-2.5 space-y-1.5">
+                    {verificationChecklist.map((item) => (
+                      <div key={item.label} className="flex items-start gap-2 text-[11px]">
+                        <span
+                          className={`mt-0.5 inline-block h-2 w-2 rounded-full ${item.done ? 'bg-emerald-500' : 'bg-amber-500'}`}
+                        />
+                        <span className={item.done ? 'text-emerald-700 font-semibold' : 'text-amber-800'}>{item.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleTabChange('encashment')}
+                    className="mt-3 inline-flex items-center rounded-lg border border-amber-300 bg-white px-2.5 py-1 text-[11px] font-semibold text-amber-700 hover:bg-amber-100 transition-colors"
+                  >
+                    Open KYC Form
+                  </button>
+                </div>
+              )}
             </motion.div>
 
             {/* Account stats */}
@@ -311,14 +461,14 @@ const ProfilePage = () => {
               initial="hidden"
               animate="visible"
               custom={2}
-              className="rounded-2xl border border-gray-200 bg-white p-3"
+              className="hidden xl:block rounded-2xl border border-gray-200 bg-white p-3"
             >
               <nav className="space-y-1">
                 {TABS.map(({ key, label, Icon: TabIcon }) => (
                   <button
                     key={key}
                     type="button"
-                    onClick={() => setActiveTab(key)}
+                    onClick={() => handleTabChange(key)}
                     className={`w-full flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all ${
                       activeTab === key
                         ? 'bg-orange-500 text-white shadow-sm'
@@ -364,10 +514,10 @@ const ProfilePage = () => {
             </motion.div>
           </aside>
 
-          {/* ── Main content ─────────────────────────────────────────────── */}
-          <div className="xl:col-span-8 space-y-5">
+          {/* â”€â”€ Main content â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+          <div ref={mainContentRef} className="xl:col-span-8 space-y-5">
             <AnimatePresence mode="wait">
-              {/* ── Profile tab ── */}
+              {/* â”€â”€ Profile tab â”€â”€ */}
               {activeTab === 'profile' && (
                 <motion.div key="profile" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.25 }} className="space-y-5">
 
@@ -527,7 +677,7 @@ const ProfilePage = () => {
                 </motion.div>
               )}
 
-              {/* ── Security tab ── */}
+              {/* â”€â”€ Security tab â”€â”€ */}
               {activeTab === 'security' && (
                 <motion.div key="security" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.25 }} className="space-y-5">
 
@@ -590,7 +740,7 @@ const ProfilePage = () => {
                             </div>
                             <p className="text-[11px] text-gray-500">
                               Strength: <span className="font-semibold text-gray-700">{pwStrength.label}</span>
-                              {' — '}Use uppercase, numbers &amp; symbols for a stronger password.
+                              {' â€” '}Use uppercase, numbers &amp; symbols for a stronger password.
                             </p>
                           </div>
                         )}
@@ -679,7 +829,7 @@ const ProfilePage = () => {
                 </motion.div>
               )}
 
-              {/* ── Preferences tab ── */}
+              {/* â”€â”€ Preferences tab â”€â”€ */}
               {activeTab === 'preferences' && (
                 <motion.div key="preferences" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.25 }} className="space-y-5">
 
@@ -725,8 +875,8 @@ const ProfilePage = () => {
                           onChange={(e) => setPrefs((p) => ({ ...p, language: e.target.value as 'en' | 'fil' }))}
                           className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300"
                         >
-                          <option value="en">🌐 English</option>
-                          <option value="fil">🇵🇭 Filipino</option>
+                          <option value="en">ðŸŒ English</option>
+                          <option value="fil">ðŸ‡µðŸ‡­ Filipino</option>
                         </select>
                       </div>
                       <div className="space-y-1.5">
@@ -736,7 +886,7 @@ const ProfilePage = () => {
                           onChange={(e) => setPrefs((p) => ({ ...p, currency: e.target.value as 'PHP' | 'USD' }))}
                           className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300"
                         >
-                          <option value="PHP">₱ Philippine Peso (PHP)</option>
+                          <option value="PHP">â‚± Philippine Peso (PHP)</option>
                           <option value="USD">$ US Dollar (USD)</option>
                         </select>
                       </div>
@@ -754,7 +904,7 @@ const ProfilePage = () => {
                 </motion.div>
               )}
 
-              {/* ── Activity tab ── */}
+              {/* â”€â”€ Activity tab â”€â”€ */}
               {activeTab === 'wallet' && (
                 <motion.div
                   key="wallet"
@@ -821,7 +971,7 @@ const ProfilePage = () => {
                         </div>
                         <div>
                           <p className="text-sm font-semibold text-gray-800">Current Device</p>
-                          <p className="text-xs text-gray-500">Windows · Chrome · Manila, PH</p>
+                          <p className="text-xs text-gray-500">Windows Â· Chrome Â· Manila, PH</p>
                         </div>
                       </div>
                       <span className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-1 rounded-full">

@@ -8,6 +8,7 @@ import { useCart } from '@/context/CartContext'
 import { useSession, signOut } from 'next-auth/react'
 import { useLogoutMutation } from '@/store/api/authApi'
 import { useGetCategoriesQuery } from '@/store/api/categoriesApi'
+import { useMeQuery } from '@/store/api/userApi'
 import { useRouter } from 'next/navigation'
 import { categoryProducts } from '@/libs/CategoryData'
 
@@ -138,6 +139,7 @@ export default function Navbar() {
   const [mobileSearch, setMobileSearch] = useState('')
   const { cartCount, setIsOpen } = useCart()
   const { data: session, status } = useSession();
+  const { data: meData } = useMeQuery(undefined, { skip: status !== 'authenticated' })
   const [logoutApi] = useLogoutMutation();
   const {
     data: categoriesData,
@@ -147,6 +149,7 @@ export default function Navbar() {
 
   const isLoggedIn = status === 'authenticated'
   const user = session?.user
+  const avatarUrl = meData?.avatar_url || user?.image || null
 
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const profileMenuRef = useRef<HTMLDivElement | null>(null)
@@ -373,9 +376,17 @@ export default function Navbar() {
                     className="flex items-center gap-2 p-2 rounded-xl hover:bg-gray-100 transition-colors"
                     title="Profile menu"
                   >
-                    <span className="flex items-center justify-center h-8 w-8 rounded-full bg-orange-100 text-orange-600 text-xs font-semibold uppercase">
-                      {user?.name?.charAt(0) ?? 'U'}
-                    </span>
+                    {avatarUrl ? (
+                      <img
+                        src={avatarUrl}
+                        alt={user?.name || 'Profile'}
+                        className="h-8 w-8 rounded-full object-cover"
+                      />
+                    ) : (
+                      <span className="flex items-center justify-center h-8 w-8 rounded-full bg-orange-100 text-orange-600 text-xs font-semibold uppercase">
+                        {user?.name?.charAt(0) ?? 'U'}
+                      </span>
+                    )}
                   </button>
 
                   <AnimatePresence>

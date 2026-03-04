@@ -109,8 +109,10 @@ const navItems: NavItem[] = [
     icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M12 6v12m6-6H6M4 7h16M4 17h16" /></svg>,
     children: [
       { label: 'Dashboard', path: '/admin/finance' },
+      { label: 'Wallet Check Queue', path: '/admin/encashment' },
       { label: 'Release Center', path: '/admin/encashment/approved_by_admin' },
       { label: 'Released', path: '/admin/encashment/released' },
+      { label: 'Invoices', path: '/admin/accounting/invoices' },
     ],
   },
   {
@@ -226,7 +228,7 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
 
   const visibleNavItems = navItems.filter((item) => {
     if (isAccounting) return item.id === 'accounting' || item.id === 'encashment'
-    if (isFinanceOfficer) return item.id === 'finance' || item.id === 'encashment'
+    if (isFinanceOfficer) return item.id === 'finance'
     return true
   })
 
@@ -312,14 +314,14 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
         <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-0.5" style={{ scrollbarWidth: 'none' }}>
           {visibleNavItems.map((item) => {
             const hasChildren = !!item.children?.length
-            const menuOpen = isAccounting ? true : openMenus.includes(item.id)
+            const menuOpen = isAccounting || isFinanceOfficer ? true : openMenus.includes(item.id)
             const active = item.path ? isActive(item.path) : isChildActive(item.children)
 
             return (
               <div key={item.id}>
                 {hasChildren ? (
                   <button
-                    onClick={() => !isCollapsed && !isAccounting && toggleMenu(item.id)}
+                    onClick={() => !isCollapsed && !isAccounting && !isFinanceOfficer && toggleMenu(item.id)}
                     title={isCollapsed ? item.label : undefined}
                     className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-200 group relative
                       ${active ? 'bg-teal-500/15 text-teal-400' : 'text-slate-400 hover:bg-slate-800 hover:text-slate-100'}
@@ -331,7 +333,7 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
                       <>
                         <span className="flex-1 text-left font-medium">{item.label}</span>
                         {item.badge && <span className="bg-teal-500 text-white text-xs px-1.5 py-0.5 rounded-full font-bold min-w-[20px] text-center">{item.badge}</span>}
-                        {!isAccounting && (
+                        {!isAccounting && !isFinanceOfficer && (
                           <svg className={`w-4 h-4 shrink-0 transition-transform duration-200 ${menuOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                         )}
                       </>

@@ -13,6 +13,8 @@ export interface EncashmentRequestItem {
   account_number?: string | null;
   notes?: string | null;
   status: EncashmentStatus;
+  proof_url?: string | null;
+  proof_uploaded_at?: string | null;
   approved_at?: string | null;
   released_at?: string | null;
   created_at?: string | null;
@@ -45,6 +47,11 @@ export interface EncashmentListResponse {
     cooldown_hours: number;
     require_active_account: boolean;
   };
+  verification?: {
+    status: 'verified' | 'pending_review' | 'blocked' | 'not_submitted';
+    reference_no?: string | null;
+    submitted_at?: string | null;
+  };
 }
 
 export interface CreateEncashmentPayload {
@@ -60,6 +67,32 @@ export interface CreateEncashmentResponse {
   request: EncashmentRequestItem;
   eligibility?: EncashmentListResponse['eligibility'];
   policy?: EncashmentListResponse['policy'];
+}
+
+export interface VerificationRequestResponse {
+  message: string;
+  status: 'verified' | 'pending_review';
+  approval_owner: 'admin';
+  reference_no?: string;
+  verification?: EncashmentListResponse['verification'];
+}
+
+export interface VerificationRequestPayload {
+  full_name: string;
+  birth_date?: string;
+  id_type: string;
+  id_number?: string;
+  contact_number?: string;
+  address_line?: string;
+  city?: string;
+  province?: string;
+  postal_code?: string;
+  country?: string;
+  notes?: string;
+  id_front_url: string;
+  id_back_url?: string;
+  selfie_url: string;
+  profile_photo_url?: string;
 }
 
 export type AdminEncashmentStatus = 'pending' | 'approved_by_admin' | 'released' | 'rejected' | 'on_hold';
@@ -78,6 +111,15 @@ export interface AdminEncashmentItem {
   status: AdminEncashmentStatus;
   admin_notes?: string | null;
   accounting_notes?: string | null;
+  proof_url?: string | null;
+  proof_public_id?: string | null;
+  proof_uploaded_by?: number | null;
+  proof_uploaded_at?: string | null;
+  wallet_cash_balance?: number;
+  wallet_locked_amount?: number;
+  wallet_available_amount?: number;
+  can_release_by_balance?: boolean;
+  balance_shortfall?: number;
   approved_by?: number | null;
   approved_at?: string | null;
   released_by?: number | null;
@@ -165,6 +207,14 @@ export const encashmentApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['Encashment'],
     }),
+    submitEncashmentVerificationRequest: builder.mutation<VerificationRequestResponse, VerificationRequestPayload>({
+      query: (body) => ({
+        url: '/api/encashment/verification-request',
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: ['Encashment'],
+    }),
     getWalletOverview: builder.query<WalletOverviewResponse, { page?: number; perPage?: number; walletType?: WalletTypeFilter } | void>({
       query: (params) => ({
         url: '/api/encashment/wallet',
@@ -206,11 +256,11 @@ export const encashmentApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['Encashment'],
     }),
-    releaseAdminEncashment: builder.mutation<{ message: string }, { id: number; notes?: string }>({
-      query: ({ id, notes }) => ({
+    releaseAdminEncashment: builder.mutation<{ message: string }, { id: number; notes?: string; proof_url?: string; proof_public_id?: string }>({
+      query: ({ id, notes, proof_url, proof_public_id }) => ({
         url: `/api/admin/encashment/${id}/release`,
         method: 'PATCH',
-        body: { notes },
+        body: { notes, proof_url, proof_public_id },
       }),
       invalidatesTags: ['Encashment'],
     }),
@@ -220,6 +270,7 @@ export const encashmentApi = baseApi.injectEndpoints({
 export const {
   useGetEncashmentRequestsQuery,
   useCreateEncashmentRequestMutation,
+  useSubmitEncashmentVerificationRequestMutation,
   useGetWalletOverviewQuery,
   useGetAdminEncashmentRequestsQuery,
   useApproveAdminEncashmentMutation,
