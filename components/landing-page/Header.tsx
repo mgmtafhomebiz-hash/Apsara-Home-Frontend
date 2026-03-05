@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ShoppingBag, Menu, X, User } from 'lucide-react';
+import { useSession } from 'next-auth/react';
 
 interface HeaderProps {
   cartCount: number;
@@ -10,6 +11,8 @@ interface HeaderProps {
 export default function Header({ cartCount, onCartClick }: HeaderProps) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { status } = useSession();
+  const userHref = status === 'authenticated' ? '/shop' : '/login';
 
   useEffect(() => {
     const handleScroll = () => {
@@ -77,7 +80,7 @@ export default function Header({ cartCount, onCartClick }: HeaderProps) {
           <div className="flex items-center gap-4">
             {/* User Icon with href */}
             <motion.a
-              href="/login"
+              href={userHref}
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.95 }}
               className={`p-2 transition-colors ${isScrolled ? 'text-black' : 'text-white'}`}

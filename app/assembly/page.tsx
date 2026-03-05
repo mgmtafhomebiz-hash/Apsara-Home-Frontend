@@ -1,3 +1,7 @@
+import { buildPageMetadata } from '@/app/seo';
+
+export const metadata = buildPageMetadata({ title: 'Assembly', description: 'Browse the Assembly page on AF Home.', path: '/assembly' });
+
 export default function AssemblyGuidesPage() {
   return (
     <main className="container mx-auto px-4 py-16">

@@ -1,3 +1,7 @@
+import { buildPageMetadata } from '@/app/seo';
+
+export const metadata = buildPageMetadata({ title: 'By Room', description: 'Browse the By Room page on AF Home.', path: '/by-room' });
+
 export default function ByRoomPage() {
   return (
     <main className="container mx-auto px-4 py-16">

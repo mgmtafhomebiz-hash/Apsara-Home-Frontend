@@ -43,7 +43,7 @@ const LoginForm = ({ onSwitchToSignUp }: LoginFormProps) => {
         setIsLoading(false)
 
         if (result?.ok) {
-            router.replace('/');
+            router.replace('/shop');
         } else {
             setError('Invalid email or password. Please try Again.')
         }

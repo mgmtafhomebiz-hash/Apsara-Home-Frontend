@@ -12,6 +12,7 @@ export interface Member {
   name: string;
   email: string;
   avatar?: string;
+  verificationStatus?: 'verified' | 'pending_review' | 'not_verified' | 'blocked';
   status: MemberStatus;
   tier: MemberTier;
   orders: number;

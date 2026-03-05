@@ -1,3 +1,7 @@
+import { buildPageMetadata } from '@/app/seo';
+
+export const metadata = buildPageMetadata({ title: 'Admin Products', description: 'Browse the Admin Products page on AF Home.', path: '/admin/products', noIndex: true });
+
 import ProductsPageMain from '@/components/superAdmin/products/ProductsPageMain'
 import { authOptions } from '@/libs/auth'
 import { normalizeProductsResponse, ProductsResponse } from '@/store/api/productsApi'

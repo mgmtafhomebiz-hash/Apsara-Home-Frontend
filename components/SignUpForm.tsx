@@ -1,10 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { motion } from 'framer-motion'
-import { useRouter } from 'next/navigation'
 import { useRegisterMutation } from '@/store/api/authApi'
-import { signIn } from 'next-auth/react'
 import Loading from './Loading'
 import { usePhAddress } from '@/hooks/usePhAddress'
 
@@ -45,11 +43,11 @@ interface SignUpFormProps {
 }
 
 export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
-    const router = useRouter()
     const [register, { isLoading }] = useRegisterMutation()
     const [showPass, setShowPass] = useState(false)
     const [showConfirm, setShowConfirm] = useState(false)
     const [error, setError] = useState('')
+    const errorRef = useRef<HTMLDivElement | null>(null)
 
     const ph = usePhAddress()
 
@@ -76,19 +74,26 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
     const set = (field: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
         setForm(f => ({ ...f, [field]: e.target.type === 'checkbox' ? e.target.checked : e.target.value }))
 
+    const showError = (message: string) => {
+        setError(message)
+        requestAnimationFrame(() => {
+            errorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        })
+    }
+
     const handleRegister = async (e: React.FormEvent) => {
         e.preventDefault()
         setError('')
 
-        if (!form.agreeTerms) return setError('You must agree to the Terms & Conditions.')
-        if (form.password !== form.confirmPassword) return setError('Passwords do not match.')
-        if (form.password.length < 8) return setError('Password must be at least 8 characters.')
-        if (!/[A-Z]/.test(form.password)) return setError('Password must include at least one uppercase letter.')
-        if (!/[a-z]/.test(form.password)) return setError('Password must include at least one lowercase letter.')
-        if (!/[0-9]/.test(form.password)) return setError('Password must include at least one number.')
-        if (!/[^A-Za-z0-9]/.test(form.password)) return setError('Password must include at least one special character.')
+        if (!form.agreeTerms) return showError('You must agree to the Terms & Conditions.')
+        if (form.password !== form.confirmPassword) return showError('Passwords do not match.')
+        if (form.password.length < 8) return showError('Password must be at least 8 characters.')
+        if (!/[A-Z]/.test(form.password)) return showError('Password must include at least one uppercase letter.')
+        if (!/[a-z]/.test(form.password)) return showError('Password must include at least one lowercase letter.')
+        if (!/[0-9]/.test(form.password)) return showError('Password must include at least one number.')
+        if (!/[^A-Za-z0-9]/.test(form.password)) return showError('Password must include at least one special character.')
         if (containsBlockedWord(form.firstName) || containsBlockedWord(form.lastName) || containsBlockedWord(form.username) || containsBlockedWord(form.middleName)) {
-            return setError('Account details contain prohibited words. Please use appropriate name/username.')
+            return showError('Account details contain prohibited words. Please use appropriate name/username.')
         }
 
         const result = await register({
@@ -120,22 +125,11 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
             const firstError = errorData?.errors
                 ? Object.values(errorData.errors)[0][0]
                 : errorData?.message || 'Registration failed. Please try again.'
-            setError(firstError)
+            showError(firstError)
             return
         }
 
-        const signInRes = await signIn('credentials', {
-            email: form.email,
-            password: form.password,
-            redirect: false,
-        })
-
-        if (signInRes?.ok) {
-            router.push('/login')
-            router.refresh()
-        } else {
-            onSwitchToLogin()
-        }
+        onSwitchToLogin()
     }
 
     return (
@@ -150,7 +144,7 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
 
             <form onSubmit={handleRegister} className="space-y-4">
                 {error && (
-                    <div className="bg-red-500/20 border border-red-400/20 rounded-xl px-4 py-2.5 text-sm text-red-300">
+                    <div ref={errorRef} className="bg-red-500/20 border border-red-400/20 rounded-xl px-4 py-2.5 text-sm text-red-300">
                         {error}
                     </div>
                 )}
@@ -186,8 +180,13 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                         <label className={labelClass}>Birth Date <span className="text-orange-400">*</span></label>
-                        <input type="date" required
-                            value={form.birthDate} onChange={set('birthDate')} className={`${inputClass} scheme-dark`} />
+                        <input 
+                            type="date" 
+                            required
+                            value={form.birthDate} 
+                            onChange={set('birthDate')} 
+                            className={`${inputClass} scheme-dark`} 
+                        />
                     </div>
                     <div>
                         <label className={labelClass}>Email Address <span className="text-orange-400">*</span></label>
@@ -199,12 +198,13 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
                 {/* Gender + Occupation */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                        <label className={labelClass}>Gender</label>
+                        <label className={labelClass}>Gender <span className="text-orange-400">*</span></label>
                         <SelectWrapper>
                             <select
                                 className={selectClass}
                                 value={form.gender}
                                 onChange={set('gender')}
+                                required
                             >
                                 <option value="" className="bg-slate-800">- Select Gender -</option>
                                 <option value="male" className="bg-slate-800">Male</option>
@@ -214,8 +214,10 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
                         </SelectWrapper>
                     </div>
                     <div>
-                        <label className={labelClass}>Occupation</label>
-                        <input type="text" placeholder="e.g. Engineer, Nurse, OFW"
+                        <label className={labelClass}>Occupation <span className="text-orange-400">*</span></label>
+                        <input 
+                            type="text" placeholder="e.g. Engineer, Nurse, OFW"
+                            required
                             value={form.occupation} onChange={set('occupation')} className={inputClass} />
                     </div>
                 </div>
@@ -269,9 +271,15 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
                             value={form.username} onChange={set('username')} className={inputClass} />
                     </div>
                     <div>
-                        <label className={labelClass}>Referred By</label>
-                        <input type="text" placeholder="Referral code"
-                            value={form.referredBy} onChange={set('referredBy')} className={inputClass} />
+                        <label className={labelClass}>Referred By <span className="text-orange-400">*</span></label>
+                        <input 
+                            type="text" 
+                            placeholder="Referral code"
+                            value={form.referredBy} 
+                            onChange={set('referredBy')} 
+                            className={inputClass} 
+                            required
+                        />
                     </div>
                 </div>
 
@@ -283,14 +291,17 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
 
                 {/* Street */}
                 <div>
-                    <label className={labelClass}>Street / House No.</label>
-                    <input type="text" placeholder="e.g. 123 Rizal St."
+                    <label className={labelClass}>Street / House No. <span className="text-orange-400">*</span></label>
+                    <input 
+                        type="text" 
+                        placeholder="e.g. 123 Rizal St."
+                        required
                         value={form.address} onChange={set('address')} className={inputClass} />
                 </div>
 
                 {/* Region */}
                 <div>
-                    <label className={labelClass}>Region</label>
+                    <label className={labelClass}>Region <span className="text-orange-400">*</span></label>
                     <SelectWrapper>
                         <select
                             className={selectClass}
@@ -299,6 +310,7 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
                                 const opt = e.target.options[e.target.selectedIndex]
                                 ph.setRegion(e.target.value, opt.text)
                             }}
+                            required
                         >
                             <option value="" className="bg-slate-800">— Select Region —</option>
                             {ph.regions.map(r => (
@@ -311,7 +323,7 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
                 {/* Province — hidden for NCR and no-province regions */}
                 {!ph.noProvince && (
                     <div>
-                        <label className={labelClass}>Province</label>
+                        <label className={labelClass}>Province <span className="text-orange-400">*</span></label>
                         <SelectWrapper>
                             <select
                                 className={selectClass}
@@ -321,6 +333,7 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
                                     const opt = e.target.options[e.target.selectedIndex]
                                     ph.setProvince(e.target.value, opt.text)
                                 }}
+                                required
                             >
                                 <option value="" className="bg-slate-800">
                                     {ph.loadingProvinces ? 'Loading provinces...' : '— Select Province —'}
@@ -335,7 +348,7 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
 
                 {/* City / Municipality */}
                 <div>
-                    <label className={labelClass}>City / Municipality</label>
+                    <label className={labelClass}>City / Municipality <span className="text-orange-400">*</span></label>
                     <SelectWrapper>
                         <select
                             className={selectClass}
@@ -345,6 +358,7 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
                                 const opt = e.target.options[e.target.selectedIndex]
                                 ph.setCity(e.target.value, opt.text)
                             }}
+                            required
                         >
                             <option value="" className="bg-slate-800">
                                 {ph.loadingCities || ph.loadingProvinces ? 'Loading...' : '— Select City / Municipality —'}
@@ -358,13 +372,14 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
 
                 {/* Barangay */}
                 <div>
-                    <label className={labelClass}>Barangay</label>
+                    <label className={labelClass}>Barangay <span className="text-orange-400">*</span></label>
                     <SelectWrapper>
                         <select
                             className={selectClass}
                             value={ph.address.barangay}
                             disabled={!ph.cityCode || ph.loadingBarangays}
                             onChange={e => ph.setBarangay(e.target.value)}
+                            required
                         >
                             <option value="" className="bg-slate-800">
                                 {ph.loadingBarangays ? 'Loading...' : '— Select Barangay —'}
@@ -378,9 +393,15 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
 
                 {/* ZIP Code */}
                 <div>
-                    <label className={labelClass}>ZIP Code</label>
-                    <input type="text" placeholder="ZIP code" maxLength={10}
-                        value={form.zipCode} onChange={set('zipCode')} className={inputClass} />
+                    <label className={labelClass}>ZIP Code <span className="text-orange-400">*</span></label>
+                    <input 
+                        type="text" placeholder="ZIP code" 
+                        maxLength={10}
+                        value={form.zipCode} 
+                        onChange={set('zipCode')} 
+                        className={inputClass} 
+                        required
+                    />
                 </div>
 
                 {/* ── Account Security ── */}

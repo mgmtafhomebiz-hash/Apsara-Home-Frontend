@@ -28,7 +28,7 @@ const Checkout = () => {
           <div className="mt-4 space-y-2 text-sm">
             <div className="flex justify-between"><span>Qty</span><span>{qty}</span></div>
             <div className="flex justify-between"><span>Method</span><span>{methodMap[method] ?? method}</span></div>
-            <div className="flex justify-between font-bold text-orange-500"><span>Total</span><span>PHP {total.toLocaleString()}</span></div>
+            <div className="flex justify-between font-bold text-orange-500"><span>Total</span><span>₱{total.toLocaleString()}</span></div>
           </div>
 
           <p className="mt-4 text-xs text-gray-500">This is a test-only checkout summary before redirecting to PayMongo.</p>

@@ -1,3 +1,7 @@
+import { buildPageMetadata } from '@/app/seo';
+
+export const metadata = buildPageMetadata({ title: 'Blog', description: 'Browse the Blog page on AF Home.', path: '/blog' });
+
 export default function BlogPage() {
   return (
     <main className="container mx-auto px-4 py-16">

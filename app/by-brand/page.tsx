@@ -1,3 +1,7 @@
+import { buildPageMetadata } from '@/app/seo';
+
+export const metadata = buildPageMetadata({ title: 'By Brand', description: 'Browse the By Brand page on AF Home.', path: '/by-brand' });
+
 export default function ByBrandPage() {
   return (
     <main className="container mx-auto px-4 py-16">

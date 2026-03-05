@@ -90,7 +90,7 @@ const BuyNowOptionsModal = ({
   selectedSize,
   selectedType,
 }: BuyNowOptionsModalProps) => {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>('gcash');
   const [selectedOnlineBank, setSelectedOnlineBank] = useState(onlineBankingOptions[0]);
   const [selectedCardBrand, setSelectedCardBrand] = useState(cardOptions[0]);
@@ -105,6 +105,13 @@ const BuyNowOptionsModal = ({
   const router = useRouter();
 
   const handleProceed = async () => {
+
+    if (status !== 'authenticated') {
+      onClose();
+      router.push('/login');
+      return;
+    }
+
     if (selectedMethod === 'online_banking') {
       setNotice(`Online Banking (${selectedOnlineBank}) is coming soon.`);
       return;
@@ -121,9 +128,9 @@ const BuyNowOptionsModal = ({
         payment_method: selectedMethod,
         customer: customerEmail
           ? {
-              email: customerEmail,
-              name: customerName,
-            }
+            email: customerEmail,
+            name: customerName,
+          }
           : undefined,
         order: {
           product_name: product.name,
@@ -225,7 +232,7 @@ const BuyNowOptionsModal = ({
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-bold text-slate-800 leading-snug line-clamp-2">{product.name}</p>
-                      <p className="text-orange-500 font-extrabold text-[15px] mt-1.5">PHP {product.price.toLocaleString()}</p>
+                      <p className="text-orange-500 font-extrabold text-[15px] mt-1.5">₱{product.price.toLocaleString()}</p>
                       <div className="flex flex-wrap items-center gap-1 mt-1.5">
                         <span className="px-2 py-0.5 bg-orange-50 border border-orange-100 text-orange-600 text-[10px] font-bold rounded-full">
                           Qty: {quantity}
@@ -255,7 +262,7 @@ const BuyNowOptionsModal = ({
                     <div className="px-4 py-3.5 space-y-2.5 text-sm">
                       <div className="flex justify-between items-center text-slate-500">
                         <span>Subtotal ({quantity} item{quantity > 1 ? 's' : ''})</span>
-                        <span className="font-semibold text-slate-700">PHP {subtotal.toLocaleString()}</span>
+                        <span className="font-semibold text-slate-700">₱{subtotal.toLocaleString()}</span>
                       </div>
                       <div className="flex justify-between items-center text-slate-500">
                         <div className="flex items-center gap-1.5">
@@ -265,13 +272,13 @@ const BuyNowOptionsModal = ({
                           )}
                         </div>
                         <span className={handlingFee === 0 ? 'text-green-600 font-semibold' : 'font-semibold text-slate-700'}>
-                          {handlingFee === 0 ? 'PHP 0.00' : `PHP ${handlingFee}`}
+                          {handlingFee === 0 ? '₱0.00' : `₱${handlingFee}`}
                         </span>
                       </div>
                     </div>
                     <div className="bg-orange-50 border-t border-orange-100 px-4 py-3 flex justify-between items-center">
                       <span className="font-bold text-slate-800 text-sm">Total Amount</span>
-                      <span className="font-extrabold text-orange-500 text-xl">PHP {total.toLocaleString()}</span>
+                      <span className="font-extrabold text-orange-500 text-xl">₱{total.toLocaleString()}</span>
                     </div>
                   </div>
 
@@ -281,14 +288,14 @@ const BuyNowOptionsModal = ({
                       <svg className="w-3.5 h-3.5 text-green-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
-                      <p className="text-xs text-green-700 font-medium">Free shipping on orders PHP 5,000+</p>
+                      <p className="text-xs text-green-700 font-medium">Free shipping on orders ₱5,000+</p>
                     </div>
                   ) : (
                     <div className="mt-2 flex items-center gap-2 px-3 py-2 bg-slate-50 rounded-xl border border-slate-100">
                       <svg className="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
-                      <p className="text-xs text-slate-400">Add more items to get free shipping (PHP 5,000+)</p>
+                      <p className="text-xs text-slate-400">Add more items to get free shipping (₱5,000+)</p>
                     </div>
                   )}
 
@@ -485,7 +492,7 @@ const BuyNowOptionsModal = ({
                           <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                           </svg>
-                          <span>Continue to Checkout · PHP {total.toLocaleString()}</span>
+                          <span>Continue to Checkout · ₱{total.toLocaleString()}</span>
                         </>
                       )}
                     </button>
@@ -523,6 +530,7 @@ const BuyNowOptionsModal = ({
           </motion.div>
         </>
       )}
+
     </AnimatePresence>
   );
 };

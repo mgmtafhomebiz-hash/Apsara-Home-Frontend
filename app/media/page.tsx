@@ -1,3 +1,7 @@
+import { buildPageMetadata } from '@/app/seo';
+
+export const metadata = buildPageMetadata({ title: 'Media', description: 'Browse the Media page on AF Home.', path: '/media' });
+
 export default function MediaPage() {
   return (
     <main className="container mx-auto px-4 py-16">

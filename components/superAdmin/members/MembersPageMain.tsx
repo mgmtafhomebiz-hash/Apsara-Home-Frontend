@@ -27,7 +27,7 @@ const MembersPageMain = ({ initialData = null, initialStats = null }: MembersPag
     const [page, setPage] = useState(1)
     const [stableData, setStableData] = useState<MembersResponse | null>(initialData)
     const [stableStats, setStableStats] = useState<MembersStatsResponse | null>(initialStats)
-    const perPage = 25
+    const perPage = 7
     const urlSearch = (searchParams.get('q') ?? '').trim()
 
     useEffect(() => {
@@ -166,8 +166,8 @@ const MembersPageMain = ({ initialData = null, initialStats = null }: MembersPag
             ) : (
                 <div className="space-y-2">
                     {isFetching && (
-                        <div className="h-1 w-full overflow-hidden rounded-full bg-slate-200">
-                            <div className="h-full w-1/3 animate-pulse rounded-full bg-teal-500" />
+                        <div className="relative h-0.5 w-full overflow-hidden bg-teal-100/60">
+                            <div className="animate-loading-sweep absolute inset-y-0 left-0 w-2/5 bg-gradient-to-r from-transparent via-teal-500 to-transparent" />
                         </div>
                     )}
                     <MembersTable

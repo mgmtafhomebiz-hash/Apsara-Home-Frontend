@@ -1,6 +1,9 @@
 import CategoryListProductMain from '@/components/category/CategoryListProductMain';
 import type { Category } from '@/store/api/categoriesApi';
 import type { Product, ProductsResponse } from '@/store/api/productsApi';
+import { buildPageMetadata } from '@/app/seo';
+
+export const metadata = buildPageMetadata({ title: 'Category Details', description: 'Browse the Category Details page on AF Home.', path: '/category/[slug]' });
 
 interface ApiCategoriesResponse {
   categories?: Category[];
@@ -10,8 +13,10 @@ type LooseRecord = Record<string, unknown>;
 const toLooseRecord = (value: unknown): LooseRecord => value as LooseRecord;
 
 interface DisplayProduct {
+  id?: number;
   name: string;
   price: number;
+  priceDp?: number;
   prodpv?: number;
   originalPrice?: number;
   image: string;
@@ -142,8 +147,10 @@ const mapProductToDisplay = (product: Product | LooseRecord, apiUrl?: string): D
   const verified = toBoolean(row.verified ?? row.pd_verified);
 
   return {
+    id: toNumber(row.id ?? row.pd_id ?? 0) || undefined,
     name,
     price,
+    priceDp: dp > 0 ? dp : undefined,
     prodpv,
     originalPrice: isOnSale && dp > 0 && srp > dp ? srp : undefined,
     image: resolveImageUrl(rawImage, apiUrl),
@@ -233,4 +240,3 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
     />
   );
 }
-

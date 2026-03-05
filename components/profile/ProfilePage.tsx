@@ -261,7 +261,7 @@ const ProfilePage = () => {
     { key: 'profile', label: 'Profile', Icon: Icon.User },
     { key: 'security', label: 'Security', Icon: Icon.Shield },
     { key: 'preferences', label: 'Preferences', Icon: Icon.Bell },
-    { key: 'wallet', label: 'Wallet', Icon: Icon.Activity },
+    { key: 'wallet', label: 'Wallet', Icon: Icon.Wallet },
     { key: 'encashment', label: 'Encashment', Icon: Icon.Bag },
     { key: 'activity', label: 'Activity', Icon: Icon.Activity },
   ];

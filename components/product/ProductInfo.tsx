@@ -8,6 +8,7 @@ import { useEffect, useMemo, useState } from "react";
 import StarRating from "../ui/StarRating";
 import BuyNowOptionsModal from "./BuyNowOptionsModal";
 import { useSession } from "next-auth/react";
+import { useMeQuery } from "@/store/api/userApi";
 
 const CartIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -75,8 +76,10 @@ const buildVariantGroupKey = (variant: VariantOption, index: number) => {
 const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange }: ProductInfoProps) => {
     const { addToCart } = useCart();
     const { data: session } = useSession();
-    const role = String((session?.user as { role?: string } | undefined)?.role ?? '').toLowerCase();
-    const canSeePv = role === '' || role === 'customer' || role === 'member' || role === 'affiliate';
+    const isLoggedIn = Boolean(session?.user);
+    const { data: me } = useMeQuery(undefined, { skip: !isLoggedIn });
+    const isVerifiedAccount = (me?.verification_status === 'verified') || (me?.account_status === 1);
+    const canUseDealerPrice = isLoggedIn && isVerifiedAccount;
     const displayPv = Number(product.prodpv ?? 0);
     const [quantity, setQuantity] = useState(1);
     const [selectedColor, setSelectedColor] = useState('');
@@ -173,12 +176,14 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange }
         onVariantChange?.(selectedVariant?.images ?? []);
     }, [selectedVariant, onVariantChange]);
 
-    const displayPrice = (selectedVariant?.priceDp ?? 0) > 0
-        ? Number(selectedVariant?.priceDp)
-        : (selectedVariant?.priceSrp ?? product.price);
-    const displayOriginalPrice = (selectedVariant?.priceDp ?? 0) > 0 && (selectedVariant?.priceSrp ?? 0) > (selectedVariant?.priceDp ?? 0)
-        ? Number(selectedVariant?.priceSrp)
-        : product.originalPrice;
+    const variantSrp = Number(selectedVariant?.priceSrp ?? product.originalPrice ?? product.price ?? 0);
+    const variantDp = Number(selectedVariant?.priceDp ?? product.priceDp ?? 0);
+    const hasDealerPrice = variantDp > 0 && variantDp < variantSrp;
+
+    const displayPrice = canUseDealerPrice && hasDealerPrice ? variantDp : variantSrp;
+    const displayOriginalPrice = canUseDealerPrice
+        ? (hasDealerPrice ? variantSrp : undefined)
+        : (product.originalPrice && product.originalPrice > variantSrp ? product.originalPrice : undefined);
     const displayStock = typeof selectedVariant?.qty === 'number'
         ? selectedVariant.qty
         : product.stock;
@@ -297,11 +302,15 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange }
                 )}
             </div>
 
-            {canSeePv && (
-                <div className="inline-flex items-center self-start rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700">
-                    PV {displayPv.toLocaleString()}
+            {canUseDealerPrice && hasDealerPrice && (
+                <div className="inline-flex items-center self-start rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700">
+                    Dealer Price Applied
                 </div>
             )}
+
+            <div className="inline-flex items-center self-start rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700">
+                PV {displayPv.toLocaleString()}
+            </div>
 
             <div className="h-px bg-gray-100" />
 

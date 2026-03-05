@@ -1,5 +1,8 @@
 import { redirect } from 'next/navigation';
 import type { Category } from '@/store/api/categoriesApi';
+import { buildPageMetadata } from '@/app/seo';
+
+export const metadata = buildPageMetadata({ title: 'Category', description: 'Browse the Category page on AF Home.', path: '/category' });
 
 interface ApiCategoriesResponse {
   categories?: Category[];

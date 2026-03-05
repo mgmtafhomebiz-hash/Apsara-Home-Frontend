@@ -307,7 +307,7 @@ export default function Navbar() {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16 gap-4">
           {/* Logo */}
-          <Link href="/" className="flex items-center shrink-0">
+          <Link href="/shop" className="flex items-center shrink-0">
             <Image
               src="/Images/af_home_logo.png"
               alt="AF Home"
@@ -521,7 +521,7 @@ export default function Navbar() {
                           My Orders
                         </Link>
                         <button
-                          onClick={() => signOut({ callbackUrl: '/'})}
+                          onClick={() => signOut({ callbackUrl: '/shop'})}
                           disabled={isLoggingOut}
                           className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2 disabled:opacity-60"
                         >

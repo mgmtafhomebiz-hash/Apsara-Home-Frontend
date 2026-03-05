@@ -11,6 +11,9 @@ export interface Product {
   prodpv?: number
   qty: number
   weight: number
+  psweight?: number
+  pslenght?: number
+  psheight?: number
   type: number
   musthave: boolean
   bestseller: boolean
@@ -150,6 +153,18 @@ export const normalizeProduct = (input: Product & Record<string, unknown>): Prod
       typeof input.prodpv === 'number'
         ? input.prodpv
         : (typeof input.pd_prodpv === 'number' ? input.pd_prodpv : (typeof input.pd_prodpv === 'string' ? Number(input.pd_prodpv) : 0)),
+    psweight:
+      typeof input.psweight === 'number'
+        ? input.psweight
+        : (typeof input.pd_psweight === 'number' ? input.pd_psweight : (typeof input.pd_psweight === 'string' ? Number(input.pd_psweight) : undefined)),
+    pslenght:
+      typeof input.pslenght === 'number'
+        ? input.pslenght
+        : (typeof input.pd_pslenght === 'number' ? input.pd_pslenght : (typeof input.pd_pslenght === 'string' ? Number(input.pd_pslenght) : undefined)),
+    psheight:
+      typeof input.psheight === 'number'
+        ? input.psheight
+        : (typeof input.pd_psheight === 'number' ? input.pd_psheight : (typeof input.pd_psheight === 'string' ? Number(input.pd_psheight) : undefined)),
     image: primaryImage ?? images[0] ?? null,
     images,
     variants: parsedVariants,

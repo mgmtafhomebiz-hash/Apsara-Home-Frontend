@@ -4,6 +4,7 @@ import { Member } from "@/types/members/types"
 import { motion, AnimatePresence } from "framer-motion"
 import MembersStatusBadge from "./MembersStatusBadge"
 import TierBadge from "@/components/ui/TierBadge"
+import { useState } from "react"
 
 const avatarColors = [
   'bg-teal-500', 'bg-blue-500', 'bg-purple-500', 'bg-pink-500',
@@ -11,6 +12,24 @@ const avatarColors = [
 ]
 const getAvatarColor = (name: string) => avatarColors[name.charCodeAt(0) % avatarColors.length]
 const getInitials = (name: string) => name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+
+const pageVariants = {
+  initial: { opacity: 0 },
+  animate: {
+    opacity: 1,
+    transition: {
+      duration: 0.2,
+      when: 'beforeChildren',
+      staggerChildren: 0.02,
+    },
+  },
+  exit: { opacity: 0, transition: { duration: 0.14 } },
+}
+
+const rowVariants = {
+  initial: { opacity: 0 },
+  animate: { opacity: 1, transition: { duration: 0.16 } },
+}
 
 interface MembersTableProps {
   rows: Member[]
@@ -33,6 +52,21 @@ const MembersTable = ({
 }: MembersTableProps) => {
   const canGoPrev = currentPage > 1
   const canGoNext = currentPage < totalPages
+  const [selectedMember, setSelectedMember] = useState<Member | null>(null)
+
+  const verificationBadge = (member: Member) => {
+    const status = member.verificationStatus ?? 'not_verified'
+    if (status === 'verified') {
+      return <span className="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700">Verified</span>
+    }
+    if (status === 'pending_review') {
+      return <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-700">Pending Review</span>
+    }
+    if (status === 'blocked') {
+      return <span className="inline-flex items-center rounded-full bg-red-100 px-2.5 py-1 text-xs font-semibold text-red-700">Blocked</span>
+    }
+    return <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">Not Verified</span>
+  }
 
   if (rows.length === 0) {
     return (
@@ -65,16 +99,20 @@ const MembersTable = ({
               <th className="px-5 py-3.5 text-right text-xs font-semibold text-slate-500 uppercase tracking-wide">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-50">
-            <AnimatePresence>
-              {rows.map((member, index) => {
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.tbody
+              key={`members-page-${currentPage}`}
+              className="divide-y divide-slate-50"
+              variants={pageVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+            >
+              {rows.map((member) => {
                 return (
                   <motion.tr
                     key={member.id}
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ delay: index * 0.04 }}
+                    variants={rowVariants}
                     className="hover:bg-slate-50/70 transition-colors group cursor-pointer"
                   >
                     {/* Member */}
@@ -132,8 +170,12 @@ const MembersTable = ({
 
                     {/* Actions */}
                     <td className="px-5 py-3.5">
-                      <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button title="View" className="h-7 w-7 rounded-lg text-slate-400 hover:text-teal-600 hover:bg-teal-50 transition-colors flex items-center justify-center">
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          title="View"
+                          onClick={() => setSelectedMember(member)}
+                          className="h-7 w-7 rounded-lg text-slate-400 hover:text-teal-600 hover:bg-teal-50 transition-colors flex items-center justify-center"
+                        >
                           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
@@ -154,36 +196,121 @@ const MembersTable = ({
                   </motion.tr>
                 )
               })}
-            </AnimatePresence>
-          </tbody>
+            </motion.tbody>
+          </AnimatePresence>
         </table>
       </div>
 
       {/* Footer */}
       <div className="px-5 py-3 border-t border-slate-50 flex items-center justify-between bg-slate-50/50">
-        <p className="text-xs text-slate-400">
-          {from && to ? `${from}-${to}` : rows.length} of {totalRecords} records
+        <p className="text-xs text-slate-500 font-medium">
+          Showing {from ?? 0} to {to ?? rows.length} of {totalRecords}
         </p>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-2">
           <button
             onClick={() => canGoPrev && onPageChange(currentPage - 1)}
             disabled={!canGoPrev}
-            className="h-7 w-7 rounded-lg border border-slate-200 bg-white text-slate-400 hover:text-slate-700 hover:border-slate-300 transition-colors flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7"/></svg>
+            Prev
           </button>
-          <span className="px-3 h-7 rounded-lg bg-teal-600 text-white text-xs font-semibold flex items-center">
-            {currentPage} / {totalPages}
+          <span className="px-3 h-7 rounded-lg bg-slate-200 text-slate-700 text-xs font-semibold flex items-center">
+            Page {currentPage} / {totalPages}
           </span>
           <button
             onClick={() => canGoNext && onPageChange(currentPage + 1)}
             disabled={!canGoNext}
-            className="h-7 w-7 rounded-lg border border-slate-200 bg-white text-slate-400 hover:text-slate-700 hover:border-slate-300 transition-colors flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-teal-200 bg-white px-3 py-1.5 text-xs font-semibold text-teal-700 hover:bg-teal-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
+            Next 
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7"/></svg>
           </button>
         </div>
       </div>
+
+      <AnimatePresence>
+        {selectedMember && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-slate-900/45 backdrop-blur-sm p-4"
+            onClick={() => setSelectedMember(null)}
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 12, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 10, scale: 0.98 }}
+              transition={{ duration: 0.2 }}
+              className="mx-auto mt-10 w-full max-w-xl rounded-2xl border border-slate-200 bg-white p-5 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="mb-5 flex items-start justify-between">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-teal-600">Member Details</p>
+                  <h3 className="mt-1 text-xl font-bold text-slate-900">{selectedMember.name}</h3>
+                </div>
+                <button
+                  onClick={() => setSelectedMember(null)}
+                  className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+                >
+                  Close
+                </button>
+              </div>
+
+              <div className="mb-5 flex items-center gap-4 rounded-xl border border-slate-100 bg-slate-50 p-4">
+                {selectedMember.avatar ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={selectedMember.avatar}
+                    alt={selectedMember.name}
+                    className="h-16 w-16 rounded-full object-cover ring-2 ring-white shadow"
+                  />
+                ) : (
+                  <div className={`${getAvatarColor(selectedMember.name)} h-16 w-16 rounded-full flex items-center justify-center shrink-0 shadow-sm`}>
+                    <span className="text-white font-bold text-lg">{getInitials(selectedMember.name)}</span>
+                  </div>
+                )}
+                <div>
+                  <p className="text-sm font-semibold text-slate-900">{selectedMember.email}</p>
+                  <div className="mt-2 flex items-center gap-2">
+                    <MembersStatusBadge status={selectedMember.status} />
+                    {verificationBadge(selectedMember)}
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div className="rounded-xl border border-slate-100 p-3">
+                  <p className="text-xs text-slate-500">Tier</p>
+                  <div className="mt-1"><TierBadge tier={selectedMember.tier} /></div>
+                </div>
+                <div className="rounded-xl border border-slate-100 p-3">
+                  <p className="text-xs text-slate-500">Orders</p>
+                  <p className="mt-1 font-semibold text-slate-800">{selectedMember.orders}</p>
+                </div>
+                <div className="rounded-xl border border-slate-100 p-3">
+                  <p className="text-xs text-slate-500">Total Spent</p>
+                  <p className="mt-1 font-semibold text-slate-800">PHP {selectedMember.totalSpent.toLocaleString()}</p>
+                </div>
+                <div className="rounded-xl border border-slate-100 p-3">
+                  <p className="text-xs text-slate-500">Earnings</p>
+                  <p className="mt-1 font-semibold text-teal-700">PHP {selectedMember.earnings.toLocaleString()}</p>
+                </div>
+                <div className="rounded-xl border border-slate-100 p-3">
+                  <p className="text-xs text-slate-500">Referrals</p>
+                  <p className="mt-1 font-semibold text-slate-800">{selectedMember.referrals}</p>
+                </div>
+                <div className="rounded-xl border border-slate-100 p-3">
+                  <p className="text-xs text-slate-500">Joined</p>
+                  <p className="mt-1 font-semibold text-slate-800">{selectedMember.joinedAt}</p>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

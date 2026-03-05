@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useCart } from '@/context/CartContext';
 import { CategoryProduct } from '@/libs/CategoryData';
+import { useMeQuery } from '@/store/api/userApi';
 
 interface StickyAddToCartProps {
   product: CategoryProduct;
@@ -15,9 +16,17 @@ const StickyAddToCart = ({ product }: StickyAddToCartProps) => {
   const [visible, setVisible] = useState(false);
   const { addToCart } = useCart();
   const { data: session } = useSession();
+  const isLoggedIn = Boolean(session?.user);
+  const { data: me } = useMeQuery(undefined, { skip: !isLoggedIn });
   const role = String((session?.user as { role?: string } | undefined)?.role ?? '').toLowerCase();
+  const isVerifiedAccount = (me?.verification_status === 'verified') || (me?.account_status === 1);
+  const canUseDealerPrice = isLoggedIn && isVerifiedAccount;
   const canSeePv = role === '' || role === 'customer' || role === 'member' || role === 'affiliate';
   const displayPv = Number(product.prodpv ?? 0);
+  const srp = Number(product.originalPrice ?? product.price ?? 0);
+  const dp = Number(product.priceDp ?? 0);
+  const hasDealerPrice = dp > 0 && dp < srp;
+  const displayPrice = canUseDealerPrice && hasDealerPrice ? dp : srp;
 
   useEffect(() => {
     const handler = () => setVisible(window.scrollY > 500);
@@ -29,7 +38,7 @@ const StickyAddToCart = ({ product }: StickyAddToCartProps) => {
     addToCart({
       id: product.name.toLowerCase().replace(/\s+/g, '-'),
       name: product.name,
-      price: product.price,
+      price: displayPrice,
       image: product.image,
     });
   };
@@ -51,7 +60,7 @@ const StickyAddToCart = ({ product }: StickyAddToCartProps) => {
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-bold text-slate-800">{product.name}</p>
               <div className="flex items-center gap-2">
-                <p className="text-sm font-bold text-orange-500">PHP {product.price.toLocaleString()}</p>
+                <p className="text-sm font-bold text-orange-500">₱{displayPrice.toLocaleString()}</p>
                 {canSeePv && (
                   <span className="rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-[10px] font-semibold text-blue-700">
                     PV {displayPv.toLocaleString()}

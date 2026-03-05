@@ -3,6 +3,7 @@ export interface CategoryProduct {
     name: string;
     type?: number;
     price: number;
+    priceDp?: number;
     prodpv?: number;
     originalPrice?: number;
     image: string;

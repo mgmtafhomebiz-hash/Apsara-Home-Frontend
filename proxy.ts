@@ -16,6 +16,8 @@ const FINANCE_ALLOWED_PREFIXES = [
   "/admin/accounting/invoices",
 ];
 
+const AUTH_REQUIRED_PREFIXES = ["/profile", "/orders"]
+
 const getAdminRedirectPath = (role: string): string => {
   switch (role) {
     case "accounting":
@@ -42,6 +44,7 @@ export async function proxy(req: NextRequest) {
 
   const isAdminLoginPage = pathname === "/admin/login";
   const isAdminRoute = pathname.startsWith("/admin");
+  const isAuthRequiredRoute = AUTH_REQUIRED_PREFIXES.some((prefix) => pathname.startsWith(prefix));
 
   if (isAdminLoginPage) {
     const role = String((token as { role?: string } | null)?.role ?? "").toLowerCase();
@@ -49,6 +52,7 @@ export async function proxy(req: NextRequest) {
     const isAccounting = role === "accounting" || userLevelId === 5;
     const isFinanceOfficer = role === "finance_officer" || userLevelId === 6;
     const hasAdminAccess = ADMIN_ALLOWED_ROLES.has(role) || isAccounting || isFinanceOfficer;
+
     if (token && hasAdminAccess) {
       const redirectPath = isAccounting
         ? "/admin/accounting"
@@ -72,6 +76,7 @@ export async function proxy(req: NextRequest) {
     const isAccounting = role === "accounting" || userLevelId === 5;
     const isFinanceOfficer = role === "finance_officer" || userLevelId === 6;
     const hasAdminAccess = ADMIN_ALLOWED_ROLES.has(role) || isAccounting || isFinanceOfficer;
+
     if (!hasAdminAccess) {
       return NextResponse.redirect(new URL("/", req.url));
     }
@@ -91,9 +96,15 @@ export async function proxy(req: NextRequest) {
     }
   }
 
+  if (isAuthRequiredRoute && !token) {
+    const loginUrl = new URL("/login", req.url);
+    loginUrl.searchParams.set("callback", pathname);
+    return NextResponse.redirect(loginUrl);
+  }
+
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/admin/:path*"],
+  matcher: ["/admin/:path*", "/profile/:path*", "/orders/:path*"],
 };

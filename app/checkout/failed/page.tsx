@@ -1,6 +1,7 @@
-'use client';
-
+import { buildPageMetadata } from '@/app/seo';
 import Link from 'next/link';
+
+export const metadata = buildPageMetadata({ title: 'Checkout Failed', description: 'Browse the Checkout Failed page on AF Home.', path: '/checkout/failed', noIndex: true });
 
 export default function CheckoutFailedPage() {
   return (

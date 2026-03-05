@@ -1,3 +1,7 @@
+import { buildPageMetadata } from '@/app/seo';
+
+export const metadata = buildPageMetadata({ title: 'Interior', description: 'Browse the Interior page on AF Home.', path: '/interior' });
+
 export default function InteriorServicesPage() {
   return (
     <main className="container mx-auto px-4 py-16">

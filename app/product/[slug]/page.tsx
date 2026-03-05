@@ -1,5 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { redirect } from 'next/navigation';
+import type { Metadata } from 'next';
 import TopBar from '@/components/layout/TopBar';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
@@ -12,6 +14,7 @@ import ProductQA from '@/components/product/ProductQA';
 import CompleteTheLook from '@/components/product/CompleteTheLook';
 import type { Category } from '@/store/api/categoriesApi';
 import type { Product } from '@/store/api/productsApi';
+import { buildPageMetadata } from '@/app/seo';
 
 type LooseRecord = Record<string, unknown>;
 const toLooseRecord = (value: unknown): LooseRecord => value as LooseRecord;
@@ -45,6 +48,46 @@ const slugify = (value: string) =>
     .trim()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
+
+const parseSlugAndId = (raw: string) => {
+  const match = raw.match(/^(.*)-i(\d+)$/i);
+  if (!match) return { slugOnly: raw, id: null as number | null };
+  const id = Number(match[2]);
+  return {
+    slugOnly: (match[1] || '').trim(),
+    id: Number.isFinite(id) ? id : null,
+  };
+};
+
+const buildCanonicalProductSlug = (name: string, id?: number) => {
+  const base = slugify(name);
+  if (typeof id === 'number' && id > 0) return `${base}-i${id}`;
+  return base;
+};
+
+export async function generateMetadata(
+  { params }: { params: Promise<{ slug: string }> }
+): Promise<Metadata> {
+  const { slug } = await params;
+  const data = await getProductPageData(slug);
+  if (!data) {
+    return buildPageMetadata({
+      title: 'Product Details',
+      description: 'Browse product details on AF Home.',
+      path: '/product',
+    });
+  }
+
+  const canonicalSlug = buildCanonicalProductSlug(data.product.name, data.product.id);
+  const fallbackDescription = `Buy ${data.product.name} on AF Home.`;
+  const safeDescription = (data.product.description || fallbackDescription).slice(0, 160);
+
+  return buildPageMetadata({
+    title: data.product.name,
+    description: safeDescription,
+    path: `/product/${canonicalSlug}`,
+  });
+}
 
 const normalizeCategorySlug = (rawUrl: string | null | undefined, fallbackName: string) => {
   const source = (rawUrl ?? '').trim();
@@ -106,6 +149,7 @@ const extractProducts = (json: unknown): Product[] => {
 };
 
 const toCategoryProduct = (row: LooseRecord, apiUrl?: string): CategoryProduct => {
+  const id = toNumber(row.id ?? row.pd_id ?? 0);
   const name = String(row.name ?? row.pd_name ?? 'Untitled Product');
   const srp = toNumber(row.priceSrp ?? row.pd_price_srp ?? 0);
   const dp = toNumber(row.priceDp ?? row.pd_price_dp ?? 0);
@@ -148,9 +192,11 @@ const toCategoryProduct = (row: LooseRecord, apiUrl?: string): CategoryProduct =
     : undefined;
 
   return {
+    id: id > 0 ? id : undefined,
     name,
     type: toNumber(row.type ?? row.pd_type),
     price,
+    priceDp: dp > 0 ? dp : undefined,
     prodpv,
     originalPrice: isOnSale && dp > 0 && srp > dp ? srp : undefined,
     image: resolveImageUrl(rawImage, apiUrl),
@@ -190,6 +236,7 @@ const getCategorySlugFromProduct = (row: LooseRecord, categories: Category[]) =>
 async function getProductPageData(slug: string): Promise<ProductPageData | null> {
   const apiUrl = process.env.LARAVEL_API_URL ?? process.env.NEXT_PUBLIC_LARAVEL_API_URL;
   if (!apiUrl) return null;
+  const { slugOnly, id } = parseSlugAndId(slug);
 
   try {
     const [categoriesRes, productRes, productsRes] = await Promise.all([
@@ -198,7 +245,7 @@ async function getProductPageData(slug: string): Promise<ProductPageData | null>
         headers: { Accept: 'application/json' },
         next: { revalidate: 300 },
       }),
-      fetch(`${apiUrl}/api/products/slug/${encodeURIComponent(slug)}`, {
+      fetch(id ? `${apiUrl}/api/products/${id}` : `${apiUrl}/api/products/slug/${encodeURIComponent(slugOnly)}`, {
         method: 'GET',
         headers: { Accept: 'application/json' },
         next: { revalidate: 60 },
@@ -225,8 +272,10 @@ async function getProductPageData(slug: string): Promise<ProductPageData | null>
 
     const relatedProducts = products
       .filter((row) => {
+        const rowId = toNumber(row.id ?? row.pd_id ?? 0);
+        if (id && rowId === id) return false;
         const rowSlug = slugify(String(row.name ?? row.pd_name ?? ''));
-        if (rowSlug === slug) return false;
+        if (rowSlug === slugOnly) return false;
         const rowCategorySlug = getCategorySlugFromProduct(row, categories);
         return rowCategorySlug === categorySlug;
       })
@@ -249,6 +298,11 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
 
   const dynamicData = await getProductPageData(slug);
   if (!dynamicData) return notFound();
+
+  const canonicalSlug = buildCanonicalProductSlug(dynamicData.product.name, dynamicData.product.id);
+  if (slug !== canonicalSlug) {
+    redirect(`/product/${canonicalSlug}`);
+  }
 
   return (
     <div className="min-h-screen bg-white flex flex-col">

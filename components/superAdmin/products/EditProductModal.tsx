@@ -147,6 +147,7 @@ export default function EditProductModal({ product, onClose }: EditProductModalP
   // Populate form when product changes
   useEffect(() => {
     if (!product) return
+    const row = product as Product & Record<string, unknown>
     setForm({
       pd_name: product.name ?? '',
       pd_catid: String(product.catid ?? ''),
@@ -156,9 +157,9 @@ export default function EditProductModal({ product, onClose }: EditProductModalP
       pd_prodpv: String(product.prodpv ?? ''),
       pd_qty: String(product.qty ?? ''),
       pd_weight: String(product.weight ?? ''),
-      pd_psweight: '',
-      pd_pslenght: '',
-      pd_psheight: '',
+      pd_psweight: String(row.psweight ?? row.pd_psweight ?? ''),
+      pd_pslenght: String(row.pslenght ?? row.pd_pslenght ?? ''),
+      pd_psheight: String(row.psheight ?? row.pd_psheight ?? ''),
       pd_parent_sku: generateSkuFromName(product.name ?? '', product.id),
       pd_type: String(product.type ?? 0),
       pd_musthave: product.musthave ?? false,
@@ -305,11 +306,17 @@ export default function EditProductModal({ product, onClose }: EditProductModalP
     if (!form.pd_name.trim()) e.pd_name = 'Product name is required'
     if (!form.pd_catid.trim()) e.pd_catid = 'Category is required'
     if (!form.pd_price_srp.trim() || isNaN(Number(form.pd_price_srp))) e.pd_price_srp = 'Valid SRP price is required'
+    if (form.pd_price_dp && isNaN(Number(form.pd_price_dp))) e.pd_price_dp = 'Must be a valid number'
     if (form.pd_prodpv && isNaN(Number(form.pd_prodpv))) e.pd_prodpv = 'Must be a valid number'
+    if (form.pd_qty && isNaN(Number(form.pd_qty))) e.pd_qty = 'Must be a valid number'
+    if (form.pd_weight && isNaN(Number(form.pd_weight))) e.pd_weight = 'Must be a valid number'
+    if (form.pd_psweight && isNaN(Number(form.pd_psweight))) e.pd_psweight = 'Must be a valid number'
+    if (form.pd_pslenght && isNaN(Number(form.pd_pslenght))) e.pd_pslenght = 'Must be a valid number'
+    if (form.pd_psheight && isNaN(Number(form.pd_psheight))) e.pd_psheight = 'Must be a valid number'
     return e
   }
 
-  const isVariantType = form.pd_type === '1'
+  const hasVariants = form.pd_type === '1'
   const expandedVariants = variants
     .filter((v) => v.pv_colors.length > 0 || v.pv_size || v.pv_sku || v.pv_images.length > 0)
     .flatMap((v, index) => {
@@ -334,8 +341,8 @@ export default function EditProductModal({ product, onClose }: EditProductModalP
     setServerError('')
     const errs = validate()
     if (Object.keys(errs).length > 0) { setErrors(errs); return }
-    if (isVariantType && expandedVariants.length === 0) {
-      setServerError('At least one variant is required when Product Type is Variant.')
+    if (hasVariants && expandedVariants.length === 0) {
+      setServerError('At least one variant is required when Has Variants is enabled.')
       return
     }
 
@@ -377,6 +384,9 @@ export default function EditProductModal({ product, onClose }: EditProductModalP
       pd_prodpv: form.pd_prodpv ? Number(form.pd_prodpv) : undefined,
       pd_qty: form.pd_qty ? Number(form.pd_qty) : undefined,
       pd_weight: form.pd_weight ? Number(form.pd_weight) : undefined,
+      pd_psweight: form.pd_psweight ? Number(form.pd_psweight) : undefined,
+      pd_pslenght: form.pd_pslenght ? Number(form.pd_pslenght) : undefined,
+      pd_psheight: form.pd_psheight ? Number(form.pd_psheight) : undefined,
       pd_parent_sku: form.pd_parent_sku.trim() || undefined,
       pd_type: Number(form.pd_type),
       pd_musthave: form.pd_musthave,
@@ -386,7 +396,7 @@ export default function EditProductModal({ product, onClose }: EditProductModalP
       pd_status: Number(form.pd_status),
       pd_image: finalImageUrls[0] ?? undefined,
       pd_images: finalImageUrls.length > 0 ? finalImageUrls : undefined,
-      pd_variants: isVariantType ? expandedVariants : [],
+      pd_variants: hasVariants ? expandedVariants : [],
     }
 
     try {
@@ -621,27 +631,34 @@ export default function EditProductModal({ product, onClose }: EditProductModalP
 
                   <div className="grid grid-cols-2 gap-3">
                     {textField('Quantity', 'pd_qty', 'number', '0')}
-                    {textField('Weight (g)', 'pd_weight', 'number', '0')}
+                    {textField('Net Weight (kg)', 'pd_weight', 'number', '0')}
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    {textField('Length (cm)', 'pd_pslenght', 'number', '0')}
+                    {textField('Height (cm)', 'pd_psheight', 'number', '0')}
+                    {textField('Package Weight (kg)', 'pd_psweight', 'number', '0')}
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs font-semibold text-slate-600 mb-1.5">Product Type</label>
-                      <select
-                        value={form.pd_type}
-                        onChange={(e) => {
-                          const value = e.target.value
-                          set('pd_type', value)
-                          if (value !== '1') {
-                            setVariants([])
-                            setNewColorInputs({})
-                          }
-                        }}
-                        className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-400 transition-all cursor-pointer">
-                        <option value="0">Regular</option>
-                        <option value="1">Variant</option>
-                        <option value="2">Bundle</option>
-                      </select>
+                      <label className="block text-xs font-semibold text-slate-600 mb-1.5">Variants</label>
+                      <label className="flex h-[42px] items-center gap-2.5 rounded-xl border border-slate-200 bg-slate-50 px-3 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={hasVariants}
+                          onChange={(e) => {
+                            const checked = e.target.checked
+                            set('pd_type', checked ? '1' : '0')
+                            if (!checked) {
+                              setVariants([])
+                              setNewColorInputs({})
+                            }
+                          }}
+                          className="h-4 w-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+                        />
+                        <span className="text-sm text-slate-700 font-medium">Has Variants</span>
+                      </label>
                     </div>
                     <div>
                       <label className="block text-xs font-semibold text-slate-600 mb-1.5">Status</label>
@@ -676,7 +693,7 @@ export default function EditProductModal({ product, onClose }: EditProductModalP
                     </label>
                   </div>
 
-                  {isVariantType && (
+                  {hasVariants && (
                   <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
                     <div className="flex items-center justify-between">
                       <p className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Variants</p>

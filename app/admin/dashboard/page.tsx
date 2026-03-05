@@ -1,10 +1,11 @@
-'use client';
-
 import OrdersChart from "@/components/superAdmin/dashboard/OrdersChart";
 import RecentOrders from "@/components/superAdmin/dashboard/RecentOrders";
 import SalesChart from "@/components/superAdmin/dashboard/SalesChart";
 import StatsGrid from "@/components/superAdmin/dashboard/StatsGrid";
 import TopProducts from "@/components/superAdmin/dashboard/TopProducts";
+import { buildPageMetadata } from '@/app/seo';
+
+export const metadata = buildPageMetadata({ title: 'Admin Dashboard', description: 'Browse the Admin Dashboard page on AF Home.', path: '/admin/dashboard', noIndex: true });
 
 const AdminDashboardPage = () => {
   return (

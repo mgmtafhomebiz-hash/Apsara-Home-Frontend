@@ -1,3 +1,7 @@
+import { buildPageMetadata } from '@/app/seo';
+
+export const metadata = buildPageMetadata({ title: 'By Room Details', description: 'Browse the By Room Details page on AF Home.', path: '/by-room/[...slug]' });
+
 type ByRoomDetailsPageProps = {
   params: Promise<{ slug: string[] }>
 }

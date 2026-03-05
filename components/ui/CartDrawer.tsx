@@ -3,11 +3,20 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
 import { useCart } from '@/context/CartContext'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
+import { useEffect } from 'react'
 
 export default function CartDrawer() {
   const router = useRouter();
+  const pathname = usePathname();
   const { items, isOpen, setIsOpen, removeFromCart, updateQuantity, cartCount, total } = useCart();
+  const isCheckoutRoute = pathname.startsWith('/checkout');
+
+  useEffect(() => {
+    if (isCheckoutRoute && isOpen) {
+      setIsOpen(false);
+    }
+  }, [isCheckoutRoute, isOpen, setIsOpen]);
 
     const handleCustomerCheckout = () => {
     const handlingFee = total >= 5000 ? 0 : 99;
@@ -29,6 +38,10 @@ export default function CartDrawer() {
     router.push('/checkout/customer');
   }
 
+
+  if (isCheckoutRoute) {
+    return null;
+  }
 
   return (
     <AnimatePresence>
