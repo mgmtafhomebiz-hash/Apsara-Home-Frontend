@@ -119,10 +119,9 @@ const ProfilePage = () => {
   const verificationStatus = data?.verification_status ?? 'not_verified';
   const isVerified = verificationStatus === 'verified' || data?.account_status === 1;
   const isPendingVerification = verificationStatus === 'pending_review' || data?.account_status === 2;
-  const siteOrigin =
-    (typeof window !== 'undefined' ? window.location.origin : '') ||
-    process.env.NEXT_PUBLIC_APP_URL ||
-    'http://localhost:3000';
+  const configuredAppUrl = (process.env.NEXT_PUBLIC_APP_URL ?? '').trim().replace(/\/+$/, '');
+  const runtimeOrigin = (typeof window !== 'undefined' ? window.location.origin : '').trim().replace(/\/+$/, '');
+  const siteOrigin = configuredAppUrl || runtimeOrigin || 'http://localhost:3000';
   const referralCode = (form.username || data?.username || '').trim();
   const referralLink = referralCode
     ? `${siteOrigin}/login?ref=${encodeURIComponent(referralCode)}`
