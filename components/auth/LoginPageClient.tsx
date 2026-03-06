@@ -3,16 +3,25 @@
 import VideoBackground from "@/components/VideoBackground";
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import AuthTabs from "@/components/AuthTabs";
 import LoginForm from "@/components/LoginForm";
 import SignUpForm from "@/components/SignUpForm";
+import { useSearchParams } from "next/navigation";
 
 type Mode = 'login' | 'signup'
 
 export default function LoginPageClient() {
+  const searchParams = useSearchParams();
   const [mode, setMode] = useState<Mode>('login');
+
+  useEffect(() => {
+    const hasReferral = Boolean(searchParams.get('ref') || searchParams.get('referred_by'));
+    if (hasReferral) {
+      setMode('signup');
+    }
+  }, [searchParams]);
 
   return (
     <div className="relative min-h-screen w-full overflow-x-hidden overflow-y-auto flex flex-col">

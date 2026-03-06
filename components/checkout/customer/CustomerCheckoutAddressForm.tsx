@@ -153,7 +153,7 @@ const CustomerCheckoutAddressForm = ({ form, errors, setField }: CustomerCheckou
                     </div>
                 </div>
 
-                <Field label="ZIP Code" value={form.zip} onChange={v => setField('zip', v)} placeholder="e.g. 1234" fieldKey="zip" />
+                <Field label="ZIP Code" value={form.zip} onChange={v => setField('zip', v)} placeholder="e.g. 1234" fieldKey="zip" /> 
 
                 <div className="flex items-start gap-2.5 p-3 bg-amber-50 rounded-xl border border-orange-100 mt-1">
                     <svg className="w-4 h-4 text-orange-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">

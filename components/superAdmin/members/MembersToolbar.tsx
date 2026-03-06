@@ -9,13 +9,15 @@ interface MembersToolbarProps {
   onStatus: (v: 'all' | MemberStatus) => void
   tier: 'all' | MemberTier
   onTier: (v: 'all' | MemberTier) => void
+  sort: 'default' | 'earnings_low_high' | 'earnings_high_low'
+  onSort: (v: 'default' | 'earnings_low_high' | 'earnings_high_low') => void
   resultCount: number
 }
 
 const MembersToolbar = ({
-  search, onSearch, status, onStatus, tier, onTier, resultCount
+  search, onSearch, status, onStatus, tier, onTier, sort, onSort, resultCount
 }: MembersToolbarProps) => {
-  const hasFilter = search !== '' || status !== 'all' || tier !== 'all'
+  const hasFilter = search !== '' || status !== 'all' || tier !== 'all' || sort !== 'default'
 
   return (
     <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 space-y-3">
@@ -67,6 +69,15 @@ const MembersToolbar = ({
             <option value="Lifestyle Consultant">Lifestyle Consultant</option>
             <option value="Lifestyle Elite">Lifestyle Elite</option>
           </select>
+          <select
+            value={sort}
+            onChange={(e) => onSort(e.target.value as 'default' | 'earnings_low_high' | 'earnings_high_low')}
+            className="px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-400 transition-all min-w-[170px] cursor-pointer"
+          >
+            <option value="default">Default Sort</option>
+            <option value="earnings_low_high">Earnings: Low to High</option>
+            <option value="earnings_high_low">Earnings: High to Low</option>
+          </select>
         </div>
 
         {/* Export */}
@@ -88,7 +99,7 @@ const MembersToolbar = ({
         </p>
         {hasFilter && (
           <button
-            onClick={() => { onSearch(''); onStatus('all'); onTier('all') }}
+            onClick={() => { onSearch(''); onStatus('all'); onTier('all'); onSort('default') }}
             className="text-xs text-teal-600 hover:text-teal-800 font-medium hover:underline transition-colors"
           >
             Clear filters

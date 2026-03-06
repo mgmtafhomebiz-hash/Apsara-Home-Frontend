@@ -17,32 +17,77 @@ function CheckoutSuccessPage() {
 
   useEffect(() => {
     let isMounted = true;
-    const verify = async () => {
+    let pollCount = 0;
+    const maxPolls = 24; // up to ~2 minutes
+    const pollMs = 5000;
+    let intervalId: ReturnType<typeof setInterval> | null = null;
+
+    const normalizeStatus = (status: string | null | undefined) => typeof status === 'string' ? status.toLowerCase() : '';
+    const isPaidStatus = (status: string | null | undefined) => ['paid', 'succeeded', 'success'].includes(normalizeStatus(status));
+    const isPendingStatus = (status: string | null | undefined) => ['active', 'unpaid', 'pending'].includes(normalizeStatus(status));
+    const isFailedStatus = (status: string | null | undefined) => ['failed', 'cancelled', 'expired'].includes(normalizeStatus(status));
+
+    const stopPolling = () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+        intervalId = null;
+      }
+    };
+
+    const verify = async (isInitial = false) => {
       const checkoutId = localStorage.getItem('last_checkout_id');
       if (!checkoutId) {
         if (!isMounted) return;
         setError('No checkout reference found in local storage.');
         setLoading(false);
+        stopPolling();
         return;
       }
       try {
         const data = await verifyCheckoutSession(checkoutId).unwrap();
         if (!isMounted) return;
         setResult(data);
+
+        if (isInitial) {
+          setLoading(false);
+        }
+
+        if (isPaidStatus(data?.status) || isFailedStatus(data?.status)) {
+          stopPolling();
+          return;
+        }
+
+        if (isPendingStatus(data?.status)) {
+          if (!intervalId) {
+            intervalId = setInterval(() => {
+              if (!isMounted) return;
+              pollCount += 1;
+              if (pollCount > maxPolls) {
+                stopPolling();
+                return;
+              }
+              verify(false);
+            }, pollMs);
+          }
+        }
       } catch (e) {
         if (!isMounted) return;
         setError(e instanceof Error ? e.message : 'Verification failed');
-      } finally {
-        if (!isMounted) return;
         setLoading(false);
+        stopPolling();
       }
     };
-    verify();
-    return () => { isMounted = false; };
+
+    verify(true);
+    return () => {
+      isMounted = false;
+      stopPolling();
+    };
   }, [verifyCheckoutSession]);
 
-  const isPaid    = result?.status?.toLowerCase().includes('paid') ?? false;
-  const isPending = !isPaid && (result?.status === 'unpaid' || result?.status === 'active');
+  const normalizedStatus = result?.status?.toLowerCase() ?? '';
+  const isPaid = normalizedStatus === 'paid' || normalizedStatus === 'succeeded' || normalizedStatus === 'success';
+  const isPending = !isPaid && (normalizedStatus === 'unpaid' || normalizedStatus === 'active' || normalizedStatus === 'pending');
 
   // ── LOADING ──────────────────────────────────────────────────
   if (loading) {
@@ -140,7 +185,7 @@ function CheckoutSuccessPage() {
   const subtitle = isPaid
     ? 'Your order is confirmed and is now being prepared.'
     : isPending
-    ? "Your payment is still being processed. We'll notify you soon."
+    ? "Your payment is still being processed. We're rechecking automatically."
     : 'Something went wrong with your payment. Please try again.';
 
   return (

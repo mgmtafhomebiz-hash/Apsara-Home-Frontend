@@ -8,7 +8,8 @@ export interface GuestForm {
   city: string;
   province: string;
   zip: string;
-  referral_code: string;
+  referred_by: string;
+  voucher_coupon: string;
 }
 
 export interface CustomerCheckoutProduct {

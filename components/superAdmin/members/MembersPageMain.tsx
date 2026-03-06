@@ -4,7 +4,7 @@ import { motion } from "framer-motion"
 import MembersToolbar from "./MembersToolbar"
 import MembersStats from "./MembersStats"
 import MembersTable from "./MembersTable"
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { MemberStatus, MemberTier } from "@/types/members/types"
 import AddMemberModal from "./AddMemberModal"
 import { MembersResponse, MembersStatsResponse, useGetMembersQuery, useGetMembersStatsQuery } from "@/store/api/membersApi"
@@ -23,7 +23,9 @@ const MembersPageMain = ({ initialData = null, initialStats = null }: MembersPag
     const [debouncedSearch, setDebouncedSearch] = useState('')
     const [status, setStatus] = useState<'all' | MemberStatus>('all')
     const [tier, setTier] = useState<'all' | MemberTier>('all');
+    const [sort, setSort] = useState<'default' | 'earnings_low_high' | 'earnings_high_low'>('default')
     const [showModal, setShowModal] = useState(false);
+    const [showEarningsModal, setShowEarningsModal] = useState(false);
     const [page, setPage] = useState(1)
     const [stableData, setStableData] = useState<MembersResponse | null>(initialData)
     const [stableStats, setStableStats] = useState<MembersStatsResponse | null>(initialStats)
@@ -84,7 +86,24 @@ const MembersPageMain = ({ initialData = null, initialStats = null }: MembersPag
     const effectiveData = data ?? stableData ?? initialData ?? null
     const effectiveStats = statsData ?? stableStats ?? initialStats ?? null
     const members = effectiveData?.members ?? []
+    const sortedMembers = useMemo(() => {
+        const list = [...members]
+        if (sort === 'earnings_low_high') {
+            return list.sort((a, b) => (a.earnings ?? 0) - (b.earnings ?? 0))
+        }
+        if (sort === 'earnings_high_low') {
+            return list.sort((a, b) => (b.earnings ?? 0) - (a.earnings ?? 0))
+        }
+        return list
+    }, [members, sort])
     const meta = effectiveData?.meta
+    const earningsMembers = useMemo(
+        () =>
+            members
+                .filter((member) => member.earnings > 0)
+                .sort((a, b) => b.earnings - a.earnings),
+        [members]
+    )
 
     const handleSearch = (value: string) => {
         setSearch(value)
@@ -122,7 +141,10 @@ const MembersPageMain = ({ initialData = null, initialStats = null }: MembersPag
                 </button>
             </motion.div>
 
-            <MembersStats stats={effectiveStats ?? undefined} />
+            <MembersStats
+                stats={effectiveStats ?? undefined}
+                onTotalEarningsClick={() => setShowEarningsModal(true)}
+            />
 
             <MembersToolbar
                 search={search}
@@ -131,6 +153,8 @@ const MembersPageMain = ({ initialData = null, initialStats = null }: MembersPag
                 onStatus={handleStatus}
                 tier={tier}
                 onTier={handleTier}
+                sort={sort}
+                onSort={setSort}
                 resultCount={meta?.total ?? members.length}
             />
 
@@ -171,7 +195,7 @@ const MembersPageMain = ({ initialData = null, initialStats = null }: MembersPag
                         </div>
                     )}
                     <MembersTable
-                        rows={members}
+                        rows={sortedMembers}
                         currentPage={meta?.current_page ?? 1}
                         totalPages={meta?.last_page ?? 1}
                         totalRecords={meta?.total ?? members.length}
@@ -189,6 +213,55 @@ const MembersPageMain = ({ initialData = null, initialStats = null }: MembersPag
                     console.log('New member data: ', data)
                 }}
             />
+
+            {showEarningsModal && (
+                <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
+                    <div
+                        className="absolute inset-0 bg-slate-900/55"
+                        onClick={() => setShowEarningsModal(false)}
+                    />
+                    <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden">
+                        <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+                            <div>
+                                <h2 className="text-base font-bold text-slate-800">Members With Earnings</h2>
+                                <p className="text-xs text-slate-500 mt-0.5">
+                                    Traced from the current members list view.
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => setShowEarningsModal(false)}
+                                className="h-8 w-8 rounded-lg border border-slate-200 text-slate-500 hover:text-slate-700 hover:bg-slate-50"
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        <div className="max-h-[65vh] overflow-auto">
+                            {earningsMembers.length > 0 ? (
+                                <div className="divide-y divide-slate-100">
+                                    {earningsMembers.map((member) => (
+                                        <div key={member.id} className="px-5 py-3.5 flex items-center justify-between gap-3">
+                                            <div className="min-w-0">
+                                                <p className="text-sm font-semibold text-slate-800 truncate">{member.name}</p>
+                                                <p className="text-xs text-slate-500 truncate">{member.email}</p>
+                                            </div>
+                                            <div className="text-right shrink-0">
+                                                <p className="text-sm font-bold text-teal-700">PHP {member.earnings.toLocaleString()}</p>
+                                                <p className="text-[11px] text-slate-400">Orders: {member.orders}</p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="px-5 py-12 text-center">
+                                    <p className="text-sm text-slate-600 font-medium">No members with earnings found.</p>
+                                    <p className="text-xs text-slate-400 mt-1">Try changing search/filter to trace other records.</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

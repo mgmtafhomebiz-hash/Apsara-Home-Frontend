@@ -95,6 +95,7 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
   const [page, setPage] = useState(1)
   const [busyId, setBusyId] = useState<number | null>(null)
   const [overdueFirst, setOverdueFirst] = useState(true)
+  const [sortBy, setSortBy] = useState<'default' | 'customer_az' | 'amount_low_high'>('default')
   const role = (session?.user?.role ?? '').toLowerCase()
   const canApprove = role === 'super_admin' || role === 'admin'
   const canTrack = canApprove || role === 'csr'
@@ -132,18 +133,32 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
 
   const visibleOrders = useMemo(() => {
     const list = [...(data?.orders ?? [])]
-    if (!overdueFirst) return list
-
     return list.sort((a, b) => {
-      const aOver = a.sla?.state === 'overdue' ? 1 : 0
-      const bOver = b.sla?.state === 'overdue' ? 1 : 0
-      if (aOver !== bOver) return bOver - aOver
+      if (overdueFirst) {
+        const aOver = a.sla?.state === 'overdue' ? 1 : 0
+        const bOver = b.sla?.state === 'overdue' ? 1 : 0
+        if (aOver !== bOver) return bOver - aOver
 
-      const aOverMin = a.sla?.overdue_minutes ?? 0
-      const bOverMin = b.sla?.overdue_minutes ?? 0
-      return bOverMin - aOverMin
+        if (aOver === 1 && bOver === 1) {
+          const aOverMin = a.sla?.overdue_minutes ?? 0
+          const bOverMin = b.sla?.overdue_minutes ?? 0
+          if (aOverMin !== bOverMin) return bOverMin - aOverMin
+        }
+      }
+
+      if (sortBy === 'customer_az') {
+        const aName = (a.customer_name ?? '').trim().toLowerCase()
+        const bName = (b.customer_name ?? '').trim().toLowerCase()
+        return aName.localeCompare(bName, 'en', { sensitivity: 'base' })
+      }
+
+      if (sortBy === 'amount_low_high') {
+        return (a.amount ?? 0) - (b.amount ?? 0)
+      }
+
+      return 0
     })
-  }, [data?.orders, overdueFirst])
+  }, [data?.orders, overdueFirst, sortBy])
 
   const handleApprove = async (id: number) => {
     setBusyId(id)
@@ -192,7 +207,16 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
             placeholder="Search checkout id, customer, product..."
             className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-400 transition-all"
           />
-          <div className="flex items-center justify-end text-xs text-slate-500">
+          <div className="flex flex-wrap items-center justify-end gap-2 text-xs text-slate-500">
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as 'default' | 'customer_az' | 'amount_low_high')}
+              className="px-2.5 py-2 rounded-lg border border-slate-200 text-xs text-slate-700 bg-white"
+            >
+              <option value="default">Sort: Default</option>
+              <option value="customer_az">Sort: Customer (A-Z)</option>
+              <option value="amount_low_high">Sort: Amount (Low to High)</option>
+            </select>
             <label className="inline-flex items-center gap-2 cursor-pointer">
               <input
                 type="checkbox"

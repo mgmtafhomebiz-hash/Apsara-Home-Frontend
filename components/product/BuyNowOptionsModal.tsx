@@ -160,6 +160,10 @@ const BuyNowOptionsModal = ({
   };
 
   const handleCustomerCheckout = () => {
+    if (status === 'authenticated') {
+      return;
+    }
+
     localStorage.setItem('guest_checkout', JSON.stringify({
       product,
       quantity,
@@ -504,26 +508,30 @@ const BuyNowOptionsModal = ({
                     Secured by <span className="font-semibold text-slate-500">PayMongo</span> · SSL Encrypted · PCI DSS Compliant
                   </p>
 
-                  {/* CUSTOMER CHECKOUT DIVIDER */}
-                  <div className='flex items-center gap-3 mt-4'>
-                    <div className='flex-1 h-px bg-slate-100' />
-                    <span className='text-[11px] text-slate-400 font-medium'>or</span>
-                    <div className='flex-1 h-px bg-slate-100' />
-                  </div>
+                  {status !== 'authenticated' && (
+                    <>
+                      {/* CUSTOMER CHECKOUT DIVIDER */}
+                      <div className='flex items-center gap-3 mt-4'>
+                        <div className='flex-1 h-px bg-slate-100' />
+                        <span className='text-[11px] text-slate-400 font-medium'>or</span>
+                        <div className='flex-1 h-px bg-slate-100' />
+                      </div>
 
-                  {/* GUEST CHECKOUT BUTTON */}
-                  <button
-                    onClick={handleCustomerCheckout}
-                    className='mt-3 w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-dashed border-slate-300 text-slate-500 hover:border-orange-400 hover:text-orange-500 hover:bg-orange-50/50 text-xs font-semibold transition-all'
-                  >
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                    Continue checkout without account
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </button>
+                      {/* GUEST CHECKOUT BUTTON */}
+                      <button
+                        onClick={handleCustomerCheckout}
+                        className='mt-3 w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-dashed border-slate-300 text-slate-500 hover:border-orange-400 hover:text-orange-500 hover:bg-orange-50/50 text-xs font-semibold transition-all'
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                        Continue checkout without account
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
             </div>

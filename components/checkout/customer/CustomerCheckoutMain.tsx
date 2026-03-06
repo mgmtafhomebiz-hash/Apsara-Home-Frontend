@@ -25,7 +25,8 @@ const defaultForm: GuestForm = {
     city: '',
     province: '',
     zip: '',
-    referral_code: ''
+    referred_by: '',
+    voucher_coupon: ''
 
 }
 

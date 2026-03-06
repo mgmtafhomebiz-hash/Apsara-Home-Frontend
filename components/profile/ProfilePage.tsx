@@ -65,9 +65,11 @@ const ProfilePage = () => {
   });
 
   const [profileMsg, setProfileMsg] = useState<AlertMsg | null>(null);
+  const [referralMsg, setReferralMsg] = useState<AlertMsg | null>(null);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [isAvatarPreviewOpen, setIsAvatarPreviewOpen] = useState(false);
   const msgTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const referralMsgTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mainContentRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -99,6 +101,13 @@ const ProfilePage = () => {
     return () => document.removeEventListener('keydown', handleEsc);
   }, [isAvatarPreviewOpen]);
 
+  useEffect(() => {
+    if (!referralMsg) return;
+    if (referralMsgTimer.current) clearTimeout(referralMsgTimer.current);
+    referralMsgTimer.current = setTimeout(() => setReferralMsg(null), 3500);
+    return () => { if (referralMsgTimer.current) clearTimeout(referralMsgTimer.current); };
+  }, [referralMsg]);
+
   const hasChanges = useMemo(
     () =>
       form.name !== (data?.name ?? session?.user?.name ?? '') ||
@@ -110,6 +119,14 @@ const ProfilePage = () => {
   const verificationStatus = data?.verification_status ?? 'not_verified';
   const isVerified = verificationStatus === 'verified' || data?.account_status === 1;
   const isPendingVerification = verificationStatus === 'pending_review' || data?.account_status === 2;
+  const siteOrigin =
+    (typeof window !== 'undefined' ? window.location.origin : '') ||
+    process.env.NEXT_PUBLIC_APP_URL ||
+    'http://localhost:3000';
+  const referralCode = (form.username || data?.username || '').trim();
+  const referralLink = referralCode
+    ? `${siteOrigin}/login?ref=${encodeURIComponent(referralCode)}`
+    : '';
 
   const completion = useMemo(() => {
     if (isVerified) return 100;
@@ -150,6 +167,42 @@ const ProfilePage = () => {
 
   const togglePref = (field: keyof PreferencesState) =>
     setPrefs((prev) => (typeof prev[field] === 'boolean' ? { ...prev, [field]: !prev[field] } : prev));
+
+  const handleCopyReferralLink = async () => {
+    if (!referralLink) {
+      setReferralMsg({ type: 'error', text: 'Referral link is unavailable. Set your username first.' });
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(referralLink);
+      setReferralMsg({ type: 'success', text: 'Referral link copied.' });
+    } catch {
+      setReferralMsg({ type: 'error', text: 'Failed to copy referral link.' });
+    }
+  };
+
+  const handleShareReferralLink = async () => {
+    if (!referralLink) {
+      setReferralMsg({ type: 'error', text: 'Referral link is unavailable. Set your username first.' });
+      return;
+    }
+
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({
+          title: 'Join AF Home',
+          text: 'Register using my affiliate referral link.',
+          url: referralLink,
+        });
+        return;
+      } catch {
+        // no-op; fallback to copy
+      }
+    }
+
+    await handleCopyReferralLink();
+  };
 
   const handleSaveProfile = async (e: FormEvent) => {
     e.preventDefault();
@@ -398,6 +451,57 @@ const ProfilePage = () => {
                 {/* Loyalty badge */}
                 <TierBadge tier={loyaltyTier} className="px-3 py-1" />
               </div>
+
+              {/* Affiliate referral tools (verified members only) */}
+              {isVerified && (
+                <div className="mt-4 rounded-xl border border-purple-100 bg-purple-50/50 p-3.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-[11px] font-bold uppercase tracking-wide text-purple-700">Affiliate Referral QR</p>
+                    <span className="rounded-full bg-purple-100 px-2 py-0.5 text-[10px] font-semibold text-purple-700">Verified</span>
+                  </div>
+                  {referralLink ? (
+                    <>
+                      <div className="mt-2.5 flex items-center justify-center">
+                        <img
+                          src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(referralLink)}`}
+                          alt="Referral QR code"
+                          className="h-36 w-36 rounded-xl border border-purple-200 bg-white p-2"
+                        />
+                      </div>
+                      <p className="mt-2 text-[11px] text-purple-700 break-all">{referralLink}</p>
+                      <div className="mt-2.5 grid grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={handleShareReferralLink}
+                          className="rounded-lg border border-purple-200 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-purple-700 hover:bg-purple-100 transition-colors"
+                        >
+                          Share Link
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleCopyReferralLink}
+                          className="rounded-lg border border-purple-200 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-purple-700 hover:bg-purple-100 transition-colors"
+                        >
+                          Copy Link
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <p className="mt-2 text-[11px] text-purple-700">
+                      Set your username in profile first to generate your referral link.
+                    </p>
+                  )}
+                  {referralMsg && (
+                    <p
+                      className={`mt-2 text-[11px] font-medium ${
+                        referralMsg.type === 'success' ? 'text-emerald-700' : 'text-red-600'
+                      }`}
+                    >
+                      {referralMsg.text}
+                    </p>
+                  )}
+                </div>
+              )}
 
               {/* Profile completion */}
               <div className="mt-5">
