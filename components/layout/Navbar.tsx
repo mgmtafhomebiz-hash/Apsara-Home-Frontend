@@ -171,15 +171,24 @@ export default function Navbar() {
   const mobileTopSearchRef = useRef<HTMLFormElement | null>(null)
 
   const activeSearchQuery = (activeSearchField === 'mobile' ? mobileTopSearchQuery : desktopSearchQuery).trim()
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(activeSearchQuery)
+
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      setDebouncedSearchQuery(activeSearchQuery)
+    }, 180)
+    return () => clearTimeout(timeoutId)
+  }, [activeSearchQuery])
+
   const { data: searchedProductsData, isFetching: isSearchingProducts } = useGetPublicProductsQuery(
     {
       page: 1,
       perPage: 8,
-      search: activeSearchQuery,
+      search: debouncedSearchQuery,
       status: '1',
     },
     {
-      skip: activeSearchQuery.length < 2,
+      skip: debouncedSearchQuery.length < 2,
     },
   )
 
@@ -222,11 +231,19 @@ export default function Navbar() {
     desktopSearchTerm.length >= 2 &&
     !isSearchingProducts &&
     desktopSuggestions.length === 0
+  const showDesktopSearching =
+    activeSearchField === 'desktop' &&
+    desktopSearchTerm.length >= 2 &&
+    isSearchingProducts
   const showMobileNotFound =
     activeSearchField === 'mobile' &&
     mobileSearchTerm.length >= 2 &&
     !isSearchingProducts &&
     mobileSuggestions.length === 0
+  const showMobileSearching =
+    activeSearchField === 'mobile' &&
+    mobileSearchTerm.length >= 2 &&
+    isSearchingProducts
 
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 20)
@@ -377,14 +394,16 @@ export default function Navbar() {
               </button>
 
               <AnimatePresence>
-                {activeSearchField === 'desktop' && (desktopSuggestions.length > 0 || showDesktopNotFound) && (
+                {activeSearchField === 'desktop' && (desktopSuggestions.length > 0 || showDesktopNotFound || showDesktopSearching) && (
                   <motion.div
                     initial={{ opacity: 0, y: 6 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 6 }}
                     className="absolute left-0 right-0 mt-2 bg-white border border-gray-100 rounded-xl shadow-lg shadow-black/10 overflow-hidden z-50"
                   >
-                    {desktopSuggestions.length > 0 ? (
+                    {showDesktopSearching ? (
+                      <div className="px-3 py-3 text-sm text-gray-500">Searching products...</div>
+                    ) : desktopSuggestions.length > 0 ? (
                       desktopSuggestions.map((product) => (
                         <Link
                           key={product.id}
@@ -634,14 +653,16 @@ export default function Navbar() {
             </button>
 
             <AnimatePresence>
-              {activeSearchField === 'mobile' && (mobileSuggestions.length > 0 || showMobileNotFound) && (
+              {activeSearchField === 'mobile' && (mobileSuggestions.length > 0 || showMobileNotFound || showMobileSearching) && (
                 <motion.div
                   initial={{ opacity: 0, y: 6 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 6 }}
                   className="absolute left-0 right-0 mt-2 bg-white border border-gray-100 rounded-xl shadow-lg shadow-black/10 overflow-hidden z-50"
                 >
-                  {mobileSuggestions.length > 0 ? (
+                  {showMobileSearching ? (
+                    <div className="px-3 py-3 text-sm text-gray-500">Searching products...</div>
+                  ) : mobileSuggestions.length > 0 ? (
                     mobileSuggestions.map((product) => (
                       <Link
                         key={product.id}
