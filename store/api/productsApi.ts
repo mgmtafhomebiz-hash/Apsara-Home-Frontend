@@ -184,6 +184,20 @@ export const normalizeProductsResponse = (response: ProductsResponse | Record<st
 
 export const productsApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
+    getPublicProducts: builder.query<ProductsResponse, ProductsQueryParams | void>({
+      query: (params) => ({
+        url: '/api/products',
+        method: 'GET',
+        params: {
+          page: params?.page ?? 1,
+          per_page: params?.perPage ?? 25,
+          q: params?.search,
+          status: params?.status,
+        },
+      }),
+      transformResponse: (response: ProductsResponse) => normalizeProductsResponse(response),
+      providesTags: ['Products'],
+    }),
     getProducts: builder.query<ProductsResponse, ProductsQueryParams | void>({
       query: (params) => ({
         url: '/api/admin/products',
@@ -225,6 +239,7 @@ export const productsApi = baseApi.injectEndpoints({
 })
 
 export const {
+  useGetPublicProductsQuery,
   useGetProductsQuery,
   useCreateProductMutation,
   useUpdateProductMutation,

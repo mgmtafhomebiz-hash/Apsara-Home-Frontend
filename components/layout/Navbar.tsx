@@ -8,10 +8,10 @@ import { useCart } from '@/context/CartContext'
 import { useSession, signOut } from 'next-auth/react'
 import { useLogoutMutation } from '@/store/api/authApi'
 import { useGetCategoriesQuery } from '@/store/api/categoriesApi'
+import { useGetPublicProductsQuery } from '@/store/api/productsApi'
 import { useMeQuery } from '@/store/api/userApi'
 import { useGetCustomerNotificationsQuery } from '@/store/api/customerNotificationsApi'
 import { useRouter } from 'next/navigation'
-import { categoryProducts } from '@/libs/CategoryData'
 
 type NavLink = {
   label: string;
@@ -170,30 +170,63 @@ export default function Navbar() {
   const desktopSearchRef = useRef<HTMLFormElement | null>(null)
   const mobileTopSearchRef = useRef<HTMLFormElement | null>(null)
 
-  const allProducts = useMemo(
-    () =>
-      Object.entries(categoryProducts).flatMap(([category, products]) =>
-        products.map((product) => ({
-          name: product.name,
-          image: product.image,
-          category,
-          slug: product.name.toLowerCase().replace(/\s+/g, '-'),
-        })),
-      ),
-    [],
+  const activeSearchQuery = (activeSearchField === 'mobile' ? mobileTopSearchQuery : desktopSearchQuery).trim()
+  const { data: searchedProductsData, isFetching: isSearchingProducts } = useGetPublicProductsQuery(
+    {
+      page: 1,
+      perPage: 8,
+      search: activeSearchQuery,
+      status: '1',
+    },
+    {
+      skip: activeSearchQuery.length < 2,
+    },
   )
 
+  const searchedProducts = useMemo(() => {
+    const rows = searchedProductsData?.products ?? []
+    return rows
+      .map((product) => {
+        const name = String(product.name ?? '').trim()
+        if (!name) return null
+        const imageFromArray = Array.isArray(product.images)
+          ? product.images.find((item) => typeof item === 'string' && item.trim().length > 0)
+          : null
+        const image = product.image || imageFromArray || null
+        const slug = toSlug(name)
+        const id = typeof product.id === 'number' ? product.id : null
+        return {
+          id: id ?? slug,
+          name,
+          image,
+          path: id ? `/product/${slug}-i${id}` : `/product/${slug}`,
+        }
+      })
+      .filter((product): product is { id: number | string; name: string; image: string | null; path: string } => Boolean(product))
+  }, [searchedProductsData?.products])
+
   const desktopSuggestions = useMemo(() => {
-    const q = desktopSearchQuery.trim().toLowerCase()
-    if (!q) return []
-    return allProducts.filter((p) => p.name.toLowerCase().includes(q)).slice(0, 8)
-  }, [desktopSearchQuery, allProducts])
+    if (activeSearchField !== 'desktop') return []
+    return searchedProducts
+  }, [activeSearchField, searchedProducts])
 
   const mobileSuggestions = useMemo(() => {
-    const q = mobileTopSearchQuery.trim().toLowerCase()
-    if (!q) return []
-    return allProducts.filter((p) => p.name.toLowerCase().includes(q)).slice(0, 8)
-  }, [mobileTopSearchQuery, allProducts])
+    if (activeSearchField !== 'mobile') return []
+    return searchedProducts
+  }, [activeSearchField, searchedProducts])
+
+  const desktopSearchTerm = desktopSearchQuery.trim()
+  const mobileSearchTerm = mobileTopSearchQuery.trim()
+  const showDesktopNotFound =
+    activeSearchField === 'desktop' &&
+    desktopSearchTerm.length >= 2 &&
+    !isSearchingProducts &&
+    desktopSuggestions.length === 0
+  const showMobileNotFound =
+    activeSearchField === 'mobile' &&
+    mobileSearchTerm.length >= 2 &&
+    !isSearchingProducts &&
+    mobileSuggestions.length === 0
 
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 20)
@@ -283,15 +316,18 @@ export default function Navbar() {
   //   await signOut({ callbackUrl: '/' })
   // }
 
-  const handleProductSearchSubmit = (query: string) => {
+  const handleProductSearchSubmit = (query: string, field: 'desktop' | 'mobile') => {
     const q = query.trim().toLowerCase()
     if (!q) return
 
-    const exactMatch = allProducts.find((p) => p.name.toLowerCase() === q)
-    const firstMatch = exactMatch ?? allProducts.find((p) => p.name.toLowerCase().includes(q))
-    if (!firstMatch) return
+    const exactMatch = searchedProducts.find((p) => p.name.toLowerCase() === q)
+    const firstMatch = exactMatch ?? searchedProducts.find((p) => p.name.toLowerCase().includes(q))
+    if (!firstMatch) {
+      setActiveSearchField(field)
+      return
+    }
 
-    router.push(`/product/${firstMatch.slug}`)
+    router.push(firstMatch.path)
     setDesktopSearchQuery('')
     setMobileTopSearchQuery('')
     setActiveSearchField(null)
@@ -325,7 +361,7 @@ export default function Navbar() {
               ref={desktopSearchRef}
               onSubmit={(e) => {
                 e.preventDefault()
-                handleProductSearchSubmit(desktopSearchQuery)
+                handleProductSearchSubmit(desktopSearchQuery, 'desktop')
               }}
             >
               <input
@@ -341,29 +377,39 @@ export default function Navbar() {
               </button>
 
               <AnimatePresence>
-                {activeSearchField === 'desktop' && desktopSuggestions.length > 0 && (
+                {activeSearchField === 'desktop' && (desktopSuggestions.length > 0 || showDesktopNotFound) && (
                   <motion.div
                     initial={{ opacity: 0, y: 6 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 6 }}
                     className="absolute left-0 right-0 mt-2 bg-white border border-gray-100 rounded-xl shadow-lg shadow-black/10 overflow-hidden z-50"
                   >
-                    {desktopSuggestions.map((product) => (
-                      <Link
-                        key={`${product.category}-${product.slug}`}
-                        href={`/product/${product.slug}`}
-                        onClick={() => {
-                          setDesktopSearchQuery('')
-                          setActiveSearchField(null)
-                        }}
-                        className="flex items-center gap-3 px-3 py-2.5 hover:bg-orange-50 transition-colors"
-                      >
-                        <span className="relative h-10 w-10 rounded-md overflow-hidden bg-gray-100 shrink-0">
-                          <Image src={product.image} alt={product.name} fill className="object-cover" />
-                        </span>
-                        <span className="text-sm text-gray-700 truncate">{product.name}</span>
-                      </Link>
-                    ))}
+                    {desktopSuggestions.length > 0 ? (
+                      desktopSuggestions.map((product) => (
+                        <Link
+                          key={product.id}
+                          href={product.path}
+                          onClick={() => {
+                            setDesktopSearchQuery('')
+                            setActiveSearchField(null)
+                          }}
+                          className="flex items-center gap-3 px-3 py-2.5 hover:bg-orange-50 transition-colors"
+                        >
+                          <span className="relative h-10 w-10 rounded-md overflow-hidden bg-gray-100 shrink-0">
+                            {product.image ? (
+                              <Image src={product.image} alt={product.name} fill className="object-cover" />
+                            ) : (
+                              <span className="flex h-full w-full items-center justify-center text-[10px] font-semibold text-gray-400">
+                                AF
+                              </span>
+                            )}
+                          </span>
+                          <span className="text-sm text-gray-700 truncate">{product.name}</span>
+                        </Link>
+                      ))
+                    ) : (
+                      <div className="px-3 py-3 text-sm text-gray-500">Product not found</div>
+                    )}
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -572,7 +618,7 @@ export default function Navbar() {
             ref={mobileTopSearchRef}
             onSubmit={(e) => {
               e.preventDefault()
-              handleProductSearchSubmit(mobileTopSearchQuery)
+              handleProductSearchSubmit(mobileTopSearchQuery, 'mobile')
             }}
           >
             <input
@@ -588,29 +634,39 @@ export default function Navbar() {
             </button>
 
             <AnimatePresence>
-              {activeSearchField === 'mobile' && mobileSuggestions.length > 0 && (
+              {activeSearchField === 'mobile' && (mobileSuggestions.length > 0 || showMobileNotFound) && (
                 <motion.div
                   initial={{ opacity: 0, y: 6 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 6 }}
                   className="absolute left-0 right-0 mt-2 bg-white border border-gray-100 rounded-xl shadow-lg shadow-black/10 overflow-hidden z-50"
                 >
-                  {mobileSuggestions.map((product) => (
-                    <Link
-                      key={`${product.category}-${product.slug}`}
-                      href={`/product/${product.slug}`}
-                      onClick={() => {
-                        setMobileTopSearchQuery('')
-                        setActiveSearchField(null)
-                      }}
-                      className="flex items-center gap-3 px-3 py-2.5 hover:bg-orange-50 transition-colors"
-                    >
-                      <span className="relative h-10 w-10 rounded-md overflow-hidden bg-gray-100 shrink-0">
-                        <Image src={product.image} alt={product.name} fill className="object-cover" />
-                      </span>
-                      <span className="text-sm text-gray-700 truncate">{product.name}</span>
-                    </Link>
-                  ))}
+                  {mobileSuggestions.length > 0 ? (
+                    mobileSuggestions.map((product) => (
+                      <Link
+                        key={product.id}
+                        href={product.path}
+                        onClick={() => {
+                          setMobileTopSearchQuery('')
+                          setActiveSearchField(null)
+                        }}
+                        className="flex items-center gap-3 px-3 py-2.5 hover:bg-orange-50 transition-colors"
+                      >
+                        <span className="relative h-10 w-10 rounded-md overflow-hidden bg-gray-100 shrink-0">
+                          {product.image ? (
+                            <Image src={product.image} alt={product.name} fill className="object-cover" />
+                          ) : (
+                            <span className="flex h-full w-full items-center justify-center text-[10px] font-semibold text-gray-400">
+                              AF
+                            </span>
+                          )}
+                        </span>
+                        <span className="text-sm text-gray-700 truncate">{product.name}</span>
+                      </Link>
+                    ))
+                  ) : (
+                    <div className="px-3 py-3 text-sm text-gray-500">Product not found</div>
+                  )}
                 </motion.div>
               )}
             </AnimatePresence>

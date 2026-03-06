@@ -61,18 +61,18 @@ export default function Wishlist() {
   };
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-gradient-to-b from-orange-50/50 via-white to-white">
-      <div className="pointer-events-none absolute -top-20 -left-10 h-72 w-72 rounded-full bg-orange-200/30 blur-3xl" />
-      <div className="pointer-events-none absolute -top-6 right-0 h-64 w-64 rounded-full bg-amber-200/20 blur-3xl" />
+    <main className="min-h-screen bg-slate-50">
+      <div className="container mx-auto px-4 py-8 md:py-10 max-w-7xl">
 
-      <div className="container mx-auto px-4 py-8 md:py-10">
+        {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.28 }}
-          className="mb-6 rounded-3xl border border-orange-100 bg-white/90 p-5 shadow-[0_20px_50px_-28px_rgba(249,115,22,0.45)] backdrop-blur"
+          className="mb-8"
         >
-          <div className="mb-4">
+          {/* Breadcrumb + back */}
+          <div className="flex items-center gap-1.5 text-xs text-slate-400 mb-3">
             <button
               type="button"
               onClick={() => {
@@ -82,138 +82,171 @@ export default function Wishlist() {
                 }
                 router.push('/shop');
               }}
-              className="inline-flex items-center gap-2 rounded-xl border border-orange-200 bg-orange-50 px-3.5 py-2 text-xs font-semibold text-orange-700 transition-colors hover:bg-orange-100"
+              className="hover:text-slate-600 transition-colors"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4">
-                <path d="M15 18l-6-6 6-6" />
-              </svg>
-              Back
+              Shop
             </button>
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M9 18l6-6-6-6" /></svg>
+            <span className="text-slate-600 font-medium">Wishlist</span>
           </div>
 
-          <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-orange-500">Account Space</p>
-              <h1 className="mt-1 text-3xl font-black text-slate-900 sm:text-4xl">My Wishlist</h1>
+              <h1 className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight">My Wishlist</h1>
               <p className="mt-1 text-sm text-slate-500">Your saved favorites in one place.</p>
             </div>
 
-            <div className="grid grid-cols-2 gap-2 sm:flex sm:gap-3">
-              <div className="rounded-2xl border border-orange-100 bg-orange-50/60 px-4 py-2.5">
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-orange-600">Saved Items</p>
-                <p className="text-lg font-extrabold text-slate-900">{items.length}</p>
+            {isAuthenticated && !isFetching && !isError && (
+              <div className="flex items-center gap-3">
+                <div className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 shadow-sm">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Saved Items</p>
+                  <p className="text-xl font-bold text-slate-900">{items.length}</p>
+                </div>
+                <div className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 shadow-sm">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Total Value</p>
+                  <p className="text-xl font-bold text-slate-900">PHP {totalValue.toLocaleString()}</p>
+                </div>
               </div>
-              <div className="rounded-2xl border border-amber-100 bg-amber-50/70 px-4 py-2.5">
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-amber-700">Total Value</p>
-                <p className="text-lg font-extrabold text-slate-900">PHP {totalValue.toLocaleString()}</p>
-              </div>
-            </div>
+            )}
           </div>
 
-          <div className="mt-4">
-            <label className="relative block">
+          {/* Search */}
+          {isAuthenticated && !isError && items.length > 0 && (
+            <div className="mt-5 relative max-w-sm">
+              <svg
+                className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none"
+                xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+              >
+                <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" />
+              </svg>
               <input
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search wishlist..."
-                className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-800 outline-none transition-all focus:border-orange-300 focus:ring-4 focus:ring-orange-100"
+                className="w-full rounded-xl border border-slate-200 bg-white pl-10 pr-4 py-2.5 text-sm text-slate-800 outline-none transition-all focus:border-orange-300 focus:ring-2 focus:ring-orange-100 placeholder:text-slate-400"
               />
-            </label>
-          </div>
+            </div>
+          )}
         </motion.div>
 
+        {/* States */}
         {status === 'loading' || isFetching ? (
-          <div className="rounded-2xl border border-gray-200 bg-white p-10 text-center text-gray-500 shadow-sm">
-            Loading wishlist...
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="rounded-2xl border border-slate-200 bg-white overflow-hidden animate-pulse">
+                <div className="aspect-square bg-slate-100" />
+                <div className="p-4 space-y-2">
+                  <div className="h-3.5 bg-slate-100 rounded-lg w-3/4" />
+                  <div className="h-3.5 bg-slate-100 rounded-lg w-1/2" />
+                  <div className="h-5 bg-slate-100 rounded-lg w-1/3 mt-3" />
+                  <div className="grid grid-cols-2 gap-2 mt-3">
+                    <div className="h-8 bg-slate-100 rounded-xl" />
+                    <div className="h-8 bg-slate-100 rounded-xl" />
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         ) : !isAuthenticated ? (
-          <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-10 text-center shadow-sm">
-            <p className="text-gray-700 font-medium">Please sign in to view your wishlist.</p>
-            <Link href="/login" className="mt-4 inline-block rounded-xl bg-orange-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-orange-600">
-              Go to Login
+          <div className="flex flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white py-20 text-center shadow-sm">
+            <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-slate-100">
+              <svg className="h-7 w-7 text-slate-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" /></svg>
+            </div>
+            <h2 className="text-base font-bold text-slate-900">Sign in to view your wishlist</h2>
+            <p className="mt-1 text-sm text-slate-500">Save and track your favorite items.</p>
+            <Link href="/login" className="mt-5 inline-flex items-center gap-2 rounded-xl bg-orange-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-orange-600 transition-colors">
+              Sign In
             </Link>
           </div>
         ) : isError ? (
-          <div className="rounded-2xl border border-red-200 bg-red-50 p-10 text-center">
-            <p className="text-red-700">{errorMessage}</p>
+          <div className="flex flex-col items-center justify-center rounded-2xl border border-red-100 bg-red-50 py-16 text-center">
+            <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
+              <svg className="h-6 w-6 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
+            </div>
+            <p className="text-sm font-semibold text-red-700 max-w-sm">{errorMessage}</p>
             <button
               onClick={() => refetch()}
-              className="mt-4 rounded-xl border border-red-200 bg-white px-5 py-2 text-sm font-semibold text-red-700 hover:bg-red-100"
+              className="mt-4 rounded-xl border border-red-200 bg-white px-5 py-2 text-sm font-semibold text-red-600 hover:bg-red-50 transition-colors"
             >
-              Retry
+              Try Again
             </button>
-            <p className="mt-3 text-xs text-red-500">
-              Check Laravel route and auth token. Expected route: <code>/api/wishlist</code>.
-            </p>
           </div>
         ) : !hasItems ? (
-          <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-12 text-center shadow-sm">
-            <h2 className="text-xl font-bold text-slate-900">No results in your wishlist</h2>
-            <p className="mt-1 text-sm text-gray-500">
+          <div className="flex flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white py-20 text-center shadow-sm">
+            <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-orange-50">
+              <svg className="h-7 w-7 text-orange-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" /></svg>
+            </div>
+            <h2 className="text-base font-bold text-slate-900">
+              {search ? 'No matching items' : 'Your wishlist is empty'}
+            </h2>
+            <p className="mt-1 text-sm text-slate-500">
               {search ? 'Try a different keyword or clear your search.' : 'Start saving products you love.'}
             </p>
-            <div className="mt-4 flex items-center justify-center gap-2">
+            <div className="mt-5 flex items-center gap-2">
               {search && (
                 <button
                   onClick={() => setSearch('')}
-                  className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                  className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors"
                 >
                   Clear Search
                 </button>
               )}
-              <Link href="/shop" className="rounded-xl bg-orange-500 px-5 py-2 text-sm font-semibold text-white hover:bg-orange-600">
-                Go to Shop
+              <Link href="/shop" className="rounded-xl bg-orange-500 px-5 py-2 text-sm font-semibold text-white hover:bg-orange-600 transition-colors">
+                Browse Shop
               </Link>
             </div>
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {filteredItems.map((item, index) => (
-              (() => {
-                const productPath = `/product/${item.slug}-i${item.productId}`;
-                return (
-                  <motion.div
-                    key={item.productId}
-                    initial={{ opacity: 0, y: 14 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.25, delay: index * 0.04 }}
-                    className="group overflow-hidden rounded-3xl border border-gray-200 bg-white p-3 shadow-[0_18px_45px_-30px_rgba(2,6,23,0.35)] transition-all hover:-translate-y-1 hover:shadow-[0_30px_50px_-30px_rgba(249,115,22,0.4)]"
-                  >
-                    <Link href={productPath} className="block">
-                      <div className="relative mb-3 aspect-square overflow-hidden rounded-2xl bg-gray-50">
-                        <Image
-                          src={item.image}
-                          alt={item.name}
-                          fill
-                          unoptimized
-                          className="object-cover transition-transform duration-500 group-hover:scale-105"
-                        />
-                        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-                      </div>
-                      <h2 className="line-clamp-2 min-h-[2.8rem] text-sm font-semibold text-slate-900">{item.name}</h2>
-                      <p className="mt-1 text-lg font-extrabold text-orange-500">PHP {item.price.toLocaleString()}</p>
+            {filteredItems.map((item, index) => {
+              const productPath = `/product/${item.slug}-i${item.productId}`;
+              return (
+                <motion.div
+                  key={item.productId}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.22, delay: index * 0.04 }}
+                  className="group flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md hover:border-slate-300"
+                >
+                  {/* Image */}
+                  <Link href={productPath} className="block relative aspect-square overflow-hidden bg-slate-50">
+                    <Image
+                      src={item.image}
+                      alt={item.name}
+                      fill
+                      unoptimized
+                      className="object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                    <div className="pointer-events-none absolute inset-0 bg-linear-to-t from-black/20 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                  </Link>
+
+                  {/* Info */}
+                  <div className="flex flex-1 flex-col p-4">
+                    <Link href={productPath} className="block flex-1">
+                      <h2 className="line-clamp-2 text-sm font-semibold text-slate-900 leading-snug">{item.name}</h2>
+                      <p className="mt-2 text-base font-bold text-orange-500">PHP {Number(item.price).toLocaleString()}</p>
                     </Link>
 
-                    <div className="mt-3 grid grid-cols-2 gap-2">
+                    <div className="mt-4 grid grid-cols-2 gap-2">
                       <Link
                         href={productPath}
-                        className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-center text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50"
+                        className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-center text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-100"
                       >
-                        View Product
+                        View
                       </Link>
                       <button
                         onClick={() => handleRemove(item.productId)}
                         disabled={pendingRemoveId === item.productId}
-                        className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-600 transition-colors hover:bg-red-100 disabled:opacity-60"
+                        className="rounded-xl border border-red-100 bg-red-50 px-3 py-2 text-xs font-semibold text-red-500 transition-colors hover:bg-red-100 disabled:opacity-50"
                       >
                         {pendingRemoveId === item.productId ? 'Removing...' : 'Remove'}
                       </button>
                     </div>
-                  </motion.div>
-                );
-              })()
-            ))}
+                  </div>
+                </motion.div>
+              );
+            })}
           </div>
         )}
       </div>
