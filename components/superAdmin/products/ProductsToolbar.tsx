@@ -8,40 +8,60 @@ interface ProductsToolbarProps {
   resultCount: number
 }
 
-export default function ProductsToolbar({
-  search, onSearch, status, onStatus, resultCount,
-}: ProductsToolbarProps) {
+const STATUS_TABS = [
+  { value: '',  label: 'All'      },
+  { value: '1', label: 'Active'   },
+  { value: '0', label: 'Inactive' },
+]
+
+export default function ProductsToolbar({ search, onSearch, status, onStatus, resultCount }: ProductsToolbarProps) {
   return (
-    <div className="bg-white rounded-2xl border border-slate-100 p-4 flex flex-col sm:flex-row gap-3">
+    <div className="flex flex-wrap items-center gap-3">
+      {/* Status filter */}
+      <div className="flex items-center p-1 bg-white border border-slate-200 rounded-xl gap-0.5 shrink-0">
+        {STATUS_TABS.map(tab => (
+          <button
+            key={tab.value}
+            onClick={() => onStatus(tab.value)}
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              status === tab.value
+                ? 'bg-teal-600 text-white shadow-sm'
+                : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
       {/* Search */}
-      <div className="relative flex-1">
+      <div className="relative flex-1 min-w-48">
         <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 105 11a6 6 0 0012 0z"/>
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
         </svg>
         <input
           type="text"
           value={search}
-          onChange={(e) => onSearch(e.target.value)}
-          placeholder="Search by name or SKU..."
-          className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-400 transition-all"
+          onChange={e => onSearch(e.target.value)}
+          placeholder="Search by name or SKU…"
+          className="w-full pl-9 pr-8 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-400 transition-all"
         />
+        {search && (
+          <button
+            onClick={() => onSearch('')}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        )}
       </div>
-
-      {/* Status filter */}
-      <select
-        value={status}
-        onChange={(e) => onStatus(e.target.value)}
-        className="px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-400 transition-all cursor-pointer"
-      >
-        <option value="">All Status</option>
-        <option value="1">Active</option>
-        <option value="0">Inactive</option>
-      </select>
 
       {/* Count */}
-      <div className="flex items-center px-3 py-2.5 bg-slate-50 rounded-xl border border-slate-200 text-sm text-slate-500 whitespace-nowrap">
-        <span className="font-semibold text-slate-700 mr-1">{resultCount.toLocaleString()}</span> products
-      </div>
+      <span className="text-xs bg-white border border-slate-200 px-3 py-2.5 rounded-xl font-medium shrink-0 whitespace-nowrap text-slate-500">
+        <span className="font-bold text-slate-700">{resultCount.toLocaleString()}</span> results
+      </span>
     </div>
   )
 }

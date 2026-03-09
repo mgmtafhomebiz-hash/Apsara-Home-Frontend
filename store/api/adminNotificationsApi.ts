@@ -35,6 +35,23 @@ export const adminNotificationsApi = baseApi.injectEndpoints({
         url: `/api/admin/orders/notifications/${id}/read`,
         method: 'POST',
       }),
+      async onQueryStarted(id, { dispatch, queryFulfilled }) {
+        const patchResult = dispatch(
+          adminNotificationsApi.util.updateQueryData('getAdminNotifications', undefined, (draft) => {
+            const target = draft.items.find((item) => item.id === id);
+            if (!target || target.is_read) return;
+            target.is_read = true;
+            target.count = 0;
+            draft.unread_count = Math.max(0, (draft.unread_count ?? 0) - 1);
+          })
+        );
+
+        try {
+          await queryFulfilled;
+        } catch {
+          patchResult.undo();
+        }
+      },
       invalidatesTags: ['AdminNotifications'],
     }),
     markAllAdminNotificationsRead: builder.mutation<{ message: string }, void>({
@@ -42,6 +59,23 @@ export const adminNotificationsApi = baseApi.injectEndpoints({
         url: '/api/admin/orders/notifications/read-all',
         method: 'POST',
       }),
+      async onQueryStarted(_arg, { dispatch, queryFulfilled }) {
+        const patchResult = dispatch(
+          adminNotificationsApi.util.updateQueryData('getAdminNotifications', undefined, (draft) => {
+            draft.unread_count = 0;
+            draft.items.forEach((item) => {
+              item.is_read = true;
+              item.count = 0;
+            });
+          })
+        );
+
+        try {
+          await queryFulfilled;
+        } catch {
+          patchResult.undo();
+        }
+      },
       invalidatesTags: ['AdminNotifications'],
     }),
   }),

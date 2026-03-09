@@ -94,6 +94,7 @@ const MembersTable = ({
               <th className="px-5 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide hidden md:table-cell">Orders</th>
               <th className="px-5 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide hidden md:table-cell">Total Spent</th>
               <th className="px-5 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide hidden lg:table-cell">Earnings</th>
+              <th className="px-5 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide hidden xl:table-cell">Wallet Credits</th>
               <th className="px-5 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide hidden lg:table-cell">Referrals</th>
               <th className="px-5 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide hidden xl:table-cell">Joined</th>
               <th className="px-5 py-3.5 text-right text-xs font-semibold text-slate-500 uppercase tracking-wide">Actions</th>
@@ -151,6 +152,18 @@ const MembersTable = ({
                     {/* Earnings */}
                     <td className="px-5 py-3.5 hidden lg:table-cell">
                       <span className="text-teal-700 font-semibold">₱ {member.earnings.toLocaleString()}</span>
+                    </td>
+
+                    {/* Wallet Credits */}
+                    <td className="px-5 py-3.5 hidden xl:table-cell">
+                      <div className="flex flex-col leading-tight">
+                        <span className="text-[11px] font-semibold text-emerald-700">
+                          Cash +{Number(member.walletCashCredits ?? 0).toLocaleString()}
+                        </span>
+                        <span className="text-[11px] font-semibold text-indigo-700">
+                          PV +{Number(member.walletPvCredits ?? 0).toLocaleString()}
+                        </span>
+                      </div>
                     </td>
 
                     {/* Referrals */}
@@ -297,6 +310,14 @@ const MembersTable = ({
                 <div className="rounded-xl border border-slate-100 p-3">
                   <p className="text-xs text-slate-500">Earnings</p>
                   <p className="mt-1 font-semibold text-teal-700">PHP {selectedMember.earnings.toLocaleString()}</p>
+                </div>
+                <div className="rounded-xl border border-slate-100 p-3">
+                  <p className="text-xs text-slate-500">Wallet Cash Credits</p>
+                  <p className="mt-1 font-semibold text-emerald-700">+{Number(selectedMember.walletCashCredits ?? 0).toLocaleString()}</p>
+                </div>
+                <div className="rounded-xl border border-slate-100 p-3">
+                  <p className="text-xs text-slate-500">Wallet PV Credits</p>
+                  <p className="mt-1 font-semibold text-indigo-700">+{Number(selectedMember.walletPvCredits ?? 0).toLocaleString()}</p>
                 </div>
                 <div className="rounded-xl border border-slate-100 p-3">
                   <p className="text-xs text-slate-500">Referrals</p>

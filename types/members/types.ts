@@ -18,6 +18,10 @@ export interface Member {
   orders: number;
   totalSpent: number;
   earnings: number;
+  walletCashBalance?: number;
+  walletPvBalance?: number;
+  walletCashCredits?: number;
+  walletPvCredits?: number;
   referrals: number;
   joinedAt: string;
   lastActiveAt: string;

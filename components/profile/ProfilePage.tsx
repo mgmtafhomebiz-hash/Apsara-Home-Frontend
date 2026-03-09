@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import { useMeQuery, useReferralTreeQuery, useUpdateProfileMutation } from '@/store/api/userApi';
+import { ReferralTreeNode, useMeQuery, useReferralTreeQuery, useUpdateProfileMutation } from '@/store/api/userApi';
 import { signOut, useSession } from 'next-auth/react';
 import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import Loading from '../Loading';
@@ -35,9 +35,10 @@ type PreferencesState = {
   currency: 'PHP' | 'USD';
 };
 
-type Tab = 'profile' | 'security' | 'preferences' | 'wallet' | 'encashment' | 'activity';
+type Tab = 'profile' | 'security' | 'preferences' | 'wallet' | 'encashment' | 'activity' | 'referrals';
 
 type AlertMsg = { type: 'success' | 'error'; text: string };
+type TreeStatusFilter = 'all' | 'verified' | 'pending_review' | 'not_verified' | 'blocked';
 
 const ProfilePage = () => {
   const router = useRouter();
@@ -67,6 +68,9 @@ const ProfilePage = () => {
 
   const [profileMsg, setProfileMsg] = useState<AlertMsg | null>(null);
   const [referralMsg, setReferralMsg] = useState<AlertMsg | null>(null);
+  const [expandedTreeNodes, setExpandedTreeNodes] = useState<Record<number, boolean>>({});
+  const [treeSearchQuery, setTreeSearchQuery] = useState('');
+  const [treeStatusFilter, setTreeStatusFilter] = useState<TreeStatusFilter>('all');
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [isAvatarPreviewOpen, setIsAvatarPreviewOpen] = useState(false);
   const msgTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -108,6 +112,16 @@ const ProfilePage = () => {
     referralMsgTimer.current = setTimeout(() => setReferralMsg(null), 3500);
     return () => { if (referralMsgTimer.current) clearTimeout(referralMsgTimer.current); };
   }, [referralMsg]);
+
+  useEffect(() => {
+    const directChildren = referralTree?.children ?? [];
+    if (!directChildren.length) return;
+    const next: Record<number, boolean> = {};
+    directChildren.forEach((node) => {
+      next[node.id] = true;
+    });
+    setExpandedTreeNodes(next);
+  }, [referralTree?.children]);
 
   const hasChanges = useMemo(
     () =>
@@ -208,6 +222,220 @@ const ProfilePage = () => {
     }
 
     await handleCopyReferralLink();
+  };
+
+  const toggleTreeNode = (id: number) => {
+    setExpandedTreeNodes((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const formatJoinedAt = (value?: string) => {
+    if (!value) return 'Joined date unavailable';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return 'Joined date unavailable';
+    return `Joined ${date.toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+  };
+
+  const collectTreeNodeIds = (nodes: ReferralTreeNode[]): number[] => {
+    const ids: number[] = [];
+    nodes.forEach((node) => {
+      ids.push(node.id);
+      if ((node.children?.length ?? 0) > 0) {
+        ids.push(...collectTreeNodeIds(node.children ?? []));
+      }
+    });
+    return ids;
+  };
+
+  const hasTreeFilters = treeSearchQuery.trim() !== '' || treeStatusFilter !== 'all';
+
+  const filteredReferralChildren = useMemo(() => {
+    const sourceNodes = referralTree?.children ?? [];
+    const normalizedSearch = treeSearchQuery.trim().toLowerCase();
+
+    const matchesNode = (node: ReferralTreeNode) => {
+      const statusMatch = treeStatusFilter === 'all' || node.verification_status === treeStatusFilter;
+      if (!statusMatch) return false;
+      if (!normalizedSearch) return true;
+      const haystack = `${node.name} ${node.username} ${node.email}`.toLowerCase();
+      return haystack.includes(normalizedSearch);
+    };
+
+    const filterNodes = (nodes: ReferralTreeNode[]): ReferralTreeNode[] => {
+      return nodes.reduce<ReferralTreeNode[]>((acc, node) => {
+        const filteredChildren = filterNodes(node.children ?? []);
+        const selfMatch = matchesNode(node);
+        if (!selfMatch && filteredChildren.length === 0) return acc;
+
+        acc.push({
+          ...node,
+          children: filteredChildren,
+          children_count: filteredChildren.length,
+        });
+        return acc;
+      }, []);
+    };
+
+    return filterNodes(sourceNodes);
+  }, [referralTree?.children, treeSearchQuery, treeStatusFilter]);
+
+  const handleExpandAllTreeNodes = () => {
+    const allIds = collectTreeNodeIds(filteredReferralChildren);
+    if (!allIds.length) return;
+    const next: Record<number, boolean> = {};
+    allIds.forEach((id) => {
+      next[id] = true;
+    });
+    setExpandedTreeNodes(next);
+  };
+
+  const handleCollapseAllTreeNodes = () => {
+    setExpandedTreeNodes({});
+  };
+
+  const renderReferralNode = (node: ReferralTreeNode, level = 0): React.ReactNode => {
+    const children = node.children ?? [];
+    const hasChildren = children.length > 0;
+    const isExpanded = hasTreeFilters ? true : (expandedTreeNodes[node.id] ?? level < 1);
+    const levelClass = level === 0 ? 'border-indigo-200 bg-white' : 'border-purple-100 bg-slate-50/60';
+    const nameClass = level === 0 ? 'text-slate-800' : 'text-slate-700';
+
+    return (
+      <div key={`${node.id}-${level}`} className="relative">
+        {level > 0 && <span className="pointer-events-none absolute -left-3 top-5 h-px w-3 bg-purple-200" />}
+        <div className={`rounded-xl border px-3 py-2.5 ${levelClass}`}>
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <p className={`text-xs font-semibold truncate ${nameClass}`}>
+                {node.name}
+                {node.username ? ` (@${node.username})` : ''}
+              </p>
+              <p className="text-[10px] text-slate-400 mt-0.5 truncate">{node.email || 'No email'}</p>
+              <p className="text-[10px] text-slate-400 mt-0.5">{formatJoinedAt(node.joined_at)}</p>
+            </div>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${verificationBadgeClass(node.verification_status)}`}>
+                {node.verification_status}
+              </span>
+              {hasChildren && (
+                <button
+                  type="button"
+                  onClick={() => toggleTreeNode(node.id)}
+                  className="inline-flex items-center justify-center h-6 w-6 rounded-md border border-purple-200 bg-white text-purple-600 hover:bg-purple-50 transition-colors"
+                  aria-label={isExpanded ? 'Collapse referral node' : 'Expand referral node'}
+                >
+                  <Icon.ChevronRight className={`h-3.5 w-3.5 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div className="mt-2 flex items-center gap-2 text-[10px]">
+            <span className="rounded-md bg-indigo-50 px-1.5 py-0.5 font-semibold text-indigo-700">
+              PV {Number(node.total_earnings ?? 0).toLocaleString()}
+            </span>
+            <span className="rounded-md bg-slate-100 px-1.5 py-0.5 font-semibold text-slate-600">
+              {node.children_count ?? children.length} downline
+            </span>
+          </div>
+        </div>
+
+        {hasChildren && isExpanded && (
+          <div className="relative mt-2 ml-3 space-y-2 border-l border-purple-200 pl-3">
+            {children.map((child) => renderReferralNode(child, level + 1))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const verificationColor = (status?: string) => {
+    if (status === 'verified') return { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200', dot: 'bg-emerald-400' };
+    if (status === 'pending_review') return { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200', dot: 'bg-amber-400' };
+    if (status === 'blocked') return { bg: 'bg-red-50', text: 'text-red-600', border: 'border-red-200', dot: 'bg-red-400' };
+    return { bg: 'bg-slate-100', text: 'text-slate-500', border: 'border-slate-200', dot: 'bg-slate-400' };
+  };
+
+  const getNodeInitials = (name: string) =>
+    name.split(' ').slice(0, 2).map((w: string) => w[0]?.toUpperCase() ?? '').join('');
+
+  const renderReferralNodeFull = (node: ReferralTreeNode, level = 0): React.ReactNode => {
+    const children = node.children ?? [];
+    const hasChildren = children.length > 0;
+    const isExpanded = hasTreeFilters ? true : (expandedTreeNodes[node.id] ?? level < 1);
+    const vc = verificationColor(node.verification_status);
+    const nodeInitials = getNodeInitials(node.name || 'AF');
+
+    return (
+      <div key={`full-${node.id}-${level}`} className="relative">
+        {level > 0 && (
+          <span className="pointer-events-none absolute -left-4 top-6 h-px w-4 bg-orange-200" />
+        )}
+        <div className={`rounded-2xl border transition-all duration-200 hover:shadow-sm ${level === 0 ? 'border-slate-200 bg-white shadow-sm' : 'border-slate-100 bg-slate-50/60'}`}>
+          <div className="flex items-start gap-3.5 p-4">
+            {/* Avatar */}
+            <div className="relative shrink-0">
+              <div className={`h-10 w-10 rounded-full flex items-center justify-center font-bold text-sm text-white ${level === 0 ? 'bg-gradient-to-br from-orange-400 to-amber-500' : 'bg-gradient-to-br from-slate-300 to-slate-500'}`}>
+                {nodeInitials}
+              </div>
+              <span className={`absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-white ${vc.dot}`} />
+            </div>
+
+            {/* Info */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="text-sm font-bold text-slate-800 truncate">
+                    {node.name || 'Unknown'}
+                    {node.username ? <span className="text-slate-400 font-normal ml-1 text-xs">@{node.username}</span> : null}
+                  </p>
+                  <p className="text-xs text-slate-400 truncate mt-0.5">{node.email || 'No email'}</p>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${vc.bg} ${vc.text} ${vc.border}`}>
+                    <span className={`h-1.5 w-1.5 rounded-full ${vc.dot}`} />
+                    {node.verification_status?.replace('_', ' ') ?? 'not verified'}
+                  </span>
+                  {hasChildren && (
+                    <button
+                      type="button"
+                      onClick={() => toggleTreeNode(node.id)}
+                      className="h-7 w-7 rounded-lg border border-slate-200 bg-white hover:border-orange-300 hover:bg-orange-50 text-slate-400 hover:text-orange-500 flex items-center justify-center transition-colors"
+                      aria-label={isExpanded ? 'Collapse' : 'Expand'}
+                    >
+                      <Icon.ChevronRight className={`h-3.5 w-3.5 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 mt-2.5 flex-wrap">
+                <div className="flex items-center gap-1.5">
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-orange-50 border border-orange-100 text-[11px] font-bold text-orange-700">
+                    PV {Number(node.total_earnings ?? 0).toLocaleString()}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-slate-100 text-[11px] font-semibold text-slate-600">
+                    {node.children_count ?? children.length} downline
+                  </span>
+                </div>
+                {node.joined_at && (
+                  <span className="text-[11px] text-slate-400">
+                    Joined {new Date(node.joined_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {hasChildren && isExpanded && (
+          <div className="relative mt-2 ml-6 space-y-2 border-l-2 border-orange-100 pl-4">
+            {children.map((child) => renderReferralNodeFull(child, level + 1))}
+          </div>
+        )}
+      </div>
+    );
   };
 
   const handleSaveProfile = async (e: FormEvent) => {
@@ -323,6 +551,7 @@ const ProfilePage = () => {
     { key: 'wallet', label: 'Wallet', Icon: Icon.Wallet },
     { key: 'encashment', label: 'Encashment', Icon: Icon.Bag },
     { key: 'activity', label: 'Activity', Icon: Icon.Activity },
+    { key: 'referrals', label: 'Referrals', Icon: Icon.Network },
   ];
 
   const initials = (form.name || session?.user?.name || 'A')
@@ -554,64 +783,42 @@ const ProfilePage = () => {
                     )}
 
                     <div className="mt-4 border-t border-purple-200 pt-3">
-                      <p className="text-xs font-bold text-purple-700 mb-2">Affiliate Tree</p>
-
-                      {isReferralTreeLoading ? (
-                        <p className="text-xs text-purple-600">Loading your network...</p>
-                      ) : (
-                        <>
-                          <div className="grid grid-cols-3 gap-2 mb-3">
-                            <div className="rounded-lg border border-purple-200 bg-white px-2 py-1.5 text-center">
-                              <p className="text-[10px] text-purple-600">Direct</p>
-                              <p className="text-xs font-bold text-purple-800">{referralTree?.summary?.direct_count ?? 0}</p>
-                            </div>
-                            <div className="rounded-lg border border-purple-200 bg-white px-2 py-1.5 text-center">
-                              <p className="text-[10px] text-purple-600">Level 2</p>
-                              <p className="text-xs font-bold text-purple-800">{referralTree?.summary?.second_level_count ?? 0}</p>
-                            </div>
-                            <div className="rounded-lg border border-purple-200 bg-white px-2 py-1.5 text-center">
-                              <p className="text-[10px] text-purple-600">Total</p>
-                              <p className="text-xs font-bold text-purple-800">{referralTree?.summary?.total_network ?? 0}</p>
-                            </div>
-                          </div>
-
-                          {(referralTree?.children?.length ?? 0) > 0 ? (
-                            <div className="max-h-56 space-y-2 overflow-y-auto pr-1">
-                              {referralTree?.children?.map((node) => (
-                                <div key={node.id} className="rounded-lg border border-purple-200 bg-white px-2.5 py-2">
-                                  <div className="flex items-center justify-between gap-2">
-                                    <p className="text-xs font-semibold text-slate-800 truncate">
-                                      {node.name}
-                                      {node.username ? ` (@${node.username})` : ''}
-                                    </p>
-                                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${verificationBadgeClass(node.verification_status)}`}>
-                                      {node.verification_status}
-                                    </span>
-                                  </div>
-
-                                  {(node.children?.length ?? 0) > 0 && (
-                                    <div className="mt-2 space-y-1 pl-2 border-l-2 border-purple-100">
-                                      {node.children?.map((child) => (
-                                        <div key={child.id} className="flex items-center justify-between gap-2">
-                                          <p className="text-[11px] text-slate-600 truncate">
-                                            {child.name}
-                                            {child.username ? ` (@${child.username})` : ''}
-                                          </p>
-                                          <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-semibold ${verificationBadgeClass(child.verification_status)}`}>
-                                            {child.verification_status}
-                                          </span>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  )}
-                                </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <p className="text-xs text-purple-600">No referrals yet.</p>
-                          )}
-                        </>
-                      )}
+                      <div className="flex items-center justify-between gap-2 mb-3">
+                        <p className="text-xs font-bold text-purple-700">Affiliate Network</p>
+                        {!isReferralTreeLoading && (
+                          <span className="text-[10px] font-semibold text-emerald-600 bg-emerald-50 border border-emerald-100 px-1.5 py-0.5 rounded-full">
+                            {referralTree?.summary?.total_network ?? 0} members
+                          </span>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 mb-3">
+                        <div className="rounded-lg border border-indigo-100 bg-indigo-50 px-2 py-2 text-center">
+                          <p className="text-[10px] text-indigo-500 font-medium">Direct</p>
+                          <p className="text-sm font-bold text-indigo-800">{referralTree?.summary?.direct_count ?? 0}</p>
+                        </div>
+                        <div className="rounded-lg border border-purple-100 bg-purple-50 px-2 py-2 text-center">
+                          <p className="text-[10px] text-purple-500 font-medium">Level 2</p>
+                          <p className="text-sm font-bold text-purple-800">{referralTree?.summary?.second_level_count ?? 0}</p>
+                        </div>
+                        <div className="rounded-lg border border-emerald-100 bg-emerald-50 px-2 py-2 text-center">
+                          <p className="text-[10px] text-emerald-500 font-medium">Total</p>
+                          <p className="text-sm font-bold text-emerald-800">{referralTree?.summary?.total_network ?? 0}</p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleTabChange('referrals')}
+                        className="w-full flex items-center justify-center gap-1.5 rounded-xl bg-white border border-purple-200 px-3 py-2.5 text-xs font-semibold text-purple-700 hover:bg-purple-50 transition-colors"
+                      >
+                        <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                          <circle cx="18" cy="5" r="3" />
+                          <circle cx="6" cy="12" r="3" />
+                          <circle cx="18" cy="19" r="3" />
+                          <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+                          <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+                        </svg>
+                        View Full Referral Tree
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -1121,6 +1328,180 @@ const ProfilePage = () => {
                   transition={{ duration: 0.25 }}
                 >
                   <EncashmentTab />
+                </motion.div>
+              )}
+
+              {activeTab === 'referrals' && (
+                <motion.div
+                  key="referrals"
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.25 }}
+                  className="space-y-5"
+                >
+                  {/* Header card */}
+                  <div className="rounded-2xl border border-slate-200 bg-white p-5 md:p-6">
+                    <div className="flex items-start justify-between gap-3 mb-5 flex-wrap">
+                      <div>
+                        <h3 className="text-base font-bold text-slate-900">Referral Network</h3>
+                        <p className="text-xs text-slate-500 mt-0.5">Your affiliate tree, referral link, and commission overview.</p>
+                      </div>
+                      {isVerified && (
+                        <span className="text-xs px-2.5 py-1 rounded-full bg-purple-50 text-purple-700 font-semibold border border-purple-100 whitespace-nowrap">
+                          Verified Affiliate
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Stats row */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+                      {[
+                        { label: 'Direct Referrals', value: referralTree?.summary?.direct_count ?? 0, bg: 'bg-indigo-50', text: 'text-indigo-700', border: 'border-indigo-100', val: 'text-indigo-900' },
+                        { label: 'Level 2', value: referralTree?.summary?.second_level_count ?? 0, bg: 'bg-purple-50', text: 'text-purple-700', border: 'border-purple-100', val: 'text-purple-900' },
+                        { label: 'Total Network', value: referralTree?.summary?.total_network ?? 0, bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-100', val: 'text-emerald-900' },
+                        { label: 'Total PV Earned', value: (referralTree?.summary as { total_pv?: number } | undefined)?.total_pv ?? 0, bg: 'bg-orange-50', text: 'text-orange-700', border: 'border-orange-100', val: 'text-orange-900' },
+                      ].map((stat) => (
+                        <div key={stat.label} className={`rounded-xl border ${stat.border} ${stat.bg} px-4 py-3`}>
+                          <p className={`text-[11px] font-medium ${stat.text} mb-1`}>{stat.label}</p>
+                          <p className={`text-xl font-bold ${stat.val}`}>{stat.value.toLocaleString()}</p>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Referral Link + QR */}
+                    {isVerified && referralLink && (
+                      <div className="flex flex-col sm:flex-row items-start gap-4 p-4 rounded-xl bg-gradient-to-br from-purple-50 to-indigo-50 border border-purple-100 mb-5">
+                        <div className="shrink-0">
+                          <img
+                            src={`https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(referralLink)}`}
+                            alt="Referral QR"
+                            className="h-24 w-24 rounded-xl border border-purple-200 bg-white p-1.5 shadow-sm"
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-bold text-purple-800 mb-1">Your Referral Link</p>
+                          <div className="flex items-center gap-2 p-2 rounded-lg bg-white border border-purple-100 mb-3">
+                            <p className="text-[11px] text-purple-600 truncate flex-1">{referralLink}</p>
+                          </div>
+                          {referralMsg && (
+                            <p className={`mb-2 text-xs font-medium ${referralMsg.type === 'success' ? 'text-emerald-700' : 'text-red-600'}`}>
+                              {referralMsg.text}
+                            </p>
+                          )}
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <button
+                              type="button"
+                              onClick={handleCopyReferralLink}
+                              className="flex items-center gap-1.5 rounded-xl bg-white border border-purple-200 px-3.5 py-2 text-xs font-semibold text-purple-700 hover:bg-purple-50 transition-colors"
+                            >
+                              <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
+                              Copy Link
+                            </button>
+                            <button
+                              type="button"
+                              onClick={handleShareReferralLink}
+                              className="flex items-center gap-1.5 rounded-xl bg-purple-600 px-3.5 py-2 text-xs font-semibold text-white hover:bg-purple-700 transition-colors shadow-sm shadow-purple-200"
+                            >
+                              <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" /></svg>
+                              Share
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Not verified notice */}
+                    {!isVerified && (
+                      <div className="flex items-start gap-3 p-4 rounded-xl bg-amber-50 border border-amber-100 mb-5">
+                        <Icon.Warning className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-sm font-semibold text-amber-800">Verification Required</p>
+                          <p className="text-xs text-amber-700 mt-0.5">Complete KYC verification to unlock your referral link and start earning commissions.</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Search + filter + controls */}
+                    {isReferralTreeLoading ? (
+                      <div className="space-y-3 animate-pulse">
+                        {[1, 2, 3].map((i) => (
+                          <div key={i} className="h-20 rounded-2xl bg-slate-100" />
+                        ))}
+                      </div>
+                    ) : (
+                      <>
+                        <div className="flex flex-col sm:flex-row gap-2 mb-3">
+                          <div className="relative flex-1">
+                            <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
+                            <input
+                              type="text"
+                              value={treeSearchQuery}
+                              onChange={(e) => setTreeSearchQuery(e.target.value)}
+                              placeholder="Search name, username, email..."
+                              className="w-full pl-9 pr-3 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300 bg-slate-50 text-slate-700 placeholder-slate-400"
+                            />
+                          </div>
+                          <select
+                            value={treeStatusFilter}
+                            onChange={(e) => setTreeStatusFilter(e.target.value as TreeStatusFilter)}
+                            className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300"
+                          >
+                            <option value="all">All Status</option>
+                            <option value="verified">Verified</option>
+                            <option value="pending_review">Pending Review</option>
+                            <option value="not_verified">Not Verified</option>
+                            <option value="blocked">Blocked</option>
+                          </select>
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              onClick={handleExpandAllTreeNodes}
+                              className="flex-1 sm:flex-none rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-600 hover:border-orange-300 hover:text-orange-600 transition-colors"
+                            >
+                              Expand All
+                            </button>
+                            <button
+                              type="button"
+                              onClick={handleCollapseAllTreeNodes}
+                              className="flex-1 sm:flex-none rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-600 hover:border-orange-300 hover:text-orange-600 transition-colors"
+                            >
+                              Collapse
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between mb-4">
+                          <p className="text-xs text-slate-500">
+                            Showing <span className="font-semibold text-slate-700">{filteredReferralChildren.length}</span> direct referral{filteredReferralChildren.length !== 1 ? 's' : ''}
+                          </p>
+                          {treeSearchQuery && (
+                            <button type="button" onClick={() => setTreeSearchQuery('')} className="text-xs text-orange-500 hover:text-orange-600 font-medium">
+                              Clear search
+                            </button>
+                          )}
+                        </div>
+
+                        {filteredReferralChildren.length > 0 ? (
+                          <div className="space-y-3">
+                            {filteredReferralChildren.map((node) => renderReferralNodeFull(node))}
+                          </div>
+                        ) : (
+                          <div className="py-12 text-center">
+                            <div className="h-12 w-12 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-3">
+                              <Icon.Network className="h-6 w-6 text-slate-400" />
+                            </div>
+                            <p className="text-sm font-semibold text-slate-700">
+                              {(referralTree?.children?.length ?? 0) > 0 ? 'No matches found' : 'No referrals yet'}
+                            </p>
+                            <p className="text-xs text-slate-400 mt-1">
+                              {(referralTree?.children?.length ?? 0) > 0 ? 'Try a different search or filter' : 'Share your referral link to start building your network'}
+                            </p>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
                 </motion.div>
               )}
 

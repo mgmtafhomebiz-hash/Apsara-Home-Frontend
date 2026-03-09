@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useSession } from 'next-auth/react'
 import {
   AdminEncashmentItem,
@@ -13,431 +13,691 @@ import {
 } from '@/store/api/encashmentApi'
 import { showErrorToast, showSuccessToast } from '@/libs/toast'
 
+/* ─── config ────────────────────────────────────────────────── */
+
 const FILTER_LABELS: Record<string, string> = {
-  all: 'All Requests',
-  pending: 'Pending',
-  released: 'Released',
+  all:               'All Requests',
+  pending:           'Pending',
+  released:          'Released',
   approved_by_admin: 'Approved by Admin',
-  rejected: 'Rejected',
-  on_hold: 'On Hold',
+  rejected:          'Rejected',
+  on_hold:           'On Hold',
 }
 
-const badgeClass = (status: AdminEncashmentStatus) => {
-  switch (status) {
-    case 'pending':
-      return 'bg-amber-50 text-amber-700 border-amber-200'
-    case 'approved_by_admin':
-      return 'bg-blue-50 text-blue-700 border-blue-200'
-    case 'released':
-      return 'bg-emerald-50 text-emerald-700 border-emerald-200'
-    case 'rejected':
-      return 'bg-red-50 text-red-700 border-red-200'
-    case 'on_hold':
-      return 'bg-slate-100 text-slate-700 border-slate-300'
-    default:
-      return 'bg-slate-50 text-slate-700 border-slate-200'
-  }
+const STATUS_CONFIG: Record<AdminEncashmentStatus, { dot: string; badge: string; label: string }> = {
+  pending:           { dot: 'bg-amber-400',   badge: 'bg-amber-50 text-amber-700 border-amber-200',     label: 'Pending'           },
+  approved_by_admin: { dot: 'bg-blue-400',    badge: 'bg-blue-50 text-blue-700 border-blue-200',        label: 'Approved by Admin' },
+  released:          { dot: 'bg-emerald-400', badge: 'bg-emerald-50 text-emerald-700 border-emerald-200', label: 'Released'        },
+  rejected:          { dot: 'bg-red-400',     badge: 'bg-red-50 text-red-700 border-red-200',           label: 'Rejected'          },
+  on_hold:           { dot: 'bg-slate-400',   badge: 'bg-slate-100 text-slate-600 border-slate-300',    label: 'On Hold'           },
 }
+
+type ActionType = 'approve' | 'release' | 'reject'
+
+/* ─── helpers ───────────────────────────────────────────────── */
 
 const formatMoney = (value: number) =>
-  new Intl.NumberFormat('en-PH', {
-    style: 'currency',
-    currency: 'PHP',
-    maximumFractionDigits: 2,
-  }).format(value || 0)
+  new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', maximumFractionDigits: 2 }).format(value || 0)
 
 const formatDate = (value?: string | null) => {
   if (!value) return 'N/A'
   const d = new Date(value)
   if (Number.isNaN(d.getTime())) return 'N/A'
   return new Intl.DateTimeFormat('en-PH', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
+    year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit',
   }).format(d)
 }
 
-interface Props {
-  initialFilter?: string
+const getInitials = (name?: string | null) => {
+  if (!name) return '?'
+  return name.split(' ').map(p => p[0]).join('').slice(0, 2).toUpperCase()
 }
 
-type ActionType = 'approve' | 'release' | 'reject'
+/* ─── stat card ─────────────────────────────────────────────── */
 
-type ActionModalState = {
-  open: boolean
-  action: ActionType
-  id: number | null
-  notes: string
-  proofUrl: string
-  proofPublicId: string
-  proofFileName: string
+function StatCard({ label, value, bg, text, border, icon }: {
+  label: string; value: number; bg: string; text: string; border: string; icon: React.ReactNode
+}) {
+  return (
+    <div className={`bg-white border ${border} rounded-2xl p-4 shadow-sm`}>
+      <div className="flex items-center gap-3 mb-3">
+        <div className={`h-9 w-9 rounded-xl ${bg} ${text} flex items-center justify-center shrink-0`}>{icon}</div>
+        <p className="text-[11px] text-slate-400 font-medium leading-tight">{label}</p>
+      </div>
+      <p className="text-xl font-bold text-slate-800">{value}</p>
+    </div>
+  )
 }
+
+/* ─── detail modal ──────────────────────────────────────────── */
+
+function DetailModal({ item, onClose, onAction, canApprove, canRelease }: {
+  item: AdminEncashmentItem
+  onClose: () => void
+  onAction: (action: ActionType, id: number) => void
+  canApprove: boolean
+  canRelease: boolean
+}) {
+  const cfg = STATUS_CONFIG[item.status]
+  const canApproveThis = canApprove && (item.status === 'pending' || item.status === 'on_hold')
+  const canRejectThis  = canApprove && item.status !== 'released' && item.status !== 'rejected'
+  const canReleaseThis = canRelease && item.status === 'approved_by_admin' && (item.can_release_by_balance ?? true)
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <motion.div
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        onClick={onClose}
+        className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+      />
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 12 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 12 }}
+        className="relative bg-white rounded-2xl shadow-xl w-full max-w-2xl z-10 overflow-hidden"
+      >
+        {/* Header */}
+        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-full bg-linear-to-br from-teal-400 to-teal-600 flex items-center justify-center text-white text-sm font-bold shrink-0">
+              {getInitials(item.affiliate_name)}
+            </div>
+            <div>
+              <h2 className="text-sm font-bold text-slate-800">{item.affiliate_name || 'Affiliate'}</h2>
+              <p className="text-xs text-slate-400">{item.reference_no} · {item.affiliate_email || 'No email'}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border ${cfg.badge}`}>
+              <span className={`h-1.5 w-1.5 rounded-full ${cfg.dot}`} />
+              {cfg.label}
+            </span>
+            <button onClick={onClose} className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-400 transition">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        {/* Body */}
+        <div className="px-6 py-5 max-h-[65vh] overflow-y-auto space-y-4">
+          {/* Amount + balance row */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="bg-teal-50 border border-teal-100 rounded-xl px-4 py-3">
+              <p className="text-[10px] text-teal-600 font-semibold uppercase tracking-wide">Request Amount</p>
+              <p className="text-lg font-bold text-teal-700 mt-1">{formatMoney(item.amount)}</p>
+            </div>
+            <div className={`rounded-xl px-4 py-3 border ${
+              (item.can_release_by_balance ?? true)
+                ? 'bg-emerald-50 border-emerald-100'
+                : 'bg-red-50 border-red-100'
+            }`}>
+              <p className={`text-[10px] font-semibold uppercase tracking-wide ${(item.can_release_by_balance ?? true) ? 'text-emerald-600' : 'text-red-500'}`}>
+                Release Check
+              </p>
+              <p className={`text-sm font-bold mt-1 ${(item.can_release_by_balance ?? true) ? 'text-emerald-700' : 'text-red-700'}`}>
+                {(item.can_release_by_balance ?? true) ? 'Ready to Release' : 'Insufficient Balance'}
+              </p>
+              {item.can_release_by_balance === false && (
+                <p className="text-xs text-red-500 mt-0.5">Shortfall: {formatMoney(item.balance_shortfall ?? 0)}</p>
+              )}
+            </div>
+          </div>
+
+          {/* Details grid */}
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              { label: 'Invoice No',     value: item.invoice_no || 'Pending'          },
+              { label: 'Payout Channel', value: (item.channel || '').toUpperCase()    },
+              { label: 'Account Name',   value: item.account_name || 'Not provided'   },
+              { label: 'Account No',     value: item.account_number || 'Not provided' },
+              { label: 'Cash Balance',   value: formatMoney(item.wallet_cash_balance ?? 0) },
+              { label: 'Locked',         value: formatMoney(item.wallet_locked_amount ?? 0) },
+              { label: 'Available',      value: formatMoney(item.wallet_available_amount ?? 0) },
+              { label: 'Requested',      value: formatDate(item.created_at) },
+              { label: 'Approved',       value: formatDate(item.approved_at) },
+              { label: 'Released',       value: formatDate(item.released_at) },
+            ].map(({ label, value }) => (
+              <div key={label} className="rounded-xl border border-slate-100 bg-slate-50 px-3.5 py-3">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
+                <p className="text-sm font-medium text-slate-700 mt-1">{value}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Notes */}
+          {(item.notes || item.admin_notes || item.accounting_notes) && (
+            <div className="rounded-xl border border-slate-100 bg-slate-50 px-3.5 py-3 space-y-1.5">
+              {item.notes && (
+                <p className="text-sm text-slate-700">
+                  <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 mr-2">Member:</span>
+                  {item.notes}
+                </p>
+              )}
+              {item.admin_notes && (
+                <p className="text-sm text-slate-700">
+                  <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 mr-2">Admin:</span>
+                  {item.admin_notes}
+                </p>
+              )}
+              {item.accounting_notes && (
+                <p className="text-sm text-slate-700">
+                  <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 mr-2">Accounting:</span>
+                  {item.accounting_notes}
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Proof */}
+          {item.proof_url && (
+            <a
+              href={item.proof_url}
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-2.5 rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 hover:bg-emerald-100 transition-all"
+            >
+              <div className="h-8 w-8 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-emerald-700">View Release Proof</p>
+                <p className="text-[11px] text-emerald-600">Uploaded screenshot</p>
+              </div>
+            </a>
+          )}
+        </div>
+
+        {/* Footer */}
+        {(canApproveThis || canRejectThis || canReleaseThis) && (
+          <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-end gap-2">
+            {canRejectThis && (
+              <button
+                onClick={() => { onClose(); onAction('reject', item.id) }}
+                className="px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-red-500 hover:bg-red-600 transition-all"
+              >
+                Reject
+              </button>
+            )}
+            {canApproveThis && (
+              <button
+                onClick={() => { onClose(); onAction('approve', item.id) }}
+                className="px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 transition-all"
+              >
+                Approve
+              </button>
+            )}
+            {canReleaseThis && (
+              <button
+                onClick={() => { onClose(); onAction('release', item.id) }}
+                className="px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 transition-all"
+              >
+                Release
+              </button>
+            )}
+          </div>
+        )}
+      </motion.div>
+    </div>
+  )
+}
+
+/* ─── action modal ──────────────────────────────────────────── */
+
+const ACTION_META = {
+  approve: { title: 'Approve Request',   icon: 'bg-blue-50 text-blue-600',    btn: 'bg-blue-600 hover:bg-blue-700',       label: 'Confirm Approval'  },
+  release: { title: 'Release Request',   icon: 'bg-emerald-50 text-emerald-600', btn: 'bg-emerald-600 hover:bg-emerald-700', label: 'Confirm Release'   },
+  reject:  { title: 'Reject Request',   icon: 'bg-red-50 text-red-500',      btn: 'bg-red-500 hover:bg-red-600',         label: 'Confirm Rejection' },
+}
+
+function ActionModal({ action, busy, uploading, notes, proofUrl, proofFileName, onNotes, onFileChange, onConfirm, onClose }: {
+  action: ActionType; busy: boolean; uploading: boolean; notes: string; proofUrl: string; proofFileName: string
+  onNotes: (v: string) => void; onFileChange: (f: File) => void; onConfirm: () => void; onClose: () => void
+}) {
+  const meta = ACTION_META[action]
+  return (
+    <div className="fixed inset-0 z-60 flex items-center justify-center p-4">
+      <motion.div
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        onClick={onClose}
+        className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+      />
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 12 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 12 }}
+        className="relative bg-white rounded-2xl shadow-xl w-full max-w-md z-10 overflow-hidden"
+      >
+        <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-3">
+          <div className={`h-9 w-9 rounded-xl flex items-center justify-center shrink-0 ${meta.icon}`}>
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              {action === 'approve' && <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />}
+              {action === 'release' && <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />}
+              {action === 'reject'  && <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />}
+            </svg>
+          </div>
+          <div className="flex-1">
+            <h2 className="text-sm font-bold text-slate-800">{meta.title}</h2>
+            <p className="text-xs text-slate-400 mt-0.5">Note required for audit trail.</p>
+          </div>
+          <button onClick={onClose} className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-400 transition">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <div className="px-6 py-5 space-y-4">
+          <div>
+            <label className="text-xs font-semibold text-slate-600 block mb-1.5">
+              Approval Note <span className="text-red-400">*</span>
+            </label>
+            <textarea
+              value={notes}
+              onChange={e => onNotes(e.target.value)}
+              rows={4}
+              placeholder="Write clear reason / details (min 5 characters)…"
+              className="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-400 bg-slate-50 text-slate-700 placeholder-slate-400 transition resize-none"
+            />
+          </div>
+
+          {action === 'release' && (
+            <div>
+              <label className="text-xs font-semibold text-slate-600 block mb-1.5">
+                Release Screenshot Proof <span className="text-red-400">*</span>
+              </label>
+              <label className="flex items-center gap-3 border border-dashed border-slate-300 rounded-xl px-4 py-3 cursor-pointer hover:border-teal-400 hover:bg-teal-50/30 transition-all">
+                <div className="h-8 w-8 rounded-lg bg-slate-100 text-slate-400 flex items-center justify-center shrink-0">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold text-slate-600">
+                    {proofFileName || 'Click to upload screenshot'}
+                  </p>
+                  <p className="text-[11px] text-slate-400 mt-0.5">PNG, JPG, WebP accepted</p>
+                </div>
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,image/gif"
+                  onChange={e => { const f = e.target.files?.[0]; if (f) onFileChange(f) }}
+                  className="sr-only"
+                />
+              </label>
+              {uploading && (
+                <p className="text-xs text-teal-600 mt-1.5 flex items-center gap-1.5">
+                  <span className="h-1.5 w-1.5 rounded-full bg-teal-500 animate-pulse" />
+                  Uploading proof…
+                </p>
+              )}
+              {proofUrl && !uploading && (
+                <a
+                  href={proofUrl} target="_blank" rel="noreferrer"
+                  className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 hover:underline"
+                >
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                  Proof uploaded — view file
+                </a>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
+          <button
+            onClick={onClose}
+            className="flex-1 py-2.5 rounded-xl text-sm font-semibold border border-slate-200 text-slate-600 hover:border-slate-300 transition"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={busy || uploading}
+            className={`flex-1 py-2.5 rounded-xl text-sm font-bold text-white disabled:opacity-60 transition-all ${meta.btn}`}
+          >
+            {uploading ? 'Uploading…' : busy ? 'Processing…' : meta.label}
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  )
+}
+
+/* ─── main page ─────────────────────────────────────────────── */
+
+interface Props { initialFilter?: string }
 
 export default function EncashmentPageMain({ initialFilter = 'all' }: Props) {
   const { data: session } = useSession()
-  const role = (session?.user?.role ?? '').toLowerCase()
+  const role       = (session?.user?.role ?? '').toLowerCase()
   const canApprove = role === 'accounting'
   const canRelease = role === 'finance_officer' || role === 'super_admin'
 
-  const [search, setSearch] = useState('')
-  const [page, setPage] = useState(1)
-  const [busyId, setBusyId] = useState<number | null>(null)
+  const [search,      setSearch]      = useState('')
+  const [page,        setPage]        = useState(1)
+  const [busyId,      setBusyId]      = useState<number | null>(null)
   const [selectedRow, setSelectedRow] = useState<AdminEncashmentItem | null>(null)
-  const [actionMessage, setActionMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
-  const [actionModal, setActionModal] = useState<ActionModalState>({
-    open: false,
-    action: 'approve',
-    id: null,
-    notes: '',
-    proofUrl: '',
-    proofPublicId: '',
-    proofFileName: '',
-  })
   const [isUploadingProof, setIsUploadingProof] = useState(false)
+  const [actionModal, setActionModal] = useState<{
+    open: boolean; action: ActionType; id: number | null
+    notes: string; proofUrl: string; proofPublicId: string; proofFileName: string
+  }>({ open: false, action: 'approve', id: null, notes: '', proofUrl: '', proofPublicId: '', proofFileName: '' })
 
   const effectiveFilter = useMemo(() => {
-    const normalized = initialFilter
-      .trim()
-      .toLowerCase()
-      .replace(/\s+/g, '_')
-      .replace(/-/g, '_')
-
-    const aliases: Record<string, string> = {
-      all_requests: 'all',
-      approved: 'approved_by_admin',
-      hold: 'on_hold',
-    }
-
-    const mapped = aliases[normalized] ?? normalized
+    const normalized = initialFilter.trim().toLowerCase().replace(/\s+/g, '_').replace(/-/g, '_')
+    const aliases: Record<string, string> = { all_requests: 'all', approved: 'approved_by_admin', hold: 'on_hold' }
+    const mapped    = aliases[normalized] ?? normalized
     const supported = ['all', 'pending', 'released', 'approved_by_admin', 'rejected', 'on_hold']
     return supported.includes(mapped) ? mapped : 'all'
   }, [initialFilter])
 
   const { data, isLoading, isFetching, isError } = useGetAdminEncashmentRequestsQuery({
-    filter: effectiveFilter,
-    search: search.trim() || undefined,
-    page,
-    perPage: 20,
+    filter: effectiveFilter, search: search.trim() || undefined, page, perPage: 20,
   })
 
   const [approveRequest] = useApproveAdminEncashmentMutation()
-  const [rejectRequest] = useRejectAdminEncashmentMutation()
+  const [rejectRequest]  = useRejectAdminEncashmentMutation()
   const [releaseRequest] = useReleaseAdminEncashmentMutation()
 
-  const openActionModal = (action: ActionType, id: number) => {
-    setActionModal({
-      open: true,
-      action,
-      id,
-      notes: '',
-      proofUrl: '',
-      proofPublicId: '',
-      proofFileName: '',
-    })
-  }
+  const openActionModal = (action: ActionType, id: number) =>
+    setActionModal({ open: true, action, id, notes: '', proofUrl: '', proofPublicId: '', proofFileName: '' })
 
   const closeActionModal = () => {
-    setActionModal((prev) => ({
-      ...prev,
-      open: false,
-      id: null,
-      notes: '',
-      proofUrl: '',
-      proofPublicId: '',
-      proofFileName: '',
-    }))
+    setActionModal(prev => ({ ...prev, open: false, id: null, notes: '', proofUrl: '', proofPublicId: '', proofFileName: '' }))
     setIsUploadingProof(false)
   }
 
-  const getActionTitle = (action: ActionType) => {
-    if (action === 'approve') return 'Approve Request'
-    if (action === 'release') return 'Release Request'
-    return 'Reject Request'
-  }
-
-  const getActionButtonLabel = (action: ActionType) => {
-    if (action === 'approve') return 'Confirm Approval'
-    if (action === 'release') return 'Confirm Release'
-    return 'Confirm Rejection'
-  }
-
-  const getActionButtonClass = (action: ActionType) => {
-    if (action === 'approve') return 'bg-blue-600 hover:bg-blue-700'
-    if (action === 'release') return 'bg-emerald-600 hover:bg-emerald-700'
-    return 'bg-red-600 hover:bg-red-700'
-  }
-
-  const handleActionConfirm = async () => {
-    const id = actionModal.id
-    const notes = actionModal.notes.trim()
-    if (!id) return
-    if (notes.length < 5) {
-      const msg = 'Action note is required (minimum 5 characters).'
-      setActionMessage({ type: 'error', text: msg })
-      showErrorToast(msg)
-      return
-    }
-    if (actionModal.action === 'release' && !actionModal.proofUrl) {
-      const msg = 'Screenshot proof is required before release.'
-      setActionMessage({ type: 'error', text: msg })
-      showErrorToast(msg)
-      return
-    }
-
-    setBusyId(id)
-    try {
-      if (actionModal.action === 'approve') {
-        await approveRequest({ id, notes }).unwrap()
-        const msg = 'Request approved successfully.'
-        setActionMessage({ type: 'success', text: msg })
-        showSuccessToast(msg)
-      } else if (actionModal.action === 'release') {
-        await releaseRequest({
-          id,
-          notes,
-          proof_url: actionModal.proofUrl,
-          proof_public_id: actionModal.proofPublicId || undefined,
-        }).unwrap()
-        const msg = 'Request released successfully.'
-        setActionMessage({ type: 'success', text: msg })
-        showSuccessToast(msg)
-      } else {
-        await rejectRequest({ id, notes }).unwrap()
-        const msg = 'Request rejected successfully.'
-        setActionMessage({ type: 'success', text: msg })
-        showSuccessToast(msg)
-      }
-      closeActionModal()
-    } catch (err: unknown) {
-      const apiErr = err as { data?: { message?: string } }
-      const fallback =
-        actionModal.action === 'approve'
-          ? 'Failed to approve request.'
-          : actionModal.action === 'release'
-          ? 'Failed to release request.'
-          : 'Failed to reject request.'
-      const msg = apiErr?.data?.message || fallback
-      setActionMessage({ type: 'error', text: msg })
-      showErrorToast(msg)
-    } finally {
-      setBusyId(null)
-    }
-  }
-
   const handleProofUpload = async (file: File) => {
-    setActionMessage(null)
     setIsUploadingProof(true)
     try {
       const formData = new FormData()
       formData.append('file', file)
       formData.append('folder', 'encashment')
-
-      const response = await fetch('/api/admin/upload', {
-        method: 'POST',
-        body: formData,
-      })
-      const result = (await response.json()) as { url?: string; public_id?: string; error?: string }
-      if (!response.ok || !result?.url) {
-        throw new Error(result?.error || 'Upload failed.')
-      }
-
-      setActionModal((prev) => ({
-        ...prev,
-        proofUrl: result.url ?? '',
-        proofPublicId: result.public_id ?? '',
-        proofFileName: file.name,
+      const response = await fetch('/api/admin/upload', { method: 'POST', body: formData })
+      const result   = (await response.json()) as { url?: string; public_id?: string; error?: string }
+      if (!response.ok || !result?.url) throw new Error(result?.error || 'Upload failed.')
+      setActionModal(prev => ({
+        ...prev, proofUrl: result.url ?? '', proofPublicId: result.public_id ?? '', proofFileName: file.name,
       }))
-      const msg = 'Proof uploaded successfully.'
-      setActionMessage({ type: 'success', text: msg })
-      showSuccessToast(msg)
+      showSuccessToast('Proof uploaded successfully.')
     } catch (err: unknown) {
-      const error = err as { message?: string }
-      const msg = error?.message || 'Failed to upload proof.'
-      setActionMessage({ type: 'error', text: msg })
-      showErrorToast(msg)
+      showErrorToast((err as { message?: string })?.message || 'Failed to upload proof.')
     } finally {
       setIsUploadingProof(false)
     }
   }
 
+  const handleActionConfirm = async () => {
+    const id    = actionModal.id
+    const notes = actionModal.notes.trim()
+    if (!id) return
+    if (notes.length < 5) { showErrorToast('Action note is required (minimum 5 characters).'); return }
+    if (actionModal.action === 'release' && !actionModal.proofUrl) {
+      showErrorToast('Screenshot proof is required before release.'); return
+    }
+    setBusyId(id)
+    try {
+      if (actionModal.action === 'approve') {
+        await approveRequest({ id, notes }).unwrap()
+        showSuccessToast('Request approved successfully.')
+      } else if (actionModal.action === 'release') {
+        await releaseRequest({ id, notes, proof_url: actionModal.proofUrl, proof_public_id: actionModal.proofPublicId || undefined }).unwrap()
+        showSuccessToast('Request released successfully.')
+      } else {
+        await rejectRequest({ id, notes }).unwrap()
+        showSuccessToast('Request rejected successfully.')
+      }
+      closeActionModal()
+    } catch (err: unknown) {
+      const fallback = actionModal.action === 'approve' ? 'Failed to approve.' : actionModal.action === 'release' ? 'Failed to release.' : 'Failed to reject.'
+      showErrorToast((err as { data?: { message?: string } })?.data?.message || fallback)
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  const counts = data?.counts
+
   return (
-    <div className="space-y-5">
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-        <h1 className="text-xl font-bold text-slate-800">Encashment</h1>
-        <p className="text-sm text-slate-500 mt-0.5">Review affiliate payout requests and coordinate release with accounting.</p>
+    <div className="space-y-6">
+      {/* ── Header ── */}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex items-start justify-between gap-4 flex-wrap"
+      >
+        <div>
+          <h1 className="text-xl font-bold text-slate-800">Encashment</h1>
+          <p className="text-sm text-slate-500 mt-0.5">Review affiliate payout requests and coordinate release with accounting</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className={`inline-flex items-center px-3 py-1.5 rounded-xl text-xs font-semibold border ${
+            canApprove || canRelease ? 'bg-teal-50 text-teal-700 border-teal-200' : 'bg-slate-100 text-slate-500 border-slate-200'
+          }`}>
+            <span className={`h-1.5 w-1.5 rounded-full mr-1.5 ${canApprove || canRelease ? 'bg-teal-500' : 'bg-slate-400'}`} />
+            {role || 'staff'}
+          </span>
+          <button className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 hover:border-slate-300 text-slate-700 rounded-xl text-sm font-semibold transition-all shadow-sm hover:shadow">
+            <svg className="w-4 h-4 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            Export
+          </button>
+        </div>
       </motion.div>
 
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 space-y-3">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+      {/* ── Stat Cards ── */}
+      {counts && (
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05 }}
+          className="grid grid-cols-1 sm:grid-cols-3 gap-4"
+        >
+          <StatCard label="All Requests" value={counts.all}      bg="bg-slate-100"  text="text-slate-600"   border="border-slate-200"
+            icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>}
+          />
+          <StatCard label="Pending"      value={counts.pending}  bg="bg-amber-50"   text="text-amber-600"   border="border-amber-100"
+            icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
+          />
+          <StatCard label="Released"     value={counts.released} bg="bg-emerald-50" text="text-emerald-600" border="border-emerald-100"
+            icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>}
+          />
+        </motion.div>
+      )}
+
+      {/* ── Toolbar ── */}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className="bg-white border border-slate-100 rounded-2xl shadow-sm p-4 flex flex-wrap items-center gap-3"
+      >
+        <div className="relative flex-1 min-w-50">
+          <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
           <input
             value={search}
-            onChange={(e) => {
-              setSearch(e.target.value)
-              setPage(1)
-            }}
-            placeholder="Search reference, affiliate, email..."
-            className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-400 transition-all"
+            onChange={e => { setSearch(e.target.value); setPage(1) }}
+            placeholder="Search reference, affiliate, email…"
+            className="w-full pl-9 pr-4 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-400 bg-slate-50 text-slate-700 placeholder-slate-400 transition"
           />
-          <div className="flex items-center justify-end text-xs text-slate-500">
-            {FILTER_LABELS[effectiveFilter] ?? 'All Requests'}
-          </div>
         </div>
+        <span className="text-xs text-slate-400 bg-slate-50 border border-slate-100 px-2.5 py-1 rounded-full font-medium ml-auto">
+          {FILTER_LABELS[effectiveFilter] ?? 'All Requests'}
+        </span>
+      </motion.div>
 
-        {data?.counts ? (
-          <div className="grid grid-cols-3 gap-2">
-            <div className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2">
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">All</p>
-              <p className="text-sm font-bold text-slate-800 mt-1">{data.counts.all}</p>
-            </div>
-            <div className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2">
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Pending</p>
-              <p className="text-sm font-bold text-slate-800 mt-1">{data.counts.pending}</p>
-            </div>
-            <div className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2">
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Released</p>
-              <p className="text-sm font-bold text-slate-800 mt-1">{data.counts.released}</p>
-            </div>
-          </div>
-        ) : null}
-
-        <div className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5 text-xs text-slate-600">
-          Role: <span className="font-semibold">{role || 'staff'}</span>
-          {!canApprove ? ' - Approval is restricted to accounting.' : ''}
-          {!canRelease ? ' - Release is restricted to finance officer.' : ''}
-        </div>
-      </div>
-
-      {actionMessage ? (
-        <div
-          className={`rounded-xl border p-3 text-sm ${
-            actionMessage.type === 'success'
-              ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-              : 'border-red-200 bg-red-50 text-red-700'
-          }`}
-        >
-          {actionMessage.text}
-        </div>
-      ) : null}
-
-      {isError ? (
-        <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+      {/* ── Error ── */}
+      {isError && (
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 flex items-center gap-2">
+          <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
           Failed to load encashment requests.
         </div>
-      ) : null}
+      )}
 
+      {/* ── Loading ── */}
       {isLoading ? (
-        <div className="rounded-2xl border border-slate-100 bg-white p-4 animate-pulse">
-          <div className="space-y-3">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="h-12 rounded bg-slate-100" />
+        <div className="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden animate-pulse">
+          <div className="px-5 py-4 border-b border-slate-100">
+            <div className="h-4 w-32 bg-slate-100 rounded-lg" />
+          </div>
+          <div className="divide-y divide-slate-50">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="px-4 py-4 flex items-center gap-4">
+                <div className="h-9 w-9 rounded-full bg-slate-100 shrink-0" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-3 w-36 bg-slate-100 rounded" />
+                  <div className="h-2.5 w-24 bg-slate-100 rounded" />
+                </div>
+                <div className="h-6 w-20 bg-slate-100 rounded-full" />
+                <div className="h-7 w-16 bg-slate-100 rounded-lg" />
+              </div>
             ))}
           </div>
         </div>
       ) : (
-        <div className="space-y-3">
-          {isFetching ? (
-            <div className="h-1 w-full overflow-hidden rounded-full bg-slate-200">
-              <div className="h-full w-1/3 animate-pulse rounded-full bg-teal-500" />
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="space-y-3"
+        >
+          {isFetching && (
+            <div className="h-1 w-full overflow-hidden rounded-full bg-slate-100">
+              <div className="h-full w-1/3 animate-pulse rounded-full bg-teal-400" />
             </div>
-          ) : null}
+          )}
 
-          <div className="rounded-2xl border border-slate-100 bg-white shadow-sm overflow-hidden">
-            <div className="overflow-auto">
-              <table className="w-full min-w-[1240px]">
-                <thead className="bg-slate-50 border-b border-slate-100">
-                  <tr className="text-left text-xs text-slate-500">
-                    <th className="px-4 py-3 font-semibold">Reference</th>
-                    <th className="px-4 py-3 font-semibold">Invoice</th>
-                    <th className="px-4 py-3 font-semibold">Affiliate</th>
-                    <th className="px-4 py-3 font-semibold">Amount</th>
-                    <th className="px-4 py-3 font-semibold">Wallet</th>
-                    <th className="px-4 py-3 font-semibold">Requested</th>
-                    <th className="px-4 py-3 font-semibold">Status</th>
-                    <th className="px-4 py-3 font-semibold">Actions</th>
+          <div className="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden">
+            <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+              <h2 className="text-sm font-bold text-slate-800">Encashment Requests</h2>
+              <span className="text-xs text-slate-400 bg-slate-50 border border-slate-100 px-2.5 py-1 rounded-full font-medium">
+                {data?.requests?.length ?? 0} shown
+              </span>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left min-w-310">
+                <thead>
+                  <tr className="border-b border-slate-100 bg-slate-50">
+                    {['Reference', 'Affiliate', 'Amount', 'Wallet', 'Dates', 'Status', 'Actions'].map(h => (
+                      <th key={h} className="px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wide">{h}</th>
+                    ))}
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y divide-slate-50">
                   {data?.requests?.length ? (
-                    data.requests.map((row) => {
-                      const isBusy = busyId === row.id
+                    data.requests.map(row => {
+                      const isBusy        = busyId === row.id
                       const canApproveThis = canApprove && (row.status === 'pending' || row.status === 'on_hold')
-                      const canRejectThis = canApprove && row.status !== 'released' && row.status !== 'rejected'
+                      const canRejectThis  = canApprove && row.status !== 'released' && row.status !== 'rejected'
                       const canReleaseThis = canRelease && row.status === 'approved_by_admin' && (row.can_release_by_balance ?? true)
+                      const cfg = STATUS_CONFIG[row.status]
 
                       return (
-                        <tr key={row.id} className="border-b border-slate-50 last:border-b-0">
-                          <td className="px-4 py-3">
+                        <tr key={row.id} className="hover:bg-slate-50/70 transition-colors">
+                          {/* Reference */}
+                          <td className="px-4 py-3.5">
                             <p className="text-sm font-semibold text-slate-800">{row.reference_no}</p>
-                            <p className="text-xs text-slate-500 mt-0.5 capitalize">{row.channel}</p>
+                            <p className="text-xs text-slate-400 mt-0.5 capitalize">{row.channel}</p>
+                            <p className="text-xs text-slate-400">{row.invoice_no || 'Invoice pending'}</p>
                           </td>
-                          <td className="px-4 py-3 text-sm text-slate-700">{row.invoice_no || 'Pending'}</td>
-                          <td className="px-4 py-3">
-                            <p className="text-sm text-slate-800">{row.affiliate_name || 'Affiliate'}</p>
-                            <p className="text-xs text-slate-500">{row.affiliate_email || 'No email'}</p>
+
+                          {/* Affiliate */}
+                          <td className="px-4 py-3.5">
+                            <div className="flex items-center gap-2.5">
+                              <div className="h-8 w-8 rounded-full bg-linear-to-br from-teal-400 to-teal-600 flex items-center justify-center text-white text-[10px] font-bold shrink-0">
+                                {getInitials(row.affiliate_name)}
+                              </div>
+                              <div>
+                                <p className="text-sm font-semibold text-slate-800">{row.affiliate_name || 'Affiliate'}</p>
+                                <p className="text-xs text-slate-400">{row.affiliate_email || 'No email'}</p>
+                              </div>
+                            </div>
                           </td>
-                          <td className="px-4 py-3 text-sm font-bold text-slate-800">{formatMoney(row.amount)}</td>
-                          <td className="px-4 py-3 text-xs text-slate-600">
-                            <p>Cash: <span className="font-semibold text-slate-800">{formatMoney(row.wallet_cash_balance ?? 0)}</span></p>
-                            <p className="mt-0.5">Locked: {formatMoney(row.wallet_locked_amount ?? 0)}</p>
-                            <p className="mt-0.5">Available: {formatMoney(row.wallet_available_amount ?? 0)}</p>
-                            {(row.can_release_by_balance === false) ? (
-                              <p className="mt-1 text-red-600 font-semibold">
-                                Shortfall: {formatMoney(row.balance_shortfall ?? 0)}
-                              </p>
-                            ) : null}
+
+                          {/* Amount */}
+                          <td className="px-4 py-3.5">
+                            <p className="text-sm font-bold text-slate-800">{formatMoney(row.amount)}</p>
                           </td>
-                          <td className="px-4 py-3 text-xs text-slate-600">
+
+                          {/* Wallet */}
+                          <td className="px-4 py-3.5 text-xs text-slate-600 space-y-0.5">
+                            <p>Cash: <span className="font-semibold text-slate-700">{formatMoney(row.wallet_cash_balance ?? 0)}</span></p>
+                            <p>Locked: {formatMoney(row.wallet_locked_amount ?? 0)}</p>
+                            <p>Avail: {formatMoney(row.wallet_available_amount ?? 0)}</p>
+                            {row.can_release_by_balance === false && (
+                              <p className="text-red-500 font-semibold">−{formatMoney(row.balance_shortfall ?? 0)}</p>
+                            )}
+                          </td>
+
+                          {/* Dates */}
+                          <td className="px-4 py-3.5 text-xs text-slate-500 space-y-0.5 whitespace-nowrap">
                             <p>{formatDate(row.created_at)}</p>
-                            <p className="mt-0.5">Approved: {formatDate(row.approved_at)}</p>
-                            <p className="mt-0.5">Released: {formatDate(row.released_at)}</p>
+                            {row.approved_at && <p className="text-slate-400">Approved: {formatDate(row.approved_at)}</p>}
+                            {row.released_at && <p className="text-slate-400">Released: {formatDate(row.released_at)}</p>}
                           </td>
-                          <td className="px-4 py-3">
-                            <span className={`inline-flex px-2 py-1 rounded-full border text-xs font-semibold ${badgeClass(row.status)}`}>
-                              {row.status.replace(/_/g, ' ')}
+
+                          {/* Status */}
+                          <td className="px-4 py-3.5">
+                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[11px] font-semibold ${cfg.badge}`}>
+                              <span className={`h-1.5 w-1.5 rounded-full ${cfg.dot}`} />
+                              {cfg.label}
                             </span>
                           </td>
-                          <td className="px-4 py-3">
-                            <div className="flex items-center gap-2">
+
+                          {/* Actions */}
+                          <td className="px-4 py-3.5">
+                            <div className="flex flex-col gap-1.5">
                               <button
                                 onClick={() => setSelectedRow(row)}
-                                className="px-2.5 py-1.5 rounded-lg text-xs font-semibold border border-slate-300 text-slate-700 hover:bg-slate-50"
+                                className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300 transition-all"
                               >
                                 View
                               </button>
-                              {row.proof_url ? (
+                              {row.proof_url && (
                                 <a
-                                  href={row.proof_url}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="px-2.5 py-1.5 rounded-lg text-xs font-semibold border border-emerald-200 text-emerald-700 hover:bg-emerald-50"
+                                  href={row.proof_url} target="_blank" rel="noreferrer"
+                                  className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-emerald-200 text-emerald-700 hover:bg-emerald-50 transition-all text-center"
                                 >
                                   Proof
                                 </a>
-                              ) : null}
-                              <button
-                                disabled={isBusy || !canApproveThis}
-                                onClick={() => openActionModal('approve', row.id)}
-                                className="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 text-white disabled:opacity-50"
-                              >
-                                Approve
-                              </button>
-                              <button
-                                disabled={isBusy || !canReleaseThis}
-                                onClick={() => openActionModal('release', row.id)}
-                                title={row.can_release_by_balance === false ? 'Insufficient affiliate cash balance.' : undefined}
-                                className="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 text-white disabled:opacity-50"
-                              >
-                                Release
-                              </button>
-                              <button
-                                disabled={isBusy || !canRejectThis}
-                                onClick={() => openActionModal('reject', row.id)}
-                                className="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-red-600 text-white disabled:opacity-50"
-                              >
-                                Reject
-                              </button>
+                              )}
+                              {canApproveThis && (
+                                <button
+                                  disabled={isBusy}
+                                  onClick={() => openActionModal('approve', row.id)}
+                                  className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 disabled:opacity-50 transition-all"
+                                >
+                                  Approve
+                                </button>
+                              )}
+                              {canReleaseThis && (
+                                <button
+                                  disabled={isBusy}
+                                  onClick={() => openActionModal('release', row.id)}
+                                  className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 disabled:opacity-50 transition-all"
+                                >
+                                  Release
+                                </button>
+                              )}
+                              {canRejectThis && (
+                                <button
+                                  disabled={isBusy}
+                                  onClick={() => openActionModal('reject', row.id)}
+                                  className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 disabled:opacity-50 transition-all"
+                                >
+                                  Reject
+                                </button>
+                              )}
                             </div>
                           </td>
                         </tr>
@@ -445,216 +705,80 @@ export default function EncashmentPageMain({ initialFilter = 'all' }: Props) {
                     })
                   ) : (
                     <tr>
-                      <td colSpan={8} className="px-4 py-10 text-center text-sm text-slate-500">
-                        No encashment requests found.
+                      <td colSpan={7} className="px-5 py-14 text-center">
+                        <div className="flex flex-col items-center gap-2">
+                          <svg className="w-8 h-8 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <p className="text-sm font-semibold text-slate-500">No encashment requests found</p>
+                          <p className="text-xs text-slate-400">Try adjusting your search or filter</p>
+                        </div>
                       </td>
                     </tr>
                   )}
                 </tbody>
               </table>
             </div>
-          </div>
 
-          <div className="flex items-center justify-between px-1">
-            <p className="text-xs text-slate-500">
-              Showing {data?.meta?.from ?? 0} - {data?.meta?.to ?? 0} of {data?.meta?.total ?? 0}
-            </p>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setPage((prev) => Math.max(1, prev - 1))}
-                disabled={(data?.meta?.current_page ?? 1) <= 1}
-                className="px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs text-slate-700 disabled:opacity-40"
-              >
-                Prev
-              </button>
-              <span className="text-xs text-slate-600">
-                Page {data?.meta?.current_page ?? 1} / {data?.meta?.last_page ?? 1}
+            {/* Pagination */}
+            <div className="px-5 py-3.5 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400">
+              <span>
+                Showing{' '}
+                <span className="font-semibold text-slate-600">{data?.meta?.from ?? 0}–{data?.meta?.to ?? 0}</span>
+                {' '}of <span className="font-semibold text-slate-600">{data?.meta?.total ?? 0}</span>
               </span>
-              <button
-                onClick={() => setPage((prev) => prev + 1)}
-                disabled={(data?.meta?.current_page ?? 1) >= (data?.meta?.last_page ?? 1)}
-                className="px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs text-slate-700 disabled:opacity-40"
-              >
-                Next
-              </button>
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => setPage(p => Math.max(1, p - 1))}
+                  disabled={(data?.meta?.current_page ?? 1) <= 1}
+                  className="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 transition"
+                >
+                  Prev
+                </button>
+                <span className="px-2">{data?.meta?.current_page ?? 1} / {data?.meta?.last_page ?? 1}</span>
+                <button
+                  onClick={() => setPage(p => p + 1)}
+                  disabled={(data?.meta?.current_page ?? 1) >= (data?.meta?.last_page ?? 1)}
+                  className="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 transition"
+                >
+                  Next
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        </motion.div>
       )}
 
-      {selectedRow ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
-          <div className="w-full max-w-2xl rounded-2xl bg-white border border-slate-200 shadow-xl overflow-hidden">
-            <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
-              <div>
-                <h2 className="text-base font-bold text-slate-800">Encashment Details</h2>
-                <p className="text-xs text-slate-500 mt-0.5">{selectedRow.reference_no}</p>
-              </div>
-              <button
-                onClick={() => setSelectedRow(null)}
-                className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50"
-              >
-                Close
-              </button>
-            </div>
+      {/* ── Detail Modal ── */}
+      <AnimatePresence>
+        {selectedRow && (
+          <DetailModal
+            item={selectedRow}
+            onClose={() => setSelectedRow(null)}
+            onAction={openActionModal}
+            canApprove={canApprove}
+            canRelease={canRelease}
+          />
+        )}
+      </AnimatePresence>
 
-            <div className="px-5 py-4 space-y-4 max-h-[70vh] overflow-auto">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5">
-                  <p className="text-[11px] uppercase tracking-wide text-slate-500">Status</p>
-                  <span className={`mt-1 inline-flex px-2 py-1 rounded-full border text-xs font-semibold ${badgeClass(selectedRow.status)}`}>
-                    {selectedRow.status.replace(/_/g, ' ')}
-                  </span>
-                </div>
-                <div className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5">
-                  <p className="text-[11px] uppercase tracking-wide text-slate-500">Amount</p>
-                  <p className="mt-1 text-sm font-bold text-slate-800">{formatMoney(selectedRow.amount)}</p>
-                </div>
-                <div className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5">
-                  <p className="text-[11px] uppercase tracking-wide text-slate-500">Wallet Cash</p>
-                  <p className="mt-1 text-sm font-bold text-slate-800">{formatMoney(selectedRow.wallet_cash_balance ?? 0)}</p>
-                  <p className="mt-0.5 text-xs text-slate-600">Locked: {formatMoney(selectedRow.wallet_locked_amount ?? 0)}</p>
-                </div>
-                <div className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5">
-                  <p className="text-[11px] uppercase tracking-wide text-slate-500">Release Check</p>
-                  <p className={`mt-1 text-sm font-bold ${(selectedRow.can_release_by_balance ?? true) ? 'text-emerald-700' : 'text-red-700'}`}>
-                    {(selectedRow.can_release_by_balance ?? true) ? 'Ready' : 'Insufficient'}
-                  </p>
-                  {(selectedRow.can_release_by_balance === false) ? (
-                    <p className="mt-0.5 text-xs text-red-600">Shortfall: {formatMoney(selectedRow.balance_shortfall ?? 0)}</p>
-                  ) : (
-                    <p className="mt-0.5 text-xs text-slate-600">Available: {formatMoney(selectedRow.wallet_available_amount ?? 0)}</p>
-                  )}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Affiliate</p>
-                  <p className="mt-1 text-slate-800">{selectedRow.affiliate_name || 'Affiliate'}</p>
-                  <p className="text-slate-500">{selectedRow.affiliate_email || 'No email'}</p>
-                </div>
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Payout Channel</p>
-                  <p className="mt-1 text-slate-800 uppercase">{selectedRow.channel}</p>
-                  <p className="text-slate-500">{selectedRow.account_name || 'No account name'}</p>
-                  <p className="text-slate-500">{selectedRow.account_number || 'No account number'}</p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                <div className="rounded-xl border border-slate-100 px-3 py-2.5">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Reference No</p>
-                  <p className="mt-1 text-slate-800">{selectedRow.reference_no}</p>
-                </div>
-                <div className="rounded-xl border border-slate-100 px-3 py-2.5">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Invoice No</p>
-                  <p className="mt-1 text-slate-800">{selectedRow.invoice_no || 'Pending'}</p>
-                </div>
-              </div>
-
-              <div className="rounded-xl border border-slate-100 px-3 py-2.5 text-sm">
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Notes</p>
-                <p className="mt-1 text-slate-700">{selectedRow.notes || 'No customer notes.'}</p>
-                {selectedRow.admin_notes ? <p className="mt-2 text-slate-700">Admin: {selectedRow.admin_notes}</p> : null}
-                {selectedRow.accounting_notes ? <p className="mt-1 text-slate-700">Accounting: {selectedRow.accounting_notes}</p> : null}
-                {selectedRow.proof_url ? (
-                  <a
-                    href={selectedRow.proof_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="mt-2 inline-flex items-center rounded-lg border border-emerald-200 px-2.5 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-50"
-                  >
-                    View Release Proof
-                  </a>
-                ) : null}
-              </div>
-
-              <div className="rounded-xl border border-slate-100 px-3 py-2.5 text-xs text-slate-600 space-y-1">
-                <p>Requested: {formatDate(selectedRow.created_at)}</p>
-                <p>Approved: {formatDate(selectedRow.approved_at)}</p>
-                <p>Released: {formatDate(selectedRow.released_at)}</p>
-                <p>Updated: {formatDate(selectedRow.updated_at)}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      ) : null}
-
-      {actionModal.open ? (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/50 p-4">
-          <div className="w-full max-w-lg rounded-2xl border border-slate-200 bg-white shadow-xl overflow-hidden">
-            <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
-              <div>
-                <h2 className="text-base font-bold text-slate-800">{getActionTitle(actionModal.action)}</h2>
-                <p className="text-xs text-slate-500 mt-0.5">Add approval note for audit trail.</p>
-              </div>
-              <button
-                onClick={closeActionModal}
-                className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50"
-              >
-                Close
-              </button>
-            </div>
-
-            <div className="px-5 py-4 space-y-3">
-              <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">Approval Note</label>
-              <textarea
-                value={actionModal.notes}
-                onChange={(e) => setActionModal((prev) => ({ ...prev, notes: e.target.value }))}
-                rows={5}
-                placeholder="Write clear reason/details (minimum 5 characters)..."
-                className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-400"
-              />
-              {actionModal.action === 'release' ? (
-                <div className="space-y-2">
-                  <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">Release Screenshot Proof (required)</label>
-                  <input
-                    type="file"
-                    accept="image/png,image/jpeg,image/webp,image/gif"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0]
-                      if (!file) return
-                      void handleProofUpload(file)
-                    }}
-                    className="block w-full rounded-xl border border-slate-200 px-3.5 py-2 text-sm text-slate-700 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-slate-700 hover:file:bg-slate-200"
-                  />
-                  {isUploadingProof ? <p className="text-xs text-slate-500">Uploading proof...</p> : null}
-                  {actionModal.proofUrl ? (
-                    <a
-                      href={actionModal.proofUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center rounded-lg border border-emerald-200 px-2.5 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-50"
-                    >
-                      Proof uploaded: {actionModal.proofFileName || 'View file'}
-                    </a>
-                  ) : null}
-                </div>
-              ) : null}
-              <p className="text-xs text-slate-500">
-                Note is required. This will be visible in encashment details for audit and tracking.
-              </p>
-            </div>
-
-            <div className="flex items-center justify-end gap-2 border-t border-slate-100 px-5 py-4">
-              <button
-                onClick={closeActionModal}
-                className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleActionConfirm}
-                disabled={busyId === actionModal.id || isUploadingProof}
-                className={`rounded-lg px-3 py-2 text-xs font-semibold text-white disabled:opacity-60 ${getActionButtonClass(actionModal.action)}`}
-              >
-                {isUploadingProof ? 'Uploading proof...' : busyId === actionModal.id ? 'Processing...' : getActionButtonLabel(actionModal.action)}
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
+      {/* ── Action Modal ── */}
+      <AnimatePresence>
+        {actionModal.open && (
+          <ActionModal
+            action={actionModal.action}
+            busy={busyId === actionModal.id}
+            uploading={isUploadingProof}
+            notes={actionModal.notes}
+            proofUrl={actionModal.proofUrl}
+            proofFileName={actionModal.proofFileName}
+            onNotes={v => setActionModal(prev => ({ ...prev, notes: v }))}
+            onFileChange={handleProofUpload}
+            onConfirm={handleActionConfirm}
+            onClose={closeActionModal}
+          />
+        )}
+      </AnimatePresence>
     </div>
   )
 }

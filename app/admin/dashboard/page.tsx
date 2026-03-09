@@ -11,7 +11,7 @@ const AdminDashboardPage = () => {
   return (
     <div className="space-y-6">
       <StatsGrid />
-      <div className="grid grid-cols-1 xl:grid-col-3 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         <div className="xl:col-span-2">
           <SalesChart />
         </div>

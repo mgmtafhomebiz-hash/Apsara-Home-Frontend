@@ -28,21 +28,30 @@ const statusBadge = (status: number) =>
 const formatPrice = (v: number) =>
   new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', maximumFractionDigits: 2 }).format(v)
 
+/* ── Stock badge ── */
+function StockBadge({ qty }: { qty: number }) {
+  if (qty === 0) return (
+    <span className="font-semibold text-red-500">{qty.toLocaleString()}</span>
+  )
+  if (qty <= 5) return (
+    <span className="font-semibold text-orange-500">{qty.toLocaleString()}
+      <span className="ml-1 text-[10px] font-medium text-orange-400">low</span>
+    </span>
+  )
+  return <span className="text-slate-600">{qty.toLocaleString()}</span>
+}
+
 export default function ProductsTable({
   rows, currentPage, totalPages, totalRecords, from, to,
   onPageChange, onEdit, onDelete, isDeletingIds = [], selectedIds, onToggleSelect, onToggleSelectAll,
 }: ProductsTableProps) {
   const [confirmId, setConfirmId] = useState<number | null>(null)
-  const allSelected = rows.length > 0 && rows.every((row) => selectedIds.includes(row.id))
-  const isDeleting = (id: number) => isDeletingIds.includes(id)
+  const allSelected = rows.length > 0 && rows.every(row => selectedIds.includes(row.id))
+  const isDeleting  = (id: number) => isDeletingIds.includes(id)
 
   const handleDeleteClick = (id: number) => {
-    if (confirmId === id) {
-      onDelete(id)
-      setConfirmId(null)
-    } else {
-      setConfirmId(id)
-    }
+    if (confirmId === id) { onDelete(id); setConfirmId(null) }
+    else setConfirmId(id)
   }
 
   return (
@@ -60,32 +69,41 @@ export default function ProductsTable({
                   aria-label="Select all products in current page"
                 />
               </th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide w-12">Img</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Product Name</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">SKU</th>
-              <th className="text-right px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">SRP</th>
-              <th className="text-right px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">DP</th>
-              <th className="text-right px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Qty</th>
-              <th className="text-center px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Flags</th>
-              <th className="text-center px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Status</th>
-              <th className="text-center px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Actions</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wide w-14">Image</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wide">Product</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wide">SKU</th>
+              <th className="text-right px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wide">SRP</th>
+              <th className="text-right px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wide">DP</th>
+              <th className="text-right px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wide">Stock</th>
+              <th className="text-center px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wide">Badges</th>
+              <th className="text-center px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wide">Status</th>
+              <th className="text-center px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wide">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-50">
             {rows.length === 0 ? (
               <tr>
-                <td colSpan={10} className="text-center py-16 text-slate-400 text-sm">
-                  No products found.
+                <td colSpan={10} className="py-20 text-center">
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="h-14 w-14 rounded-2xl bg-slate-100 flex items-center justify-center">
+                      <svg className="w-7 h-7 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                      </svg>
+                    </div>
+                    <p className="text-sm font-semibold text-slate-500">No products found</p>
+                    <p className="text-xs text-slate-400">Try adjusting your search or filter</p>
+                  </div>
                 </td>
               </tr>
             ) : (
-              rows.map((p) => (
+              rows.map(p => (
                 <tr
                   key={p.id}
                   className="hover:bg-slate-50/60 transition-colors group"
                   onClick={() => confirmId === p.id && setConfirmId(null)}
                 >
-                  <td className="px-3 py-2" onClick={(e) => e.stopPropagation()}>
+                  {/* Checkbox */}
+                  <td className="px-3 py-2" onClick={e => e.stopPropagation()}>
                     <input
                       type="checkbox"
                       checked={selectedIds.includes(p.id)}
@@ -94,20 +112,15 @@ export default function ProductsTable({
                       aria-label={`Select product ${p.name}`}
                     />
                   </td>
+
                   {/* Image */}
-                  <td className="px-3 py-2">
-                    <div className="relative h-10 w-10 rounded-lg overflow-hidden bg-slate-100 border border-slate-200 shrink-0">
+                  <td className="px-3 py-2.5">
+                    <div className="relative h-11 w-11 rounded-xl overflow-hidden bg-slate-100 border border-slate-200 shrink-0">
                       {p.image ? (
-                        <Image
-                          src={p.image}
-                          alt={p.name}
-                          fill
-                          className="object-cover"
-                          unoptimized
-                        />
+                        <Image src={p.image} alt={p.name} fill className="object-cover" unoptimized/>
                       ) : (
                         <div className="h-full w-full flex items-center justify-center">
-                          <svg className="w-4 h-4 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-5 h-5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                           </svg>
                         </div>
@@ -115,25 +128,55 @@ export default function ProductsTable({
                     </div>
                   </td>
 
-                  {/* Name */}
+                  {/* Name + meta */}
                   <td className="px-4 py-3">
-                    <div>
-                      <span className="font-medium text-slate-800 line-clamp-1">{p.name || '—'}</span>
-                      <span className="text-xs text-slate-400 font-mono">#{p.id}</span>
+                    <p className="font-medium text-slate-800 line-clamp-1 leading-snug">{p.name || '—'}</p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="text-[10px] text-slate-400 font-mono">#{p.id}</span>
+                      {p.variants && p.variants.length > 0 && (
+                        <span className="text-[10px] text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-md font-medium">
+                          {p.variants.length} variant{p.variants.length !== 1 ? 's' : ''}
+                        </span>
+                      )}
                     </div>
                   </td>
 
-                  <td className="px-4 py-3 text-xs text-slate-500 font-mono">{p.sku || '—'}</td>
-                  <td className="px-4 py-3 text-right font-semibold text-slate-700">{formatPrice(p.priceSrp)}</td>
-                  <td className="px-4 py-3 text-right text-slate-500">{formatPrice(p.priceDp)}</td>
-                  <td className="px-4 py-3 text-right text-slate-600">{p.qty.toLocaleString()}</td>
+                  {/* SKU */}
+                  <td className="px-4 py-3">
+                    <span className="text-xs text-slate-500 font-mono bg-slate-50 px-2 py-1 rounded-lg border border-slate-100">
+                      {p.sku || '—'}
+                    </span>
+                  </td>
 
-                  {/* Flags */}
-                  <td className="px-4 py-3 text-center">
-                    <div className="flex items-center justify-center gap-1.5">
-                      {p.musthave && <span className="px-1.5 py-0.5 rounded-md bg-amber-50 text-amber-700 text-xs border border-amber-200 font-medium">MH</span>}
-                      {p.bestseller && <span className="px-1.5 py-0.5 rounded-md bg-purple-50 text-purple-700 text-xs border border-purple-200 font-medium">BS</span>}
-                      {!p.musthave && !p.bestseller && <span className="text-slate-300">—</span>}
+                  {/* Prices */}
+                  <td className="px-4 py-3 text-right font-semibold text-slate-700 text-sm">{formatPrice(p.priceSrp)}</td>
+                  <td className="px-4 py-3 text-right text-slate-500 text-sm">{formatPrice(p.priceDp)}</td>
+
+                  {/* Stock */}
+                  <td className="px-4 py-3 text-right text-sm">
+                    <StockBadge qty={p.qty} />
+                  </td>
+
+                  {/* Badges (Must Have / Bestseller) */}
+                  <td className="px-4 py-3">
+                    <div className="flex flex-col items-center gap-1">
+                      {p.musthave && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 text-[10px] border border-amber-200 font-semibold whitespace-nowrap">
+                          <svg className="w-2.5 h-2.5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                          </svg>
+                          Must Have
+                        </span>
+                      )}
+                      {p.bestseller && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 text-[10px] border border-purple-200 font-semibold whitespace-nowrap">
+                          <svg className="w-2.5 h-2.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                          </svg>
+                          Bestseller
+                        </span>
+                      )}
+                      {!p.musthave && !p.bestseller && <span className="text-slate-300 text-xs">—</span>}
                     </div>
                   </td>
 
@@ -147,9 +190,8 @@ export default function ProductsTable({
                   {/* Actions */}
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-center gap-1.5">
-                      {/* Edit */}
                       <button
-                        onClick={(e) => { e.stopPropagation(); setConfirmId(null); onEdit(p) }}
+                        onClick={e => { e.stopPropagation(); setConfirmId(null); onEdit(p) }}
                         className="h-7 w-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-teal-600 hover:bg-teal-50 transition-colors"
                         title="Edit"
                       >
@@ -158,12 +200,11 @@ export default function ProductsTable({
                         </svg>
                       </button>
 
-                      {/* Delete / Confirm */}
                       {confirmId === p.id ? (
                         <button
-                          onClick={(e) => { e.stopPropagation(); handleDeleteClick(p.id) }}
+                          onClick={e => { e.stopPropagation(); handleDeleteClick(p.id) }}
                           disabled={isDeleting(p.id)}
-                          className="flex items-center gap-1 px-2 py-1 rounded-lg bg-red-500 hover:bg-red-600 text-white text-xs font-semibold transition-colors disabled:opacity-60"
+                          className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-red-500 hover:bg-red-600 text-white text-xs font-semibold transition-colors disabled:opacity-60"
                         >
                           {isDeleting(p.id) ? (
                             <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -174,7 +215,7 @@ export default function ProductsTable({
                         </button>
                       ) : (
                         <button
-                          onClick={(e) => { e.stopPropagation(); handleDeleteClick(p.id) }}
+                          onClick={e => { e.stopPropagation(); handleDeleteClick(p.id) }}
                           className="h-7 w-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"
                           title="Delete"
                         >
@@ -200,15 +241,21 @@ export default function ProductsTable({
             <span className="font-semibold text-slate-700">{totalRecords.toLocaleString()}</span>
           </p>
           <div className="flex items-center gap-1">
-            <button onClick={() => onPageChange(currentPage - 1)} disabled={currentPage <= 1}
-              className="h-7 w-7 flex items-center justify-center rounded-lg text-slate-500 hover:bg-slate-200 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
+            <button
+              onClick={() => onPageChange(currentPage - 1)}
+              disabled={currentPage <= 1}
+              className="h-7 w-7 flex items-center justify-center rounded-lg text-slate-500 hover:bg-slate-200 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7"/></svg>
             </button>
             <span className="px-3 py-1 text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-lg">
               {currentPage} / {totalPages}
             </span>
-            <button onClick={() => onPageChange(currentPage + 1)} disabled={currentPage >= totalPages}
-              className="h-7 w-7 flex items-center justify-center rounded-lg text-slate-500 hover:bg-slate-200 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
+            <button
+              onClick={() => onPageChange(currentPage + 1)}
+              disabled={currentPage >= totalPages}
+              className="h-7 w-7 flex items-center justify-center rounded-lg text-slate-500 hover:bg-slate-200 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7"/></svg>
             </button>
           </div>

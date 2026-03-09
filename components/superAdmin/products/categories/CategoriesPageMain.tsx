@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useSession } from 'next-auth/react'
 import { Category, useGetCategoriesQuery, useDeleteCategoryMutation } from '@/store/api/categoriesApi'
@@ -71,16 +72,26 @@ function CategoryCard({
 
       <div className={`p-5 transition-all ${anySelected ? 'pl-11' : ''}`}>
         <div className="flex items-start gap-4">
-          {/* Icon block */}
-          <div className={`h-12 w-12 rounded-xl ${color.bg} flex items-center justify-center shrink-0 shadow-sm`}>
-            <span className="text-white font-bold text-lg uppercase">{category.name.charAt(0)}</span>
+          {/* Icon / image block */}
+          <div className={`h-12 w-12 rounded-xl ${color.bg} flex items-center justify-center shrink-0 shadow-sm overflow-hidden relative`}>
+            {category.image ? (
+              <Image
+                src={category.image}
+                alt={category.name}
+                fill
+                className="object-cover"
+                unoptimized
+              />
+            ) : (
+              <span className="text-white font-bold text-lg uppercase">{category.name.charAt(0)}</span>
+            )}
           </div>
           {/* Content */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <h3 className="font-bold text-slate-800 text-sm leading-tight">{category.name}</h3>
               <span className={`inline-flex items-center text-[10px] font-bold px-1.5 py-0.5 rounded-md ${color.badge}`}>
-                #{category.order}
+                {category.product_count ?? 0} product{(category.product_count ?? 0) === 1 ? '' : 's'}
               </span>
             </div>
             {category.url && category.url !== '0' && (
@@ -97,7 +108,24 @@ function CategoryCard({
 
       {/* Footer */}
       <div className="px-5 py-3 border-t border-slate-50 bg-slate-50/60 flex items-center justify-between">
-        <span className="text-slate-400 text-xs">ID #{category.id}</span>
+        <div className="flex items-center gap-2">
+          <span className="text-slate-400 text-xs">ID #{category.id}</span>
+          {category.url && category.url !== '0' && (
+            <a
+              href={`/${category.url}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={e => e.stopPropagation()}
+              className="inline-flex items-center gap-1 text-[10px] font-semibold text-slate-400 hover:text-violet-600 transition-colors"
+              title="View in store"
+            >
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+              </svg>
+              View
+            </a>
+          )}
+        </div>
 
         <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
           {/* Edit — hide while confirming */}
@@ -323,14 +351,14 @@ export default function CategoriesPageMain() {
         <div className="hidden sm:flex bg-white rounded-2xl border border-slate-100 px-5 py-4 items-center gap-3">
           <div className="h-9 w-9 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
             <svg className="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
             </svg>
           </div>
           <div>
             <p className="text-2xl font-bold text-slate-800 leading-none">
-              {isLoading ? '—' : rawCategories.filter(c => c.url && c.url !== '0').length}
+              {isLoading ? '—' : rawCategories.filter(c => c.image).length}
             </p>
-            <p className="text-xs text-slate-500 mt-0.5">With URL Slug</p>
+            <p className="text-xs text-slate-500 mt-0.5">With Image</p>
           </div>
         </div>
       </motion.div>

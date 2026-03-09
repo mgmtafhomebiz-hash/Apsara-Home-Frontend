@@ -6,10 +6,13 @@ import { signOut, useSession } from "next-auth/react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
+    adminNotificationsApi,
+    AdminNotificationItem,
     useGetAdminNotificationsQuery,
     useMarkAdminNotificationReadMutation,
     useMarkAllAdminNotificationsReadMutation,
 } from "@/store/api/adminNotificationsApi";
+import { useAppDispatch } from "@/store/hooks";
 import Pusher from "pusher-js";
 
 interface HeaderProps {
@@ -57,7 +60,29 @@ const formatRelativeTime = (value?: string | null) => {
     return `${diffDays}d ago`;
 };
 
+const resolveNotificationHref = (notif: AdminNotificationItem) => {
+    const rawHref = (notif.href || '/admin/orders').trim();
+    const fallbackHref = rawHref.startsWith('/') ? rawHref : '/admin/orders';
+    const url = new URL(fallbackHref, 'http://localhost');
+    const payload = (notif.payload ?? {}) as Record<string, unknown>;
+    const orderId = payload.order_id;
+    const checkoutId = payload.checkout_id;
+
+    if (typeof orderId === 'number' && Number.isFinite(orderId)) {
+        url.searchParams.set('highlightOrderId', String(orderId));
+    } else if (typeof orderId === 'string' && orderId.trim() !== '') {
+        url.searchParams.set('highlightOrderId', orderId.trim());
+    }
+
+    if (typeof checkoutId === 'string' && checkoutId.trim() !== '' && !url.searchParams.get('q')) {
+        url.searchParams.set('q', checkoutId.trim());
+    }
+
+    return `${url.pathname}${url.search}`;
+};
+
 const Header = ({ onMenuClick }: HeaderProps) => {
+    const dispatch = useAppDispatch();
     const [notifOpen, setNotifOpen] = useState(false);
     const [userOpen, setUserOpen] = useState(false);
     const { data: session } = useSession();
@@ -74,8 +99,10 @@ const Header = ({ onMenuClick }: HeaderProps) => {
         isError: isNotifError,
         refetch: refetchNotifs,
     } = useGetAdminNotificationsQuery(undefined, {
-        pollingInterval: 10000,
+        pollingInterval: 5000,
         refetchOnFocus: true,
+        refetchOnReconnect: true,
+        skipPollingIfUnfocused: true,
     });
     const [markNotificationRead] = useMarkAdminNotificationReadMutation();
     const [markAllNotificationsRead] = useMarkAllAdminNotificationsReadMutation();
@@ -119,7 +146,40 @@ const Header = ({ onMenuClick }: HeaderProps) => {
         const onOrderCreated = () => {
             refetchNotifs();
         };
-        const onNotificationCreated = () => {
+        const onNotificationCreated = (event: {
+            id?: number | string;
+            type?: string;
+            title?: string;
+            description?: string;
+            href?: string;
+            created_at?: string;
+        }) => {
+            if (event?.id != null) {
+                dispatch(
+                    adminNotificationsApi.util.updateQueryData('getAdminNotifications', undefined, (draft) => {
+                        const id = String(event.id);
+                        const existingIndex = draft.items.findIndex((item) => item.id === id);
+                        const nextItem: AdminNotificationItem = {
+                            id,
+                            type: event.type ?? 'system',
+                            title: event.title ?? 'New notification',
+                            description: event.description ?? '',
+                            count: 1,
+                            is_read: false,
+                            severity: 'info',
+                            href: event.href ?? '/admin/orders',
+                            updated_at: event.created_at ?? new Date().toISOString(),
+                            payload: null,
+                        };
+
+                        if (existingIndex >= 0) {
+                            draft.items.splice(existingIndex, 1);
+                        }
+                        draft.items.unshift(nextItem);
+                        draft.unread_count = (draft.unread_count ?? 0) + 1;
+                    })
+                );
+            }
             refetchNotifs();
         };
 
@@ -132,17 +192,14 @@ const Header = ({ onMenuClick }: HeaderProps) => {
             pusher.unsubscribe('private-admin-orders');
             pusher.disconnect();
         };
-    }, [accessToken, refetchNotifs]);
+    }, [accessToken, dispatch, refetchNotifs]);
 
-    const handleNotificationClick = async (id: string, href: string) => {
-        try {
-            await markNotificationRead(id).unwrap();
-        } catch {
-            // Navigate even if read-state update fails; polling/realtime will reconcile state.
-        } finally {
-            setNotifOpen(false);
-            router.push(href);
-        }
+    const handleNotificationClick = (notif: AdminNotificationItem) => {
+        setNotifOpen(false);
+        router.push(resolveNotificationHref(notif));
+        void markNotificationRead(notif.id).unwrap().catch(() => {
+            // Keep navigation smooth even if read-state update fails.
+        });
     };
 
     const handleMarkAllNotificationsRead = async () => {
@@ -323,8 +380,8 @@ const Header = ({ onMenuClick }: HeaderProps) => {
                                             <button
                                                 key={notif.id}
                                                 type="button"
-                                                onClick={() => {
-                                                    handleNotificationClick(notif.id, notif.href);
+                                            onClick={() => {
+                                                    handleNotificationClick(notif);
                                                 }}
                                                 className={`w-full text-left flex items-start gap-3 px-4 py-3 hover:bg-slate-50 transition-colors cursor-pointer ${isNew ? 'bg-teal-50/40' : ''}`}
                                             >
@@ -348,7 +405,7 @@ const Header = ({ onMenuClick }: HeaderProps) => {
                                 </div>
                                 <div className="px-4 py-2.5 border-t border-slate-100 text-center">
                                     <p className="text-[11px] text-slate-400">
-                                        Realtime updates enabled (with 10-second polling fallback)
+                                        Realtime updates enabled (with 5-second polling fallback)
                                     </p>
                                     {notifications?.generated_at ? (
                                         <p className="text-[11px] text-slate-400 mt-0.5">

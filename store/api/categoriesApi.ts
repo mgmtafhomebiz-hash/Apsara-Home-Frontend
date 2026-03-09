@@ -7,6 +7,7 @@ export interface Category {
   url: string
   image: string | null
   order: number
+  product_count?: number
 }
 
 export interface CategoriesResponse {

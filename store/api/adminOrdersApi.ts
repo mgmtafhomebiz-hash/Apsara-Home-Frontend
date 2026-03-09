@@ -11,6 +11,15 @@ export type AdminFulfillmentStatus =
   | 'cancelled'
   | 'refunded'
 
+export type AdminShipmentStatus =
+  | 'for_pickup'
+  | 'picked_up'
+  | 'in_transit'
+  | 'out_for_delivery'
+  | 'delivered'
+  | 'failed_delivery'
+  | 'returned_to_sender'
+
 export interface AdminOrder {
   id: number
   customer_id: number
@@ -21,6 +30,10 @@ export interface AdminOrder {
   approved_by?: number | null
   approved_at?: string | null
   fulfillment_status: AdminFulfillmentStatus
+  courier?: string | null
+  tracking_no?: string | null
+  shipment_status?: string | null
+  shipped_at?: string | null
   product_name: string
   product_image?: string | null
   quantity: number
@@ -108,6 +121,14 @@ export const adminOrdersApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['Orders', 'AdminNotifications'],
     }),
+    updateAdminOrderShipmentStatus: builder.mutation<{ message: string }, { id: number; shipment_status: AdminShipmentStatus }>({
+      query: ({ id, shipment_status }) => ({
+        url: `/api/admin/orders/${id}/shipment-status`,
+        method: 'PATCH',
+        body: { shipment_status },
+      }),
+      invalidatesTags: ['Orders', 'AdminNotifications'],
+    }),
   }),
 })
 
@@ -116,4 +137,5 @@ export const {
   useApproveAdminOrderMutation,
   useRejectAdminOrderMutation,
   useUpdateAdminOrderStatusMutation,
+  useUpdateAdminOrderShipmentStatusMutation,
 } = adminOrdersApi
