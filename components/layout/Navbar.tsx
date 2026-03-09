@@ -479,41 +479,43 @@ export default function Navbar() {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: 6 }}
                         transition={{ duration: 0.15 }}
-                        className="absolute right-0 mt-2 w-[320px] rounded-xl border border-gray-100 bg-white shadow-lg shadow-black/10 overflow-hidden z-50"
+                        className="fixed left-2 right-2 top-16 mt-0 w-auto rounded-xl border border-gray-100 bg-white shadow-lg shadow-black/10 overflow-hidden z-50 sm:absolute sm:right-0 sm:left-auto sm:top-auto sm:mt-2 sm:w-[320px] sm:max-w-[calc(100vw-1rem)]"
                       >
-                        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+                        <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-gray-100">
                           <p className="text-sm font-semibold text-gray-800">Notifications</p>
                           <button
                             onClick={() => setNotifMuted(true)}
-                            className="text-xs font-medium text-orange-600 hover:underline"
+                            className="shrink-0 text-xs font-medium text-orange-600 hover:underline"
                           >
                             Mark all read
                           </button>
                         </div>
 
-                        {isNotificationsLoading ? (
-                          <div className="px-4 py-3 text-sm text-gray-500">Loading notifications...</div>
-                        ) : isNotificationsError ? (
-                          <div className="px-4 py-3 text-sm text-red-600">Failed to load notifications.</div>
-                        ) : notificationsData?.items?.length ? (
-                          notificationsData.items.map((item) => (
-                            <Link
-                              key={item.id}
-                              href={item.href}
-                              onClick={() => setNotifMenuOpen(false)}
-                              className={`flex items-start gap-3 px-4 py-3 hover:bg-orange-50 transition-colors ${item.count > 0 ? 'bg-orange-50/40' : ''}`}
-                            >
-                              <span className={`mt-1 h-2 w-2 rounded-full shrink-0 ${item.count > 0 ? 'bg-orange-500' : 'bg-gray-300'}`} />
-                              <div className="min-w-0 flex-1">
-                                <p className="text-sm font-medium text-gray-800">{item.title}</p>
-                                <p className="text-xs text-gray-500 mt-0.5">{item.description}</p>
-                              </div>
-                              <span className="text-xs font-semibold text-gray-500">{item.count}</span>
-                            </Link>
-                          ))
-                        ) : (
-                          <div className="px-4 py-3 text-sm text-gray-500">No notifications right now.</div>
-                        )}
+                        <div className="max-h-[60vh] overflow-y-auto sm:max-h-[52vh]">
+                          {isNotificationsLoading ? (
+                            <div className="px-4 py-3 text-sm text-gray-500">Loading notifications...</div>
+                          ) : isNotificationsError ? (
+                            <div className="px-4 py-3 text-sm text-red-600">Failed to load notifications.</div>
+                          ) : notificationsData?.items?.length ? (
+                            notificationsData.items.map((item) => (
+                              <Link
+                                key={item.id}
+                                href={item.href}
+                                onClick={() => setNotifMenuOpen(false)}
+                                className={`flex items-start gap-3 px-4 py-3 hover:bg-orange-50 transition-colors ${item.count > 0 ? 'bg-orange-50/40' : ''}`}
+                              >
+                                <span className={`mt-1 h-2 w-2 rounded-full shrink-0 ${item.count > 0 ? 'bg-orange-500' : 'bg-gray-300'}`} />
+                                <div className="min-w-0 flex-1">
+                                  <p className="text-sm font-medium text-gray-800">{item.title}</p>
+                                  <p className="text-xs text-gray-500 mt-0.5">{item.description}</p>
+                                </div>
+                                <span className="text-xs font-semibold text-gray-500">{item.count}</span>
+                              </Link>
+                            ))
+                          ) : (
+                            <div className="px-4 py-3 text-sm text-gray-500">No notifications right now.</div>
+                          )}
+                        </div>
 
                         <div className="px-4 py-2 border-t border-gray-100">
                           <p className="text-[11px] text-gray-400">Auto-refresh every 30 seconds</p>
