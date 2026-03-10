@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import MembersStatusBadge from "./MembersStatusBadge"
 import TierBadge from "@/components/ui/TierBadge"
 import { useState } from "react"
+import AdminPagination from '@/components/superAdmin/AdminPagination'
 
 const avatarColors = [
   'bg-teal-500', 'bg-blue-500', 'bg-purple-500', 'bg-pink-500',
@@ -214,33 +215,14 @@ const MembersTable = ({
         </table>
       </div>
 
-      {/* Footer */}
-      <div className="px-5 py-3 border-t border-slate-50 flex items-center justify-between bg-slate-50/50">
-        <p className="text-xs text-slate-500 font-medium">
-          Showing {from ?? 0} to {to ?? rows.length} of {totalRecords}
-        </p>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => canGoPrev && onPageChange(currentPage - 1)}
-            disabled={!canGoPrev}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7"/></svg>
-            Prev
-          </button>
-          <span className="px-3 h-7 rounded-lg bg-slate-200 text-slate-700 text-xs font-semibold flex items-center">
-            Page {currentPage} / {totalPages}
-          </span>
-          <button
-            onClick={() => canGoNext && onPageChange(currentPage + 1)}
-            disabled={!canGoNext}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-teal-200 bg-white px-3 py-1.5 text-xs font-semibold text-teal-700 hover:bg-teal-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            Next 
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7"/></svg>
-          </button>
-        </div>
-      </div>
+      <AdminPagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        from={from}
+        to={to}
+        totalRecords={totalRecords}
+        onPageChange={onPageChange}
+      />
 
       <AnimatePresence>
         {selectedMember && (

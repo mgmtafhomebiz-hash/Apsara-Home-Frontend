@@ -43,6 +43,7 @@ export default function ProductsPageMain({ initialData = null }: ProductsPageMai
   const [search,          setSearch]          = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [status,          setStatus]          = useState('')
+  const [catId,           setCatId]           = useState<number | undefined>(undefined)
   const [page,            setPage]            = useState(1)
   const [showAddModal,    setShowAddModal]    = useState(false)
   const [editProduct,     setEditProduct]     = useState<Product | null>(null)
@@ -59,7 +60,7 @@ export default function ProductsPageMain({ initialData = null }: ProductsPageMai
   const skip     = authStatus !== 'authenticated' || !hasToken
 
   const { data, isLoading, isFetching, isError } = useGetProductsQuery(
-    { page, perPage, search: debouncedSearch || undefined, status: status || undefined },
+    { page, perPage, search: debouncedSearch || undefined, status: status || undefined, catId },
     { skip },
   )
 
@@ -77,6 +78,7 @@ export default function ProductsPageMain({ initialData = null }: ProductsPageMai
 
   const handleSearch = (v: string) => { setSearch(v); setPage(1) }
   const handleStatus = (v: string) => { setStatus(v); setPage(1) }
+  const handleCatId  = (v: number | undefined) => { setCatId(v); setPage(1) }
 
   useEffect(() => {
     const rowIds = new Set(products.map(p => p.id))
@@ -194,6 +196,7 @@ export default function ProductsPageMain({ initialData = null }: ProductsPageMai
         <ProductsToolbar
           search={search} onSearch={handleSearch}
           status={status} onStatus={handleStatus}
+          catId={catId}   onCatId={handleCatId}
           resultCount={meta?.total ?? products.length}
         />
       </motion.div>

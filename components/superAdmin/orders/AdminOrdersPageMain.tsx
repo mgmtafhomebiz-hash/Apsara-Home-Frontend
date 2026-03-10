@@ -12,6 +12,7 @@ import {
   useUpdateAdminOrderShipmentStatusMutation,
 } from '@/store/api/adminOrdersApi'
 import { showErrorToast, showSuccessToast } from '@/libs/toast'
+import AdminPagination from '@/components/superAdmin/AdminPagination'
 
 /* ─── constants ────────────────────────────────────────────── */
 
@@ -540,33 +541,14 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
               </table>
             </div>
 
-            {/* Pagination */}
-            <div className="px-5 py-3.5 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400">
-              <span>
-                Showing{' '}
-                <span className="font-semibold text-slate-600">{data?.meta?.from ?? 0}–{data?.meta?.to ?? 0}</span>
-                {' '}of <span className="font-semibold text-slate-600">{data?.meta?.total ?? 0}</span>
-              </span>
-              <div className="flex items-center gap-1.5">
-                <button
-                  onClick={() => setPage(p => Math.max(1, p - 1))}
-                  disabled={(data?.meta?.current_page ?? 1) <= 1}
-                  className="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
-                >
-                  Prev
-                </button>
-                <span className="px-2">
-                  {data?.meta?.current_page ?? 1} / {data?.meta?.last_page ?? 1}
-                </span>
-                <button
-                  onClick={() => setPage(p => p + 1)}
-                  disabled={(data?.meta?.current_page ?? 1) >= (data?.meta?.last_page ?? 1)}
-                  className="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
-                >
-                  Next
-                </button>
-              </div>
-            </div>
+            <AdminPagination
+              currentPage={data?.meta?.current_page ?? 1}
+              totalPages={data?.meta?.last_page ?? 1}
+              from={data?.meta?.from}
+              to={data?.meta?.to}
+              totalRecords={data?.meta?.total ?? 0}
+              onPageChange={setPage}
+            />
           </div>
         </motion.div>
       )}

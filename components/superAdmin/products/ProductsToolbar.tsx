@@ -1,10 +1,14 @@
 'use client'
 
+import { useGetCategoriesQuery } from '@/store/api/categoriesApi'
+
 interface ProductsToolbarProps {
   search: string
   onSearch: (v: string) => void
   status: string
   onStatus: (v: string) => void
+  catId: number | undefined
+  onCatId: (v: number | undefined) => void
   resultCount: number
 }
 
@@ -14,7 +18,10 @@ const STATUS_TABS = [
   { value: '0', label: 'Inactive' },
 ]
 
-export default function ProductsToolbar({ search, onSearch, status, onStatus, resultCount }: ProductsToolbarProps) {
+export default function ProductsToolbar({ search, onSearch, status, onStatus, catId, onCatId, resultCount }: ProductsToolbarProps) {
+  const { data: categoriesData } = useGetCategoriesQuery()
+  const categories = categoriesData?.categories ?? []
+
   return (
     <div className="flex flex-wrap items-center gap-3">
       {/* Status filter */}
@@ -32,6 +39,30 @@ export default function ProductsToolbar({ search, onSearch, status, onStatus, re
             {tab.label}
           </button>
         ))}
+      </div>
+
+      {/* Category filter */}
+      <div className="relative shrink-0">
+        <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h8m-8 6h16"/>
+        </svg>
+        <select
+          value={catId ?? ''}
+          onChange={e => onCatId(e.target.value === '' ? undefined : Number(e.target.value))}
+          className={`pl-9 pr-8 py-2.5 bg-white border rounded-xl text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-400 appearance-none cursor-pointer ${
+            catId !== undefined
+              ? 'border-teal-400 text-teal-700 bg-teal-50'
+              : 'border-slate-200 text-slate-600'
+          }`}
+        >
+          <option value="">All Categories</option>
+          {categories.map(cat => (
+            <option key={cat.id} value={cat.id}>{cat.name}</option>
+          ))}
+        </select>
+        <svg className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7"/>
+        </svg>
       </div>
 
       {/* Search */}

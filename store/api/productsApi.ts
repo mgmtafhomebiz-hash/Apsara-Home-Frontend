@@ -97,6 +97,7 @@ interface ProductsQueryParams {
   perPage?: number
   search?: string
   status?: string
+  catId?: number
 }
 
 const toStringArray = (value: unknown): string[] => {
@@ -207,6 +208,7 @@ export const productsApi = baseApi.injectEndpoints({
           per_page: params?.perPage ?? 25,
           q: params?.search,
           status: params?.status,
+          cat_id: params?.catId,
         },
       }),
       transformResponse: (response: ProductsResponse) => normalizeProductsResponse(response),

@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { AdminEncashmentItem, useGetAdminEncashmentRequestsQuery } from '@/store/api/encashmentApi'
+import AdminPagination from '@/components/superAdmin/AdminPagination'
 
 const formatMoney = (value: number) =>
   new Intl.NumberFormat('en-PH', {
@@ -208,30 +209,14 @@ export default function InvoicesPageMain() {
             </div>
           </div>
 
-          <div className="flex items-center justify-between px-1 text-xs text-slate-500">
-            <p>
-              Showing {data?.meta?.from ?? 0} - {data?.meta?.to ?? 0} of {data?.meta?.total ?? 0}
-            </p>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={(data?.meta?.current_page ?? 1) <= 1}
-                className="rounded-lg border border-slate-200 px-2.5 py-1.5 disabled:opacity-40"
-              >
-                Prev
-              </button>
-              <span>
-                Page {data?.meta?.current_page ?? 1} / {data?.meta?.last_page ?? 1}
-              </span>
-              <button
-                onClick={() => setPage((p) => p + 1)}
-                disabled={(data?.meta?.current_page ?? 1) >= (data?.meta?.last_page ?? 1)}
-                className="rounded-lg border border-slate-200 px-2.5 py-1.5 disabled:opacity-40"
-              >
-                Next
-              </button>
-            </div>
-          </div>
+          <AdminPagination
+            currentPage={data?.meta?.current_page ?? 1}
+            totalPages={data?.meta?.last_page ?? 1}
+            from={data?.meta?.from}
+            to={data?.meta?.to}
+            totalRecords={data?.meta?.total ?? 0}
+            onPageChange={setPage}
+          />
         </div>
       )}
 

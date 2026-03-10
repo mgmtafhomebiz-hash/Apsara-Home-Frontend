@@ -3,6 +3,7 @@
 import Image from 'next/image'
 import { useState } from 'react'
 import { Product } from '@/store/api/productsApi'
+import AdminPagination from '@/components/superAdmin/AdminPagination'
 
 interface ProductsTableProps {
   rows: Product[]
@@ -233,34 +234,14 @@ export default function ProductsTable({
         </table>
       </div>
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100 bg-slate-50/50">
-          <p className="text-xs text-slate-500">
-            Showing <span className="font-semibold text-slate-700">{from ?? 0}–{to ?? 0}</span> of{' '}
-            <span className="font-semibold text-slate-700">{totalRecords.toLocaleString()}</span>
-          </p>
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => onPageChange(currentPage - 1)}
-              disabled={currentPage <= 1}
-              className="h-7 w-7 flex items-center justify-center rounded-lg text-slate-500 hover:bg-slate-200 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7"/></svg>
-            </button>
-            <span className="px-3 py-1 text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-lg">
-              {currentPage} / {totalPages}
-            </span>
-            <button
-              onClick={() => onPageChange(currentPage + 1)}
-              disabled={currentPage >= totalPages}
-              className="h-7 w-7 flex items-center justify-center rounded-lg text-slate-500 hover:bg-slate-200 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7"/></svg>
-            </button>
-          </div>
-        </div>
-      )}
+      <AdminPagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        from={from}
+        to={to}
+        totalRecords={totalRecords}
+        onPageChange={onPageChange}
+      />
     </div>
   )
 }
