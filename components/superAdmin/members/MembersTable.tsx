@@ -93,6 +93,7 @@ const MembersTable = ({
               <th className="px-5 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">Status</th>
               <th className="px-5 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide hidden sm:table-cell">Tier</th>
               <th className="px-5 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide hidden md:table-cell">Orders</th>
+              <th className="px-5 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide hidden 2xl:table-cell">Address</th>
               <th className="px-5 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide hidden md:table-cell">Total Spent</th>
               <th className="px-5 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide hidden lg:table-cell">Earnings</th>
               <th className="px-5 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide hidden xl:table-cell">Wallet Credits</th>
@@ -143,6 +144,13 @@ const MembersTable = ({
                     {/* Orders */}
                     <td className="px-5 py-3.5 hidden md:table-cell">
                       <span className="text-slate-700 font-medium">{member.orders}</span>
+                    </td>
+
+                    {/* Address */}
+                    <td className="px-5 py-3.5 hidden 2xl:table-cell">
+                      <span className="block max-w-xs truncate text-xs text-slate-500">
+                        {member.fullAddress || 'No address provided'}
+                      </span>
                     </td>
 
                     {/* Total Spent */}
@@ -277,6 +285,12 @@ const MembersTable = ({
               </div>
 
               <div className="grid grid-cols-2 gap-3 text-sm">
+                <div className="col-span-2 rounded-xl border border-slate-100 p-3">
+                  <p className="text-xs text-slate-500">Address</p>
+                  <p className="mt-1 font-semibold text-slate-800">
+                    {selectedMember.fullAddress || 'No address provided'}
+                  </p>
+                </div>
                 <div className="rounded-xl border border-slate-100 p-3">
                   <p className="text-xs text-slate-500">Tier</p>
                   <div className="mt-1"><TierBadge tier={selectedMember.tier} /></div>

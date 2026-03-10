@@ -39,6 +39,12 @@ const ProductImageGallery = ({ product, activeVariantImage }: ProductImageGaller
   const [variantPreviewSrc, setVariantPreviewSrc] = useState<string | null>(null);
 
   useEffect(() => {
+    if (activeImage >= galleryImages.length) {
+      setActiveImage(0);
+    }
+  }, [activeImage, galleryImages.length]);
+
+  useEffect(() => {
     if (!activeVariantImage) {
       setVariantPreviewSrc(null);
       return;
@@ -134,7 +140,7 @@ const ProductImageGallery = ({ product, activeVariantImage }: ProductImageGaller
           >
             <AnimatePresence mode="wait">
               <motion.div
-                key={activeImage}
+                key={activeSrc}
                 initial={{ opacity: 0, x: slideDirection > 0 ? 40 : -40 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: slideDirection > 0 ? -40 : 40 }}

@@ -7,6 +7,7 @@ import { useSession } from 'next-auth/react'
 import { useCreateProductMutation, CreateProductPayload } from '@/store/api/productsApi'
 import { useGetCategoriesQuery } from '@/store/api/categoriesApi'
 import { showErrorToast, showSuccessToast } from '@/libs/toast'
+import RichTextEditor from '@/components/ui/RichTextEditor'
 
 /* ─── types ──────────────────────────────────────────────── */
 
@@ -609,12 +610,9 @@ export default function AddProductModal({ isOpen, onClose }: AddProductModalProp
                   </div>
 
                   <Field label="Description">
-                    <textarea
+                    <RichTextEditor
                       value={form.pd_description}
-                      onChange={e => set('pd_description', e.target.value)}
-                      placeholder="Describe this product…"
-                      rows={3}
-                      className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-400 hover:border-slate-300 transition-all resize-none"
+                      onChange={html => set('pd_description', html)}
                     />
                   </Field>
 

@@ -25,4 +25,11 @@ export interface Member {
   referrals: number;
   joinedAt: string;
   lastActiveAt: string;
+  addressLine?: string;
+  barangay?: string;
+  city?: string;
+  province?: string;
+  region?: string;
+  zipCode?: string;
+  fullAddress?: string;
 }

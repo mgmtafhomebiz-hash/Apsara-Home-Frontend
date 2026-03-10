@@ -165,28 +165,18 @@ async function getCategoryProducts(slug: string): Promise<{ label?: string; prod
   if (!apiUrl) return { label: titleFromSlug(slug), products: [] };
 
   try {
-    const [categoriesRes, productsRes] = await Promise.all([
-      fetch(`${apiUrl}/api/categories`, {
-        method: 'GET',
-        headers: { Accept: 'application/json' },
-        next: { revalidate: 300 },
-      }),
-      fetch(`${apiUrl}/api/products?page=1&per_page=100&status=1`, {
-        method: 'GET',
-        headers: { Accept: 'application/json' },
-        next: { revalidate: 120 },
-      }),
-    ]);
+    const categoriesRes = await fetch(`${apiUrl}/api/categories`, {
+      method: 'GET',
+      headers: { Accept: 'application/json' },
+      next: { revalidate: 300 },
+    });
 
-    if (!categoriesRes.ok || !productsRes.ok) {
+    if (!categoriesRes.ok) {
       return { label: titleFromSlug(slug), products: [] };
     }
 
     const categoriesJson = (await categoriesRes.json()) as ApiCategoriesResponse;
-    const productsJson = (await productsRes.json()) as ProductsResponse;
-
     const categories = extractCategories(categoriesJson);
-    const products = extractProducts(productsJson);
 
     const category = categories.find((item) => {
       const normalized = normalizeCategorySlug(item.url, item.name);
@@ -197,6 +187,27 @@ async function getCategoryProducts(slug: string): Promise<{ label?: string; prod
 
     const categoryId = category ? Number(category.id) : undefined;
     const categoryLabel = category?.name ?? titleFromSlug(slug);
+
+    const productsUrl = new URL(`${apiUrl}/api/products`);
+    productsUrl.searchParams.set('page', '1');
+    productsUrl.searchParams.set('per_page', '200');
+    productsUrl.searchParams.set('status', '1');
+    if (typeof categoryId === 'number' && Number.isFinite(categoryId)) {
+      productsUrl.searchParams.set('cat_id', String(categoryId));
+    }
+
+    const productsRes = await fetch(productsUrl.toString(), {
+      method: 'GET',
+      headers: { Accept: 'application/json' },
+      next: { revalidate: 120 },
+    });
+
+    if (!productsRes.ok) {
+      return { label: categoryLabel, products: [] };
+    }
+
+    const productsJson = (await productsRes.json()) as ProductsResponse;
+    const products = extractProducts(productsJson);
 
     return {
       label: categoryLabel,

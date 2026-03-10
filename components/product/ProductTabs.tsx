@@ -74,7 +74,10 @@ const ProductTabs = ({ product, defaultTab = 'description', onTabChange }: Produ
                     {activeTab === 'description' && (
                         <div className="max-w-2xl space-y-4 text-gray-600 text-sm leading-relaxed">
                             {product.description ? (
-                                <p>{product.description}</p>
+                                <div
+                                    className="text-sm text-gray-600 rich-content"
+                                    dangerouslySetInnerHTML={{ __html: product.description }}
+                                />
                             ) : (
                                 <>
                                     <p>

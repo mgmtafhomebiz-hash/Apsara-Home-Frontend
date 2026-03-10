@@ -2,7 +2,7 @@
 
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import Footer from '@/components/layout/Footer';
 import TopBar from '@/components/layout/TopBar';
 import Navbar from '@/components/layout/Navbar';
@@ -123,8 +123,10 @@ export default function CategoryListProductMain({
     const [customPriceMax, setCustomPriceMax] = useState<number | null>(null);
     const [sortBy, setSortBy] = useState('best-selling');
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-    const [showCount, setShowCount] = useState(32);
+    const [showCount, setShowCount] = useState(16);
+    const [currentPage, setCurrentPage] = useState(1);
     const [showMobileFilters, setShowMobileFilters] = useState(false);
+    const listingTopRef = useRef<HTMLDivElement | null>(null);
 
     const toggleBrand = (brand: string) =>
         setSelectedBrands(prev => prev.includes(brand) ? prev.filter(b => b !== brand) : [...prev, brand]);
@@ -177,6 +179,24 @@ export default function CategoryListProductMain({
         if (sortBy === 'newest') result = [...result].reverse();
         return result;
     }, [safeProducts, selectedPriceBrackets, customPriceMin, customPriceMax, selectedBrands, sortBy]);
+
+    // Reset to page 1 when filters/sort/showCount change.
+    useEffect(() => { setCurrentPage(1); }, [selectedBrands, selectedPriceBrackets, customPriceMin, customPriceMax, sortBy, showCount]);
+
+    // Reset pagination when switching to a different category route.
+    useEffect(() => {
+        setCurrentPage(1);
+        setShowMobileFilters(false);
+    }, [slug]);
+
+    const totalPages = Math.max(1, Math.ceil(filteredProducts.length / showCount));
+    const boundedCurrentPage = Math.min(currentPage, totalPages);
+    const paginatedProducts = filteredProducts.slice((boundedCurrentPage - 1) * showCount, boundedCurrentPage * showCount);
+
+    useEffect(() => {
+        if (boundedCurrentPage <= 1) return;
+        listingTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, [boundedCurrentPage]);
 
     const hasActivePriceRange = selectedPriceBrackets.length > 0 || customPriceMin !== null || customPriceMax !== null;
     const hasActiveFilters = selectedBrands.length > 0 || hasActivePriceRange;
@@ -416,7 +436,7 @@ export default function CategoryListProductMain({
                         <div className="flex-1 min-w-0">
 
                             {/* Toolbar */}
-                            <div className="flex items-center justify-between mb-5 flex-wrap gap-3 bg-gray-50 rounded-xl px-4 py-3 border border-gray-100">
+                            <div ref={listingTopRef} className="flex items-center justify-between mb-5 flex-wrap gap-3 bg-gray-50 rounded-xl px-4 py-3 border border-gray-100">
                                 <div className="flex items-center gap-2 sm:gap-3">
 
                                     {/* Mobile filter trigger */}
@@ -456,7 +476,7 @@ export default function CategoryListProductMain({
                                     </div>
                                     <span className="text-xs text-gray-400">
                                         Showing{' '}
-                                        <span className="font-semibold text-slate-700">{Math.min(showCount, filteredProducts.length)}</span>
+                                        <span className="font-semibold text-slate-700">{paginatedProducts.length}</span>
                                         <span className="hidden sm:inline">
                                             {' '}of{' '}
                                             <span className="font-semibold text-slate-700">{filteredProducts.length}</span>
@@ -474,6 +494,7 @@ export default function CategoryListProductMain({
                                             className="border border-gray-200 bg-white rounded-lg px-2 py-1 text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-orange-300 cursor-pointer"
                                         >
                                             <option value={16}>16</option>
+                                            <option value={24}>24</option>
                                             <option value={32}>32</option>
                                             <option value={48}>48</option>
                                         </select>
@@ -548,18 +569,23 @@ export default function CategoryListProductMain({
                                 </div>
                             ) : (
                                 <motion.div
-                                    key={`${viewMode}-${sortBy}`}
+                                    key={`${viewMode}-${sortBy}-${boundedCurrentPage}`}
                                     className={
                                         viewMode === 'grid'
                                             ? 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4'
                                             : 'flex flex-col gap-3'
                                     }
-                                    variants={containerVariants}
-                                    initial="hidden"
-                                    animate="visible"
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ duration: 0.25, ease: 'easeOut' }}
                                 >
-                                    {filteredProducts.slice(0, showCount).map((product, i) => (
-                                        <motion.div key={`${product.name}-${i}`} variants={itemVariants}>
+                                    {paginatedProducts.map((product, i) => (
+                                        <motion.div
+                                            key={`${product.name}-${i}`}
+                                            initial={{ opacity: 0, y: 14 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ duration: 0.22, delay: i * 0.02, ease: 'easeOut' }}
+                                        >
                                             <ProductCard {...product} />
                                         </motion.div>
                                     ))}
@@ -567,8 +593,55 @@ export default function CategoryListProductMain({
                             )}
 
                             {filteredProducts.length > 0 && (
-                                <p className="mt-8 text-center text-xs text-gray-400">
-                                    Showing {Math.min(showCount, filteredProducts.length)} of {filteredProducts.length} products
+                                <div className="mt-8 flex items-center justify-center gap-1.5">
+                                    {/* Prev */}
+                                    <button
+                                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                        disabled={boundedCurrentPage === 1}
+                                        className="h-8 w-8 flex items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 hover:border-orange-300 hover:text-orange-500 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="15 18 9 12 15 6" /></svg>
+                                    </button>
+
+                                    {/* Page numbers */}
+                                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => {
+                                        const isFirst = page === 1;
+                                        const isLast = page === totalPages;
+                                        const nearCurrent = Math.abs(page - boundedCurrentPage) <= 1;
+                                        if (!isFirst && !isLast && !nearCurrent) {
+                                            if (page === 2 || page === totalPages - 1) {
+                                                return <span key={page} className="text-xs text-gray-400 px-0.5">…</span>;
+                                            }
+                                            return null;
+                                        }
+                                        return (
+                                            <button
+                                                key={page}
+                                                onClick={() => setCurrentPage(page)}
+                                                className={`h-8 min-w-8 px-2 flex items-center justify-center rounded-lg text-xs font-semibold transition-colors ${
+                                                    boundedCurrentPage === page
+                                                        ? 'bg-orange-500 text-white border border-orange-500'
+                                                        : 'border border-gray-200 bg-white text-gray-600 hover:border-orange-300 hover:text-orange-500'
+                                                }`}
+                                            >
+                                                {page}
+                                            </button>
+                                        );
+                                    })}
+
+                                    {/* Next */}
+                                    <button
+                                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                        disabled={boundedCurrentPage === totalPages}
+                                        className="h-8 w-8 flex items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 hover:border-orange-300 hover:text-orange-500 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="9 18 15 12 9 6" /></svg>
+                                    </button>
+                                </div>
+                            )}
+                            {filteredProducts.length > 0 && (
+                                <p className="mt-3 text-center text-xs text-gray-400">
+                                    Showing {(boundedCurrentPage - 1) * showCount + 1}–{Math.min(boundedCurrentPage * showCount, filteredProducts.length)} of {filteredProducts.length} products
                                 </p>
                             )}
                         </div>

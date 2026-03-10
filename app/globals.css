@@ -1,5 +1,6 @@
 @import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,600;9..144,700&family=Manrope:wght@400;500;600;700&display=swap");
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
 
 :root {
   --af-cream: #faf8f5;
@@ -119,6 +120,17 @@ body {
 .animation-delay-4000 {
   animation-delay: 4s;
 }
+
+/* ── Rich text content — shared between editor and product display ── */
+.rich-content h2 { font-size: 1.1rem; font-weight: 700; margin: 0.5rem 0 0.25rem; color: #1e293b; }
+.rich-content h3 { font-size: 0.95rem; font-weight: 600; margin: 0.4rem 0 0.2rem; color: #334155; }
+.rich-content p  { margin: 0.2rem 0; }
+.rich-content ul { list-style-type: disc;    padding-left: 1.3rem; margin: 0.3rem 0; }
+.rich-content ol { list-style-type: decimal; padding-left: 1.3rem; margin: 0.3rem 0; }
+.rich-content li { margin: 0.15rem 0; }
+.rich-content strong { font-weight: 700; }
+.rich-content em     { font-style: italic; }
+.rich-content u      { text-decoration: underline; }
 
 .noise-overlay {
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");

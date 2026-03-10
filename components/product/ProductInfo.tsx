@@ -57,6 +57,22 @@ const buildVariantGroupKey = (variant: VariantOption, index: number) => {
     return `row:${index}`;
 };
 
+const looksLikeHtml = (value: string) => /<[^>]+>/.test(value);
+
+const stripHtml = (value: string) =>
+    value
+        .replace(/<br\s*\/?>/gi, '\n')
+        .replace(/<\/p>/gi, '\n\n')
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/&nbsp;/gi, ' ')
+        .replace(/&amp;/gi, '&')
+        .replace(/&quot;/gi, '"')
+        .replace(/&#39;/gi, "'")
+        .replace(/\s+\n/g, '\n')
+        .replace(/\n{3,}/g, '\n\n')
+        .replace(/[ \t]{2,}/g, ' ')
+        .trim();
+
 const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange }: ProductInfoProps) => {
     const { addToCart } = useCart();
     const { data: session } = useSession();
@@ -180,6 +196,8 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange }
         ? selectedVariant.sku
         : (product.sku && product.sku.trim().length > 0 ? product.sku : '');
     const isInStock = typeof displayStock !== 'number' || displayStock > 0;
+    const productDescription = (product.description ?? '').trim();
+    const plainDescription = productDescription ? stripHtml(productDescription) : '';
 
 
     const avgRating = (mockReviews.reduce((s, r) => s + r.rating, 0) / mockReviews.length).toFixed(1);
@@ -299,10 +317,18 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange }
 
             <div className="h-px bg-gray-100" />
 
-            {/* DESCRIPTION */}
-            {product.description && (
-                <p className="text-sm text-slate-600 leading-relaxed">{product.description}</p>
-            )}
+            {/* {productDescription && (
+                looksLikeHtml(productDescription) ? (
+                    <div
+                        className="text-sm text-slate-600 rich-content"
+                        dangerouslySetInnerHTML={{ __html: productDescription }}
+                    />
+                ) : (
+                    <div className="text-sm leading-6 text-slate-600 whitespace-pre-line">
+                        {plainDescription || productDescription}
+                    </div>
+                )
+            )} */}
 
             {(displaySku || typeof displayStock === 'number') && (
                 <div className="flex flex-wrap items-center gap-4 text-sm text-slate-600">
