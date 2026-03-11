@@ -208,6 +208,7 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
   const [imageFiles,         setImageFiles]         = useState<File[]>([])
   const [imagePreviews,      setImagePreviews]      = useState<string[]>([])
   const [existingImageUrls,  setExistingImageUrls]  = useState<string[]>([])
+  const [initialImageUrls,   setInitialImageUrls]   = useState<string[]>([])
   const [isUploading,        setIsUploading]        = useState(false)
   const [uploadedUrls,       setUploadedUrls]       = useState<string[]>([])
   const [imageError,         setImageError]         = useState('')
@@ -255,6 +256,7 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
       ? product.images.filter((img): img is string => Boolean(img))
       : (product.image ? [product.image] : [])
     setExistingImageUrls(existing)
+    setInitialImageUrls(existing)
     setImageFiles([]); setImagePreviews([]); setUploadedUrls([])
     setVariants(Array.isArray(product.variants) ? product.variants.map(mapVariantToForm) : [])
     setNewColorInputs({})
@@ -438,6 +440,10 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
       finalImageUrls = [...existingImageUrls, ...uploadedUrls]
     }
 
+    const imagesChanged =
+      finalImageUrls.length !== initialImageUrls.length ||
+      finalImageUrls.some((url, index) => url !== initialImageUrls[index])
+
     const payload: Partial<CreateProductPayload> = {
       pd_name:        form.pd_name.trim(),
       pd_catid:       Number(form.pd_catid),
@@ -461,9 +467,12 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
       pd_salespromo:  form.pd_salespromo,
       pd_verified:    form.pd_verified,
       pd_status:      Number(form.pd_status),
-      pd_image:           finalImageUrls[0] ?? undefined,
-      pd_images:          finalImageUrls.length > 0 ? finalImageUrls : undefined,
       pd_variants:        hasVariants ? expandedVariants : [],
+    }
+
+    if (imagesChanged) {
+      payload.pd_image = finalImageUrls[0] ?? undefined
+      payload.pd_images = finalImageUrls.length > 0 ? finalImageUrls : []
     }
 
     try {
