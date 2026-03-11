@@ -59,16 +59,26 @@ export default function ProductsPageMain({ initialData = null }: ProductsPageMai
   const hasToken = Boolean(session?.user?.accessToken)
   const skip     = authStatus !== 'authenticated' || !hasToken
 
-  const { data, isLoading, isFetching, isError } = useGetProductsQuery(
+  const { data, isLoading, isFetching, isError, refetch: refetchProducts } = useGetProductsQuery(
     { page, perPage, search: debouncedSearch || undefined, status: status || undefined, catId },
     { skip },
   )
 
   /* Lightweight count queries for stats */
-  const { data: activeCountData }   = useGetProductsQuery({ perPage: 1, status: '1' }, { skip })
-  const { data: inactiveCountData } = useGetProductsQuery({ perPage: 1, status: '0' }, { skip })
+  const { data: activeCountData, refetch: refetchActiveCount }   = useGetProductsQuery({ perPage: 1, status: '1' }, { skip })
+  const { data: inactiveCountData, refetch: refetchInactiveCount } = useGetProductsQuery({ perPage: 1, status: '0' }, { skip })
 
   const [deleteProduct] = useDeleteProductMutation()
+
+  const handleProductsSaved = () => {
+    if (page !== 1) {
+      setPage(1)
+    } else {
+      void refetchProducts()
+    }
+    void refetchActiveCount()
+    void refetchInactiveCount()
+  }
 
   const products = useMemo(() => data?.products ?? initialData?.products ?? [], [data?.products, initialData?.products])
   const meta     = useMemo(() => data?.meta ?? initialData?.meta,                [data?.meta,     initialData?.meta])
@@ -268,8 +278,8 @@ export default function ProductsPageMain({ initialData = null }: ProductsPageMai
         </div>
       )}
 
-      <AddProductModal isOpen={showAddModal} onClose={() => setShowAddModal(false)}/>
-      <EditProductModal product={editProduct} onClose={() => setEditProduct(null)}/>
+      <AddProductModal isOpen={showAddModal} onClose={() => setShowAddModal(false)} onSaved={handleProductsSaved}/>
+      <EditProductModal product={editProduct} onClose={() => setEditProduct(null)} onSaved={handleProductsSaved}/>
     </div>
   )
 }

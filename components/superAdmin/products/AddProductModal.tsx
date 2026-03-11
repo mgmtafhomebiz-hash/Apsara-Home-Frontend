@@ -15,6 +15,7 @@ import { hexToColorName } from '@/libs/colorUtils'
 interface AddProductModalProps {
   isOpen: boolean
   onClose: () => void
+  onSaved?: () => void
 }
 
 interface FormState {
@@ -196,7 +197,7 @@ const variantInputCls = 'w-full px-2.5 py-2 bg-white border border-slate-200 rou
 
 /* ─── main component ─────────────────────────────────────── */
 
-export default function AddProductModal({ isOpen, onClose }: AddProductModalProps) {
+export default function AddProductModal({ isOpen, onClose, onSaved }: AddProductModalProps) {
   const [form,         setForm]         = useState<FormState>(defaultForm)
   const [errors,       setErrors]       = useState<Errors>({})
   const [serverError,  setServerError]  = useState('')
@@ -418,6 +419,7 @@ export default function AddProductModal({ isOpen, onClose }: AddProductModalProp
     try {
       await createProduct(payload).unwrap()
       showSuccessToast('Product added successfully.')
+      onSaved?.()
       handleClose()
     } catch (err: unknown) {
       const message = (err as { data?: { message?: string } })?.data?.message ?? 'Failed to create product.'

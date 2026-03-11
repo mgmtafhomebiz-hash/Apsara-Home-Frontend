@@ -15,6 +15,7 @@ import { hexToColorName } from '@/libs/colorUtils'
 interface EditProductModalProps {
   product: Product | null
   onClose: () => void
+  onSaved?: () => void
 }
 
 interface FormState {
@@ -191,7 +192,7 @@ const variantInputCls = 'w-full px-2.5 py-2 bg-white border border-slate-200 rou
 
 /* ─── main component ─────────────────────────────────────── */
 
-export default function EditProductModal({ product, onClose }: EditProductModalProps) {
+export default function EditProductModal({ product, onClose, onSaved }: EditProductModalProps) {
   const isOpen = product !== null
 
   const [form, setForm] = useState<FormState>({
@@ -468,6 +469,7 @@ export default function EditProductModal({ product, onClose }: EditProductModalP
     try {
       await updateProduct({ id: product.id, data: payload }).unwrap()
       showSuccessToast('Product updated successfully.')
+      onSaved?.()
       onClose()
     } catch (err: unknown) {
       const message = (err as { data?: { message?: string } })?.data?.message ?? 'Failed to update product.'

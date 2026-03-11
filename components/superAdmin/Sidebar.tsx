@@ -192,6 +192,13 @@ const navItems: NavItem[] = [
   },
 ]
 
+const ADMIN_VISIBLE_NAV_IDS = new Set([
+  'dashboard',
+  'orders',
+  'products',
+  'shipping',
+])
+
 export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: SidebarProps) {
   const pathname = usePathname()
   const router = useRouter()
@@ -204,6 +211,7 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
   const displayEmail = session?.user?.email?.trim() || 'admin@afhome.com'
   const rawRole = String(session?.user?.role ?? '').toLowerCase()
   const userLevelId = Number((session?.user as { userLevelId?: number } | undefined)?.userLevelId ?? 0)
+  const isAdmin = rawRole === 'admin' || userLevelId === 2
   const isAccounting = rawRole === 'accounting' || userLevelId === 5
   const isFinanceOfficer = rawRole === 'finance_officer' || userLevelId === 6
   const displayRole = isAccounting ? 'Accounting' : isFinanceOfficer ? 'Finance Officer' : formatRole(session?.user?.role)
@@ -231,18 +239,26 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
   const visibleNavItems = navItems.filter((item) => {
     if (isAccounting) return item.id === 'accounting' || item.id === 'encashment'
     if (isFinanceOfficer) return item.id === 'finance'
+    if (isAdmin) return ADMIN_VISIBLE_NAV_IDS.has(item.id)
     return true
   })
 
   useEffect(() => {
-    const criticalRoutes = [
-      '/admin/dashboard',
-      '/admin/members',
-      '/admin/products',
-      '/admin/products/categories',
-    ]
+    const criticalRoutes = isAdmin
+      ? [
+          '/admin/dashboard',
+          '/admin/orders',
+          '/admin/products',
+          '/admin/products/categories',
+        ]
+      : [
+          '/admin/dashboard',
+          '/admin/members',
+          '/admin/products',
+          '/admin/products/categories',
+        ]
     criticalRoutes.forEach((route) => router.prefetch(route))
-  }, [router])
+  }, [isAdmin, router])
 
   const prefetchMembersData = () => {
     dispatch(

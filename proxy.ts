@@ -15,6 +15,12 @@ const FINANCE_ALLOWED_PREFIXES = [
   "/admin/encashment",
   "/admin/accounting/invoices",
 ];
+const ADMIN_ALLOWED_PREFIXES = [
+  "/admin/dashboard",
+  "/admin/orders",
+  "/admin/products",
+  "/admin/shipping",
+];
 
 const AUTH_REQUIRED_PREFIXES = ["/profile", "/orders"]
 
@@ -92,6 +98,15 @@ export async function proxy(req: NextRequest) {
       const allowed = FINANCE_ALLOWED_PREFIXES.some((prefix) => pathname.startsWith(prefix));
       if (!allowed) {
         return NextResponse.redirect(new URL("/admin/finance", req.url));
+      }
+    }
+
+    if (role === "admin" || userLevelId === 2) {
+      const allowed =
+        pathname === "/admin" ||
+        ADMIN_ALLOWED_PREFIXES.some((prefix) => pathname.startsWith(prefix));
+      if (!allowed) {
+        return NextResponse.redirect(new URL("/admin/dashboard", req.url));
       }
     }
   }
