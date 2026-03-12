@@ -8,6 +8,7 @@ import ProductsToolbar from './ProductsToolbar'
 import ProductsTable from './ProductsTable'
 import AddProductModal from './AddProductModal'
 import EditProductModal from './EditProductModal'
+import BulkEditProductsModal from './BulkEditProductsModal'
 import { showErrorToast, showSuccessToast } from '@/libs/toast'
 
 interface ProductsPageMainProps {
@@ -47,6 +48,7 @@ export default function ProductsPageMain({ initialData = null }: ProductsPageMai
   const [page,            setPage]            = useState(1)
   const [showAddModal,    setShowAddModal]    = useState(false)
   const [editProduct,     setEditProduct]     = useState<Product | null>(null)
+  const [showBulkEdit,    setShowBulkEdit]    = useState(false)
   const [deletingIds,     setDeletingIds]     = useState<number[]>([])
   const [selectedIds,     setSelectedIds]     = useState<number[]>([])
   const [useInitialData,  setUseInitialData]  = useState(Boolean(initialData))
@@ -149,6 +151,11 @@ export default function ProductsPageMain({ initialData = null }: ProductsPageMai
       setDeletingIds(prev => prev.filter(id => !ids.includes(id)))
     }
   }
+
+  const selectedProducts = useMemo(
+    () => products.filter((product) => selectedIds.includes(product.id)),
+    [products, selectedIds],
+  )
 
   return (
     <div className="space-y-5">
@@ -261,6 +268,12 @@ export default function ProductsPageMain({ initialData = null }: ProductsPageMai
               </div>
               <div className="flex items-center gap-2">
                 <button
+                  onClick={() => setShowBulkEdit(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white text-slate-700 border border-red-200 hover:border-teal-300 hover:text-teal-700 transition-colors text-xs font-semibold"
+                >
+                  Bulk Edit
+                </button>
+                <button
                   onClick={() => setSelectedIds([])}
                   className="text-xs font-semibold text-red-500 hover:text-red-700 transition-colors"
                 >
@@ -297,6 +310,14 @@ export default function ProductsPageMain({ initialData = null }: ProductsPageMai
 
       <AddProductModal isOpen={showAddModal} onClose={() => setShowAddModal(false)} onSaved={handleProductsSaved}/>
       <EditProductModal product={editProduct} onClose={() => setEditProduct(null)} onSaved={handleProductsSaved}/>
+      <BulkEditProductsModal
+        products={showBulkEdit ? selectedProducts : []}
+        onClose={() => setShowBulkEdit(false)}
+        onSaved={() => {
+          setSelectedIds([])
+          handleProductsSaved()
+        }}
+      />
     </div>
   )
 }

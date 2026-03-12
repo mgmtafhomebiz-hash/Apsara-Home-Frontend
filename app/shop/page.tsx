@@ -25,7 +25,7 @@ const ShopPage = () => {
       <PromoBenners />
       <NewsLetter />
       <Footer />
-      <TawkToWidget />
+      {/* <TawkToWidget /> */}
     </div>
   )
 }

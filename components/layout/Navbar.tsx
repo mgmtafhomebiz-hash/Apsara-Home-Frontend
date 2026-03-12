@@ -87,7 +87,7 @@ const navLinks: NavLink[] = [
   },
   { label: 'Shop By Brand', href: '/by-brand' },
   { label: 'Assembly Guides', href: '/assembly' },
-  { label: 'Interior Services', href: '/interior' },
+  { label: 'Interior Services', href: '/interior-services' },
   {
     label: 'Media',
     href: '/media',
