@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { v2 as cloudinary } from 'cloudinary'
 
+export const runtime = 'nodejs'
+export const maxDuration = 30
+
 const cloudinaryCloudName = process.env.CLOUDINARY_CLOUD_NAME
 const cloudinaryApiKey = process.env.CLOUDINARY_API_KEY
 const cloudinaryApiSecret = process.env.CLOUDINARY_API_SECRET
