@@ -9,6 +9,7 @@ export interface CustomerNotificationItem {
   count: number
   severity: CustomerNotificationSeverity
   href: string
+  latest_at: string | null
 }
 
 export interface CustomerNotificationsResponse {

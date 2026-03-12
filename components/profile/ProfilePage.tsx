@@ -5,7 +5,7 @@ import { signOut, useSession } from 'next-auth/react';
 import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import Loading from '../Loading';
 import { AnimatePresence, motion } from 'framer-motion';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import TierBadge from '@/components/ui/TierBadge';
 import { MemberTier } from '@/types/members/types';
 import Icon from './Icons';
@@ -42,6 +42,7 @@ type TreeStatusFilter = 'all' | 'verified' | 'pending_review' | 'not_verified' |
 
 const ProfilePage = () => {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { data: session } = useSession();
   const { data } = useMeQuery();
   const { data: referralTree, isLoading: isReferralTreeLoading } = useReferralTreeQuery();
@@ -88,6 +89,15 @@ const ProfilePage = () => {
       });
     }
   }, [data, session]);
+
+  useEffect(() => {
+    const requestedTab = searchParams.get('tab');
+    const allowedTabs: Tab[] = ['profile', 'security', 'preferences', 'wallet', 'encashment', 'activity', 'referrals'];
+
+    if (requestedTab && allowedTabs.includes(requestedTab as Tab)) {
+      setActiveTab(requestedTab as Tab);
+    }
+  }, [searchParams]);
 
   // Auto-dismiss alert messages
   useEffect(() => {

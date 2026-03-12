@@ -136,7 +136,6 @@ export default function Navbar() {
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null)
   const [profileMenuOpen, setProfileMenuOpen] = useState(false)
   const [notifMenuOpen, setNotifMenuOpen] = useState(false)
-  const [notifMuted, setNotifMuted] = useState(false)
   const [desktopSearchQuery, setDesktopSearchQuery] = useState('')
   const [mobileTopSearchQuery, setMobileTopSearchQuery] = useState('')
   const [activeSearchField, setActiveSearchField] = useState<'desktop' | 'mobile' | null>(null)
@@ -166,8 +165,8 @@ export default function Navbar() {
     pollingInterval: 30000,
     refetchOnFocus: true,
   })
-  const unreadNotificationCount = notifMuted ? 0 : (notificationsData?.unread_count ?? 0)
-  const visibleCustomerNotifications = (notificationsData?.items ?? []).filter((item) => item.count > 0)
+  const customerNotificationStorageKey = `afhome-customer-notif-read:${customerNotificationCacheKey}`
+  const [readCustomerNotificationKeys, setReadCustomerNotificationKeys] = useState<string[]>([])
 
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const profileMenuRef = useRef<HTMLDivElement | null>(null)
@@ -257,6 +256,33 @@ export default function Navbar() {
   }, [])
 
   useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    try {
+      const stored = window.localStorage.getItem(customerNotificationStorageKey)
+      if (!stored) {
+        setReadCustomerNotificationKeys([])
+        return
+      }
+
+      const parsed = JSON.parse(stored)
+      setReadCustomerNotificationKeys(Array.isArray(parsed) ? parsed.filter((entry): entry is string => typeof entry === 'string') : [])
+    } catch {
+      setReadCustomerNotificationKeys([])
+    }
+  }, [customerNotificationStorageKey])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    try {
+      window.localStorage.setItem(customerNotificationStorageKey, JSON.stringify(readCustomerNotificationKeys))
+    } catch {
+      // Ignore localStorage write failures.
+    }
+  }, [customerNotificationStorageKey, readCustomerNotificationKeys])
+
+  useEffect(() => {
     const onPointerDown = (event: MouseEvent) => {
       const target = event.target as Node
       const clickedOutsideProfile = !profileMenuRef.current || !profileMenuRef.current.contains(target)
@@ -287,11 +313,68 @@ export default function Navbar() {
     }
   }, [])
 
-  useEffect(() => {
-    if ((notificationsData?.unread_count ?? 0) > 0) {
-      setNotifMuted(false)
-    }
-  }, [notificationsData?.generated_at, notificationsData?.unread_count])
+  const getCustomerNotificationReadKey = (item: { id: string; title: string; description: string; count: number }) =>
+    `${item.id}:${item.title}:${item.description}:${item.count}`
+
+  const getCustomerNotificationTimestamp = (value: string | null | undefined) => {
+    if (!value) return 0
+    const timestamp = new Date(value).getTime()
+    return Number.isNaN(timestamp) ? 0 : timestamp
+  }
+
+  const formatCustomerNotificationTime = (value: string | null | undefined) => {
+    if (!value) return null
+
+    const date = new Date(value)
+    if (Number.isNaN(date.getTime())) return null
+
+    return new Intl.DateTimeFormat('en-PH', {
+      timeZone: 'Asia/Manila',
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    }).format(date)
+  }
+
+  const visibleCustomerNotifications = useMemo(() => {
+    const items = (notificationsData?.items ?? []).filter((item) => item.count > 0)
+
+    return [...items].sort((a, b) => {
+      const aUnread = readCustomerNotificationKeys.includes(getCustomerNotificationReadKey(a)) ? 1 : 0
+      const bUnread = readCustomerNotificationKeys.includes(getCustomerNotificationReadKey(b)) ? 1 : 0
+
+      if (aUnread !== bUnread) return aUnread - bUnread
+      const timeDiff = getCustomerNotificationTimestamp(b.latest_at) - getCustomerNotificationTimestamp(a.latest_at)
+      if (timeDiff !== 0) return timeDiff
+      return b.count - a.count
+    })
+  }, [notificationsData?.items, readCustomerNotificationKeys])
+
+  const unreadNotificationCount = useMemo(() => {
+    return visibleCustomerNotifications.reduce((total, item) => {
+      const isRead = readCustomerNotificationKeys.includes(getCustomerNotificationReadKey(item))
+      return isRead ? total : total + item.count
+    }, 0)
+  }, [readCustomerNotificationKeys, visibleCustomerNotifications])
+
+  const markCustomerNotificationAsRead = (item: { id: string; title: string; description: string; count: number }) => {
+    const readKey = getCustomerNotificationReadKey(item)
+
+    setReadCustomerNotificationKeys((current) => (
+      current.includes(readKey) ? current : [...current, readKey]
+    ))
+  }
+
+  const markAllCustomerNotificationsAsRead = () => {
+    setReadCustomerNotificationKeys((current) => {
+      const next = new Set(current)
+      visibleCustomerNotifications.forEach((item) => next.add(getCustomerNotificationReadKey(item)))
+      return Array.from(next)
+    })
+  }
 
   const open = (label: string) => {
     if (closeTimer.current) clearTimeout(closeTimer.current)
@@ -501,7 +584,7 @@ export default function Navbar() {
                         <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-gray-100">
                           <p className="text-sm font-semibold text-gray-800">Notifications</p>
                           <button
-                            onClick={() => setNotifMuted(true)}
+                            onClick={markAllCustomerNotificationsAsRead}
                             className="shrink-0 text-xs font-medium text-orange-600 hover:underline"
                           >
                             Mark all read
@@ -518,13 +601,21 @@ export default function Navbar() {
                               <Link
                                 key={item.id}
                                 href={item.href}
-                                onClick={() => setNotifMenuOpen(false)}
-                                className={`flex items-start gap-3 px-4 py-3 hover:bg-orange-50 transition-colors ${item.count > 0 ? 'bg-orange-50/40' : ''}`}
+                                onClick={() => {
+                                  markCustomerNotificationAsRead(item)
+                                  setNotifMenuOpen(false)
+                                }}
+                                className={`flex items-start gap-3 px-4 py-3 hover:bg-orange-50 transition-colors ${readCustomerNotificationKeys.includes(getCustomerNotificationReadKey(item)) ? '' : 'bg-orange-50/40'}`}
                               >
-                                <span className={`mt-1 h-2 w-2 rounded-full shrink-0 ${item.count > 0 ? 'bg-orange-500' : 'bg-gray-300'}`} />
+                                <span className={`mt-1 h-2 w-2 rounded-full shrink-0 ${readCustomerNotificationKeys.includes(getCustomerNotificationReadKey(item)) ? 'bg-gray-300' : 'bg-orange-500'}`} />
                                 <div className="min-w-0 flex-1">
                                   <p className="text-sm font-medium text-gray-800">{item.title}</p>
                                   <p className="text-xs text-gray-500 mt-0.5">{item.description}</p>
+                                  {formatCustomerNotificationTime(item.latest_at) && (
+                                    <p className="text-[11px] text-gray-400 mt-1">
+                                      {formatCustomerNotificationTime(item.latest_at)} PHT
+                                    </p>
+                                  )}
                                 </div>
                                 <span className="text-xs font-semibold text-gray-500">{item.count}</span>
                               </Link>
