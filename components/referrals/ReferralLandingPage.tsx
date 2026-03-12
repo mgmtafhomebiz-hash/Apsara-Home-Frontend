@@ -49,10 +49,11 @@ const ReferralLandingPage = ({ referralCode }: ReferralLandingPageProps) => {
 
             {isLoggedIn && !isOwnLink && (
               <div className="mt-8 rounded-[24px] border border-amber-200 bg-amber-50 px-5 py-4 text-sm leading-6 text-amber-900">
-                <p className="font-semibold">You are already signed in.</p>
+                <p className="font-semibold">You already have an affiliated account.</p>
                 <p className="mt-1 text-amber-800">
-                  This referral link will not replace your current account referral. If you want to register under
-                  <span className="font-semibold"> @{normalizedCode}</span>, please sign out first or use another browser.
+                  This referral link from <span className="font-semibold">@{normalizedCode}</span> will not replace your current affiliate relationship.
+                  Referral links are only applicable to users who do not have an account yet. If you want to register under
+                  this link, please sign out and create a new account in another browser or device.
                 </p>
               </div>
             )}
@@ -129,7 +130,7 @@ const ReferralLandingPage = ({ referralCode }: ReferralLandingPageProps) => {
               )}
               {isLoggedIn && !isOwnLink && (
                 <p>
-                  You are already signed in. Your current account will stay active, and this referral link will not overwrite your existing account relationship.
+                  You are already registered under an existing affiliate. This shared link will not overwrite that relationship and is only applicable to visitors who do not have an account yet.
                 </p>
               )}
             </div>
