@@ -118,7 +118,7 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
   const [highlightedOrderId, setHighlightedOrderId] = useState<number | null>(null)
 
   const role       = (session?.user?.role ?? '').toLowerCase()
-  const canApprove = role === 'super_admin' || role === 'admin'
+  const canApprove = role === 'super_admin' || role === 'admin' || role === 'merchant_admin'
   const canTrack   = canApprove || role === 'csr'
 
   const effectiveFilter = useMemo(() => {

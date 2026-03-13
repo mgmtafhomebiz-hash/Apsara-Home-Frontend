@@ -119,6 +119,25 @@ const toNumber = (value: unknown): number => {
   return Number.isFinite(parsed) ? parsed : 0;
 };
 
+const toOptionalNumber = (value: unknown): number | undefined => {
+  if (value == null) return undefined;
+  if (typeof value === 'string' && value.trim() === '') return undefined;
+
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : undefined;
+  }
+
+  if (typeof value === 'string') {
+    const normalized = value.replace(/[^0-9.-]/g, '');
+    if (normalized === '') return undefined;
+    const parsed = Number(normalized);
+    return Number.isFinite(parsed) ? parsed : undefined;
+  }
+
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : undefined;
+};
+
 const toStringArray = (value: unknown): string[] => {
   if (Array.isArray(value)) {
     return value.filter((item): item is string => typeof item === 'string' && item.trim().length > 0);
@@ -183,9 +202,9 @@ const toCategoryProduct = (row: LooseRecord, apiUrl?: string): CategoryProduct =
         color: typeof (variant.color ?? variant.pv_color) === 'string' ? String(variant.color ?? variant.pv_color) : undefined,
         colorHex: typeof (variant.colorHex ?? variant.pv_color_hex) === 'string' ? String(variant.colorHex ?? variant.pv_color_hex) : undefined,
         size: typeof (variant.size ?? variant.pv_size) === 'string' ? String(variant.size ?? variant.pv_size) : undefined,
-        priceSrp: toNumber(variant.priceSrp ?? variant.pv_price_srp),
-        priceDp: toNumber(variant.priceDp ?? variant.pv_price_dp),
-        qty: toNumber(variant.qty ?? variant.pv_qty),
+        priceSrp: toOptionalNumber(variant.priceSrp ?? variant.pv_price_srp),
+        priceDp: toOptionalNumber(variant.priceDp ?? variant.pv_price_dp),
+        qty: toOptionalNumber(variant.qty ?? variant.pv_qty),
         status: typeof statusRaw === 'number' ? statusRaw : Number(statusRaw),
         images: toStringArray(variant.images ?? variant.pv_images).map((img) => resolveImageUrl(img, apiUrl)),
       };

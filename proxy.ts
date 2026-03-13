@@ -8,6 +8,8 @@ const ADMIN_ALLOWED_ROLES = new Set([
   "finance_officer",
   "csr",
   "web_content",
+  "merchant_admin",
+  "supplier_admin",
 ]);
 const ACCOUNTING_ALLOWED_PREFIXES = ["/admin/accounting", "/admin/encashment"];
 const FINANCE_ALLOWED_PREFIXES = [
@@ -20,6 +22,16 @@ const ADMIN_ALLOWED_PREFIXES = [
   "/admin/orders",
   "/admin/products",
   "/admin/shipping",
+];
+const MERCHANT_ALLOWED_PREFIXES = [
+  "/admin/dashboard",
+  "/admin/orders",
+  "/admin/products",
+  "/admin/shipping",
+];
+const SUPPLIER_ALLOWED_PREFIXES = [
+  "/admin/products",
+  "/admin/suppliers",
 ];
 
 const AUTH_REQUIRED_PREFIXES = ["/profile", "/orders"]
@@ -34,6 +46,10 @@ const getAdminRedirectPath = (role: string): string => {
       return "/admin/orders";
     case "web_content":
       return "/admin/webpages/home";
+    case "merchant_admin":
+      return "/admin/orders";
+    case "supplier_admin":
+      return "/admin/suppliers";
     case "admin":
     case "super_admin":
     default:
@@ -57,13 +73,19 @@ export async function proxy(req: NextRequest) {
     const userLevelId = Number((token as { userLevelId?: number } | null)?.userLevelId ?? 0);
     const isAccounting = role === "accounting" || userLevelId === 5;
     const isFinanceOfficer = role === "finance_officer" || userLevelId === 6;
-    const hasAdminAccess = ADMIN_ALLOWED_ROLES.has(role) || isAccounting || isFinanceOfficer;
+    const isMerchantAdmin = role === "merchant_admin" || userLevelId === 7;
+    const isSupplierAdmin = role === "supplier_admin" || userLevelId === 8;
+    const hasAdminAccess = ADMIN_ALLOWED_ROLES.has(role) || isAccounting || isFinanceOfficer || isMerchantAdmin || isSupplierAdmin;
 
     if (token && hasAdminAccess) {
       const redirectPath = isAccounting
         ? "/admin/accounting"
         : isFinanceOfficer
           ? "/admin/finance"
+          : isMerchantAdmin
+            ? "/admin/orders"
+            : isSupplierAdmin
+              ? "/admin/suppliers"
           : getAdminRedirectPath(role);
       return NextResponse.redirect(new URL(redirectPath, req.url));
     }
@@ -81,7 +103,9 @@ export async function proxy(req: NextRequest) {
     const userLevelId = Number((token as { userLevelId?: number } | null)?.userLevelId ?? 0);
     const isAccounting = role === "accounting" || userLevelId === 5;
     const isFinanceOfficer = role === "finance_officer" || userLevelId === 6;
-    const hasAdminAccess = ADMIN_ALLOWED_ROLES.has(role) || isAccounting || isFinanceOfficer;
+    const isMerchantAdmin = role === "merchant_admin" || userLevelId === 7;
+    const isSupplierAdmin = role === "supplier_admin" || userLevelId === 8;
+    const hasAdminAccess = ADMIN_ALLOWED_ROLES.has(role) || isAccounting || isFinanceOfficer || isMerchantAdmin || isSupplierAdmin;
 
     if (!hasAdminAccess) {
       return NextResponse.redirect(new URL("/", req.url));
@@ -98,6 +122,24 @@ export async function proxy(req: NextRequest) {
       const allowed = FINANCE_ALLOWED_PREFIXES.some((prefix) => pathname.startsWith(prefix));
       if (!allowed) {
         return NextResponse.redirect(new URL("/admin/finance", req.url));
+      }
+    }
+
+    if (isMerchantAdmin) {
+      const allowed =
+        pathname === "/admin" ||
+        MERCHANT_ALLOWED_PREFIXES.some((prefix) => pathname.startsWith(prefix));
+      if (!allowed) {
+        return NextResponse.redirect(new URL("/admin/orders", req.url));
+      }
+    }
+
+    if (isSupplierAdmin) {
+      const allowed =
+        pathname === "/admin" ||
+        SUPPLIER_ALLOWED_PREFIXES.some((prefix) => pathname.startsWith(prefix));
+      if (!allowed) {
+        return NextResponse.redirect(new URL("/admin/suppliers", req.url));
       }
     }
 

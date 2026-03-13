@@ -362,7 +362,9 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange }
                         {variantGroups.map((group, index) => {
                             const variant = group.variants[0];
                             const label = getVariantLabel(variant, index);
-                            const variantPrice = (variant.priceDp ?? 0) > 0 ? variant.priceDp : variant.priceSrp;
+                            const variantPrice = (variant.priceDp ?? 0) > 0
+                                ? variant.priceDp
+                                : (variant.priceSrp ?? product.originalPrice ?? product.price);
                             const variantThumb = variant.images && variant.images.length > 0 ? variant.images[0] : null;
                             const isActive = selectedGroup?.key === group.key;
 

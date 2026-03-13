@@ -8,7 +8,7 @@ import { Product, ProductVariant, useUpdateProductMutation, CreateProductPayload
 import { useGetCategoriesQuery } from '@/store/api/categoriesApi'
 import { showErrorToast, showSuccessToast } from '@/libs/toast'
 import RichTextEditor from '@/components/ui/RichTextEditor'
-import { hexToColorName } from '@/libs/colorUtils'
+import { colorNameToHex, hexToColorName } from '@/libs/colorUtils'
 
 /* ─── types ──────────────────────────────────────────────── */
 
@@ -1049,9 +1049,18 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
                                       <input
                                         type="text"
                                         value={newColorInputs[index]?.name ?? ''}
-                                        onChange={e => setNewColorInputs(prev => ({
-                                          ...prev, [index]: { ...(prev[index] ?? { hex: '#94a3b8' }), name: e.target.value },
-                                        }))}
+                                        onChange={e => {
+                                          const name = e.target.value
+                                          const matchedHex = colorNameToHex(name)
+                                          setNewColorInputs(prev => ({
+                                            ...prev,
+                                            [index]: {
+                                              ...(prev[index] ?? { hex: '#94a3b8' }),
+                                              name,
+                                              hex: matchedHex ?? prev[index]?.hex ?? '#94a3b8',
+                                            },
+                                          }))
+                                        }}
                                         onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addVariantColor(index))}
                                         placeholder="Color name (e.g. Midnight Blue)"
                                         className="flex-1 px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-teal-400 focus:border-teal-400"

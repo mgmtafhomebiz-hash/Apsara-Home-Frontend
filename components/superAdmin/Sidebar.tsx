@@ -198,6 +198,16 @@ const ADMIN_VISIBLE_NAV_IDS = new Set([
   'products',
   'shipping',
 ])
+const MERCHANT_VISIBLE_NAV_IDS = new Set([
+  'dashboard',
+  'orders',
+  'products',
+  'shipping',
+])
+const SUPPLIER_VISIBLE_NAV_IDS = new Set([
+  'products',
+  'suppliers',
+])
 
 export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: SidebarProps) {
   const pathname = usePathname()
@@ -214,8 +224,26 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
   const isAdmin = rawRole === 'admin' || userLevelId === 2
   const isAccounting = rawRole === 'accounting' || userLevelId === 5
   const isFinanceOfficer = rawRole === 'finance_officer' || userLevelId === 6
-  const displayRole = isAccounting ? 'Accounting' : isFinanceOfficer ? 'Finance Officer' : formatRole(session?.user?.role)
-  const role = isAccounting ? 'accounting' : isFinanceOfficer ? 'finance_officer' : rawRole
+  const isMerchantAdmin = rawRole === 'merchant_admin' || userLevelId === 7
+  const isSupplierAdmin = rawRole === 'supplier_admin' || userLevelId === 8
+  const displayRole = isAccounting
+    ? 'Accounting'
+    : isFinanceOfficer
+      ? 'Finance Officer'
+      : isMerchantAdmin
+        ? 'Merchant Admin'
+        : isSupplierAdmin
+          ? 'Supplier Admin'
+          : formatRole(session?.user?.role)
+  const role = isAccounting
+    ? 'accounting'
+    : isFinanceOfficer
+      ? 'finance_officer'
+      : isMerchantAdmin
+        ? 'merchant_admin'
+        : isSupplierAdmin
+          ? 'supplier_admin'
+          : rawRole
   const displayInitials = getInitials(displayName)
   const avatarSrc = session?.user?.image
 
@@ -239,12 +267,26 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
   const visibleNavItems = navItems.filter((item) => {
     if (isAccounting) return item.id === 'accounting' || item.id === 'encashment'
     if (isFinanceOfficer) return item.id === 'finance'
+    if (isMerchantAdmin) return MERCHANT_VISIBLE_NAV_IDS.has(item.id)
+    if (isSupplierAdmin) return SUPPLIER_VISIBLE_NAV_IDS.has(item.id)
     if (isAdmin) return ADMIN_VISIBLE_NAV_IDS.has(item.id)
     return true
   })
 
   useEffect(() => {
-    const criticalRoutes = isAdmin
+    const criticalRoutes = isSupplierAdmin
+      ? [
+          '/admin/products',
+          '/admin/suppliers',
+        ]
+      : isMerchantAdmin
+        ? [
+            '/admin/dashboard',
+            '/admin/orders',
+            '/admin/products',
+            '/admin/shipping/rates',
+          ]
+      : isAdmin
       ? [
           '/admin/dashboard',
           '/admin/orders',
@@ -258,7 +300,7 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
           '/admin/products/categories',
         ]
     criticalRoutes.forEach((route) => router.prefetch(route))
-  }, [isAdmin, router])
+  }, [isAdmin, isMerchantAdmin, isSupplierAdmin, router])
 
   const prefetchMembersData = () => {
     dispatch(

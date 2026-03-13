@@ -136,3 +136,26 @@ export function displayColorName(name: string, hex?: string): string {
   if (isHexColor(name)) return hexToColorName(name)
   return name
 }
+
+const normalizeColorName = (value: string) =>
+  value.trim().toLowerCase().replace(/[^a-z0-9]+/g, ' ')
+
+/**
+ * Finds the closest palette hex for a typed color name.
+ * Prefers exact matches, then prefix matches, then inclusive matches.
+ */
+export function colorNameToHex(name: string): string | null {
+  const normalized = normalizeColorName(name)
+  if (!normalized) return null
+
+  const exact = COLOR_PALETTE.find((color) => normalizeColorName(color.name) === normalized)
+  if (exact) return exact.hex
+
+  const startsWith = COLOR_PALETTE.find((color) => normalizeColorName(color.name).startsWith(normalized))
+  if (startsWith) return startsWith.hex
+
+  const includes = COLOR_PALETTE.find((color) => normalizeColorName(color.name).includes(normalized))
+  if (includes) return includes.hex
+
+  return null
+}

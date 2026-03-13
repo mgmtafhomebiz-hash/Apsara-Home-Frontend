@@ -91,6 +91,24 @@ const ROLE_OPTIONS = [
       </svg>
     ),
   },
+  {
+    value: 7, label: 'Merchant Admin', colorKey: 'rose',
+    description: 'Manage merchant-side orders, products, and shipping workflows',
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M3 7l1.664 9.152A2 2 0 006.632 18h10.736a2 2 0 001.968-1.848L21 7M7 7V5a2 2 0 012-2h6a2 2 0 012 2v2M9 11h6" />
+      </svg>
+    ),
+  },
+  {
+    value: 8, label: 'Supplier Admin', colorKey: 'cyan',
+    description: 'Handle supplier records and supplier-linked product operations',
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1" />
+      </svg>
+    ),
+  },
 ]
 
 /* Full Tailwind class strings — must be static for purge */
@@ -101,6 +119,8 @@ const ROLE_CARD_STYLES: Record<string, { card: string; icon: string; label: stri
   amber:   { card: 'border-amber-300 bg-amber-50 ring-2 ring-amber-200',     icon: 'bg-amber-100 text-amber-600',    label: 'text-amber-700'   },
   emerald: { card: 'border-emerald-300 bg-emerald-50 ring-2 ring-emerald-200', icon: 'bg-emerald-100 text-emerald-600', label: 'text-emerald-700' },
   indigo:  { card: 'border-indigo-300 bg-indigo-50 ring-2 ring-indigo-200',  icon: 'bg-indigo-100 text-indigo-600',  label: 'text-indigo-700'  },
+  rose:    { card: 'border-rose-300 bg-rose-50 ring-2 ring-rose-200',        icon: 'bg-rose-100 text-rose-600',      label: 'text-rose-700'    },
+  cyan:    { card: 'border-cyan-300 bg-cyan-50 ring-2 ring-cyan-200',        icon: 'bg-cyan-100 text-cyan-600',      label: 'text-cyan-700'    },
 }
 
 const ROLE_COLORS: Record<string, string> = {
@@ -110,6 +130,8 @@ const ROLE_COLORS: Record<string, string> = {
   web_content:     'bg-amber-50 text-amber-700 border-amber-200',
   accounting:      'bg-emerald-50 text-emerald-700 border-emerald-200',
   finance_officer: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+  merchant_admin:  'bg-rose-50 text-rose-700 border-rose-200',
+  supplier_admin:  'bg-cyan-50 text-cyan-700 border-cyan-200',
 }
 
 const AVATAR_COLORS = [
