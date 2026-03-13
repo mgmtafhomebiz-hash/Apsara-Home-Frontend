@@ -71,7 +71,10 @@ export async function proxy(req: NextRequest) {
   });
 
   const isAdminLoginPage = pathname === "/admin/login";
-  const isSupplierLoginPage = pathname === "/supplier/login";
+  const isSupplierPublicPage =
+    pathname === "/supplier/login" ||
+    pathname === "/supplier/forgot-password" ||
+    pathname === "/supplier/reset-password";
   const isAdminRoute = pathname.startsWith("/admin");
   const isSupplierRoute = pathname.startsWith("/supplier");
   const isAuthRequiredRoute = AUTH_REQUIRED_PREFIXES.some((prefix) => pathname.startsWith(prefix));
@@ -100,7 +103,7 @@ export async function proxy(req: NextRequest) {
     return NextResponse.next();
   }
 
-  if (isSupplierLoginPage) {
+  if (isSupplierPublicPage) {
     const role = String((token as { role?: string } | null)?.role ?? "").toLowerCase();
     if (token && role === "supplier") {
       return NextResponse.redirect(new URL("/supplier/dashboard", req.url));

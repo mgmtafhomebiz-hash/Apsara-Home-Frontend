@@ -1,11 +1,14 @@
 'use client'
 
-import { useState } from 'react'
+import Link from 'next/link'
+import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import Image from 'next/image'
 import Loading from '@/components/Loading'
 import { signIn, signOut } from 'next-auth/react'
 import { clearAccessTokenCache } from '@/store/api/baseApi'
+
+const REMEMBER_SUPPLIER_LOGIN_KEY = 'afhome_supplier_login'
 
 const EyeIcon = ({ open }: { open: boolean }) => open
   ? <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" /><line x1="1" y1="1" x2="23" y2="23" /></svg>
@@ -14,11 +17,27 @@ const EyeIcon = ({ open }: { open: boolean }) => open
 export default function SupplierLoginForm() {
   const [showPass, setShowPass] = useState(false)
   const [error, setError] = useState('')
-  const [form, setForm] = useState({ login: '', password: '' })
+  const [form, setForm] = useState({ login: '', password: '', rememberMe: false })
   const [isLoading, setIsLoading] = useState(false)
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    const rememberedLogin = window.localStorage.getItem(REMEMBER_SUPPLIER_LOGIN_KEY)
+    if (!rememberedLogin) return
+
+    setForm((prev) => ({
+      ...prev,
+      login: rememberedLogin,
+      rememberMe: true,
+    }))
+  }, [])
 
   const set = (field: 'login' | 'password') => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((prev) => ({ ...prev, [field]: e.target.value }))
+
+  const setRememberMe = (e: React.ChangeEvent<HTMLInputElement>) =>
+    setForm((prev) => ({ ...prev, rememberMe: e.target.checked }))
 
   const handleSign = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -38,6 +57,14 @@ export default function SupplierLoginForm() {
       if (!result?.ok) {
         setError('Invalid username/email or password')
         return
+      }
+
+      if (typeof window !== 'undefined') {
+        if (form.rememberMe) {
+          window.localStorage.setItem(REMEMBER_SUPPLIER_LOGIN_KEY, form.login.trim())
+        } else {
+          window.localStorage.removeItem(REMEMBER_SUPPLIER_LOGIN_KEY)
+        }
       }
 
       window.location.href = '/supplier/dashboard'
@@ -132,6 +159,22 @@ export default function SupplierLoginForm() {
                   <EyeIcon open={showPass} />
                 </button>
               </div>
+            </div>
+
+            <div className="mt-3 flex items-center justify-between gap-3">
+              <label className="inline-flex items-center gap-2 text-xs text-slate-400">
+                <input
+                  type="checkbox"
+                  checked={form.rememberMe}
+                  onChange={setRememberMe}
+                  className="h-4 w-4 rounded border-slate-600 bg-slate-800 text-cyan-500 focus:ring-cyan-500/40"
+                />
+                Remember me
+              </label>
+
+              <Link href="/supplier/forgot-password" className="text-xs font-semibold text-cyan-300 transition hover:text-cyan-200">
+                Forgot password?
+              </Link>
             </div>
 
             <button
