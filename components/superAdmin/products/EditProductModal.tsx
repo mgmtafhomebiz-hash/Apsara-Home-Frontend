@@ -449,11 +449,13 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
     .flatMap((v, index) => {
       const autoSku    = buildVariantSku(form.pd_parent_sku || generateSkuFromName(form.pd_name, product?.id), index)
       const variantSku = v.pv_sku.trim() || autoSku
+      const baseSrp = form.pd_price_srp ? Number(form.pd_price_srp) : undefined
+      const baseDp = form.pd_price_dp ? Number(form.pd_price_dp) : undefined
       const base = {
         pv_sku:       variantSku,
         pv_size:      v.pv_size || undefined,
-        pv_price_srp: v.pv_price_srp ? Number(v.pv_price_srp) : undefined,
-        pv_price_dp:  v.pv_price_dp  ? Number(v.pv_price_dp)  : undefined,
+        pv_price_srp: v.pv_price_srp ? Number(v.pv_price_srp) : baseSrp,
+        pv_price_dp:  v.pv_price_dp  ? Number(v.pv_price_dp)  : baseDp,
         pv_qty:       v.pv_qty       ? Number(v.pv_qty)       : undefined,
         pv_status:    Number(v.pv_status),
         pv_images:    v.pv_images.length > 0 ? v.pv_images : undefined,
