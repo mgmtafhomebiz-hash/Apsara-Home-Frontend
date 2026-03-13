@@ -10,6 +10,8 @@ declare module 'next-auth' {
             image?: string | null
             role?: string;
             userLevelId?: number;
+            supplierId?: number | null;
+            supplierName?: string | null;
             accessToken?: string
         }
     }
@@ -20,6 +22,8 @@ declare module 'next-auth/jwt' {
         id?: string
         role?: string
         userLevelId?: number
+        supplierId?: number | null
+        supplierName?: string | null
         accessToken?: string
     }
 }

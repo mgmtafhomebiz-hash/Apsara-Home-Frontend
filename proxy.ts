@@ -29,12 +29,18 @@ const MERCHANT_ALLOWED_PREFIXES = [
   "/admin/products",
   "/admin/shipping",
 ];
-const SUPPLIER_ALLOWED_PREFIXES = [
+const ADMIN_SUPPLIER_ALLOWED_PREFIXES = [
+  "/admin/dashboard",
   "/admin/products",
   "/admin/suppliers",
 ];
 
 const AUTH_REQUIRED_PREFIXES = ["/profile", "/orders"]
+const SUPPLIER_ALLOWED_PREFIXES = [
+  "/supplier/dashboard",
+  "/supplier/products",
+  "/supplier/company",
+];
 
 const getAdminRedirectPath = (role: string): string => {
   switch (role) {
@@ -49,7 +55,7 @@ const getAdminRedirectPath = (role: string): string => {
     case "merchant_admin":
       return "/admin/orders";
     case "supplier_admin":
-      return "/admin/suppliers";
+      return "/admin/dashboard";
     case "admin":
     case "super_admin":
     default:
@@ -65,7 +71,9 @@ export async function proxy(req: NextRequest) {
   });
 
   const isAdminLoginPage = pathname === "/admin/login";
+  const isSupplierLoginPage = pathname === "/supplier/login";
   const isAdminRoute = pathname.startsWith("/admin");
+  const isSupplierRoute = pathname.startsWith("/supplier");
   const isAuthRequiredRoute = AUTH_REQUIRED_PREFIXES.some((prefix) => pathname.startsWith(prefix));
 
   if (isAdminLoginPage) {
@@ -85,9 +93,17 @@ export async function proxy(req: NextRequest) {
           : isMerchantAdmin
             ? "/admin/orders"
             : isSupplierAdmin
-              ? "/admin/suppliers"
+              ? "/admin/dashboard"
           : getAdminRedirectPath(role);
       return NextResponse.redirect(new URL(redirectPath, req.url));
+    }
+    return NextResponse.next();
+  }
+
+  if (isSupplierLoginPage) {
+    const role = String((token as { role?: string } | null)?.role ?? "").toLowerCase();
+    if (token && role === "supplier") {
+      return NextResponse.redirect(new URL("/supplier/dashboard", req.url));
     }
     return NextResponse.next();
   }
@@ -137,9 +153,9 @@ export async function proxy(req: NextRequest) {
     if (isSupplierAdmin) {
       const allowed =
         pathname === "/admin" ||
-        SUPPLIER_ALLOWED_PREFIXES.some((prefix) => pathname.startsWith(prefix));
+        ADMIN_SUPPLIER_ALLOWED_PREFIXES.some((prefix) => pathname.startsWith(prefix));
       if (!allowed) {
-        return NextResponse.redirect(new URL("/admin/suppliers", req.url));
+        return NextResponse.redirect(new URL("/admin/dashboard", req.url));
       }
     }
 
@@ -153,6 +169,26 @@ export async function proxy(req: NextRequest) {
     }
   }
 
+  if (isSupplierRoute) {
+    if (!token) {
+      const loginUrl = new URL("/supplier/login", req.url);
+      loginUrl.searchParams.set("callback", pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+
+    const role = String((token as { role?: string } | null)?.role ?? "").toLowerCase();
+    if (role !== "supplier") {
+      return NextResponse.redirect(new URL("/", req.url));
+    }
+
+    const allowed =
+      pathname === "/supplier" ||
+      SUPPLIER_ALLOWED_PREFIXES.some((prefix) => pathname.startsWith(prefix));
+    if (!allowed) {
+      return NextResponse.redirect(new URL("/supplier/dashboard", req.url));
+    }
+  }
+
   if (isAuthRequiredRoute && !token) {
     const loginUrl = new URL("/login", req.url);
     loginUrl.searchParams.set("callback", pathname);
@@ -163,5 +199,5 @@ export async function proxy(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/profile/:path*", "/orders/:path*"],
+  matcher: ["/admin/:path*", "/supplier/:path*", "/profile/:path*", "/orders/:path*"],
 };

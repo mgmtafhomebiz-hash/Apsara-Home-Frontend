@@ -20,13 +20,13 @@ const StickyAddToCart = ({ product }: StickyAddToCartProps) => {
   const { data: me } = useMeQuery(undefined, { skip: !isLoggedIn });
   const role = String((session?.user as { role?: string } | undefined)?.role ?? '').toLowerCase();
   const isVerifiedAccount = (me?.verification_status === 'verified') || (me?.account_status === 1);
-  const canUseDealerPrice = isLoggedIn && isVerifiedAccount;
+  const canUseMemberPrice = isLoggedIn && isVerifiedAccount;
   const canSeePv = role === '' || role === 'customer' || role === 'member' || role === 'affiliate';
   const displayPv = Number(product.prodpv ?? 0);
   const srp = Number(product.originalPrice ?? product.price ?? 0);
-  const dp = Number(product.priceDp ?? 0);
-  const hasDealerPrice = dp > 0 && dp < srp;
-  const displayPrice = canUseDealerPrice && hasDealerPrice ? dp : srp;
+  const member = Number(product.priceMember ?? 0);
+  const hasMemberPrice = member > 0 && member < srp;
+  const displayPrice = canUseMemberPrice && hasMemberPrice ? member : srp;
 
   useEffect(() => {
     const handler = () => setVisible(window.scrollY > 500);

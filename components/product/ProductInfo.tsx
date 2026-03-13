@@ -80,7 +80,7 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange }
     const isLoggedIn = Boolean(session?.user);
     const { data: me } = useMeQuery(undefined, { skip: !isLoggedIn });
     const isVerifiedAccount = (me?.verification_status === 'verified') || (me?.account_status === 1);
-    const canUseDealerPrice = isLoggedIn && isVerifiedAccount;
+    const canUseMemberPrice = isLoggedIn && isVerifiedAccount;
     const displayPv = Number(product.prodpv ?? 0);
     const [quantity, setQuantity] = useState(1);
     const [selectedColor, setSelectedColor] = useState('');
@@ -100,6 +100,7 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange }
                     variant.size ||
                     variant.sku ||
                     (variant.images && variant.images.length > 0) ||
+                    typeof variant.priceMember === 'number' ||
                     typeof variant.priceDp === 'number' ||
                     typeof variant.priceSrp === 'number',
                 ),
@@ -182,12 +183,12 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange }
     }, [selectedVariant, onVariantChange]);
 
     const variantSrp = Number(selectedVariant?.priceSrp ?? product.originalPrice ?? product.price ?? 0);
-    const variantDp = Number(selectedVariant?.priceDp ?? product.priceDp ?? 0);
-    const hasDealerPrice = variantDp > 0 && variantDp < variantSrp;
+    const variantMember = Number(selectedVariant?.priceMember ?? product.priceMember ?? 0);
+    const hasMemberPrice = variantMember > 0 && variantMember < variantSrp;
 
-    const displayPrice = canUseDealerPrice && hasDealerPrice ? variantDp : variantSrp;
-    const displayOriginalPrice = canUseDealerPrice
-        ? (hasDealerPrice ? variantSrp : undefined)
+    const displayPrice = canUseMemberPrice && hasMemberPrice ? variantMember : variantSrp;
+    const displayOriginalPrice = canUseMemberPrice
+        ? (hasMemberPrice ? variantSrp : undefined)
         : (product.originalPrice && product.originalPrice > variantSrp ? product.originalPrice : undefined);
     const displayStock = typeof selectedVariant?.qty === 'number'
         ? selectedVariant.qty
@@ -309,9 +310,9 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange }
                 )}
             </div>
 
-            {canUseDealerPrice && hasDealerPrice && (
+            {canUseMemberPrice && hasMemberPrice && (
                 <div className="inline-flex items-center self-start rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700">
-                    Dealer Price Applied
+                    Member Price Applied
                 </div>
             )}
 
@@ -362,8 +363,8 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange }
                         {variantGroups.map((group, index) => {
                             const variant = group.variants[0];
                             const label = getVariantLabel(variant, index);
-                            const variantPrice = (variant.priceDp ?? 0) > 0
-                                ? variant.priceDp
+                            const variantPrice = (variant.priceMember ?? 0) > 0
+                                ? variant.priceMember
                                 : (variant.priceSrp ?? product.originalPrice ?? product.price);
                             const variantThumb = variant.images && variant.images.length > 0 ? variant.images[0] : null;
                             const isActive = selectedGroup?.key === group.key;

@@ -7,6 +7,8 @@ type TokenUser = {
     accessToken?: string;
     role?: string;
     userLevelId?: number;
+    supplierId?: number | null;
+    supplierName?: string | null;
 };
 
 export const authOptions: NextAuthOptions = {
@@ -107,6 +109,56 @@ export const authOptions: NextAuthOptions = {
                         accessToken: data.token,
                         role: data.user.role,
                         userLevelId: data.user.user_level_id,
+                        supplierId: data.user.supplier_id ?? null,
+                    }
+                } catch {
+                    return null
+                }
+            }
+        }),
+        CredentialsProvider({
+            id: 'supplier-credentials',
+            name: 'Supplier Credentials',
+            credentials: {
+                login: { label: 'Email or Username', type: 'text' },
+                password: { label: 'Password', type: 'password' },
+            },
+            async authorize(credentials) {
+                if (!credentials?.login || !credentials?.password) {
+                    return null
+                }
+
+                try {
+                    const url = `${process.env.LARAVEL_API_URL}/api/supplier/auth/login`
+                    const res = await fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            login: credentials.login,
+                            password: credentials.password,
+                        }),
+                    })
+
+                    if (!res.ok) {
+                        const errBody = await res.text()
+                        console.log('[SupplierAuth] Laravel error body:', errBody)
+                        return null
+                    }
+
+                    const data = await res.json()
+                    if (!data.user || !data.token) return null
+
+                    return {
+                        id: String(data.user.id),
+                        name: data.user.name ?? data.user.username,
+                        email: data.user.email,
+                        accessToken: data.token,
+                        role: data.user.role,
+                        supplierId: data.user.supplier_id ?? null,
+                        supplierName: data.user.supplier_name ?? null,
                     }
                 } catch {
                     return null
@@ -132,6 +184,8 @@ export const authOptions: NextAuthOptions = {
                 token.accessToken = authUser.accessToken;
                 token.role = authUser.role;
                 token.userLevelId = authUser.userLevelId;
+                token.supplierId = authUser.supplierId;
+                token.supplierName = authUser.supplierName;
             }
             return token;
         },
@@ -143,6 +197,8 @@ export const authOptions: NextAuthOptions = {
                 sessionUser.accessToken = authToken.accessToken;
                 sessionUser.role = authToken.role;
                 sessionUser.userLevelId = authToken.userLevelId;
+                sessionUser.supplierId = authToken.supplierId;
+                sessionUser.supplierName = authToken.supplierName;
             }
             return session
         }

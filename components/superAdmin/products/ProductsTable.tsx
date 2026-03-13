@@ -74,7 +74,8 @@ export default function ProductsTable({
               <th className="text-left px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wide">Product</th>
               <th className="text-left px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wide">SKU</th>
               <th className="text-right px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wide">SRP</th>
-              <th className="text-right px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wide">DP</th>
+              <th className="text-right px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wide">Dealer</th>
+              <th className="text-right px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wide">Member</th>
               <th className="text-right px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wide">Stock</th>
               <th className="text-center px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wide">Badges</th>
               <th className="text-center px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wide">Status</th>
@@ -84,7 +85,7 @@ export default function ProductsTable({
           <tbody className="divide-y divide-slate-50">
             {rows.length === 0 ? (
               <tr>
-                <td colSpan={10} className="py-20 text-center">
+                <td colSpan={11} className="py-20 text-center">
                   <div className="flex flex-col items-center gap-2">
                     <div className="h-14 w-14 rounded-2xl bg-slate-100 flex items-center justify-center">
                       <svg className="w-7 h-7 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -152,6 +153,7 @@ export default function ProductsTable({
                   {/* Prices */}
                   <td className="px-4 py-3 text-right font-semibold text-slate-700 text-sm">{formatPrice(p.priceSrp)}</td>
                   <td className="px-4 py-3 text-right text-slate-500 text-sm">{formatPrice(p.priceDp)}</td>
+                  <td className="px-4 py-3 text-right text-slate-500 text-sm">{formatPrice(p.priceMember ?? 0)}</td>
 
                   {/* Stock */}
                   <td className="px-4 py-3 text-right text-sm">

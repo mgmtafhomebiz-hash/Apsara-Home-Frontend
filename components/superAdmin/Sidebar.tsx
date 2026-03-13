@@ -205,6 +205,7 @@ const MERCHANT_VISIBLE_NAV_IDS = new Set([
   'shipping',
 ])
 const SUPPLIER_VISIBLE_NAV_IDS = new Set([
+  'dashboard',
   'products',
   'suppliers',
 ])
@@ -276,6 +277,7 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
   useEffect(() => {
     const criticalRoutes = isSupplierAdmin
       ? [
+          '/admin/dashboard',
           '/admin/products',
           '/admin/suppliers',
         ]

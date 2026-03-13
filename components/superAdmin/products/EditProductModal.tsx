@@ -24,6 +24,7 @@ interface FormState {
   pd_description: string
   pd_price_srp: string
   pd_price_dp: string
+  pd_price_member: string
   pd_prodpv: string
   pd_qty: string
   pd_weight: string
@@ -55,6 +56,7 @@ interface VariantFormState {
   pv_size: string
   pv_price_srp: string
   pv_price_dp: string
+  pv_price_member: string
   pv_qty: string
   pv_status: string
   pv_images: string[]
@@ -102,7 +104,7 @@ const FLAG_CARDS: {
 
 const emptyVariant = (): VariantFormState => ({
   pv_sku: '', pv_colors: [], pv_size: '',
-  pv_price_srp: '', pv_price_dp: '', pv_qty: '',
+  pv_price_srp: '', pv_price_dp: '', pv_price_member: '', pv_qty: '',
   pv_status: '1', pv_images: [],
 })
 
@@ -117,6 +119,7 @@ const mapVariantToForm = (variant: ProductVariant): VariantFormState => ({
   pv_size: variant.size ?? '',
   pv_price_srp: variant.priceSrp != null ? String(variant.priceSrp) : '',
   pv_price_dp:  variant.priceDp  != null ? String(variant.priceDp)  : '',
+  pv_price_member: variant.priceMember != null ? String(variant.priceMember) : '',
   pv_qty:       variant.qty      != null ? String(variant.qty)      : '',
   pv_status: String(variant.status ?? 1),
   pv_images: Array.isArray(variant.images) ? variant.images.filter(Boolean) : [],
@@ -162,6 +165,7 @@ const normalizeFormForComparison = (form: FormState) => ({
   pd_description: normalizeTextField(form.pd_description),
   pd_price_srp: Number(form.pd_price_srp),
   pd_price_dp: normalizeNumberField(form.pd_price_dp),
+  pd_price_member: normalizeNumberField(form.pd_price_member),
   pd_prodpv: normalizeNumberField(form.pd_prodpv),
   pd_qty: normalizeNumberField(form.pd_qty),
   pd_weight: normalizeNumberField(form.pd_weight),
@@ -192,6 +196,7 @@ const normalizeVariantsForComparison = (variants: VariantFormState[]) =>
     pv_size: variant.pv_size.trim(),
     pv_price_srp: normalizeNumberField(variant.pv_price_srp),
     pv_price_dp: normalizeNumberField(variant.pv_price_dp),
+    pv_price_member: normalizeNumberField(variant.pv_price_member),
     pv_qty: normalizeNumberField(variant.pv_qty),
     pv_status: Number(variant.pv_status),
     pv_images: variant.pv_images.filter(Boolean),
@@ -248,7 +253,7 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
 
   const [form, setForm] = useState<FormState>({
     pd_name: '', pd_catid: '', pd_description: '', pd_price_srp: '',
-    pd_price_dp: '', pd_prodpv: '', pd_qty: '', pd_weight: '', pd_psweight: '',
+    pd_price_dp: '', pd_price_member: '', pd_prodpv: '', pd_qty: '', pd_weight: '', pd_psweight: '',
     pd_pswidth: '', pd_pslenght: '', pd_psheight: '',
     pd_material: '', pd_warranty: '', pd_assembly_required: false,
     pd_parent_sku: '', pd_type: '0',
@@ -287,6 +292,7 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
       pd_description:product.description ?? '',
       pd_price_srp:  String(product.priceSrp ?? ''),
       pd_price_dp:   String(product.priceDp  ?? ''),
+      pd_price_member: String(product.priceMember ?? ''),
       pd_prodpv:     String(product.prodpv   ?? ''),
       pd_qty:        String(product.qty      ?? ''),
       pd_weight:     String(product.weight   ?? ''),
@@ -434,6 +440,7 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
     if (!form.pd_catid.trim())                                          e.pd_catid     = 'Category is required'
     if (!form.pd_price_srp.trim() || isNaN(Number(form.pd_price_srp))) e.pd_price_srp = 'Valid SRP price is required'
     if (form.pd_price_dp && isNaN(Number(form.pd_price_dp)))           e.pd_price_dp  = 'Must be a valid number'
+    if (form.pd_price_member && isNaN(Number(form.pd_price_member)))   e.pd_price_member = 'Must be a valid number'
     if (form.pd_prodpv   && isNaN(Number(form.pd_prodpv)))             e.pd_prodpv    = 'Must be a valid number'
     if (form.pd_qty      && isNaN(Number(form.pd_qty)))                e.pd_qty       = 'Must be a valid number'
     if (form.pd_weight   && isNaN(Number(form.pd_weight)))             e.pd_weight    = 'Must be a valid number'
@@ -451,11 +458,13 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
       const variantSku = v.pv_sku.trim() || autoSku
       const baseSrp = form.pd_price_srp ? Number(form.pd_price_srp) : undefined
       const baseDp = form.pd_price_dp ? Number(form.pd_price_dp) : undefined
+      const baseMember = form.pd_price_member ? Number(form.pd_price_member) : undefined
       const base = {
         pv_sku:       variantSku,
         pv_size:      v.pv_size || undefined,
         pv_price_srp: v.pv_price_srp ? Number(v.pv_price_srp) : baseSrp,
         pv_price_dp:  v.pv_price_dp  ? Number(v.pv_price_dp)  : baseDp,
+        pv_price_member: v.pv_price_member ? Number(v.pv_price_member) : baseMember,
         pv_qty:       v.pv_qty       ? Number(v.pv_qty)       : undefined,
         pv_status:    Number(v.pv_status),
         pv_images:    v.pv_images.length > 0 ? v.pv_images : undefined,
@@ -526,6 +535,7 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
       pd_price_srp:   Number(form.pd_price_srp),
       pd_description: form.pd_description.trim() || undefined,
       pd_price_dp:    form.pd_price_dp  ? Number(form.pd_price_dp)  : undefined,
+      pd_price_member: form.pd_price_member ? Number(form.pd_price_member) : undefined,
       pd_prodpv:      form.pd_prodpv    ? Number(form.pd_prodpv)    : undefined,
       pd_qty:         form.pd_qty       ? Number(form.pd_qty)       : undefined,
       pd_weight:      form.pd_weight    ? Number(form.pd_weight)    : undefined,
@@ -828,12 +838,21 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
 
                   {/* ── Section: Pricing ── */}
                   <SectionLabel>Pricing</SectionLabel>
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
                     <Field label="SRP Price (₱)" required error={errors.pd_price_srp}>
                       <input type="number" value={form.pd_price_srp} onChange={e => set('pd_price_srp', e.target.value)} placeholder="0.00" className={inputCls(!!errors.pd_price_srp)}/>
                     </Field>
                     <Field label="Dealer Price (₱)" error={errors.pd_price_dp}>
-                      <input type="number" value={form.pd_price_dp} onChange={e => set('pd_price_dp', e.target.value)} placeholder="0.00" className={inputCls(!!errors.pd_price_dp)}/>
+                      <div className="space-y-1">
+                        <input type="number" value={form.pd_price_dp} onChange={e => set('pd_price_dp', e.target.value)} placeholder="0.00" className={inputCls(!!errors.pd_price_dp)}/>
+                        <p className="text-[11px] text-slate-500">Separate dealer pricing. Optional.</p>
+                      </div>
+                    </Field>
+                    <Field label="Member Price (₱)" error={errors.pd_price_member}>
+                      <div className="space-y-1">
+                        <input type="number" value={form.pd_price_member} onChange={e => set('pd_price_member', e.target.value)} placeholder="0.00" className={inputCls(!!errors.pd_price_member)}/>
+                        <p className="text-[11px] text-slate-500">Shown to member accounts. If blank, SRP will be used.</p>
+                      </div>
                     </Field>
                     <Field label="PV Value" error={errors.pd_prodpv}>
                       <input type="number" value={form.pd_prodpv} onChange={e => set('pd_prodpv', e.target.value)} placeholder="0" className={inputCls(!!errors.pd_prodpv)}/>
@@ -1090,7 +1109,7 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
                                   </div>
 
                                   {/* SRP + DP */}
-                                  <div className="grid grid-cols-2 gap-2">
+                                  <div className="grid grid-cols-1 gap-2 md:grid-cols-3">
                                     <div className="space-y-1">
                                       <label className="text-[11px] font-semibold text-slate-500 block">SRP Price (₱)</label>
                                       <input type="number" value={variant.pv_price_srp} onChange={e => setVariant(index, 'pv_price_srp', e.target.value)} placeholder="0.00" className={variantInputCls}/>
@@ -1098,6 +1117,12 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
                                     <div className="space-y-1">
                                       <label className="text-[11px] font-semibold text-slate-500 block">Dealer Price (₱)</label>
                                       <input type="number" value={variant.pv_price_dp} onChange={e => setVariant(index, 'pv_price_dp', e.target.value)} placeholder="0.00" className={variantInputCls}/>
+                                      <p className="text-[11px] text-slate-500">If blank, main dealer price will be used.</p>
+                                    </div>
+                                    <div className="space-y-1">
+                                      <label className="text-[11px] font-semibold text-slate-500 block">Member Price (₱)</label>
+                                      <input type="number" value={variant.pv_price_member} onChange={e => setVariant(index, 'pv_price_member', e.target.value)} placeholder="0.00" className={variantInputCls}/>
+                                      <p className="text-[11px] text-slate-500">If blank, main member price will be used.</p>
                                     </div>
                                   </div>
 

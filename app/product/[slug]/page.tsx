@@ -173,6 +173,7 @@ const toCategoryProduct = (row: LooseRecord, apiUrl?: string): CategoryProduct =
   const name = String(row.name ?? row.pd_name ?? 'Untitled Product');
   const srp = toNumber(row.priceSrp ?? row.pd_price_srp ?? 0);
   const dp = toNumber(row.priceDp ?? row.pd_price_dp ?? 0);
+  const member = toNumber(row.priceMember ?? row.pd_price_member ?? 0);
   const prodpv = toNumber(row.prodpv ?? row.pd_prodpv ?? 0);
   const isOnSale = Boolean(row.salespromo ?? row.pd_salespromo);
   const price = isOnSale && dp > 0 ? dp : srp;
@@ -204,6 +205,7 @@ const toCategoryProduct = (row: LooseRecord, apiUrl?: string): CategoryProduct =
         size: typeof (variant.size ?? variant.pv_size) === 'string' ? String(variant.size ?? variant.pv_size) : undefined,
         priceSrp: toOptionalNumber(variant.priceSrp ?? variant.pv_price_srp),
         priceDp: toOptionalNumber(variant.priceDp ?? variant.pv_price_dp),
+        priceMember: toOptionalNumber(variant.priceMember ?? variant.pv_price_member),
         qty: toOptionalNumber(variant.qty ?? variant.pv_qty),
         status: typeof statusRaw === 'number' ? statusRaw : Number(statusRaw),
         images: toStringArray(variant.images ?? variant.pv_images).map((img) => resolveImageUrl(img, apiUrl)),
@@ -217,6 +219,7 @@ const toCategoryProduct = (row: LooseRecord, apiUrl?: string): CategoryProduct =
     type: toNumber(row.type ?? row.pd_type),
     price,
     priceDp: dp > 0 ? dp : undefined,
+    priceMember: member > 0 ? member : undefined,
     prodpv,
     originalPrice: isOnSale && dp > 0 && srp > dp ? srp : undefined,
     image: resolveImageUrl(rawImage, apiUrl),

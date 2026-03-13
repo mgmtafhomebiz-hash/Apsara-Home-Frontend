@@ -10,6 +10,7 @@ import {
   useGetAdminUsersQuery,
   useUpdateAdminUserMutation,
 } from '@/store/api/adminUsersApi'
+import { useGetSuppliersQuery } from '@/store/api/suppliersApi'
 import { showErrorToast, showSuccessToast } from '@/libs/toast'
 
 /* ─── types ──────────────────────────────────────────────── */
@@ -19,6 +20,7 @@ type CreateForm = {
   username: string
   email: string
   user_level_id: number
+  supplier_id: number | null
 }
 
 type EditForm = CreateForm & {
@@ -26,7 +28,7 @@ type EditForm = CreateForm & {
 }
 
 const initialForm: CreateForm = {
-  name: '', username: '', email: '', user_level_id: 2,
+  name: '', username: '', email: '', user_level_id: 2, supplier_id: null,
 }
 
 const initialEditForm: EditForm = {
@@ -97,15 +99,6 @@ const ROLE_OPTIONS = [
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M3 7l1.664 9.152A2 2 0 006.632 18h10.736a2 2 0 001.968-1.848L21 7M7 7V5a2 2 0 012-2h6a2 2 0 012 2v2M9 11h6" />
-      </svg>
-    ),
-  },
-  {
-    value: 8, label: 'Supplier Admin', colorKey: 'cyan',
-    description: 'Handle supplier records and supplier-linked product operations',
-    icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1" />
       </svg>
     ),
   },
@@ -330,15 +323,47 @@ function RoleCardGrid({ value, onChange }: { value: number; onChange: (v: number
   )
 }
 
+function SupplierSelect({
+  value,
+  onChange,
+  options,
+}: {
+  value: number | null
+  onChange: (value: number | null) => void
+  options: Array<{ id: number; label: string }>
+}) {
+  return (
+    <div className="space-y-1.5">
+      <label className="text-xs font-semibold text-slate-600 block">
+        Supplier Company <span className="text-red-400">*</span>
+      </label>
+      <select
+        value={value ?? ''}
+        onChange={(e) => onChange(e.target.value ? Number(e.target.value) : null)}
+        className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-700 focus:border-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-500/30"
+      >
+        <option value="">Select supplier company</option>
+        {options.map((option) => (
+          <option key={option.id} value={option.id}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+      <p className="text-xs text-slate-400">This controls which company data the supplier account can access.</p>
+    </div>
+  )
+}
+
 /* ─── EditModal ──────────────────────────────────────────── */
 
 function EditModal({
-  target, form, busy, onChange, onSubmit, onClose,
+  target, form, busy, onChange, onSubmit, onClose, supplierOptions,
 }: {
   target: AdminUserItem; form: EditForm; busy: boolean
   onChange: (patch: Partial<EditForm>) => void
   onSubmit: (e: React.SyntheticEvent) => void
   onClose: () => void
+  supplierOptions: Array<{ id: number; label: string }>
 }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -384,6 +409,13 @@ function EditModal({
           <InputField label="Email Address" type="email" placeholder="Email" value={form.email} onChange={v => onChange({ email: v })} required icon={<MailIcon />} />
           <SectionLabel>Role & Permissions</SectionLabel>
           <RoleCardGrid value={form.user_level_id} onChange={v => onChange({ user_level_id: v })} />
+          {form.user_level_id === 8 && (
+            <SupplierSelect
+              value={form.supplier_id}
+              onChange={(supplierId) => onChange({ supplier_id: supplierId })}
+              options={supplierOptions}
+            />
+          )}
           <SectionLabel>Security</SectionLabel>
           <InputField
             label="New Password" type="password" placeholder="Leave blank to keep current"
@@ -419,6 +451,7 @@ export default function AdminUsersPageMain() {
   const { data: session } = useSession()
   const role       = String(session?.user?.role ?? '').toLowerCase()
   const isSuperAdmin = role === 'super_admin'
+  const { data: suppliersData } = useGetSuppliersQuery(undefined, { skip: !isSuperAdmin })
 
   const [search,          setSearch]          = useState('')
   const [page,            setPage]            = useState(1)
@@ -435,6 +468,13 @@ export default function AdminUsersPageMain() {
   const [deleteAdminUser] = useDeleteAdminUserMutation()
 
   const rows = useMemo(() => data?.users ?? [], [data?.users])
+  const supplierOptions = useMemo(
+    () => (suppliersData?.suppliers ?? []).map((supplier) => ({
+      id: supplier.id,
+      label: supplier.company || supplier.name,
+    })),
+    [suppliersData?.suppliers],
+  )
 
   const handleCreate = async (e: React.SyntheticEvent) => {
     e.preventDefault()
@@ -452,7 +492,14 @@ export default function AdminUsersPageMain() {
 
   const openEditModal = (row: AdminUserItem) => {
     setEditTarget(row)
-    setEditForm({ name: row.name, username: row.username, email: row.email, password: '', user_level_id: row.user_level_id })
+    setEditForm({
+      name: row.name,
+      username: row.username,
+      email: row.email,
+      password: '',
+      user_level_id: row.user_level_id,
+      supplier_id: row.supplier_id ?? null,
+    })
   }
 
   const handleEditSubmit = async (e: React.SyntheticEvent) => {
@@ -463,6 +510,7 @@ export default function AdminUsersPageMain() {
       await updateAdminUser({
         id: editTarget.id, name: editForm.name, username: editForm.username,
         email: editForm.email, user_level_id: editForm.user_level_id,
+        supplier_id: editForm.user_level_id === 8 ? editForm.supplier_id : null,
         password: editForm.password.trim() || undefined,
       }).unwrap()
       showSuccessToast(`Updated account for ${editTarget.username}.`)
@@ -513,7 +561,8 @@ export default function AdminUsersPageMain() {
       {/* ── Page Header ── */}
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
         <h1 className="text-xl font-bold text-slate-800">Users & Roles</h1>
-        <p className="text-sm text-slate-500 mt-0.5">Create and manage admin accounts and their role permissions</p>
+        <p className="text-sm text-slate-500 mt-0.5">Create and manage internal admin accounts and their role permissions</p>
+        <p className="text-xs text-slate-400 mt-1">Supplier company accounts should use the dedicated supplier portal, not admin roles.</p>
       </motion.div>
 
       {/* ── Create Form ── */}
@@ -567,8 +616,15 @@ export default function AdminUsersPageMain() {
           <SectionLabel>Role & Permissions</SectionLabel>
           <RoleCardGrid
             value={createForm.user_level_id}
-            onChange={v => setCreateForm(p => ({ ...p, user_level_id: v }))}
+            onChange={v => setCreateForm(p => ({ ...p, user_level_id: v, supplier_id: v === 8 ? p.supplier_id : null }))}
           />
+          {createForm.user_level_id === 8 && (
+            <SupplierSelect
+              value={createForm.supplier_id}
+              onChange={(supplierId) => setCreateForm((prev) => ({ ...prev, supplier_id: supplierId }))}
+              options={supplierOptions}
+            />
+          )}
         </div>
 
         {/* Form footer */}
@@ -675,9 +731,14 @@ export default function AdminUsersPageMain() {
                       </td>
                       <td className="px-5 py-3.5 text-sm text-slate-500">{row.email}</td>
                       <td className="px-5 py-3.5">
-                        <span className={`inline-flex px-2.5 py-1 rounded-full border text-[11px] font-semibold capitalize ${roleCls}`}>
-                          {row.role.replace(/_/g, ' ')}
-                        </span>
+                        <div className="space-y-1">
+                          <span className={`inline-flex px-2.5 py-1 rounded-full border text-[11px] font-semibold capitalize ${roleCls}`}>
+                            {row.role.replace(/_/g, ' ')}
+                          </span>
+                          {row.supplier_name && (
+                            <p className="text-[11px] text-slate-400">{row.supplier_name}</p>
+                          )}
+                        </div>
                       </td>
                       <td className="px-5 py-3.5">
                         <div className="flex items-center gap-1.5">
@@ -753,6 +814,7 @@ export default function AdminUsersPageMain() {
             onChange={patch => setEditForm(prev => ({ ...prev, ...patch }))}
             onSubmit={handleEditSubmit}
             onClose={() => { setEditTarget(null); setEditForm(initialEditForm) }}
+            supplierOptions={supplierOptions}
           />
         )}
       </AnimatePresence>

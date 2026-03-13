@@ -1,35 +1,10 @@
-import OrdersChart from "@/components/superAdmin/dashboard/OrdersChart";
-import RecentOrders from "@/components/superAdmin/dashboard/RecentOrders";
-import SalesChart from "@/components/superAdmin/dashboard/SalesChart";
-import StatsGrid from "@/components/superAdmin/dashboard/StatsGrid";
-import TopProducts from "@/components/superAdmin/dashboard/TopProducts";
+import DashboardPageRouter from "@/components/superAdmin/dashboard/DashboardPageRouter";
 import { buildPageMetadata } from '@/app/seo';
 
 export const metadata = buildPageMetadata({ title: 'Admin Dashboard', description: 'Browse the Admin Dashboard page on AF Home.', path: '/admin/dashboard', noIndex: true });
 
 const AdminDashboardPage = () => {
-  return (
-    <div className="space-y-6">
-      <StatsGrid />
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        <div className="xl:col-span-2">
-          <SalesChart />
-        </div>
-        <div>
-          <OrdersChart />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        <div className="xl:col-span-2">
-          <RecentOrders />
-        </div>
-        <div>
-          <TopProducts />
-        </div>
-      </div>
-    </div>
-  );
+  return <DashboardPageRouter />;
 };
 
 export default AdminDashboardPage;

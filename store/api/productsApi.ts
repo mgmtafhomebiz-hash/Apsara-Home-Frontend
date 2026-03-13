@@ -9,6 +9,7 @@ export interface Product {
   catsubid: number
   priceSrp: number
   priceDp: number
+  priceMember?: number
   prodpv?: number
   qty: number
   weight: number
@@ -41,6 +42,7 @@ export interface ProductVariant {
   size?: string
   priceSrp?: number
   priceDp?: number
+  priceMember?: number
   qty?: number
   status?: number
   images?: string[]
@@ -66,6 +68,7 @@ export interface CreateProductPayload {
   pd_catsubid?: number
   pd_price_srp: number
   pd_price_dp?: number
+  pd_price_member?: number
   pd_prodpv?: number
   pd_qty?: number
   pd_weight?: number
@@ -97,6 +100,7 @@ export interface CreateProductVariantPayload {
   pv_size?: string
   pv_price_srp?: number
   pv_price_dp?: number
+  pv_price_member?: number
   pv_qty?: number
   pv_status?: number
   pv_images?: string[]
@@ -151,6 +155,7 @@ export const normalizeProduct = (input: Product & Record<string, unknown>): Prod
           size: typeof row.size === 'string' ? row.size : undefined,
           priceSrp: typeof row.priceSrp === 'number' ? row.priceSrp : (typeof row.priceSrp === 'string' ? Number(row.priceSrp) : undefined),
           priceDp: typeof row.priceDp === 'number' ? row.priceDp : (typeof row.priceDp === 'string' ? Number(row.priceDp) : undefined),
+          priceMember: typeof row.priceMember === 'number' ? row.priceMember : (typeof row.priceMember === 'string' ? Number(row.priceMember) : undefined),
           qty: typeof row.qty === 'number' ? row.qty : (typeof row.qty === 'string' ? Number(row.qty) : undefined),
           status: typeof row.status === 'number' ? row.status : (typeof row.status === 'string' ? Number(row.status) : undefined),
           images: toStringArray(row.images),
@@ -161,6 +166,10 @@ export const normalizeProduct = (input: Product & Record<string, unknown>): Prod
   return {
     ...input,
     specifications: typeof input.specifications === 'string' ? input.specifications : null,
+    priceMember:
+      typeof input.priceMember === 'number'
+        ? input.priceMember
+        : (typeof input.pd_price_member === 'number' ? input.pd_price_member : (typeof input.pd_price_member === 'string' ? Number(input.pd_price_member) : undefined)),
     prodpv:
       typeof input.prodpv === 'number'
         ? input.prodpv

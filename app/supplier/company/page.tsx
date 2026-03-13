@@ -2,12 +2,12 @@ import { buildPageMetadata } from '@/app/seo'
 import SuppliersPageMain from '@/components/superAdmin/suppliers/SuppliersPageMain'
 
 export const metadata = buildPageMetadata({
-  title: 'Admin Suppliers',
-  description: 'Browse the Admin Suppliers page on AF Home.',
-  path: '/admin/suppliers',
+  title: 'Supplier Company',
+  description: 'Browse your supplier company profile on AF Home.',
+  path: '/supplier/company',
   noIndex: true,
 })
 
-export default function AdminSuppliersPage() {
+export default function SupplierCompanyPage() {
   return <SuppliersPageMain />
 }

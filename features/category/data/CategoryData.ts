@@ -4,6 +4,7 @@ export interface CategoryProduct {
     type?: number;
     price: number;
     priceDp?: number;
+    priceMember?: number;
     prodpv?: number;
     originalPrice?: number;
     image: string;
@@ -19,6 +20,7 @@ export interface CategoryProduct {
         size?: string;
         priceSrp?: number;
         priceDp?: number;
+        priceMember?: number;
         qty?: number;
         status?: number;
         images?: string[];
