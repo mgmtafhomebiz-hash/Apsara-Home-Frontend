@@ -9,7 +9,7 @@ export interface MeResponse {
     avatar_url?: string;
     account_status?: number;
     lock_status?: number;
-    verification_status?: 'verified' | 'pending_review' | 'not_verified' | 'blocked';
+    verification_status?: 'verified' | 'pending_review' | 'on_hold' | 'not_verified' | 'blocked';
     email_verified?: boolean;
 }
 
@@ -27,7 +27,7 @@ export interface ReferralTreeNode {
     email: string;
     joined_at: string;
     total_earnings: number;
-    verification_status: 'verified' | 'pending_review' | 'not_verified' | 'blocked';
+    verification_status: 'verified' | 'pending_review' | 'on_hold' | 'not_verified' | 'blocked';
     children_count?: number;
     children?: ReferralTreeNode[];
 }

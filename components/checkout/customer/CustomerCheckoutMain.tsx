@@ -180,13 +180,20 @@ const CustomerCheckoutMain = () => {
             <Navbar />
             <main className="flex-1">
                 {/* HEADER */}
-                <div className="bg-white border-b border-gray-100">
+                <div className="bg-linear-to-r from-orange-500 to-orange-600 shadow-sm">
                     <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-                        <div>
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">AF Home · Secure Checkout</p>
-                            <h1 className="text-lg font-black text-slate-800">Checkout</h1>
+                        <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 rounded-2xl bg-white/15 border border-white/25 flex items-center justify-center shrink-0">
+                                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                </svg>
+                            </div>
+                            <div>
+                                <p className="text-orange-100 text-[10px] font-bold uppercase tracking-widest">AF Home · Secure Checkout</p>
+                                <h1 className="text-white font-bold text-lg leading-tight">Guest Checkout</h1>
+                            </div>
                         </div>
-                        <Link href="/" className="tex-xs text-slate-400 hover:text-orange-500 font-medium transition-colors flex items-center gap-0.5">
+                        <Link href="/" className="flex items-center gap-1.5 text-white/80 hover:text-white text-xs font-semibold transition-colors bg-white/10 hover:bg-white/20 px-3 py-2 rounded-xl border border-white/20">
                             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                             </svg>

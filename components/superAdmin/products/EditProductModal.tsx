@@ -337,7 +337,8 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
       if (!allowed.includes(file.type)) { setImageError('Only JPEG, PNG, WEBP, or GIF allowed.'); return }
       if (file.size > 5 * 1024 * 1024) { setImageError('File too large. Max 5MB.'); return }
     }
-    const next = [...imageFiles, ...files].slice(0, 10)
+    const maxNew = 10 - existingImageUrls.length
+    const next = [...imageFiles, ...files].slice(0, maxNew)
     setImageFiles(next)
     setImagePreviews(next.map(f => URL.createObjectURL(f)))
     setUploadedUrls([])
@@ -350,8 +351,10 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
     setUploadedUrls([])
     if (!next.length && fileInputRef.current) fileInputRef.current.value = ''
   }
-  const handleRemoveExistingImage = (index: number) =>
+  const handleRemoveExistingImage = (index: number) => {
     setExistingImageUrls(prev => prev.filter((_, i) => i !== index))
+    setUploadedUrls([])
+  }
   const handleClearNewImages      = () => {
     setImageFiles([]); setImagePreviews([]); setUploadedUrls([])
     setImageError('')
@@ -542,8 +545,8 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
     }
 
     if (imagesChanged) {
-      payload.pd_image = finalImageUrls[0] ?? undefined
-      payload.pd_images = finalImageUrls.length > 0 ? finalImageUrls : []
+      payload.pd_image = finalImageUrls[0] ?? null
+      payload.pd_images = finalImageUrls
     }
 
     try {
@@ -561,6 +564,19 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
   const handleClose = () => { if (isLoading || isUploading) return; onClose() }
   const isBusy      = isLoading || isUploading
   const hasAnyImages = existingImageUrls.length > 0 || imagePreviews.length > 0
+
+  /* ── change detection (for button disable + grid visibility) ── */
+  const baseChanged =
+    initialForm !== null &&
+    JSON.stringify(normalizeFormForComparison(form)) !== JSON.stringify(normalizeFormForComparison(initialForm))
+  const variantsChangedNow =
+    JSON.stringify(normalizeVariantsForComparison(variants)) !== JSON.stringify(normalizeVariantsForComparison(initialVariants))
+  const existingImagesChangedNow =
+    existingImageUrls.length !== initialImageUrls.length ||
+    existingImageUrls.some((url, i) => url !== initialImageUrls[i])
+  const hasChanged = baseChanged || variantsChangedNow || existingImagesChangedNow || imageFiles.length > 0
+  /* Keep grid visible even after all existing images are removed so user can still add new ones */
+  const showImageGrid = hasAnyImages || initialImageUrls.length > 0
 
   /* ─── render ─────────────────────────────────────────────── */
   return (
@@ -635,7 +651,7 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
                     id="edit-product-image-input"
                   />
 
-                  {hasAnyImages ? (
+                  {showImageGrid ? (
                     <div className="space-y-2">
                       <div className="grid grid-cols-4 gap-2">
                         {/* Existing images */}
@@ -685,7 +701,9 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
                       </div>
                       <div className="flex items-center gap-3">
                         <p className="text-xs text-slate-400 flex-1">
-                          {existingImageUrls.length} saved · {imagePreviews.length} pending upload
+                          {!hasAnyImages
+                            ? 'All images removed — click + to add new images'
+                            : `${existingImageUrls.length} saved · ${imagePreviews.length} pending upload`}
                         </p>
                         {imagePreviews.length > 0 && (
                           <button type="button" onClick={handleClearNewImages} className="text-xs font-semibold text-slate-400 hover:text-red-500 transition-colors">
@@ -1168,8 +1186,8 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
                   </button>
                   <button
                     type="submit"
-                    disabled={isBusy}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-bold transition-colors shadow-sm shadow-blue-500/30 disabled:opacity-60"
+                    disabled={isBusy || !hasChanged}
+                    className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-bold transition-colors shadow-sm shadow-blue-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isBusy ? (
                       <>

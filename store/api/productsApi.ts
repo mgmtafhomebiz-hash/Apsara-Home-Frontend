@@ -85,8 +85,8 @@ export interface CreateProductPayload {
   pd_salespromo?: boolean
   pd_verified?: boolean
   pd_status?: number
-  pd_image?: string
-  pd_images?: string[]
+  pd_image?: string | null
+  pd_images?: string[] | null
   pd_variants?: CreateProductVariantPayload[]
 }
 

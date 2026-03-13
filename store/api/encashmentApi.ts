@@ -195,7 +195,7 @@ interface AdminEncashmentQuery {
   perPage?: number;
 }
 
-export type WalletTypeFilter = 'all' | 'cash' | 'pv';
+export type WalletTypeFilter = 'all' | 'cash' | 'pv' | 'rewards';
 
 export interface WalletLedgerItem {
   id: number;
@@ -211,18 +211,65 @@ export interface WalletLedgerItem {
   updated_at?: string | null;
 }
 
+export interface AffiliateVoucherItem {
+  id: number;
+  code: string;
+  amount: number;
+  status: 'active' | 'redeemed' | 'cancelled' | 'expired' | string;
+  redeemed_by_customer_id?: number | null;
+  redeemed_at?: string | null;
+  expires_at?: string | null;
+  max_uses?: number | null;
+  used_count?: number | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+}
+
+export interface CreateAffiliateVoucherPayload {
+  amount: number;
+  expires_at?: string;
+  max_uses?: number;
+}
+
+export interface CreateAffiliateVoucherResponse {
+  message: string;
+  voucher: AffiliateVoucherItem;
+}
+
 export interface WalletOverviewResponse {
   summary: {
     cash_balance: number;
     pv_balance: number;
+    current_pv: number;
+    personal_purchase_pv: number;
+    group_pv: number;
+    current_month_group_pv: number;
+    current_cv: number;
+    pending_pv: number;
+    lifetime_pv: number;
     cash_credits: number;
     cash_debits: number;
     pv_credits: number;
     pv_debits: number;
     encashment_locked: number;
     encashment_available: number;
+    af_voucher_balance: number;
+    available_egc_balance: number;
+    cashback_balance: number;
+    cashback_rate: number;
+    af_voucher_source_balance: number;
+    af_voucher_reserved_balance: number;
+    cashback_source_balance: number;
+    cashback_reserved_balance: number;
+    can_create_affiliate_voucher: boolean;
+    referrals: {
+      total: number;
+      verified: number;
+      active: number;
+    };
   };
   ledger: WalletLedgerItem[];
+  affiliate_vouchers: AffiliateVoucherItem[];
   meta: {
     current_page: number;
     last_page: number;
@@ -285,6 +332,14 @@ export const encashmentApi = baseApi.injectEndpoints({
       }),
       providesTags: ['Encashment'],
     }),
+    createAffiliateVoucher: builder.mutation<CreateAffiliateVoucherResponse, CreateAffiliateVoucherPayload>({
+      query: (body) => ({
+        url: '/api/encashment/vouchers',
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: ['Encashment'],
+    }),
     getAdminEncashmentRequests: builder.query<AdminEncashmentResponse, AdminEncashmentQuery | void>({
       query: (params) => ({
         url: '/api/admin/encashment',
@@ -332,6 +387,7 @@ export const {
   useDeleteEncashmentPayoutMethodMutation,
   useSubmitEncashmentVerificationRequestMutation,
   useGetWalletOverviewQuery,
+  useCreateAffiliateVoucherMutation,
   useGetAdminEncashmentRequestsQuery,
   useApproveAdminEncashmentMutation,
   useRejectAdminEncashmentMutation,

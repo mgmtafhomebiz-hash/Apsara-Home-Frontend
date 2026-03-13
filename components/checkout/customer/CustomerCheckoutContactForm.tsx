@@ -46,9 +46,9 @@ const CustomerCheckoutContactForm = ({
 
                 {/* DIVIDER */}
                 <div className="flex items-center gap-3 pt-1">
-                    <div className="flex items-center gap-3 pt-1" />
+                    <div className="flex-1 h-px bg-slate-100" />
                     <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">Optional</span>
-                    <div />
+                    <div className="flex-1 h-px bg-slate-100" />
                 </div>
 
                 {/* REFERRAL + VOUCHER */}

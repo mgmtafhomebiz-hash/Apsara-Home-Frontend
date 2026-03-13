@@ -29,49 +29,13 @@ const paymentMethods: Array<{
   label: string;
   note: string;
   badge: string;
-  iconBg: string;
-  icon: React.ReactNode;
+  badgeColor: string;
+  logos: string[];
 }> = [
-    {
-      id: 'gcash',
-      label: 'GCash',
-      note: 'Pay via GCash wallet',
-      badge: 'Popular',
-      iconBg: 'bg-gradient-to-br from-blue-400 to-blue-700',
-      icon: <span className="text-white font-black text-lg leading-none">G</span>,
-    },
-    {
-      id: 'maya',
-      label: 'Maya',
-      note: 'Pay via Maya wallet',
-      badge: 'Fast',
-      iconBg: 'bg-gradient-to-br from-emerald-400 to-green-700',
-      icon: <span className="text-white font-black text-lg leading-none">M</span>,
-    },
-    {
-      id: 'online_banking',
-      label: 'Online Banking',
-      note: 'Instapay / PesoNet',
-      badge: 'Bank Transfer',
-      iconBg: 'bg-gradient-to-br from-sky-400 to-blue-600',
-      icon: (
-        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" />
-        </svg>
-      ),
-    },
-    {
-      id: 'card',
-      label: 'Credit / Debit Card',
-      note: 'Visa or Mastercard',
-      badge: '3DS Secured',
-      iconBg: 'bg-gradient-to-br from-slate-600 to-slate-900',
-      icon: (
-        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-        </svg>
-      ),
-    },
+    { id: 'gcash', label: 'GCash', note: 'Pay via GCash wallet', badge: 'Popular', badgeColor: 'bg-blue-500', logos: ['/payment-logos/gcash.svg'] },
+    { id: 'maya', label: 'Maya', note: 'Pay via Maya wallet', badge: 'Fast', badgeColor: 'bg-emerald-500', logos: ['/payment-logos/maya.svg'] },
+    { id: 'online_banking', label: 'Online Banking', note: 'Instapay / PesoNet', badge: 'Bank Transfer', badgeColor: 'bg-sky-500', logos: ['/payment-logos/online-banking.svg'] },
+    { id: 'card', label: 'Credit / Debit Card', note: 'Visa or Mastercard', badge: '3DS Secured', badgeColor: 'bg-slate-700', logos: ['/payment-logos/visa.svg', '/payment-logos/mastercard.svg'] },
   ];
 
 const methodLabelMap: Record<PaymentMethod, string> = {
@@ -225,7 +189,7 @@ const BuyNowOptionsModal = ({
                   </svg>
                 </button>
               </div>
-
+              
               <div className="grid grid-cols-1 lg:grid-cols-5">
                 {/* ── Left Panel: Order Summary ── */}
                 <div className="lg:col-span-2 bg-gradient-to-b from-orange-50/50 to-white border-b lg:border-b-0 lg:border-r border-slate-100 p-5 sm:p-6">
@@ -347,18 +311,28 @@ const BuyNowOptionsModal = ({
                               : 'border-slate-100 hover:border-orange-200 hover:bg-orange-50/20 bg-white'
                             }`}
                         >
-                          {/* Icon */}
-                          <div className={`${method.iconBg} h-11 w-11 rounded-xl flex items-center justify-center shrink-0 shadow-md`}>
-                            {method.icon}
+                          {/* Logo */}
+                          <div className="h-11 w-11 rounded-xl bg-white border border-slate-100 flex items-center justify-center shrink-0 shadow-sm p-1.5 overflow-hidden">
+                            {method.logos.length === 1 ? (
+                              <div className="relative w-full h-full">
+                                <Image src={method.logos[0]} alt={method.label} fill className="object-contain" />
+                              </div>
+                            ) : (
+                              <div className="flex gap-0.5 w-full h-full items-center justify-center">
+                                {method.logos.map(logo => (
+                                  <div key={logo} className="relative w-5 h-4 shrink-0">
+                                    <Image src={logo} alt="" fill className="object-contain" />
+                                  </div>
+                                ))}
+                              </div>
+                            )}
                           </div>
 
                           {/* Label */}
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-1.5 flex-wrap">
                               <span className="text-sm font-bold text-slate-800">{method.label}</span>
-                              <span className={`px-1.5 py-0.5 rounded-md text-[9px] font-bold text-white leading-none
-                                ${method.id === 'gcash' ? 'bg-blue-500' : method.id === 'maya' ? 'bg-emerald-500' : method.id === 'online_banking' ? 'bg-sky-500' : 'bg-slate-700'}
-                              `}>
+                              <span className={`px-1.5 py-0.5 rounded-md text-[9px] font-bold text-white leading-none ${method.badgeColor}`}>
                                 {method.badge}
                               </span>
                             </div>
@@ -430,13 +404,16 @@ const BuyNowOptionsModal = ({
                             {cardOptions.map((brand) => (
                               <button
                                 key={brand} type="button" onClick={() => setSelectedCardBrand(brand)}
-                                className={`flex-1 py-3 rounded-xl text-xs font-bold border-2 transition-all duration-200
+                                className={`flex-1 py-2.5 rounded-xl border-2 transition-all duration-200 flex items-center justify-center gap-2
                                   ${selectedCardBrand === brand
-                                    ? 'bg-slate-800 text-white border-slate-800 shadow-sm'
-                                    : 'bg-white text-slate-600 border-slate-200 hover:border-slate-400'
+                                    ? 'border-slate-800 bg-slate-50 shadow-sm'
+                                    : 'bg-white border-slate-200 hover:border-slate-400'
                                   }`}
                               >
-                                {brand === 'Visa' ? '💳 Visa' : '💳 Mastercard'}
+                                <div className="relative w-10 h-6 shrink-0">
+                                  <Image src={`/payment-logos/${brand.toLowerCase()}.svg`} alt={brand} fill className="object-contain" />
+                                </div>
+                                <span className="text-xs font-bold text-slate-700">{brand}</span>
                               </button>
                             ))}
                           </div>
@@ -484,32 +461,97 @@ const BuyNowOptionsModal = ({
                   </AnimatePresence>
 
                   {/* CTA Buttons */}
-                  <div className="mt-4 flex flex-col sm:flex-row gap-2.5">
-                    <button
-                      onClick={onClose}
-                      className="sm:flex-1 rounded-xl border-2 border-slate-200 bg-white py-3 text-sm font-semibold text-slate-600 hover:bg-slate-50 hover:border-slate-300 transition-all"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={handleProceed}
-                      disabled={loading}
-                      className="sm:flex-[2] inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 disabled:opacity-60 disabled:cursor-not-allowed text-white py-3 text-sm font-bold transition-all shadow-lg shadow-orange-200"
-                    >
-                      {loading ? (
-                        <>
-                          <Loading size={16} />
-                          <span>Processing...</span>
-                        </>
-                      ) : (
-                        <>
-                          <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                          </svg>
-                          <span>Continue to Checkout · ₱{total.toLocaleString()}</span>
-                        </>
-                      )}
-                    </button>
+                  <div className="mt-4 flex flex-col gap-2.5">
+                    {status !== 'authenticated' ? (
+                      <>
+                        {/* Checkout path selector for guests */}
+                        <div className="rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                          <div className="px-4 py-2.5 bg-gradient-to-r from-slate-50 to-slate-100 border-b border-slate-200">
+                            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest text-center">How would you like to checkout?</p>
+                          </div>
+                          <div className="grid grid-cols-2 divide-x divide-slate-200">
+                            {/* Sign in & Checkout */}
+                            <button
+                              onClick={handleProceed}
+                              disabled={loading}
+                              className="group flex flex-col items-center gap-2 p-4 hover:bg-orange-50 transition-all duration-200 disabled:opacity-60"
+                            >
+                              <div className="h-11 w-11 rounded-2xl bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center shadow-md shadow-orange-100 group-hover:shadow-orange-200 transition-all">
+                                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                </svg>
+                              </div>
+                              {loading ? (
+                                <div className="flex items-center gap-1.5">
+                                  <Loading size={12} />
+                                  <span className="text-[11px] font-bold text-orange-600">Processing...</span>
+                                </div>
+                              ) : (
+                                <>
+                                  <span className="text-xs font-bold text-slate-800 group-hover:text-orange-600 transition-colors">Sign In & Checkout</span>
+                                  <span className="text-[10px] text-slate-400 text-center leading-tight">Earn PV · Track orders</span>
+                                </>
+                              )}
+                            </button>
+
+                            {/* Guest Checkout */}
+                            <button
+                              onClick={handleCustomerCheckout}
+                              className="group flex flex-col items-center gap-2 p-4 hover:bg-blue-50 transition-all duration-200"
+                            >
+                              <div className="h-11 w-11 rounded-2xl bg-gradient-to-br from-slate-400 to-slate-600 flex items-center justify-center shadow-md shadow-slate-100 group-hover:from-blue-400 group-hover:to-blue-600 group-hover:shadow-blue-100 transition-all">
+                                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                </svg>
+                              </div>
+                              <span className="text-xs font-bold text-slate-800 group-hover:text-blue-600 transition-colors">Guest Checkout</span>
+                              <span className="text-[10px] text-slate-400 text-center leading-tight">No account needed</span>
+                            </button>
+                          </div>
+
+                          {/* Amount reminder */}
+                          <div className="bg-orange-50 border-t border-orange-100 px-4 py-2 flex items-center justify-between">
+                            <span className="text-[11px] text-orange-700 font-medium">Order Total</span>
+                            <span className="text-sm font-extrabold text-orange-600">₱{total.toLocaleString()}</span>
+                          </div>
+                        </div>
+
+                        <button
+                          onClick={onClose}
+                          className="rounded-xl border border-slate-200 bg-white py-2.5 text-xs font-semibold text-slate-400 hover:bg-slate-50 hover:border-slate-300 hover:text-slate-600 transition-all"
+                        >
+                          Cancel
+                        </button>
+                      </>
+                    ) : (
+                      <div className="flex flex-col sm:flex-row gap-2.5">
+                        <button
+                          onClick={onClose}
+                          className="sm:flex-1 rounded-xl border-2 border-slate-200 bg-white py-3 text-sm font-semibold text-slate-600 hover:bg-slate-50 hover:border-slate-300 transition-all"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={handleProceed}
+                          disabled={loading}
+                          className="sm:flex-[2] inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 disabled:opacity-60 disabled:cursor-not-allowed text-white py-3 text-sm font-bold transition-all shadow-lg shadow-orange-200"
+                        >
+                          {loading ? (
+                            <>
+                              <Loading size={16} />
+                              <span>Processing...</span>
+                            </>
+                          ) : (
+                            <>
+                              <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                              </svg>
+                              <span>Continue to Checkout · ₱{total.toLocaleString()}</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   {/* Security note */}
@@ -517,31 +559,6 @@ const BuyNowOptionsModal = ({
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
                     Secured by <span className="font-semibold text-slate-500">PayMongo</span> · SSL Encrypted · PCI DSS Compliant
                   </p>
-
-                  {status !== 'authenticated' && (
-                    <>
-                      {/* CUSTOMER CHECKOUT DIVIDER */}
-                      <div className='flex items-center gap-3 mt-4'>
-                        <div className='flex-1 h-px bg-slate-100' />
-                        <span className='text-[11px] text-slate-400 font-medium'>or</span>
-                        <div className='flex-1 h-px bg-slate-100' />
-                      </div>
-
-                      {/* GUEST CHECKOUT BUTTON */}
-                      <button
-                        onClick={handleCustomerCheckout}
-                        className='mt-3 w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-dashed border-slate-300 text-slate-500 hover:border-orange-400 hover:text-orange-500 hover:bg-orange-50/50 text-xs font-semibold transition-all'
-                      >
-                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                        </svg>
-                        Continue checkout without account
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
-                        </svg>
-                      </button>
-                    </>
-                  )}
                 </div>
               </div>
             </div>
