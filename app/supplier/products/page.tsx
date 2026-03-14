@@ -16,13 +16,15 @@ export const dynamic = 'force-dynamic'
 async function getInitialProducts(): Promise<ProductsResponse | null> {
   const session = await getServerSession(authOptions)
   const accessToken = (session?.user as { accessToken?: string } | undefined)?.accessToken
+  const supplierId = Number((session?.user as { supplierId?: number | null } | undefined)?.supplierId ?? 0)
 
   if (!accessToken) return null
 
   const apiUrl = process.env.LARAVEL_API_URL ?? process.env.NEXT_PUBLIC_LARAVEL_API_URL
   if (!apiUrl) return null
 
-  const res = await fetch(`${apiUrl}/api/admin/products?page=1&per_page=25`, {
+  const supplierQuery = supplierId > 0 ? `&supplier_id=${supplierId}` : ''
+  const res = await fetch(`${apiUrl}/api/admin/products?page=1&per_page=25${supplierQuery}`, {
     method: 'GET',
     headers: {
       Accept: 'application/json',

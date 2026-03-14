@@ -3,10 +3,9 @@
 import { CategoryProduct } from '@/libs/CategoryData';
 import { AnimatePresence, motion } from 'framer-motion';
 import Image from 'next/image';
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState } from 'react';
 import Loading from '../Loading';
 import { useRouter } from 'next/navigation';
-import { useCreateCheckoutSessionMutation } from '@/store/api/paymentApi';
 import { useSession } from 'next-auth/react';
 
 interface BuyNowOptionsModalProps {
@@ -54,14 +53,12 @@ const BuyNowOptionsModal = ({
   selectedSize,
   selectedType,
 }: BuyNowOptionsModalProps) => {
-  const { data: session, status } = useSession();
+  const { status } = useSession();
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>('gcash');
   const [selectedOnlineBank, setSelectedOnlineBank] = useState(onlineBankingOptions[0]);
   const [selectedCardBrand, setSelectedCardBrand] = useState(cardOptions[0]);
   const [notice, setNotice] = useState('');
-  const [createCheckoutSession, { isLoading: loading }] = useCreateCheckoutSessionMutation();
-
-  useEffect(() => { setNotice(''); }, [selectedMethod, selectedOnlineBank, selectedCardBrand]);
+  const loading = false;
 
   const subtotal = useMemo(() => product.price * quantity, [product.price, quantity]);
   const unitPv = useMemo(() => Number(product.prodpv ?? 0), [product.prodpv]);
@@ -70,66 +67,7 @@ const BuyNowOptionsModal = ({
   const total = subtotal + handlingFee;
   const router = useRouter();
 
-  const handleProceed = async () => {
-
-    if (status !== 'authenticated') {
-      onClose();
-      router.push('/login');
-      return;
-    }
-
-    if (selectedMethod === 'online_banking') {
-      setNotice(`Online Banking (${selectedOnlineBank}) is coming soon.`);
-      return;
-    }
-    if (selectedMethod === 'card') {
-      setNotice(`${selectedCardBrand}`);
-    }
-    try {
-      const customerEmail = session?.user?.email ?? undefined;
-      const customerName = session?.user?.name ?? undefined;
-      const data = await createCheckoutSession({
-        amount: total,
-        description: product.name,
-        payment_method: selectedMethod,
-        customer: customerEmail
-          ? {
-            email: customerEmail,
-            name: customerName,
-          }
-          : undefined,
-        order: {
-          product_name: product.name,
-          product_id: typeof product.id === 'number' ? product.id : undefined,
-          product_sku: product.sku ?? null,
-          product_pv: typeof product.prodpv === 'number' ? product.prodpv : 0,
-          product_image: product.image,
-          quantity,
-          selected_color: selectedColor ?? null,
-          selected_size: selectedSize ?? null,
-          selected_type: selectedType ?? null,
-        },
-      }).unwrap();
-
-      if (!data.checkout_url) {
-        alert('Failed to create checkout session');
-        return;
-      }
-      if (data.checkout_id) {
-        localStorage.setItem('last_checkout_id', data.checkout_id);
-      }
-      window.location.href = data.checkout_url;
-    } catch (error) {
-      console.error(error);
-      alert('Something went wrong');
-    }
-  };
-
-  const handleCustomerCheckout = () => {
-    if (status === 'authenticated') {
-      return;
-    }
-
+  const persistCheckoutDraft = () => {
     localStorage.setItem('guest_checkout', JSON.stringify({
       product,
       quantity,
@@ -138,8 +76,24 @@ const BuyNowOptionsModal = ({
       selectedType: selectedType ?? null,
       subtotal,
       handlingFee,
-      total
+      total,
     }));
+  }
+
+  const handleProceed = async () => {
+    if (status !== 'authenticated') {
+      onClose();
+      router.push('/login');
+      return;
+    }
+
+    persistCheckoutDraft();
+    onClose();
+    router.push('/checkout/customer');
+  };
+
+  const handleCustomerCheckout = () => {
+    persistCheckoutDraft();
     onClose();
     router.push('/checkout/customer')
   }
@@ -304,7 +258,10 @@ const BuyNowOptionsModal = ({
                         <button
                           key={method.id}
                           type="button"
-                          onClick={() => setSelectedMethod(method.id)}
+                          onClick={() => {
+                            setSelectedMethod(method.id);
+                            setNotice('');
+                          }}
                           className={`text-left rounded-2xl border-2 p-4 transition-all duration-200 flex items-center gap-3.5
                             ${selected
                               ? 'border-orange-400 bg-orange-50/70 shadow-sm shadow-orange-100'
@@ -371,7 +328,10 @@ const BuyNowOptionsModal = ({
                           <div className="grid grid-cols-2 gap-2">
                             {onlineBankingOptions.map((bank) => (
                               <button
-                                key={bank} type="button" onClick={() => setSelectedOnlineBank(bank)}
+                                key={bank} type="button" onClick={() => {
+                                  setSelectedOnlineBank(bank);
+                                  setNotice('');
+                                }}
                                 className={`px-3 py-2.5 rounded-xl text-xs font-bold border-2 transition-all duration-200
                                   ${selectedOnlineBank === bank
                                     ? 'bg-sky-600 text-white border-sky-600 shadow-sm shadow-sky-200'
@@ -403,7 +363,10 @@ const BuyNowOptionsModal = ({
                           <div className="flex gap-2">
                             {cardOptions.map((brand) => (
                               <button
-                                key={brand} type="button" onClick={() => setSelectedCardBrand(brand)}
+                                key={brand} type="button" onClick={() => {
+                                  setSelectedCardBrand(brand);
+                                  setNotice('');
+                                }}
                                 className={`flex-1 py-2.5 rounded-xl border-2 transition-all duration-200 flex items-center justify-center gap-2
                                   ${selectedCardBrand === brand
                                     ? 'border-slate-800 bg-slate-50 shadow-sm'

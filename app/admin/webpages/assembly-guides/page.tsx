@@ -1,5 +1,5 @@
 import { buildPageMetadata } from '@/app/seo'
-import WebPageItemsManager from '@/components/superAdmin/webpages/WebPageItemsManager'
+import AssemblyGuidesManager from '@/components/superAdmin/webpages/AssemblyGuidesManager'
 
 export const metadata = buildPageMetadata({
   title: 'Admin Web Pages Assembly Guides',
@@ -9,12 +9,5 @@ export const metadata = buildPageMetadata({
 })
 
 export default function AdminWebPagesAssemblyGuidesPage() {
-  return (
-    <WebPageItemsManager
-      type="home"
-      title="Web Pages / Assembly Guides"
-      description="Manage assembly guide cards and links."
-    />
-  )
+  return <AssemblyGuidesManager />
 }
-

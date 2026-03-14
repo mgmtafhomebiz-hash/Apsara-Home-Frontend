@@ -7,14 +7,15 @@ import TopBar from "@/components/layout/TopBar";
 import { GuestForm, FormErrors, CustomerCheckoutData, PaymentMethod } from "@/types/CustomerCheckout/types";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useSession } from "next-auth/react";
 import CustomerCheckoutContactForm from "./CustomerCheckoutContactForm";
 import CustomerCheckoutAddressForm from "./CustomerCheckoutAddressForm";
 import CustomerCheckoutPaymentMethod from "./CustomerCheckoutPaymentMethod";
 import CustomerCheckoutOrderSummary from "./CustomerCheckoutOrderSummary";
 import { useCreateCheckoutSessionMutation } from "@/store/api/paymentApi";
 import { getStoredReferralCode } from "@/libs/referral";
-
+import { useMeQuery } from "@/store/api/userApi";
 
 const defaultForm: GuestForm = {
     name: '',
@@ -28,7 +29,6 @@ const defaultForm: GuestForm = {
     zip: '',
     referred_by: '',
     voucher_coupon: ''
-
 }
 
 const REQUIRED_FIELD_ORDER: Array<keyof GuestForm> = [
@@ -42,38 +42,61 @@ const REQUIRED_FIELD_ORDER: Array<keyof GuestForm> = [
     'barangay',
 ];
 
+function readCheckoutDraft(): CustomerCheckoutData | null {
+    if (typeof window === 'undefined') return null;
+
+    try {
+        const raw = localStorage.getItem('guest_checkout');
+        return raw ? JSON.parse(raw) as CustomerCheckoutData : null;
+    } catch {
+        return null;
+    }
+}
+
+function readStoredReferral(): string {
+    if (typeof window === 'undefined') return '';
+    return getStoredReferralCode() || '';
+}
 
 const CustomerCheckoutMain = () => {
     const router = useRouter();
+    const { status } = useSession();
+    const isLoggedIn = status === 'authenticated';
+    const { data: meData } = useMeQuery(undefined, { skip: !isLoggedIn });
 
-    const [checkoutData, setCheckoutData] = useState<CustomerCheckoutData | null>(null);
-    const [form, setForm] = useState<GuestForm>(defaultForm);
+    const checkoutData = useMemo(() => readCheckoutDraft(), []);
+    const storedReferral = useMemo(() => readStoredReferral(), []);
+
+    const [formOverrides, setFormOverrides] = useState<GuestForm>(defaultForm);
     const [errors, setErrors] = useState<FormErrors>({});
     const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>('gcash');
     const [notice, setNotice] = useState('');
     const [createCheckoutSession, { isLoading: loading }] = useCreateCheckoutSessionMutation();
 
-    useEffect(() => {
-        const raw = localStorage.getItem('guest_checkout');
-        if (!raw) {
-            router.replace('/');
-            return;
-        }
-        try {
-            setCheckoutData(JSON.parse(raw));
-        } catch {
-            router.replace('/');
-        }
-    }, [router]);
+    const form = useMemo<GuestForm>(() => ({
+        ...defaultForm,
+        referred_by: storedReferral,
+        ...(isLoggedIn ? {
+            name: meData?.name || '',
+            email: meData?.email || '',
+            phone: meData?.phone || '',
+            address: meData?.address || '',
+            region: meData?.region || '',
+            barangay: meData?.barangay || '',
+            city: meData?.city || '',
+            province: meData?.province || '',
+            zip: meData?.zip_code || '',
+        } : {}),
+        ...formOverrides,
+    }), [formOverrides, isLoggedIn, meData, storedReferral]);
 
     useEffect(() => {
-        const storedReferral = getStoredReferralCode();
-        if (!storedReferral) return;
-        setForm((prev) => (prev.referred_by ? prev : { ...prev, referred_by: storedReferral }));
-    }, []);
+        if (checkoutData) return;
+        router.replace('/');
+    }, [checkoutData, router]);
 
     const setField = useCallback((key: keyof GuestForm, value: string) => {
-        setForm(prev => ({ ...prev, [key]: value }))
+        setFormOverrides(prev => ({ ...prev, [key]: value }))
         setErrors(prev => ({ ...prev, [key]: undefined }))
     }, [])
 
@@ -156,7 +179,7 @@ const CustomerCheckoutMain = () => {
             if (!data.checkout_url) {
                 alert('Failed to create checkout session')
                 return
-            };
+            }
 
             if (data.checkout_id) {
                 localStorage.setItem('last_checkout_id', data.checkout_id);
@@ -166,20 +189,21 @@ const CustomerCheckoutMain = () => {
         } catch {
             alert('Something went wrong');
         }
-
     }
 
-    if (!checkoutData) return (
-        <div className="min-h-screen flex items-center justify-center">
-            <Loading />
-        </div>
-    );
+    if (!checkoutData) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <Loading />
+            </div>
+        );
+    }
+
     return (
         <div className="min-h-screen bg-slate-50 flex flex-col">
             <TopBar />
             <Navbar />
             <main className="flex-1">
-                {/* HEADER */}
                 <div className="bg-linear-to-r from-orange-500 to-orange-600 shadow-sm">
                     <div className="container mx-auto px-4 py-4 flex items-center justify-between">
                         <div className="flex items-center gap-3">
@@ -189,8 +213,10 @@ const CustomerCheckoutMain = () => {
                                 </svg>
                             </div>
                             <div>
-                                <p className="text-orange-100 text-[10px] font-bold uppercase tracking-widest">AF Home · Secure Checkout</p>
-                                <h1 className="text-white font-bold text-lg leading-tight">Guest Checkout</h1>
+                                <p className="text-orange-100 text-[10px] font-bold uppercase tracking-widest">AF Home Secure Checkout</p>
+                                <h1 className="text-white font-bold text-lg leading-tight">
+                                    {isLoggedIn ? 'Checkout Details' : 'Guest Checkout'}
+                                </h1>
                             </div>
                         </div>
                         <Link href="/" className="flex items-center gap-1.5 text-white/80 hover:text-white text-xs font-semibold transition-colors bg-white/10 hover:bg-white/20 px-3 py-2 rounded-xl border border-white/20">
@@ -204,30 +230,31 @@ const CustomerCheckoutMain = () => {
 
                 <div className="container mx-auto px-4 py-8">
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-
-                        {/* LEFT FORMS */}
                         <div className="lg:col-span-2 space-y-5">
                             <CustomerCheckoutContactForm
                                 form={form}
                                 errors={errors}
                                 setField={setField}
                             />
-                            <CustomerCheckoutAddressForm 
+                            <CustomerCheckoutAddressForm
                                 form={form}
                                 errors={errors}
                                 setField={setField}
+                                isLoggedIn={isLoggedIn}
                             />
 
-                            <CustomerCheckoutPaymentMethod 
+                            <CustomerCheckoutPaymentMethod
                                 selectedMethod={selectedMethod}
-                                onSelect={(m) => { setSelectedMethod(m); setNotice('')}}
+                                onSelect={(m) => {
+                                    setSelectedMethod(m);
+                                    setNotice('');
+                                }}
                                 notice={notice}
                             />
                         </div>
 
-                        {/* RIGHT ORDER SUMMARY */}
                         <div className="lg:sticky lg:top-4">
-                            <CustomerCheckoutOrderSummary 
+                            <CustomerCheckoutOrderSummary
                                 checkoutData={checkoutData}
                                 loading={loading}
                                 onSubmit={handleSubmit}

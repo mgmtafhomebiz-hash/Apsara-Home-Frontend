@@ -44,6 +44,21 @@ export const suppliersApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['Suppliers'],
     }),
+    updateSupplier: builder.mutation<{ message: string; supplier: SupplierItem }, { id: number; data: CreateSupplierPayload }>({
+      query: ({ id, data }) => ({
+        url: `/api/admin/suppliers/${id}`,
+        method: 'PUT',
+        body: data,
+      }),
+      invalidatesTags: ['Suppliers'],
+    }),
+    deleteSupplier: builder.mutation<{ message: string }, number>({
+      query: (id) => ({
+        url: `/api/admin/suppliers/${id}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['Suppliers'],
+    }),
     inviteSupplierUser: builder.mutation<{ message: string }, InviteSupplierUserPayload>({
       query: (body) => ({
         url: '/api/admin/supplier-users',
@@ -58,5 +73,7 @@ export const suppliersApi = baseApi.injectEndpoints({
 export const {
   useGetSuppliersQuery,
   useCreateSupplierMutation,
+  useUpdateSupplierMutation,
+  useDeleteSupplierMutation,
   useInviteSupplierUserMutation,
 } = suppliersApi

@@ -1,6 +1,6 @@
 import { baseApi } from './baseApi'
 
-export type WebPageType = 'home' | 'banners' | 'announcements'
+export type WebPageType = 'home' | 'banners' | 'announcements' | 'assembly-guides'
 
 export interface WebPageItem {
   id: number
@@ -40,6 +40,11 @@ export interface PublicHomeContentResponse {
   generated_at: string
 }
 
+export interface PublicWebPageItemsResponse {
+  items: WebPageItem[]
+  generated_at: string
+}
+
 export interface UpsertWebPageItemPayload {
   key?: string
   title?: string
@@ -60,6 +65,13 @@ export const webPagesApi = baseApi.injectEndpoints({
     getPublicHomeContent: builder.query<PublicHomeContentResponse, void>({
       query: () => ({
         url: '/api/web-pages/home',
+        method: 'GET',
+      }),
+      providesTags: ['WebPages'],
+    }),
+    getPublicWebPageItems: builder.query<PublicWebPageItemsResponse, WebPageType>({
+      query: (type) => ({
+        url: `/api/web-pages/${type}`,
         method: 'GET',
       }),
       providesTags: ['WebPages'],
@@ -105,9 +117,9 @@ export const webPagesApi = baseApi.injectEndpoints({
 
 export const {
   useGetPublicHomeContentQuery,
+  useGetPublicWebPageItemsQuery,
   useGetAdminWebPageItemsQuery,
   useCreateAdminWebPageItemMutation,
   useUpdateAdminWebPageItemMutation,
   useDeleteAdminWebPageItemMutation,
 } = webPagesApi
-

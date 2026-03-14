@@ -16,6 +16,7 @@ import Toggle from './Toggle';
 import getActivityIcon from './GetActivityIcon';
 import EncashmentTab from './EncashmentTab';
 import WalletTab from './WalletTab';
+import { usePhAddress } from '@/hooks/usePhAddress';
 
 
 type ProfileFormState = {
@@ -23,6 +24,11 @@ type ProfileFormState = {
   email: string;
   phone: string;
   username: string;
+};
+
+type AddressFormState = {
+  address: string;
+  zipCode: string;
 };
 
 type PreferencesState = {
@@ -74,13 +80,15 @@ const ProfilePage = () => {
   const [treeStatusFilter, setTreeStatusFilter] = useState<TreeStatusFilter>('all');
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [isAvatarPreviewOpen, setIsAvatarPreviewOpen] = useState(false);
+  const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
+  const [addressForm, setAddressForm] = useState<AddressFormState>({ address: '', zipCode: '' });
   const msgTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const referralMsgTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mainContentRef = useRef<HTMLDivElement | null>(null);
+  const phAddress = usePhAddress();
 
   useEffect(() => {
     if (data || session) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setForm({
         name: data?.name ?? session?.user?.name ?? '',
         email: data?.email ?? session?.user?.email ?? '',
@@ -89,6 +97,52 @@ const ProfilePage = () => {
       });
     }
   }, [data, session]);
+
+  useEffect(() => {
+    if (!isAddressModalOpen) return;
+    setAddressForm({
+      address: data?.address ?? '',
+      zipCode: data?.zip_code ?? '',
+    });
+  }, [data?.address, data?.zip_code, isAddressModalOpen]);
+
+  useEffect(() => {
+    if (!isAddressModalOpen || !data?.region || phAddress.regions.length === 0 || phAddress.regionCode) return;
+    const region = phAddress.regions.find((item) => item.name === data.region);
+    if (region) {
+      phAddress.setRegion(region.code, region.name);
+    }
+  }, [data?.region, isAddressModalOpen, phAddress, phAddress.regions, phAddress.regionCode]);
+
+  useEffect(() => {
+    if (
+      !isAddressModalOpen ||
+      !data?.province ||
+      phAddress.noProvince ||
+      phAddress.provinces.length === 0 ||
+      phAddress.provinceCode
+    ) return;
+    const province = phAddress.provinces.find((item) => item.name === data.province);
+    if (province) {
+      phAddress.setProvince(province.code, province.name);
+    }
+  }, [data?.province, isAddressModalOpen, phAddress, phAddress.provinces, phAddress.provinceCode, phAddress.noProvince]);
+
+  useEffect(() => {
+    if (!isAddressModalOpen || !data?.city || phAddress.cities.length === 0 || phAddress.cityCode) return;
+    const city = phAddress.cities.find((item) => item.name === data.city);
+    if (city) {
+      phAddress.setCity(city.code, city.name);
+    }
+  }, [data?.city, isAddressModalOpen, phAddress, phAddress.cities, phAddress.cityCode]);
+
+  useEffect(() => {
+    if (!isAddressModalOpen || !data?.barangay || phAddress.address.barangay) return;
+    const barangay = phAddress.barangays.find((item) => item.name === data.barangay);
+    if (barangay) {
+      phAddress.setBarangay(barangay.name);
+    }
+  }, [data?.barangay, isAddressModalOpen, phAddress, phAddress.barangays, phAddress.address.barangay]);
 
   useEffect(() => {
     const requestedTab = searchParams.get('tab');
@@ -464,6 +518,43 @@ const ProfilePage = () => {
     }
   };
 
+  const handleOpenAddressModal = () => {
+    setProfileMsg(null);
+    phAddress.reset();
+    setIsAddressModalOpen(true);
+  };
+
+  const handleCloseAddressModal = () => {
+    phAddress.reset();
+    setIsAddressModalOpen(false);
+  };
+
+  const handleSaveAddress = async (e: FormEvent) => {
+    e.preventDefault();
+    setProfileMsg(null);
+
+    try {
+      await updateProfile({
+        name: form.name.trim(),
+        username: form.username.trim() || undefined,
+        phone: form.phone.trim() || undefined,
+        address: addressForm.address.trim() || undefined,
+        barangay: phAddress.address.barangay || undefined,
+        city: phAddress.address.city || undefined,
+        province: phAddress.noProvince ? (phAddress.address.region || undefined) : (phAddress.address.province || undefined),
+        region: phAddress.address.region || undefined,
+        zip_code: addressForm.zipCode.trim() || undefined,
+      }).unwrap();
+
+      setProfileMsg({ type: 'success', text: 'Address updated successfully.' });
+      phAddress.reset();
+      setIsAddressModalOpen(false);
+    } catch (err: unknown) {
+      const apiError = err as { data?: { message?: string } };
+      setProfileMsg({ type: 'error', text: apiError?.data?.message || 'Failed to update address.' });
+    }
+  };
+
   const handleAvatarUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -527,24 +618,31 @@ const ProfilePage = () => {
     { label: 'Loyalty', value: loyaltyTier, Icon: Icon.Shield, onClick: () => {} },
   ];
 
-  const addresses = [
-    {
-      id: 'default',
-      label: 'Default Shipping',
-      recipient: form.name || 'AF Home User',
-      phone: form.phone || 'No phone provided',
-      full: 'Unit 12B, Sapphire Residences, Quezon City, Metro Manila',
-      isDefault: true,
-    },
-    {
-      id: 'billing',
-      label: 'Billing Address',
-      recipient: form.name || 'AF Home User',
-      phone: form.phone || 'No phone provided',
-      full: 'Block 7 Lot 15, Magsaysay St., Cebu City, Cebu',
-      isDefault: false,
-    },
-  ];
+  const addresses = useMemo(() => {
+    const fullAddress = [
+      data?.address,
+      data?.barangay,
+      data?.city,
+      data?.province,
+      data?.region,
+      data?.zip_code,
+    ]
+      .filter(Boolean)
+      .join(', ');
+
+    if (!fullAddress) return [];
+
+    return [
+      {
+        id: 'default',
+        label: 'Default Shipping',
+        recipient: form.name || 'AF Home User',
+        phone: form.phone || 'No phone provided',
+        full: fullAddress,
+        isDefault: true,
+      },
+    ];
+  }, [data?.address, data?.barangay, data?.city, data?.province, data?.region, data?.zip_code, form.name, form.phone]);
 
   const recentActivity = [
     { title: 'Updated profile details', time: '2 hours ago' },
@@ -1065,14 +1163,16 @@ const ProfilePage = () => {
                       </div>
                       <button
                         type="button"
+                        onClick={handleOpenAddressModal}
                         className="inline-flex items-center gap-1.5 text-sm font-semibold text-orange-600 hover:text-orange-700 transition-colors px-3 py-1.5 rounded-lg hover:bg-orange-50"
                       >
-                        + Add New
+                        {addresses.length ? '+ Edit Address' : '+ Add Address'}
                       </button>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {addresses.map((addr) => (
+                    {addresses.length ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {addresses.map((addr) => (
                         <div key={addr.id} className="group relative rounded-xl border border-slate-100 bg-slate-50 hover:border-orange-200 hover:bg-orange-50/30 p-4 transition-colors">
                           <div className="flex items-start justify-between gap-2">
                             <div className="flex items-center gap-2">
@@ -1082,11 +1182,8 @@ const ProfilePage = () => {
                               )}
                             </div>
                             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <button type="button" className="p-1 rounded-lg text-slate-400 hover:text-orange-600 hover:bg-orange-100 transition-colors">
+                              <button type="button" onClick={handleOpenAddressModal} className="p-1 rounded-lg text-slate-400 hover:text-orange-600 hover:bg-orange-100 transition-colors">
                                 <Icon.Edit className="h-3.5 w-3.5" />
-                              </button>
-                              <button type="button" className="p-1 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors">
-                                <Icon.Trash className="h-3.5 w-3.5" />
                               </button>
                             </div>
                           </div>
@@ -1094,8 +1191,14 @@ const ProfilePage = () => {
                           <p className="text-xs text-slate-500">{addr.phone}</p>
                           <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">{addr.full}</p>
                         </div>
-                      ))}
-                    </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/70 px-4 py-8 text-center">
+                        <p className="text-sm font-semibold text-slate-700">No saved address yet</p>
+                        <p className="mt-1 text-xs text-slate-500">Add your default shipping address so checkout and verification can be filled faster.</p>
+                      </div>
+                    )}
                   </div>
                 </motion.div>
               )}
@@ -1585,6 +1688,161 @@ const ProfilePage = () => {
       </div>
 
       <AnimatePresence>
+        {isAddressModalOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm p-4"
+            onClick={handleCloseAddressModal}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96, y: 8 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.96, y: 8 }}
+              transition={{ duration: 0.18 }}
+              className="mx-auto mt-8 max-w-3xl rounded-2xl bg-white p-5 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="mb-5 flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-orange-500">Address</p>
+                  <h3 className="mt-1 text-lg font-bold text-slate-900">Add or Update Address</h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleCloseAddressModal}
+                  className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+                >
+                  Close
+                </button>
+              </div>
+
+              <form onSubmit={handleSaveAddress} className="space-y-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">Street / House No.</label>
+                  <input
+                    type="text"
+                    value={addressForm.address}
+                    onChange={(e) => setAddressForm((prev) => ({ ...prev, address: e.target.value }))}
+                    className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300"
+                    placeholder="House no., street, building, unit"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">Region</label>
+                    <select
+                      value={phAddress.regionCode}
+                      onChange={(e) => {
+                        const option = e.target.options[e.target.selectedIndex];
+                        phAddress.setRegion(e.target.value, option.text);
+                      }}
+                      className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300"
+                    >
+                      <option value="">Select Region</option>
+                      {phAddress.regions.map((region) => (
+                        <option key={region.code} value={region.code}>{region.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {!phAddress.noProvince ? (
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">Province</label>
+                      <select
+                        value={phAddress.provinceCode}
+                        disabled={!phAddress.regionCode || phAddress.loadingProvinces}
+                        onChange={(e) => {
+                          const option = e.target.options[e.target.selectedIndex];
+                          phAddress.setProvince(e.target.value, option.text);
+                        }}
+                        className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300 disabled:bg-slate-50 disabled:text-slate-400"
+                      >
+                        <option value="">{phAddress.loadingProvinces ? 'Loading provinces...' : 'Select Province'}</option>
+                        {phAddress.provinces.map((province) => (
+                          <option key={province.code} value={province.code}>{province.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  ) : (
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">Province</label>
+                      <input
+                        value={phAddress.address.region}
+                        disabled
+                        className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm text-slate-400 bg-slate-50"
+                      />
+                    </div>
+                  )}
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">City / Municipality</label>
+                    <select
+                      value={phAddress.cityCode}
+                      disabled={phAddress.noProvince ? !phAddress.regionCode : (!phAddress.provinceCode || phAddress.loadingCities)}
+                      onChange={(e) => {
+                        const option = e.target.options[e.target.selectedIndex];
+                        phAddress.setCity(e.target.value, option.text);
+                      }}
+                      className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300 disabled:bg-slate-50 disabled:text-slate-400"
+                    >
+                      <option value="">{phAddress.loadingCities || phAddress.loadingProvinces ? 'Loading cities...' : 'Select City / Municipality'}</option>
+                      {phAddress.cities.map((city) => (
+                        <option key={city.code} value={city.code}>{city.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">Barangay</label>
+                    <select
+                      value={phAddress.address.barangay}
+                      disabled={!phAddress.cityCode || phAddress.loadingBarangays}
+                      onChange={(e) => phAddress.setBarangay(e.target.value)}
+                      className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300 disabled:bg-slate-50 disabled:text-slate-400"
+                    >
+                      <option value="">{phAddress.loadingBarangays ? 'Loading barangays...' : 'Select Barangay'}</option>
+                      {phAddress.barangays.map((barangay) => (
+                        <option key={barangay.code} value={barangay.name}>{barangay.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="space-y-1.5 md:col-span-2">
+                    <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">ZIP Code</label>
+                    <input
+                      type="text"
+                      value={addressForm.zipCode}
+                      onChange={(e) => setAddressForm((prev) => ({ ...prev, zipCode: e.target.value }))}
+                      className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300"
+                      placeholder="ZIP Code"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={handleCloseAddressModal}
+                    className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSaving}
+                    className="rounded-xl bg-orange-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-orange-600 disabled:opacity-50"
+                  >
+                    {isSaving ? 'Saving...' : 'Save Address'}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+
         {isAvatarPreviewOpen && data?.avatar_url && (
           <motion.div
             initial={{ opacity: 0 }}

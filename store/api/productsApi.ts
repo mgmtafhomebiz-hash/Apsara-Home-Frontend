@@ -2,6 +2,7 @@ import { baseApi } from './baseApi'
 
 export interface Product {
   id: number
+  supplierId?: number
   name: string
   description?: string | null
   specifications?: string | null
@@ -112,6 +113,7 @@ interface ProductsQueryParams {
   search?: string
   status?: string
   catId?: number
+  supplierId?: number
 }
 
 const toStringArray = (value: unknown): string[] => {
@@ -229,6 +231,7 @@ export const productsApi = baseApi.injectEndpoints({
           q: params?.search,
           status: params?.status,
           cat_id: params?.catId,
+          supplier_id: params?.supplierId,
         },
       }),
       transformResponse: (response: ProductsResponse) => normalizeProductsResponse(response),

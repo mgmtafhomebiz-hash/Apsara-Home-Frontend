@@ -10,6 +10,7 @@ interface ProductsToolbarProps {
   catId: number | undefined
   onCatId: (v: number | undefined) => void
   resultCount: number
+  supplierId?: number
 }
 
 const STATUS_TABS = [
@@ -18,8 +19,12 @@ const STATUS_TABS = [
   { value: '0', label: 'Inactive' },
 ]
 
-export default function ProductsToolbar({ search, onSearch, status, onStatus, catId, onCatId, resultCount }: ProductsToolbarProps) {
-  const { data: categoriesData } = useGetCategoriesQuery()
+export default function ProductsToolbar({ search, onSearch, status, onStatus, catId, onCatId, resultCount, supplierId }: ProductsToolbarProps) {
+  const { data: categoriesData } = useGetCategoriesQuery(
+    supplierId && supplierId > 0
+      ? { supplier_id: supplierId, used_only: true }
+      : undefined
+  )
   const categories = categoriesData?.categories ?? []
 
   return (

@@ -1,11 +1,19 @@
 'use client';
 
+import Link from "next/link";
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import Loading from '@/components/Loading'
 import { showErrorToast, showSuccessToast } from '@/libs/toast'
+
+const REMEMBER_USER_EMAIL_KEY = 'afhome_user_login'
+
+function getRememberedUserEmail() {
+    if (typeof window === 'undefined') return ''
+    return window.localStorage.getItem(REMEMBER_USER_EMAIL_KEY) ?? ''
+}
 
 const EyeIcon = ({ open }: { open: boolean }) => open
     ? <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" /><line x1="1" y1="1" x2="23" y2="23" /></svg>
@@ -20,9 +28,11 @@ const LoginForm = ({ onSwitchToSignUp }: LoginFormProps) => {
     const [showPass, setShowPass] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
+    const rememberedEmail = getRememberedUserEmail()
     const [form, setForm] = useState({
-        email: '',
+        email: rememberedEmail,
         password: '',
+        rememberMe: rememberedEmail !== '',
     })
 
     const set = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) =>
@@ -44,6 +54,14 @@ const LoginForm = ({ onSwitchToSignUp }: LoginFormProps) => {
         setIsLoading(false)
 
         if (result?.ok) {
+            if (typeof window !== 'undefined') {
+                if (form.rememberMe) {
+                    window.localStorage.setItem(REMEMBER_USER_EMAIL_KEY, form.email.trim())
+                } else {
+                    window.localStorage.removeItem(REMEMBER_USER_EMAIL_KEY)
+                }
+            }
+
             showSuccessToast('Login successful. Welcome back!')
             router.replace('/shop');
         } else {
@@ -71,11 +89,11 @@ const LoginForm = ({ onSwitchToSignUp }: LoginFormProps) => {
                 )}
                 <div>
                     <label className="block text-xs font-semibold text-white mb-1.5">
-                        Email
+                        Username or Email
                     </label>
                     <input
                         type="text"
-                        placeholder="Enter your email"
+                        placeholder="Enter your username or email"
                         value={form.email}
                         onChange={set('email')}
                         className="w-full px-4 py-3 bg-white/15 border border-white/25 rounded-xl text-sm text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-orange-400/60 focus:bg-white/20 transition-all"
@@ -106,15 +124,20 @@ const LoginForm = ({ onSwitchToSignUp }: LoginFormProps) => {
 
                 <div className="flex items-center justify-between text-xs">
                     <label className="flex items-center gap-2 text-white/70 cursor-pointer">
-                        <input type="checkbox" className="accent-orange-500 w-3.5" />
+                        <input
+                            type="checkbox"
+                            checked={form.rememberMe}
+                            onChange={(e) => setForm((prev) => ({ ...prev, rememberMe: e.target.checked }))}
+                            className="accent-orange-500 w-3.5"
+                        />
                         Remember me
                     </label>
-                    <button
-                        type="button"
+                    <Link
+                        href="/forgot-password"
                         className="text-orange-400 hover:text-orange-300 font-semibold transition-colors"
                     >
                         Forgot Password
-                    </button>
+                    </Link>
                 </div>
 
                 <button

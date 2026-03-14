@@ -21,6 +21,7 @@ interface UsePhAddressReturn {
     setProvince: (code: string, name: string) => void
     setCity: (code: string, name: string) => void
     setBarangay: (name: string) => void
+    reset: () => void
     address: {
         region: string
         province: string
@@ -98,6 +99,7 @@ export function usePhAddress(): UsePhAddressReturn {
     // Load provinces (or cities directly) when region changes.
     useEffect(() => {
         if (!regionCode) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setLoadingProvinces(false)
             return
         }
@@ -143,6 +145,7 @@ export function usePhAddress(): UsePhAddressReturn {
     // Load cities when province changes.
     useEffect(() => {
         if (!provinceCode) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setLoadingCities(false)
             return
         }
@@ -168,6 +171,7 @@ export function usePhAddress(): UsePhAddressReturn {
     // Load barangays when city changes.
     useEffect(() => {
         if (!cityCode) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setLoadingBarangays(false)
             return
         }
@@ -211,6 +215,22 @@ export function usePhAddress(): UsePhAddressReturn {
         setAddress((prev) => ({ ...prev, barangay: name }))
     }
 
+    const reset = () => {
+        setRegionCode('')
+        setProvinceCode('')
+        setCityCode('')
+        setNoProvince(false)
+        setProvinces([])
+        setCities([])
+        setBarangays([])
+        setAddress({
+            region: '',
+            province: '',
+            city: '',
+            barangay: '',
+        })
+    }
+
     return {
         regions,
         provinces,
@@ -227,6 +247,7 @@ export function usePhAddress(): UsePhAddressReturn {
         setProvince,
         setCity,
         setBarangay,
+        reset,
         address,
     }
 }

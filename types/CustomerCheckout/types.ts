@@ -12,6 +12,20 @@ export interface GuestForm {
   voucher_coupon: string;
 }
 
+export interface CheckoutAddressDraft {
+  full_name: string;
+  phone: string;
+  address: string;
+  region: string;
+  province: string;
+  city: string;
+  barangay: string;
+  zip_code: string;
+  address_type: string;
+  notes: string;
+  set_default: boolean;
+}
+
 export interface CustomerCheckoutProduct {
   id?: number;
   sku?: string;

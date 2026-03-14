@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useMeQuery } from '@/store/api/userApi';
 import {
@@ -12,6 +12,7 @@ import {
   useGetEncashmentRequestsQuery,
   useSubmitEncashmentVerificationRequestMutation,
 } from '@/store/api/encashmentApi';
+import { usePhAddress } from '@/hooks/usePhAddress';
 
 const money = new Intl.NumberFormat('en-PH', {
   style: 'currency',
@@ -151,6 +152,8 @@ const EncashmentTab = () => {
     idNumber: '',
     contactNumber: '',
     addressLine: '',
+    region: '',
+    barangay: '',
     city: '',
     province: '',
     postalCode: '',
@@ -165,6 +168,7 @@ const EncashmentTab = () => {
     idBack: boolean;
     selfie: boolean;
   }>({ idFront: false, idBack: false, selfie: false });
+  const phVerification = usePhAddress();
 
   const rows = useMemo(() => data?.requests ?? [], [data?.requests]);
   const methods = useMemo<PaymentMethod[]>(
@@ -194,6 +198,89 @@ const EncashmentTab = () => {
   const needsVerification = Boolean(eligibility && !eligibility.has_active_account);
   const isVerificationPending = verification?.status === 'pending_review';
   const showMessageInVerificationCard = Boolean(message) && needsVerification && !isVerificationPending;
+
+  useEffect(() => {
+    if (!needsVerification) return;
+    setVerificationForm((prev) => ({
+      ...prev,
+      fullName: prev.fullName || meData?.name || '',
+      contactNumber: prev.contactNumber || meData?.phone || '',
+      addressLine: prev.addressLine || meData?.address || '',
+      region: prev.region || meData?.region || '',
+      barangay: prev.barangay || meData?.barangay || '',
+      city: prev.city || meData?.city || '',
+      province: prev.province || meData?.province || '',
+      postalCode: prev.postalCode || meData?.zip_code || '',
+    }));
+  }, [
+    meData?.address,
+    meData?.barangay,
+    meData?.city,
+    meData?.name,
+    meData?.phone,
+    meData?.province,
+    meData?.region,
+    meData?.zip_code,
+    needsVerification,
+  ]);
+
+  useEffect(() => {
+    if (!needsVerification || !verificationForm.region || phVerification.regions.length === 0 || phVerification.regionCode) return;
+    const region = phVerification.regions.find((item) => item.name === verificationForm.region);
+    if (region) {
+      phVerification.setRegion(region.code, region.name);
+    }
+  }, [needsVerification, verificationForm.region, phVerification.regions, phVerification.regionCode]);
+
+  useEffect(() => {
+    if (
+      !needsVerification ||
+      !verificationForm.province ||
+      phVerification.noProvince ||
+      phVerification.provinces.length === 0 ||
+      phVerification.provinceCode
+    ) return;
+    const province = phVerification.provinces.find((item) => item.name === verificationForm.province);
+    if (province) {
+      phVerification.setProvince(province.code, province.name);
+    }
+  }, [needsVerification, verificationForm.province, phVerification.noProvince, phVerification.provinces, phVerification.provinceCode]);
+
+  useEffect(() => {
+    if (!needsVerification || !verificationForm.city || phVerification.cities.length === 0 || phVerification.cityCode) return;
+    const city = phVerification.cities.find((item) => item.name === verificationForm.city);
+    if (city) {
+      phVerification.setCity(city.code, city.name);
+    }
+  }, [needsVerification, verificationForm.city, phVerification.cities, phVerification.cityCode]);
+
+  useEffect(() => {
+    if (!needsVerification || !verificationForm.barangay || phVerification.address.barangay) return;
+    const barangay = phVerification.barangays.find((item) => item.name === verificationForm.barangay);
+    if (barangay) {
+      phVerification.setBarangay(barangay.name);
+    }
+  }, [needsVerification, verificationForm.barangay, phVerification.barangays, phVerification.address.barangay]);
+
+  useEffect(() => {
+    if (!needsVerification) return;
+    setVerificationForm((prev) => ({
+      ...prev,
+      region: phVerification.address.region || prev.region,
+      province: phVerification.noProvince
+        ? (phVerification.address.region || prev.province)
+        : (phVerification.address.province || prev.province),
+      city: phVerification.address.city || prev.city,
+      barangay: phVerification.address.barangay || prev.barangay,
+    }));
+  }, [
+    needsVerification,
+    phVerification.address.region,
+    phVerification.address.province,
+    phVerification.address.city,
+    phVerification.address.barangay,
+    phVerification.noProvince,
+  ]);
 
   const summary = useMemo(() => {
     return rows.reduce(
@@ -422,18 +509,27 @@ const EncashmentTab = () => {
       return;
     }
     try {
+      const composedAddressLine = [
+        verificationForm.addressLine.trim(),
+        verificationForm.barangay.trim(),
+      ].filter(Boolean).join(', ');
+      const composedNotes = [
+        verificationForm.notes.trim(),
+        verificationForm.region.trim() ? `Region: ${verificationForm.region.trim()}` : '',
+      ].filter(Boolean).join('\n');
+
       const res = await submitVerificationRequest({
         full_name: verificationForm.fullName.trim(),
         birth_date: verificationForm.birthDate || undefined,
         id_type: verificationForm.idType,
         id_number: verificationForm.idNumber.trim() || undefined,
         contact_number: verificationForm.contactNumber.trim() || undefined,
-        address_line: verificationForm.addressLine.trim() || undefined,
+        address_line: composedAddressLine || undefined,
         city: verificationForm.city.trim() || undefined,
         province: verificationForm.province.trim() || undefined,
         postal_code: verificationForm.postalCode.trim() || undefined,
         country: verificationForm.country.trim() || undefined,
-        notes: verificationForm.notes.trim() || undefined,
+        notes: composedNotes || undefined,
         id_front_url: verificationForm.idFrontUrl,
         id_back_url: verificationForm.idBackUrl || undefined,
         selfie_url: verificationForm.selfieUrl,
@@ -893,20 +989,70 @@ const EncashmentTab = () => {
               className="w-full rounded-xl border border-amber-200 px-3.5 py-2.5 text-sm text-amber-900 bg-white/90 focus:outline-none focus:ring-2 focus:ring-amber-200"
               placeholder="Address Line"
             />
-            <input
-              type="text"
-              value={verificationForm.city}
-              onChange={(e) => setVerificationForm((prev) => ({ ...prev, city: e.target.value }))}
+            <select
+              value={phVerification.regionCode}
+              onChange={(e) => {
+                const option = e.target.options[e.target.selectedIndex];
+                phVerification.setRegion(e.target.value, option.text);
+              }}
               className="w-full rounded-xl border border-amber-200 px-3.5 py-2.5 text-sm text-amber-900 bg-white/90 focus:outline-none focus:ring-2 focus:ring-amber-200"
-              placeholder="City"
-            />
-            <input
-              type="text"
-              value={verificationForm.province}
-              onChange={(e) => setVerificationForm((prev) => ({ ...prev, province: e.target.value }))}
-              className="w-full rounded-xl border border-amber-200 px-3.5 py-2.5 text-sm text-amber-900 bg-white/90 focus:outline-none focus:ring-2 focus:ring-amber-200"
-              placeholder="Province"
-            />
+            >
+              <option value="">Select Region</option>
+              {phVerification.regions.map((region) => (
+                <option key={region.code} value={region.code}>{region.name}</option>
+              ))}
+            </select>
+            {!phVerification.noProvince ? (
+              <select
+                value={phVerification.provinceCode}
+                disabled={!phVerification.regionCode || phVerification.loadingProvinces}
+                onChange={(e) => {
+                  const option = e.target.options[e.target.selectedIndex];
+                  phVerification.setProvince(e.target.value, option.text);
+                }}
+                className="w-full rounded-xl border border-amber-200 px-3.5 py-2.5 text-sm text-amber-900 bg-white/90 focus:outline-none focus:ring-2 focus:ring-amber-200 disabled:bg-slate-100 disabled:text-slate-400"
+              >
+                <option value="">{phVerification.loadingProvinces ? 'Loading provinces...' : 'Select Province'}</option>
+                {phVerification.provinces.map((province) => (
+                  <option key={province.code} value={province.code}>{province.name}</option>
+                ))}
+              </select>
+            ) : (
+              <input
+                type="text"
+                value={verificationForm.province}
+                disabled
+                className="w-full rounded-xl border border-amber-200 px-3.5 py-2.5 text-sm text-slate-400 bg-slate-100"
+                placeholder="Province"
+              />
+            )}
+            <select
+              value={phVerification.cityCode}
+              disabled={phVerification.noProvince ? !phVerification.regionCode : (!phVerification.provinceCode || phVerification.loadingCities)}
+              onChange={(e) => {
+                const option = e.target.options[e.target.selectedIndex];
+                phVerification.setCity(e.target.value, option.text);
+              }}
+              className="w-full rounded-xl border border-amber-200 px-3.5 py-2.5 text-sm text-amber-900 bg-white/90 focus:outline-none focus:ring-2 focus:ring-amber-200 disabled:bg-slate-100 disabled:text-slate-400"
+            >
+              <option value="">{phVerification.loadingCities || phVerification.loadingProvinces ? 'Loading cities...' : 'Select City / Municipality'}</option>
+              {phVerification.cities.map((city) => (
+                <option key={city.code} value={city.code}>{city.name}</option>
+              ))}
+            </select>
+            <select
+              value={verificationForm.barangay}
+              disabled={!phVerification.cityCode || phVerification.loadingBarangays}
+              onChange={(e) => {
+                phVerification.setBarangay(e.target.value);
+              }}
+              className="w-full rounded-xl border border-amber-200 px-3.5 py-2.5 text-sm text-amber-900 bg-white/90 focus:outline-none focus:ring-2 focus:ring-amber-200 disabled:bg-slate-100 disabled:text-slate-400"
+            >
+              <option value="">{phVerification.loadingBarangays ? 'Loading barangays...' : 'Select Barangay'}</option>
+              {phVerification.barangays.map((barangay) => (
+                <option key={barangay.code} value={barangay.name}>{barangay.name}</option>
+              ))}
+            </select>
             <input
               type="text"
               value={verificationForm.postalCode}

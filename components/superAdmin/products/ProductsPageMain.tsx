@@ -42,6 +42,9 @@ function StatCard({
 
 export default function ProductsPageMain({ initialData = null }: ProductsPageMainProps) {
   const { data: session, status: authStatus } = useSession()
+  const role = String(session?.user?.role ?? '').toLowerCase()
+  const isSupplierPortal = role === 'supplier'
+  const linkedSupplierId = Number(session?.user?.supplierId ?? 0)
   const [search,          setSearch]          = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [status,          setStatus]          = useState('')
@@ -64,13 +67,28 @@ export default function ProductsPageMain({ initialData = null }: ProductsPageMai
   const skip     = authStatus !== 'authenticated' || !hasToken
 
   const { data, isLoading, isFetching, isError, refetch: refetchProducts } = useGetProductsQuery(
-    { page, perPage, search: debouncedSearch || undefined, status: status || undefined, catId },
+    {
+      page,
+      perPage,
+      search: debouncedSearch || undefined,
+      status: status || undefined,
+      catId,
+      supplierId: isSupplierPortal && linkedSupplierId > 0 ? linkedSupplierId : undefined,
+    },
     { skip },
   )
 
   /* Lightweight count queries for stats */
-  const { data: activeCountData, refetch: refetchActiveCount }   = useGetProductsQuery({ perPage: 1, status: '1' }, { skip })
-  const { data: inactiveCountData, refetch: refetchInactiveCount } = useGetProductsQuery({ perPage: 1, status: '0' }, { skip })
+  const { data: activeCountData, refetch: refetchActiveCount }   = useGetProductsQuery({
+    perPage: 1,
+    status: '1',
+    supplierId: isSupplierPortal && linkedSupplierId > 0 ? linkedSupplierId : undefined,
+  }, { skip })
+  const { data: inactiveCountData, refetch: refetchInactiveCount } = useGetProductsQuery({
+    perPage: 1,
+    status: '0',
+    supplierId: isSupplierPortal && linkedSupplierId > 0 ? linkedSupplierId : undefined,
+  }, { skip })
 
   const [deleteProduct] = useDeleteProductMutation()
 
@@ -93,16 +111,31 @@ export default function ProductsPageMain({ initialData = null }: ProductsPageMai
   }
 
   const products = useMemo(() => {
-    if (data?.products) return data.products
-    if (useInitialData) return initialData?.products ?? []
-    return []
-  }, [data?.products, initialData?.products, useInitialData])
+    const rawProducts = data?.products
+      ? data.products
+      : (useInitialData ? (initialData?.products ?? []) : [])
+
+    if (!isSupplierPortal || linkedSupplierId <= 0) {
+      return rawProducts
+    }
+
+    return rawProducts.filter((product) => Number(product.supplierId ?? 0) === linkedSupplierId)
+  }, [data?.products, initialData?.products, isSupplierPortal, linkedSupplierId, useInitialData])
 
   const meta = useMemo(() => {
-    if (data?.meta) return data.meta
-    if (useInitialData) return initialData?.meta
-    return undefined
-  }, [data?.meta, initialData?.meta, useInitialData])
+    const rawMeta = data?.meta ?? (useInitialData ? initialData?.meta : undefined)
+
+    if (!isSupplierPortal || linkedSupplierId <= 0 || !rawMeta) {
+      return rawMeta
+    }
+
+    return {
+      ...rawMeta,
+      total: products.length,
+      from: products.length > 0 ? 1 : 0,
+      to: products.length,
+    }
+  }, [data?.meta, initialData?.meta, isSupplierPortal, linkedSupplierId, products.length, useInitialData])
 
   /* Low-stock count from current page */
   const lowStockCount = useMemo(() => products.filter(p => p.qty > 0 && p.qty <= 5).length, [products])
@@ -236,6 +269,7 @@ export default function ProductsPageMain({ initialData = null }: ProductsPageMai
           status={status} onStatus={handleStatus}
           catId={catId}   onCatId={handleCatId}
           resultCount={meta?.total ?? products.length}
+          supplierId={isSupplierPortal && linkedSupplierId > 0 ? linkedSupplierId : undefined}
         />
       </motion.div>
 

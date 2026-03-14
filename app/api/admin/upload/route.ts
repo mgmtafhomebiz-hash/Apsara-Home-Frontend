@@ -26,19 +26,31 @@ export async function POST(req: NextRequest) {
     const formData = await req.formData()
     const file = formData.get('file') as File | null
     const folderType = String(formData.get('folder') ?? 'products').toLowerCase()
+    const assetType = String(formData.get('asset_type') ?? 'image').toLowerCase()
 
     if (!file) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 })
     }
 
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+    const isPdf = assetType === 'pdf'
+    const allowedImageTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+    const allowedPdfTypes = ['application/pdf']
+    const allowedTypes = isPdf ? allowedPdfTypes : allowedImageTypes
     if (!allowedTypes.includes(file.type)) {
-      return NextResponse.json({ error: 'Invalid file type. Only JPEG, PNG, WEBP, and GIF are allowed.' }, { status: 400 })
+      return NextResponse.json({
+        error: isPdf
+          ? 'Invalid file type. Only PDF files are allowed.'
+          : 'Invalid file type. Only JPEG, PNG, WEBP, and GIF are allowed.',
+      }, { status: 400 })
     }
 
-    const maxSizeBytes = 5 * 1024 * 1024 // 5MB
+    const maxSizeBytes = isPdf ? 20 * 1024 * 1024 : 5 * 1024 * 1024
     if (file.size > maxSizeBytes) {
-      return NextResponse.json({ error: 'File too large. Maximum size is 5MB.' }, { status: 400 })
+      return NextResponse.json({
+        error: isPdf
+          ? 'File too large. Maximum size is 20MB for PDF files.'
+          : 'File too large. Maximum size is 5MB.',
+      }, { status: 400 })
     }
 
     const arrayBuffer = await file.arrayBuffer()
@@ -50,16 +62,24 @@ export async function POST(req: NextRequest) {
       encashment: 'apsara/encashment/proofs',
       verification: 'apsara/verification',
       profile: 'apsara/profile',
+      'assembly-guides': 'apsara/assembly-guides',
     }
     const folder = folderMap[folderType] ?? folderMap.products
 
-    const result = await cloudinary.uploader.upload(base64, {
-      folder,
-      transformation: [
-        { width: 1200, height: 1200, crop: 'limit' },
-        { quality: 'auto', fetch_format: 'auto' },
-      ],
-    })
+    const result = isPdf
+      ? await cloudinary.uploader.upload(base64, {
+          folder,
+          resource_type: 'raw',
+          use_filename: true,
+          unique_filename: true,
+        })
+      : await cloudinary.uploader.upload(base64, {
+          folder,
+          transformation: [
+            { width: 1200, height: 1200, crop: 'limit' },
+            { quality: 'auto', fetch_format: 'auto' },
+          ],
+        })
 
     return NextResponse.json({ url: result.secure_url, public_id: result.public_id })
   } catch (err: unknown) {
