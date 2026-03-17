@@ -88,8 +88,6 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange }
     const [selectedColor, setSelectedColor] = useState('');
     const [added, setAdded] = useState(false);
     const [selectedSize, setSelectedSize] = useState('');
-    const [selectedGroupKey, setSelectedGroupKey] = useState('');
-    const [variantClicked, setVariantClicked] = useState(false);
     const [wishlisted, setWishlisted] = useState(false);
     const [buyOptionsOpen, setBuyOptionsOpen] = useState(false);
     const [paymentLogoMissing, setPaymentLogoMissing] = useState(false);
@@ -110,75 +108,38 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange }
         [product.variants],
     );
 
-    const variantGroups = useMemo<VariantGroup[]>(() => {
-        const map = new Map<string, VariantOption[]>();
-        variantOptions.forEach((variant, index) => {
-            const key = buildVariantGroupKey(variant, index);
-            const current = map.get(key) ?? [];
-            map.set(key, [...current, variant]);
-        });
-        return Array.from(map.entries()).map(([key, variants]) => ({ key, variants }));
-    }, [variantOptions]);
-
-    const selectedGroup = useMemo(() => {
-        if (variantGroups.length === 0) return undefined;
-        return variantGroups.find((group) => group.key === selectedGroupKey) ?? variantGroups[0];
-    }, [variantGroups, selectedGroupKey]);
-
-    useEffect(() => {
-        if (variantGroups.length === 0) {
-            setSelectedGroupKey('');
-            setSelectedColor('');
-            setSelectedSize('');
-            setVariantClicked(false);
-            return;
-        }
-        const exists = variantGroups.some((group) => group.key === selectedGroupKey);
-        if (!exists) {
-            setSelectedGroupKey(variantGroups[0].key);
-            setSelectedColor('');
-            setSelectedSize('');
-        }
-    }, [variantGroups, selectedGroupKey]);
-
     const colorOptions = useMemo(() => {
         const map = new Map<string, string | undefined>();
-        (selectedGroup?.variants ?? []).forEach((variant) => {
+        variantOptions.forEach((variant) => {
             if (!variant.color) return;
             map.set(variant.color, variant.colorHex);
         });
         return Array.from(map.entries()).map(([name, hex]) => ({ name, hex }));
-    }, [selectedGroup]);
+    }, [variantOptions]);
 
     const sizeOptions = useMemo(() => {
         return Array.from(
-            new Set((selectedGroup?.variants ?? []).map((variant) => variant.size).filter((size): size is string => Boolean(size)))
+            new Set(variantOptions.map((variant) => variant.size).filter((size): size is string => Boolean(size)))
         );
-    }, [selectedGroup]);
+    }, [variantOptions]);
 
     const effectiveSelectedColor = selectedColor || colorOptions[0]?.name || '';
     const effectiveSelectedSize = selectedSize || sizeOptions[0] || '';
 
     const selectedVariant = useMemo(() => {
-        const scopedVariants = selectedGroup?.variants ?? [];
-        if (scopedVariants.length === 0) return undefined;
+        if (variantOptions.length === 0) return undefined;
         return (
-            scopedVariants.find((variant) => variant.color === effectiveSelectedColor && variant.size === effectiveSelectedSize)
-            ?? scopedVariants.find((variant) => variant.color === effectiveSelectedColor)
-            ?? scopedVariants.find((variant) => variant.size === effectiveSelectedSize)
-            ?? scopedVariants[0]
+            variantOptions.find((variant) => variant.color === effectiveSelectedColor && variant.size === effectiveSelectedSize)
+            ?? variantOptions.find((variant) => variant.color === effectiveSelectedColor)
+            ?? variantOptions.find((variant) => variant.size === effectiveSelectedSize)
+            ?? variantOptions[0]
         );
-    }, [selectedGroup, effectiveSelectedColor, effectiveSelectedSize]);
+    }, [variantOptions, effectiveSelectedColor, effectiveSelectedSize]);
 
-    const getVariantLabel = (variant: VariantOption, index: number) => {
-        if (variant.name && variant.name.trim().length > 0) return variant.name.trim();
-        const parts = [
-            variant.color ? displayColorName(variant.color, variant.colorHex) : null,
-            variant.size,
-        ].filter(Boolean);
-        if (parts.length > 0) return parts.join(' / ');
-        return `Variant ${index + 1}`;
-    };
+    useEffect(() => {
+        setSelectedColor('');
+        setSelectedSize('');
+    }, [variantOptions]);
 
     useEffect(() => {
         onVariantChange?.(selectedVariant?.images ?? []);
@@ -361,80 +322,7 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange }
                 </span>
             </div>
 
-            {hasRealVariants && (
-                <div className="flex flex-col gap-2">
-                    <span className="text-sm font-semibold text-slate-700">Variants:</span>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        {variantGroups.map((group, index) => {
-                            const variant = group.variants[0];
-                            const label = getVariantLabel(variant, index);
-                            const ownVariantSrpPrice = toPositiveNumber(variant.priceSrp);
-                            const ownVariantMemberPrice = toPositiveNumber(variant.priceMember);
-                            const variantSrpPrice = ownVariantSrpPrice ?? baseSrp;
-                            const variantMemberPrice = ownVariantMemberPrice ?? toPositiveNumber(product.priceMember) ?? 0;
-                            const variantHasMemberPrice = variantMemberPrice > 0 && variantMemberPrice < variantSrpPrice;
-                            const variantPrice = canUseMemberPrice && variantHasMemberPrice ? variantMemberPrice : variantSrpPrice;
-                            const variantThumb = variant.images && variant.images.length > 0 ? variant.images[0] : null;
-                            const variantSwatch = variant.colorHex ?? (variant.color ? '#E5E7EB' : null);
-                            const isActive = selectedGroup?.key === group.key;
-                            const hasOwnVariantPrice = Boolean(ownVariantSrpPrice || ownVariantMemberPrice);
-                            const variantMetaParts = variant.size
-                                ? [
-                                    `Size: ${variant.size}`,
-                                    hasOwnVariantPrice ? `Price: ₱${variantPrice.toLocaleString()}` : null,
-                                ].filter(Boolean)
-                                : [];
-
-                            return (
-                                <button
-                                    key={`${group.key}-${index}`}
-                                    onClick={() => {
-                                        setVariantClicked(true);
-                                        setSelectedGroupKey(group.key);
-                                        setSelectedColor('');
-                                        setSelectedSize('');
-                                    }}
-                                    className={`rounded-xl border px-3 py-2 text-left transition-colors ${isActive
-                                        ? 'border-orange-400 bg-orange-50 text-orange-600'
-                                        : 'border-gray-200 bg-white text-slate-600 hover:border-orange-200'
-                                        }`}
-                                >
-                                    <div className="flex gap-2.5">
-                                        {variantThumb ? (
-                                            <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg border border-slate-200 bg-slate-100">
-                                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                                <img src={variantThumb} alt={`${label} image`} className="h-full w-full object-cover" />
-                                            </div>
-                                        ) : variantSwatch ? (
-                                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white">
-                                                <span
-                                                    className="h-7 w-7 rounded-full border border-slate-200"
-                                                    style={{ backgroundColor: variantSwatch }}
-                                                    aria-hidden="true"
-                                                />
-                                            </div>
-                                        ) : (
-                                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50 text-[10px] text-slate-400">
-                                                No Img
-                                            </div>
-                                        )}
-                                        <div className="min-w-0">
-                                            <p className="text-xs font-semibold">{label}</p>
-                                            {variantMetaParts.length > 0 && (
-                                                <p className="mt-1 text-[11px] text-slate-500">
-                                                    {variantMetaParts.join(' · ')}
-                                                </p>
-                                            )}
-                                        </div>
-                                    </div>
-                                </button>
-                            );
-                        })}
-                    </div>
-                </div>
-            )}
-
-            {hasRealVariants && variantClicked && colorOptions.length > 0 && (
+            {hasRealVariants && colorOptions.length > 0 && (
                 <div className="flex flex-col gap-2">
                     <span className="text-sm font-semibold text-slate-700">
                         Color: <span className="text-orange-500">{displayColorName(effectiveSelectedColor)}</span>

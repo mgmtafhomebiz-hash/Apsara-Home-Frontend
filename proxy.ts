@@ -20,8 +20,10 @@ const FINANCE_ALLOWED_PREFIXES = [
 const ADMIN_ALLOWED_PREFIXES = [
   "/admin/dashboard",
   "/admin/orders",
+  "/admin/interior-requests",
   "/admin/products",
   "/admin/shipping",
+  "/admin/webpages",
 ];
 const MERCHANT_ALLOWED_PREFIXES = [
   "/admin/dashboard",
@@ -51,7 +53,7 @@ const getAdminRedirectPath = (role: string): string => {
     case "csr":
       return "/admin/orders";
     case "web_content":
-      return "/admin/webpages/home";
+      return "/admin/webpages";
     case "merchant_admin":
       return "/admin/orders";
     case "supplier_admin":

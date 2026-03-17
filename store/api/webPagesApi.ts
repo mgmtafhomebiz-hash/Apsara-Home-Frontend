@@ -1,6 +1,6 @@
 import { baseApi } from './baseApi'
 
-export type WebPageType = 'home' | 'banners' | 'announcements' | 'assembly-guides'
+export type WebPageType = 'home' | 'banners' | 'announcements' | 'assembly-guides' | 'shop-builder'
 
 export interface WebPageItem {
   id: number

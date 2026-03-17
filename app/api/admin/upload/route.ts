@@ -63,6 +63,7 @@ export async function POST(req: NextRequest) {
       verification: 'apsara/verification',
       profile: 'apsara/profile',
       'assembly-guides': 'apsara/assembly-guides',
+      'web-content': 'apsara/web-content',
     }
     const folder = folderMap[folderType] ?? folderMap.products
 

@@ -19,8 +19,45 @@ const tabs: { id: 'description' | 'specs' | 'reviews'; label: string }[] = [
     { id: 'reviews', label: 'Reviews' },
 ];
 
+const decodeHtmlEntities = (value: string) =>
+    value
+        .replace(/&lt;/gi, '<')
+        .replace(/&gt;/gi, '>')
+        .replace(/&quot;/gi, '"')
+        .replace(/&#39;|&#039;/gi, "'")
+        .replace(/&nbsp;/gi, ' ')
+        .replace(/&amp;/gi, '&');
+
+const cleanProductDescription = (value: string) => {
+    let decoded = value.trim();
+
+    // Some rows arrive double-encoded from the database, so decode a few times.
+    for (let i = 0; i < 3; i += 1) {
+        const next = decodeHtmlEntities(decoded);
+        if (next === decoded) break;
+        decoded = next;
+    }
+
+    return decoded
+        .replace(/<\s*br\s*\/?>/gi, '\n')
+        .replace(/<\s*\/p\s*>/gi, '\n\n')
+        .replace(/<\s*\/div\s*>/gi, '\n')
+        .replace(/<\s*\/li\s*>/gi, '\n')
+        .replace(/<li\b[^>]*>/gi, '- ')
+        .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, '')
+        .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '')
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/\r/g, '')
+        .replace(/[ \t]+\n/g, '\n')
+        .replace(/\n[ \t]+/g, '\n')
+        .replace(/[ \t]{2,}/g, ' ')
+        .replace(/\n{3,}/g, '\n\n')
+        .trim();
+};
+
 const ProductTabs = ({ product, defaultTab = 'description', onTabChange }: ProductTabsProps) => {
     const [activeTab, setActiveTab] = useState<'description' | 'specs' | 'reviews'>(defaultTab);
+    const cleanedDescription = product.description ? cleanProductDescription(product.description) : '';
 
     const handleTabChange = (tab: 'description' | 'specs' | 'reviews') => {
         setActiveTab(tab);
@@ -74,11 +111,14 @@ const ProductTabs = ({ product, defaultTab = 'description', onTabChange }: Produ
                 >
                     {activeTab === 'description' && (
                         <div className="max-w-2xl text-gray-600 text-sm leading-relaxed">
-                            {product.description ? (
-                                <div
-                                    className="text-sm text-gray-600 rich-content"
-                                    dangerouslySetInnerHTML={{ __html: product.description }}
-                                />
+                            {cleanedDescription ? (
+                                <div className="space-y-3 text-sm text-gray-600">
+                                    {cleanedDescription.split(/\n{2,}/).map((paragraph, index) => (
+                                        <p key={`${index}-${paragraph.slice(0, 24)}`} className="whitespace-pre-line">
+                                            {paragraph.trim()}
+                                        </p>
+                                    ))}
+                                </div>
                             ) : (
                                 <p className="text-gray-400 italic">No description available.</p>
                             )}

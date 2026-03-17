@@ -75,6 +75,10 @@ const navItems: NavItem[] = [
     ],
   },
   {
+    id: 'interior-requests', label: 'Interior Requests', path: '/admin/interior-requests',
+    icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 12h6m-6 4h3m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h6.586a2 2 0 011.414.586l3.414 3.414A2 2 0 0119 8.414V19a2 2 0 01-2 2z" /></svg>,
+  },
+  {
     id: 'encashment', label: 'Encashment',
     icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" /></svg>,
     children: [
@@ -149,18 +153,11 @@ const navItems: NavItem[] = [
     icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" /></svg>,
   },
   {
-    id: 'webpages', label: 'Web Pages',
+    id: 'webpages', label: 'Web Content',
     icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9" /></svg>,
     children: [
-      { label: 'Home Slider', path: '/admin/webpages/home-slider' },
+      { label: 'Shop Builder', path: '/admin/webpages/shop-builder' },
       { label: 'Assembly Guides', path: '/admin/webpages/assembly-guides' },
-      { label: 'Photo Gallery', path: '/admin/webpages/photo-gallery' },
-      { label: 'Video Gallery', path: '/admin/webpages/video-gallery' },
-      { label: 'Blogs', path: '/admin/webpages/blogs' },
-      { label: 'Testimonial', path: '/admin/webpages/testimonial' },
-      { label: 'Branches', path: '/admin/webpages/branches' },
-      { label: 'F.A.Q', path: '/admin/webpages/faq' },
-      { label: 'Announcement', path: '/admin/webpages/announcement' },
     ],
   },
   {
@@ -195,8 +192,10 @@ const navItems: NavItem[] = [
 const ADMIN_VISIBLE_NAV_IDS = new Set([
   'dashboard',
   'orders',
+  'interior-requests',
   'products',
   'shipping',
+  'webpages',
 ])
 const MERCHANT_VISIBLE_NAV_IDS = new Set([
   'dashboard',
@@ -222,12 +221,15 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
   const displayEmail = session?.user?.email?.trim() || 'admin@afhome.com'
   const rawRole = String(session?.user?.role ?? '').toLowerCase()
   const userLevelId = Number((session?.user as { userLevelId?: number } | undefined)?.userLevelId ?? 0)
+  const isSuperAdmin = rawRole === 'super_admin' || userLevelId === 1
   const isAdmin = rawRole === 'admin' || userLevelId === 2
   const isAccounting = rawRole === 'accounting' || userLevelId === 5
   const isFinanceOfficer = rawRole === 'finance_officer' || userLevelId === 6
   const isMerchantAdmin = rawRole === 'merchant_admin' || userLevelId === 7
   const isSupplierAdmin = rawRole === 'supplier_admin' || userLevelId === 8
-  const displayRole = isAccounting
+  const displayRole = isSuperAdmin
+    ? 'Super Admin'
+    : isAccounting
     ? 'Accounting'
     : isFinanceOfficer
       ? 'Finance Officer'
@@ -236,15 +238,6 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
         : isSupplierAdmin
           ? 'Supplier Admin'
           : formatRole(session?.user?.role)
-  const role = isAccounting
-    ? 'accounting'
-    : isFinanceOfficer
-      ? 'finance_officer'
-      : isMerchantAdmin
-        ? 'merchant_admin'
-        : isSupplierAdmin
-          ? 'supplier_admin'
-          : rawRole
   const displayInitials = getInitials(displayName)
   const avatarSrc = session?.user?.image
 
@@ -266,6 +259,7 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
   const isChildActive = (children?: SubItem[]) => children?.some(c => pathname === c.path) ?? false
 
   const visibleNavItems = navItems.filter((item) => {
+    if (isSuperAdmin) return true
     if (isAccounting) return item.id === 'accounting' || item.id === 'encashment'
     if (isFinanceOfficer) return item.id === 'finance'
     if (isMerchantAdmin) return MERCHANT_VISIBLE_NAV_IDS.has(item.id)
@@ -292,17 +286,20 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
       ? [
           '/admin/dashboard',
           '/admin/orders',
+          '/admin/interior-requests',
           '/admin/products',
           '/admin/products/categories',
+          '/admin/webpages',
         ]
       : [
           '/admin/dashboard',
+          '/admin/interior-requests',
           '/admin/members',
           '/admin/products',
           '/admin/products/categories',
         ]
     criticalRoutes.forEach((route) => router.prefetch(route))
-  }, [isAdmin, isMerchantAdmin, isSupplierAdmin, router])
+  }, [isAdmin, isMerchantAdmin, isSuperAdmin, isSupplierAdmin, router])
 
   const prefetchMembersData = () => {
     dispatch(

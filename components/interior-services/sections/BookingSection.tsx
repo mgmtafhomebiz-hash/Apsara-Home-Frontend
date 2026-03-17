@@ -1,7 +1,11 @@
 'use client';
 
 import { AnimatePresence, motion, useInView } from "framer-motion";
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { useMeQuery } from "@/store/api/userApi";
+import { useCreateInteriorRequestMutation } from "@/store/api/interiorRequestsApi";
 import { BookingFormData, FORM_STEPS, FormStep, INITIAL_FORM_DATA } from "../types";
 import { GhostButton, PrimaryButton, SectionLabel } from "../ui/Primitives";
 import { fadeUp, slideLeft, stepFade } from "../animation";
@@ -13,6 +17,12 @@ import StepContact from "../StepContact";
 import StepReview from "../StepReview";
 
 const BookingSection = ({ id }: { id?: string }) => {
+  const router = useRouter();
+  const { status } = useSession();
+  const isAuthenticated = status === 'authenticated';
+  const { data: meData } = useMeQuery(undefined, { skip: !isAuthenticated });
+  const [createInteriorRequest, { isLoading: isSubmitting }] = useCreateInteriorRequestMutation();
+
   const [currentStep, setCurrentStep] = useState<FormStep>(1);
   const [form, setForm] = useState<BookingFormData>(INITIAL_FORM_DATA);
   const [submitted, setSubmitted] = useState(false);
@@ -21,38 +31,52 @@ const BookingSection = ({ id }: { id?: string }) => {
   const ref = useRef<HTMLElement>(null);
   const isInView = useInView(ref, { once: true, margin: "-80px" });
 
+  const hydratedForm = useMemo(() => {
+    const fullName = (meData.name ?? '').trim();
+    const [firstName = '', ...rest] = fullName.split(/\s+/).filter(Boolean);
+    const lastName = rest.join(' ');
+
+    return {
+      ...form,
+      firstName: form.firstName || firstName,
+      lastName: form.lastName || lastName,
+      email: form.email || meData?.email || '',
+      phone: form.phone || meData?.phone || '',
+    };
+  }, [form, meData]);
+
   const handleChange = (field: keyof BookingFormData, value: string | string[]) => {
     setForm((prev) => ({ ...prev, [field]: value }));
     setStepError('');
   };
 
   const validateStep = (step: FormStep) => {
-    if (step === 1 && !form.serviceType.trim()) {
+    if (step === 1 && !hydratedForm.serviceType.trim()) {
       return 'Please choose a service type before continuing.';
     }
 
-    if (step === 1 && !form.projectType.trim()) {
+    if (step === 1 && !hydratedForm.projectType.trim()) {
       return 'Please choose a project type before continuing.';
     }
 
     if (step === 2) {
-      if (!form.preferredDate.trim()) return 'Please select your preferred consultation date.';
-      if (!form.preferredTime.trim()) return 'Please choose a preferred consultation time.';
+      if (!hydratedForm.preferredDate.trim()) return 'Please select your preferred consultation date.';
+      if (!hydratedForm.preferredTime.trim()) return 'Please choose a preferred consultation time.';
     }
 
     if (step === 3) {
-      if (!form.firstName.trim()) return 'Please enter your first name.';
-      if (!form.lastName.trim()) return 'Please enter your last name.';
-      if (!form.email.trim()) return 'Please enter your email address.';
+      if (!hydratedForm.firstName.trim()) return 'Please enter your first name.';
+      if (!hydratedForm.lastName.trim()) return 'Please enter your last name.';
+      if (!hydratedForm.email.trim()) return 'Please enter your email address.';
 
       const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailPattern.test(form.email.trim())) return 'Please enter a valid email address.';
+      if (!emailPattern.test(hydratedForm.email.trim())) return 'Please enter a valid email address.';
     }
 
     return '';
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     const validationMessage = validateStep(currentStep);
     if (validationMessage) {
       setStepError(validationMessage);
@@ -66,17 +90,41 @@ const BookingSection = ({ id }: { id?: string }) => {
       return;
     }
 
-    try {
-      const existingRequests = JSON.parse(window.localStorage.getItem('afhome-interior-bookings') ?? '[]') as BookingFormData[];
-      window.localStorage.setItem(
-        'afhome-interior-bookings',
-        JSON.stringify([...existingRequests, { ...form }]),
-      );
-    } catch {
-      // Ignore storage failures for now.
+    if (!isAuthenticated) {
+      setStepError('Please sign in first so your booking request can be saved to your account inbox.');
+      return;
     }
 
-    setSubmitted(true);
+    try {
+      await createInteriorRequest({
+        service_type: hydratedForm.serviceType,
+        project_type: hydratedForm.projectType,
+        property_type: hydratedForm.propertyType,
+        project_scope: hydratedForm.projectScope,
+        budget: hydratedForm.budget,
+        style_preference: hydratedForm.stylePreference,
+        preferred_date: hydratedForm.preferredDate,
+        preferred_time: hydratedForm.preferredTime,
+        flexibility: hydratedForm.flexibility,
+        target_timeline: hydratedForm.targetTimeline,
+        first_name: hydratedForm.firstName,
+        last_name: hydratedForm.lastName,
+        email: hydratedForm.email,
+        phone: hydratedForm.phone,
+        notes: hydratedForm.notes,
+        referral: hydratedForm.referral,
+        inspiration_files: hydratedForm.inspirationFiles,
+      }).unwrap();
+
+      setSubmitted(true);
+    } catch (error) {
+      const fallback = 'We could not submit your booking request right now. Please try again in a moment.';
+      const message =
+        typeof error === 'object' && error !== null && 'data' in error
+          ? String((error as { data?: { message?: string } }).data?.message ?? fallback)
+          : fallback;
+      setStepError(message);
+    }
   };
 
   const handleBack = () => {
@@ -87,7 +135,7 @@ const BookingSection = ({ id }: { id?: string }) => {
   };
 
   const stepLabels = ["Service & Scope", "Date & Time", "Contact Info", "Notes & Review"];
-  const ctaLabels = ["Continue →", "Continue →", "Continue →", "Submit Enquiry"];
+  const ctaLabels = ["Continue ->", "Continue ->", "Continue ->", "Submit Booking Request"];
 
   return (
     <section
@@ -98,16 +146,15 @@ const BookingSection = ({ id }: { id?: string }) => {
         background: "linear-gradient(180deg, #fffdf7 0%, #fff8e2 50%, #fffdf5 100%)",
       }}
     >
-      {/* Futuristic glow orb */}
       <div
-        className="absolute top-0 right-0 h-[600px] w-[600px] rounded-full opacity-60 pointer-events-none"
+        className="absolute top-0 right-0 h-[600px] w-[600px] rounded-full pointer-events-none opacity-60"
         style={{
           background: "radial-gradient(circle, rgba(212,165,20,0.12) 0%, transparent 65%)",
           transform: "translate(30%, -30%)",
         }}
       />
       <div
-        className="absolute bottom-0 left-0 h-[400px] w-[400px] rounded-full opacity-40 pointer-events-none"
+        className="absolute bottom-0 left-0 h-[400px] w-[400px] rounded-full pointer-events-none opacity-40"
         style={{
           background: "radial-gradient(circle, rgba(17,17,17,0.06) 0%, transparent 65%)",
           transform: "translate(-30%, 30%)",
@@ -144,6 +191,30 @@ const BookingSection = ({ id }: { id?: string }) => {
             </motion.p>
 
             <motion.div
+              className="mb-6 rounded-[8px] border border-orange-200 bg-orange-50 px-4 py-3"
+              initial="hidden"
+              animate={isInView ? "visible" : "hidden"}
+              variants={fadeUp}
+              custom={0.28}
+            >
+              <p className="text-[0.72rem] font-semibold uppercase tracking-[0.12em] text-orange-700">
+                Account-linked Booking
+              </p>
+              <p className="mt-1 text-[0.78rem] leading-relaxed text-orange-900">
+                Requests are tied to the authenticated customer account so only that account receives admin replies, estimate updates, and schedule notices.
+              </p>
+              {!isAuthenticated && (
+                <button
+                  type="button"
+                  onClick={() => router.push(`/login?callbackUrl=${encodeURIComponent('/interior-services#booking')}`)}
+                  className="mt-3 inline-flex items-center rounded-full bg-orange-600 px-4 py-2 text-[0.75rem] font-semibold text-white transition hover:bg-orange-700"
+                >
+                  Sign In To Book
+                </button>
+              )}
+            </motion.div>
+
+            <motion.div
               className="flex flex-col gap-5"
               initial="hidden"
               animate={isInView ? "visible" : "hidden"}
@@ -151,12 +222,12 @@ const BookingSection = ({ id }: { id?: string }) => {
               custom={0.35}
             >
               {[
-                { icon: "◈", title: "Free Initial Consultation", desc: "No cost and no pressure, just a conversation about your project." },
-                { icon: "◉", title: "Dedicated Design Lead", desc: "One point of contact from enquiry through to completion." },
-                { icon: "◻", title: "Transparent Pricing", desc: "Clear proposals before any work begins with no surprise costs." },
+                { icon: "A", title: "Free Initial Consultation", desc: "No cost and no pressure, just a conversation about your project." },
+                { icon: "B", title: "Dedicated Design Lead", desc: "One point of contact from enquiry through to completion." },
+                { icon: "C", title: "Transparent Pricing", desc: "Clear proposals before any work begins with no surprise costs." },
               ].map((item) => (
                 <div key={item.title} className="flex items-start gap-4">
-                  <div className="mt-0.5 shrink-0 text-lg text-indigo-500">
+                  <div className="mt-0.5 shrink-0 text-sm font-semibold text-indigo-500">
                     {item.icon}
                   </div>
                   <div>
@@ -178,7 +249,7 @@ const BookingSection = ({ id }: { id?: string }) => {
                 Prefer to call?
               </p>
               <p className="text-[0.9rem] text-slate-700">+63 912 345 6789</p>
-              <p className="mt-1 text-[0.75rem] text-slate-400">Mon – Sat, 9am – 6pm PHT</p>
+              <p className="mt-1 text-[0.75rem] text-slate-400">Mon - Sat, 9am - 6pm PHT</p>
             </motion.div>
           </div>
 
@@ -198,7 +269,7 @@ const BookingSection = ({ id }: { id?: string }) => {
               }}
             >
               {submitted ? (
-                <SuccessState firstName={form.firstName} />
+                <SuccessState firstName={hydratedForm.firstName} />
               ) : (
                 <div className="p-8">
                   <StepIndicator currentStep={currentStep} onStepClick={(step) => setCurrentStep(step)} />
@@ -240,18 +311,20 @@ const BookingSection = ({ id }: { id?: string }) => {
                       animate="visible"
                       exit="exit"
                     >
-                      {currentStep === 1 && <StepService form={form} onChange={handleChange} />}
-                      {currentStep === 2 && <StepSchedule form={form} onChange={handleChange} />}
-                      {currentStep === 3 && <StepContact form={form} onChange={handleChange} />}
-                      {currentStep === 4 && <StepReview form={form} onChange={handleChange} />}
+                      {currentStep === 1 && <StepService form={hydratedForm} onChange={handleChange} />}
+                      {currentStep === 2 && <StepSchedule form={hydratedForm} onChange={handleChange} />}
+                      {currentStep === 3 && <StepContact form={hydratedForm} onChange={handleChange} />}
+                      {currentStep === 4 && <StepReview form={hydratedForm} onChange={handleChange} />}
                     </motion.div>
                   </AnimatePresence>
 
                   <div className="mt-8 flex items-center justify-between border-t border-slate-100 pt-6">
                     <div>
-                      {currentStep > 1 && <GhostButton onClick={handleBack}>← Back</GhostButton>}
+                      {currentStep > 1 && <GhostButton onClick={handleBack}>Back</GhostButton>}
                     </div>
-                    <PrimaryButton onClick={handleNext}>{ctaLabels[currentStep - 1]}</PrimaryButton>
+                    <PrimaryButton onClick={() => void handleNext()}>
+                      {isSubmitting && currentStep === 4 ? 'Submitting...' : ctaLabels[currentStep - 1]}
+                    </PrimaryButton>
                   </div>
 
                   <div className="mt-4 text-center">

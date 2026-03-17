@@ -148,25 +148,29 @@ export const normalizeProduct = (input: Product & Record<string, unknown>): Prod
     ? parsedImages
     : (primaryImage ? [primaryImage] : [])
 
-  const parsedVariants = Array.isArray(input.variants)
-    ? input.variants.map((variant) => {
+  const rawVariants = Array.isArray(input.variants)
+    ? input.variants
+    : Array.isArray(input.pd_variants)
+      ? input.pd_variants
+      : []
+
+  const parsedVariants = rawVariants.map((variant) => {
         const row = variant as ProductVariant & Record<string, unknown>
         return {
           id: typeof row.id === 'number' ? row.id : undefined,
-          sku: typeof row.sku === 'string' ? row.sku : undefined,
+          sku: typeof row.sku === 'string' ? row.sku : (typeof row.pv_sku === 'string' ? row.pv_sku : undefined),
           name: typeof row.name === 'string' ? row.name : (typeof row.pv_name === 'string' ? row.pv_name : undefined),
-          color: typeof row.color === 'string' ? row.color : undefined,
-          colorHex: typeof row.colorHex === 'string' ? row.colorHex : undefined,
-          size: typeof row.size === 'string' ? row.size : undefined,
-          priceSrp: typeof row.priceSrp === 'number' ? row.priceSrp : (typeof row.priceSrp === 'string' ? Number(row.priceSrp) : undefined),
-          priceDp: typeof row.priceDp === 'number' ? row.priceDp : (typeof row.priceDp === 'string' ? Number(row.priceDp) : undefined),
-          priceMember: typeof row.priceMember === 'number' ? row.priceMember : (typeof row.priceMember === 'string' ? Number(row.priceMember) : undefined),
-          qty: typeof row.qty === 'number' ? row.qty : (typeof row.qty === 'string' ? Number(row.qty) : undefined),
-          status: typeof row.status === 'number' ? row.status : (typeof row.status === 'string' ? Number(row.status) : undefined),
-          images: toStringArray(row.images),
+          color: typeof row.color === 'string' ? row.color : (typeof row.pv_color === 'string' ? row.pv_color : undefined),
+          colorHex: typeof row.colorHex === 'string' ? row.colorHex : (typeof row.pv_color_hex === 'string' ? row.pv_color_hex : undefined),
+          size: typeof row.size === 'string' ? row.size : (typeof row.pv_size === 'string' ? row.pv_size : undefined),
+          priceSrp: typeof row.priceSrp === 'number' ? row.priceSrp : (typeof row.priceSrp === 'string' ? Number(row.priceSrp) : (typeof row.pv_price_srp === 'number' ? row.pv_price_srp : (typeof row.pv_price_srp === 'string' ? Number(row.pv_price_srp) : undefined))),
+          priceDp: typeof row.priceDp === 'number' ? row.priceDp : (typeof row.priceDp === 'string' ? Number(row.priceDp) : (typeof row.pv_price_dp === 'number' ? row.pv_price_dp : (typeof row.pv_price_dp === 'string' ? Number(row.pv_price_dp) : undefined))),
+          priceMember: typeof row.priceMember === 'number' ? row.priceMember : (typeof row.priceMember === 'string' ? Number(row.priceMember) : (typeof row.pv_price_member === 'number' ? row.pv_price_member : (typeof row.pv_price_member === 'string' ? Number(row.pv_price_member) : undefined))),
+          qty: typeof row.qty === 'number' ? row.qty : (typeof row.qty === 'string' ? Number(row.qty) : (typeof row.pv_qty === 'number' ? row.pv_qty : (typeof row.pv_qty === 'string' ? Number(row.pv_qty) : undefined))),
+          status: typeof row.status === 'number' ? row.status : (typeof row.status === 'string' ? Number(row.status) : (typeof row.pv_status === 'number' ? row.pv_status : (typeof row.pv_status === 'string' ? Number(row.pv_status) : undefined))),
+          images: toStringArray(row.images ?? row.pv_images),
         } satisfies ProductVariant
       })
-    : []
 
   return {
     ...input,
@@ -221,11 +225,14 @@ export const productsApi = baseApi.injectEndpoints({
       query: (params) => ({
         url: '/api/products',
         method: 'GET',
+        cache: 'no-store',
         params: {
           page: params?.page ?? 1,
           per_page: params?.perPage ?? 25,
           q: params?.search,
           status: params?.status,
+          cat_id: params?.catId,
+          supplier_id: params?.supplierId,
         },
       }),
       transformResponse: (response: ProductsResponse) => normalizeProductsResponse(response),
@@ -235,6 +242,7 @@ export const productsApi = baseApi.injectEndpoints({
       query: (params) => ({
         url: '/api/admin/products',
         method: 'GET',
+        cache: 'no-store',
         params: {
           page: params?.page ?? 1,
           per_page: params?.perPage ?? 25,

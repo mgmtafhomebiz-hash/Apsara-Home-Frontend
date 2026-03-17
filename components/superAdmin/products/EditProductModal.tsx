@@ -15,7 +15,7 @@ import { colorNameToHex, hexToColorName } from '@/libs/colorUtils'
 interface EditProductModalProps {
   product: Product | null
   onClose: () => void
-  onSaved?: () => void
+  onSaved?: (updatedProduct?: Product) => void
 }
 
 interface FormState {
@@ -213,6 +213,22 @@ const normalizeVariantsForComparison = (variants: VariantFormState[]) =>
     pv_images: variant.pv_images.filter(Boolean),
   }))
 
+const mapExpandedVariantToProductVariant = (
+  variant: NonNullable<CreateProductPayload['pd_variants']>[number],
+): ProductVariant => ({
+  sku: variant.pv_sku,
+  name: variant.pv_name,
+  color: variant.pv_color,
+  colorHex: variant.pv_color_hex,
+  size: variant.pv_size,
+  priceSrp: variant.pv_price_srp,
+  priceDp: variant.pv_price_dp,
+  priceMember: variant.pv_price_member,
+  qty: variant.pv_qty,
+  status: variant.pv_status,
+  images: variant.pv_images,
+})
+
 /* ─── small components ───────────────────────────────────── */
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
@@ -293,7 +309,10 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
   const { data: categoriesData } = useGetCategoriesQuery({ page: 1, per_page: 500 }, { skip: skipCategories })
   const categories = categoriesData?.categories ?? []
 
-  /* Populate form when product changes */
+  /* Populate form when product changes — only re-initialize when a different product is opened,
+     not when RTK Query returns an updated reference for the same product (which would reset
+     any in-progress edits like variant deletions). */
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!product) return
     const row = product as Product & Record<string, unknown>
@@ -335,7 +354,7 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
     setVariants(nextVariants)
     setNewColorInputs({})
     setErrors({}); setServerError(''); setImageError('')
-  }, [product])
+  }, [product?.id])
 
   const set = (key: keyof FormState, value: string | boolean) => {
     setForm(p => ({ ...p, [key]: value }))
@@ -492,11 +511,6 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
     setServerError('')
     const errs = validate()
     if (Object.keys(errs).length > 0) { setErrors(errs); return }
-    if (hasVariants && expandedVariants.length === 0) {
-      setServerError('At least one variant is required when Has Variants is enabled.')
-      return
-    }
-
     const baseChanged =
       JSON.stringify(normalizeFormForComparison(form)) !== JSON.stringify(normalizeFormForComparison(initialForm ?? form))
     const variantsChanged =
@@ -575,8 +589,36 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
 
     try {
       await updateProduct({ id: product.id, data: payload }).unwrap()
+      const updatedProduct: Product = {
+        ...product,
+        name: form.pd_name.trim(),
+        catid: Number(form.pd_catid),
+        description: form.pd_description.trim() || null,
+        priceSrp: Number(form.pd_price_srp),
+        priceDp: form.pd_price_dp ? Number(form.pd_price_dp) : 0,
+        priceMember: form.pd_price_member ? Number(form.pd_price_member) : undefined,
+        prodpv: form.pd_prodpv ? Number(form.pd_prodpv) : undefined,
+        qty: form.pd_qty ? Number(form.pd_qty) : 0,
+        weight: form.pd_weight ? Number(form.pd_weight) : 0,
+        psweight: form.pd_psweight ? Number(form.pd_psweight) : undefined,
+        pswidth: form.pd_pswidth ? Number(form.pd_pswidth) : undefined,
+        pslenght: form.pd_pslenght ? Number(form.pd_pslenght) : undefined,
+        psheight: form.pd_psheight ? Number(form.pd_psheight) : undefined,
+        material: form.pd_material.trim() || null,
+        warranty: form.pd_warranty.trim() || null,
+        assemblyRequired: form.pd_assembly_required,
+        type: Number(form.pd_type),
+        musthave: form.pd_musthave,
+        bestseller: form.pd_bestseller,
+        salespromo: form.pd_salespromo,
+        verified: form.pd_verified,
+        status: Number(form.pd_status),
+        image: finalImageUrls[0] ?? null,
+        images: finalImageUrls,
+        variants: hasVariants ? expandedVariants.map(mapExpandedVariantToProductVariant) : [],
+      }
       showSuccessToast('Product updated successfully.')
-      onSaved?.()
+      onSaved?.(updatedProduct)
       onClose()
     } catch (err: unknown) {
       const message = (err as { data?: { message?: string } })?.data?.message ?? 'Failed to update product.'

@@ -28,7 +28,7 @@ const formatDate = (value?: string | null) => {
 const walletOptions: Array<{ key: WalletTypeFilter; label: string }> = [
   { key: 'all', label: 'All Wallets' },
   { key: 'cash', label: 'Cash Wallet' },
-  { key: 'pv', label: 'PV Wallet' },
+  { key: 'pv', label: 'AF Voucher' },
   { key: 'rewards', label: 'Rewards' },
 ];
 
@@ -50,9 +50,6 @@ const walletMeta = {
     subtitle: 'Track your AF Voucher, cashback, and available digital reward balances.',
   },
 };
-
-
-
 
 type WalletTabProps = {
   isVerified?: boolean;

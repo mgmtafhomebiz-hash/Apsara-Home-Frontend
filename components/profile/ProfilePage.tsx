@@ -16,6 +16,7 @@ import Toggle from './Toggle';
 import getActivityIcon from './GetActivityIcon';
 import EncashmentTab from './EncashmentTab';
 import WalletTab from './WalletTab';
+import InteriorRequestsTab from './InteriorRequestsTab';
 import { usePhAddress } from '@/hooks/usePhAddress';
 
 
@@ -41,7 +42,7 @@ type PreferencesState = {
   currency: 'PHP' | 'USD';
 };
 
-type Tab = 'profile' | 'security' | 'preferences' | 'wallet' | 'encashment' | 'activity' | 'referrals';
+type Tab = 'profile' | 'security' | 'preferences' | 'wallet' | 'encashment' | 'interior-requests' | 'activity' | 'referrals';
 
 type AlertMsg = { type: 'success' | 'error'; text: string };
 type TreeStatusFilter = 'all' | 'verified' | 'pending_review' | 'not_verified' | 'blocked';
@@ -146,7 +147,7 @@ const ProfilePage = () => {
 
   useEffect(() => {
     const requestedTab = searchParams.get('tab');
-    const allowedTabs: Tab[] = ['profile', 'security', 'preferences', 'wallet', 'encashment', 'activity', 'referrals'];
+    const allowedTabs: Tab[] = ['profile', 'security', 'preferences', 'wallet', 'encashment', 'interior-requests', 'activity', 'referrals'];
 
     if (requestedTab && allowedTabs.includes(requestedTab as Tab)) {
       setActiveTab(requestedTab as Tab);
@@ -658,6 +659,7 @@ const ProfilePage = () => {
     { key: 'preferences', label: 'Preferences', Icon: Icon.Bell },
     { key: 'wallet', label: 'Wallet', Icon: Icon.Wallet },
     { key: 'encashment', label: 'Encashment', Icon: Icon.Bag },
+    { key: 'interior-requests', label: 'Interior Requests', Icon: Icon.Package },
     { key: 'activity', label: 'Activity', Icon: Icon.Activity },
     { key: 'referrals', label: 'Referrals', Icon: Icon.Network },
   ];
@@ -1452,6 +1454,18 @@ const ProfilePage = () => {
                   transition={{ duration: 0.25 }}
                 >
                   <EncashmentTab />
+                </motion.div>
+              )}
+
+              {activeTab === 'interior-requests' && (
+                <motion.div
+                  key="interior-requests"
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.25 }}
+                >
+                  <InteriorRequestsTab />
                 </motion.div>
               )}
 

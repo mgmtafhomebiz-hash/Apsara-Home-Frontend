@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { useSession } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
 import { Product, useGetProductsQuery, useDeleteProductMutation, ProductsResponse } from '@/store/api/productsApi'
 import ProductsToolbar from './ProductsToolbar'
 import ProductsTable from './ProductsTable'
@@ -41,6 +42,7 @@ function StatCard({
 }
 
 export default function ProductsPageMain({ initialData = null }: ProductsPageMainProps) {
+  const router = useRouter()
   const { data: session, status: authStatus } = useSession()
   const role = String(session?.user?.role ?? '').toLowerCase()
   const isSupplierPortal = role === 'supplier'
@@ -55,6 +57,7 @@ export default function ProductsPageMain({ initialData = null }: ProductsPageMai
   const [showBulkEdit,    setShowBulkEdit]    = useState(false)
   const [deletingIds,     setDeletingIds]     = useState<number[]>([])
   const [selectedIds,     setSelectedIds]     = useState<number[]>([])
+  const [productOverrides, setProductOverrides] = useState<Record<number, Product>>({})
   const [useInitialData,  setUseInitialData]  = useState(Boolean(initialData))
   const perPage = 25
 
@@ -75,7 +78,7 @@ export default function ProductsPageMain({ initialData = null }: ProductsPageMai
       catId,
       supplierId: isSupplierPortal && linkedSupplierId > 0 ? linkedSupplierId : undefined,
     },
-    { skip },
+    { skip, refetchOnMountOrArgChange: true },
   )
 
   /* Lightweight count queries for stats */
@@ -83,12 +86,12 @@ export default function ProductsPageMain({ initialData = null }: ProductsPageMai
     perPage: 1,
     status: '1',
     supplierId: isSupplierPortal && linkedSupplierId > 0 ? linkedSupplierId : undefined,
-  }, { skip })
+  }, { skip, refetchOnMountOrArgChange: true })
   const { data: inactiveCountData, refetch: refetchInactiveCount } = useGetProductsQuery({
     perPage: 1,
     status: '0',
     supplierId: isSupplierPortal && linkedSupplierId > 0 ? linkedSupplierId : undefined,
-  }, { skip })
+  }, { skip, refetchOnMountOrArgChange: true })
 
   const [deleteProduct] = useDeleteProductMutation()
 
@@ -98,8 +101,12 @@ export default function ProductsPageMain({ initialData = null }: ProductsPageMai
     }
   }, [data])
 
-  const handleProductsSaved = () => {
+  const handleProductsSaved = (updatedProduct?: Product) => {
     setUseInitialData(false)
+    if (updatedProduct) {
+      setProductOverrides((prev) => ({ ...prev, [updatedProduct.id]: updatedProduct }))
+    }
+    router.refresh()
     void revalidateStorefront()
     if (page !== 1) {
       setPage(1)
@@ -114,13 +121,14 @@ export default function ProductsPageMain({ initialData = null }: ProductsPageMai
     const rawProducts = data?.products
       ? data.products
       : (useInitialData ? (initialData?.products ?? []) : [])
+    const mergedProducts = rawProducts.map((product) => productOverrides[product.id] ?? product)
 
     if (!isSupplierPortal || linkedSupplierId <= 0) {
-      return rawProducts
+      return mergedProducts
     }
 
-    return rawProducts.filter((product) => Number(product.supplierId ?? 0) === linkedSupplierId)
-  }, [data?.products, initialData?.products, isSupplierPortal, linkedSupplierId, useInitialData])
+    return mergedProducts.filter((product) => Number(product.supplierId ?? 0) === linkedSupplierId)
+  }, [data?.products, initialData?.products, isSupplierPortal, linkedSupplierId, productOverrides, useInitialData])
 
   const meta = useMemo(() => {
     const rawMeta = data?.meta ?? (useInitialData ? initialData?.meta : undefined)
@@ -154,6 +162,11 @@ export default function ProductsPageMain({ initialData = null }: ProductsPageMai
     try {
       await deleteProduct(id).unwrap()
       await revalidateStorefront()
+      setProductOverrides((prev) => {
+        const next = { ...prev }
+        delete next[id]
+        return next
+      })
       setSelectedIds(prev => prev.filter(item => item !== id))
       showSuccessToast('Product deleted successfully.')
     } catch {
@@ -180,6 +193,11 @@ export default function ProductsPageMain({ initialData = null }: ProductsPageMai
     try {
       await Promise.all(ids.map(id => deleteProduct(id).unwrap()))
       await revalidateStorefront()
+      setProductOverrides((prev) => {
+        const next = { ...prev }
+        ids.forEach((id) => delete next[id])
+        return next
+      })
       setSelectedIds([])
       showSuccessToast(`${ids.length} product(s) deleted successfully.`)
     } catch {
