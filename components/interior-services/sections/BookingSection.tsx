@@ -32,7 +32,7 @@ const BookingSection = ({ id }: { id?: string }) => {
   const isInView = useInView(ref, { once: true, margin: "-80px" });
 
   const hydratedForm = useMemo(() => {
-    const fullName = (meData.name ?? '').trim();
+    const fullName = (meData?.name ?? '').trim();
     const [firstName = '', ...rest] = fullName.split(/\s+/).filter(Boolean);
     const lastName = rest.join(' ');
 
