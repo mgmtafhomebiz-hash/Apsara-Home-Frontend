@@ -15,18 +15,6 @@ type ShopSectionPayload = {
   fields?: Record<string, string>
 }
 
-type ApiCategoriesResponse = {
-  categories?: Category[]
-}
-
-type ApiProductsResponse = {
-  products?: Product[]
-}
-
-type ApiWebPagesResponse = {
-  items?: WebPageItem[]
-}
-
 const fallbackImage = '/Images/HeroSection/chairs_stools.jpg'
 
 const getItemByKey = (items: WebPageItem[], key: string) =>
@@ -41,50 +29,32 @@ const parseIdList = (value: string) =>
     .map((item) => Number.parseInt(item.trim(), 10))
     .filter((item) => Number.isFinite(item) && item > 0)
 
-async function getShopBuilderData() {
-  const apiUrl = process.env.LARAVEL_API_URL ?? process.env.NEXT_PUBLIC_LARAVEL_API_URL
-  if (!apiUrl) return null
+export type ShopBuilderSectionsData = {
+  items: WebPageItem[]
+  categories: Category[]
+  products: Product[]
+} | null
 
-  try {
-    const [webPagesRes, categoriesRes, productsRes] = await Promise.all([
-      fetch(`${apiUrl}/api/web-pages/shop-builder`, {
-        method: 'GET',
-        headers: { Accept: 'application/json' },
-        cache: 'no-store',
-      }),
-      fetch(`${apiUrl}/api/categories?page=1&per_page=100&used_only=1`, {
-        method: 'GET',
-        headers: { Accept: 'application/json' },
-        cache: 'no-store',
-      }),
-      fetch(`${apiUrl}/api/products?page=1&per_page=100&status=1`, {
-        method: 'GET',
-        headers: { Accept: 'application/json' },
-        cache: 'no-store',
-      }),
-    ])
+export type ShopBuilderSectionsProps = {
+  data?: ShopBuilderSectionsData
+}
 
-    if (!webPagesRes.ok || !categoriesRes.ok || !productsRes.ok) return null
+export type ShopBuilderApiResponse = {
+  items: WebPageItem[]
+  categories: Category[]
+  products: Product[]
+}
 
-    const webPagesJson = (await webPagesRes.json()) as ApiWebPagesResponse
-    const categoriesJson = (await categoriesRes.json()) as ApiCategoriesResponse
-    const productsJson = (await productsRes.json()) as ApiProductsResponse
-
-    return {
-      items: webPagesJson.items ?? [],
-      categories: categoriesJson.categories ?? [],
-      products: productsJson.products ?? [],
-    }
-  } catch {
-    return null
+export function normalizeShopBuilderApiResponse(data: ShopBuilderApiResponse | null | undefined) {
+  return {
+    items: data?.items ?? [],
+    categories: data?.categories ?? [],
+    products: data?.products ?? [],
   }
 }
 
-export default async function ShopBuilderSections() {
-  const data = await getShopBuilderData()
-  const items = data?.items ?? []
-  const categories = data?.categories ?? []
-  const products = data?.products ?? []
+export default function ShopBuilderSections({ data = null }: ShopBuilderSectionsProps) {
+  const { items, categories, products } = normalizeShopBuilderApiResponse(data)
 
   if (!data || items.length === 0) {
     return (

@@ -201,7 +201,7 @@ export default function ShopBuilderStudio() {
     perPage: 50,
     status: 'all',
   })
-  const { data: categoriesData } = useGetCategoriesQuery({ per_page: 50, used_only: true })
+  const { data: categoriesData } = useGetCategoriesQuery({ per_page: 200 })
   const { data: productsData } = useGetProductsQuery({ perPage: 30, status: '1' })
   const [createItem, { isLoading: isCreating }] = useCreateAdminWebPageItemMutation()
   const [updateItem, { isLoading: isUpdating }] = useUpdateAdminWebPageItemMutation()
@@ -240,7 +240,11 @@ export default function ShopBuilderStudio() {
           id: category.id,
           name: category.name,
           count: category.product_count ?? 0,
-          image: getFieldValue(categorySection, `card_${index + 1}_image`) || category.image || fallbackImage,
+          image:
+            getFieldValue(categorySection, `category_image_${category.id}`) ||
+            getFieldValue(categorySection, `card_${index + 1}_image`) ||
+            category.image ||
+            fallbackImage,
         }
       })
       .filter((item): item is NonNullable<typeof item> => Boolean(item))
@@ -259,6 +263,29 @@ export default function ShopBuilderStudio() {
     return remaining
   }, [categories, sections])
 
+  const categoryEditorCards = useMemo(() => {
+    const categorySection = sections.find((section) => section.id === 'category-grid')
+    if (!categorySection) return []
+
+    const selectedIds = parseIdList(getFieldValue(categorySection, 'category_ids'))
+    const selectedSet = new Set(selectedIds)
+    const orderedCategories = [
+      ...categories.filter((category) => selectedSet.has(category.id)),
+      ...categories.filter((category) => !selectedSet.has(category.id)),
+    ]
+
+    return orderedCategories.map((category, index) => ({
+      id: category.id,
+      name: category.name,
+      count: category.product_count ?? 0,
+      image:
+        getFieldValue(categorySection, `category_image_${category.id}`) ||
+        getFieldValue(categorySection, `card_${index + 1}_image`) ||
+        category.image ||
+        fallbackImage,
+    }))
+  }, [categories, sections])
+
   const selectedFeatureProducts = useMemo(() => {
     const featuredSection = sections.find((section) => section.id === 'featured-collection')
     if (!featuredSection) return []
@@ -268,6 +295,12 @@ export default function ShopBuilderStudio() {
       .filter((item): item is NonNullable<typeof item> => Boolean(item))
       .slice(0, 4)
   }, [products, sections])
+
+  const visibleSelectedFields = useMemo(() => {
+    if (selectedSection.id !== 'category-grid') return selectedSection.fields
+
+    return selectedSection.fields.filter((field) => !/^card_[1-4]_image$/.test(field.key))
+  }, [selectedSection])
 
   const updateField = (sectionId: BuilderSectionId, fieldKey: string, value: string) => {
     setDirtySections((current) => {
@@ -477,7 +510,7 @@ export default function ShopBuilderStudio() {
               <span className="text-xs font-medium text-slate-400">Key: {selectedSection.id}</span>
             </div>
 
-            {selectedSection.fields.map((field) => (
+            {visibleSelectedFields.map((field) => (
               <div key={field.key}>
                 <label className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">{field.label}</label>
                 {field.kind === 'textarea' ? (
@@ -526,6 +559,16 @@ export default function ShopBuilderStudio() {
                 )}
               </div>
             ))}
+
+            {selectedSection.id === 'category-grid' ? (
+              <DynamicCategoryImageFields
+                section={selectedSection}
+                categoryCards={categoryEditorCards}
+                onChange={updateField}
+                onUpload={uploadImageForField}
+                uploadingFieldKey={uploadingFieldKey}
+              />
+            ) : null}
 
             {selectedSection.id === 'category-grid' ? (
               <CategoryPickerPanel
@@ -612,6 +655,78 @@ function CategoryPickerPanel({
                 {category.product_count ?? 0} items
               </span>
             </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+function DynamicCategoryImageFields({
+  section,
+  categoryCards,
+  onChange,
+  onUpload,
+  uploadingFieldKey,
+}: {
+  section: BuilderSection
+  categoryCards: Array<{ id: number; name: string; count: number; image: string }>
+  onChange: (sectionId: BuilderSectionId, fieldKey: string, value: string) => void
+  onUpload: (sectionId: BuilderSectionId, fieldKey: string, file: File | null) => Promise<void>
+  uploadingFieldKey: string | null
+}) {
+  if (categoryCards.length === 0) return null
+
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+      <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Category image overrides</p>
+      <p className="mt-1 text-xs text-slate-500">All fetched categories in the grid can have their own image, not just the first four slots.</p>
+      <div className="mt-3 max-h-[520px] space-y-3 overflow-y-auto pr-1">
+        {categoryCards.map((category) => {
+          const fieldKey = `category_image_${category.id}`
+          const fieldValue = getFieldValue(section, fieldKey) || category.image || ''
+
+          return (
+            <div key={category.id} className="rounded-2xl border border-slate-200 bg-white p-3">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold text-slate-900">{category.name}</p>
+                  <p className="text-xs text-slate-500">ID {category.id}</p>
+                </div>
+                <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-500">
+                  {category.count} items
+                </span>
+              </div>
+
+              <input
+                value={fieldValue}
+                onChange={(event) => onChange(section.id, fieldKey, event.target.value)}
+                placeholder="Image URL will appear here after upload"
+                className="mt-3 w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-cyan-300 focus:bg-white focus:ring-2 focus:ring-cyan-100"
+              />
+
+              <div className="mt-3 space-y-3">
+                <label className="inline-flex w-fit cursor-pointer items-center rounded-2xl border border-cyan-200 bg-white px-4 py-2.5 text-sm font-semibold text-cyan-700 transition hover:bg-cyan-50">
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/gif"
+                    className="hidden"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0] ?? null
+                      void onUpload(section.id, fieldKey, file)
+                      event.currentTarget.value = ''
+                    }}
+                  />
+                  {uploadingFieldKey === fieldKey ? 'Uploading image...' : 'Attach Image'}
+                </label>
+
+                {fieldValue ? (
+                  <div className="relative h-28 overflow-hidden rounded-2xl border border-slate-200 bg-slate-100">
+                    <Image src={fieldValue} alt={category.name} fill className="object-cover" unoptimized />
+                  </div>
+                ) : null}
+              </div>
+            </div>
           )
         })}
       </div>
