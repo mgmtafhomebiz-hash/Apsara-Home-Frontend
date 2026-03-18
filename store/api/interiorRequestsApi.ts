@@ -139,7 +139,7 @@ export const interiorRequestsApi = baseApi.injectEndpoints({
       query: (params) => ({
         url: '/api/admin/interior-requests',
         method: 'GET',
-        params,
+        params: params ?? undefined,
       }),
       providesTags: ['InteriorRequests', 'AdminNotifications'],
     }),
