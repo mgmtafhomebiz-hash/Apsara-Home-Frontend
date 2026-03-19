@@ -8,6 +8,9 @@ import {
   AdminCourier,
   AdminShipmentStatus,
   useBookAdminOrderCourierMutation,
+  useCancelAdminOrderCourierMutation,
+  useGetAdminOrderCourierWaybillMutation,
+  useGetAdminOrderCourierEpodMutation,
   useApproveAdminOrderMutation,
   useGetAdminOrdersQuery,
   useRejectAdminOrderMutation,
@@ -43,6 +46,7 @@ const SHIPMENT_STATUS_OPTIONS: Array<{ value: AdminShipmentStatus; label: string
   { value: 'out_for_delivery', label: 'Out for Delivery' },
   { value: 'delivered', label: 'Delivered' },
   { value: 'failed_delivery', label: 'Failed Delivery' },
+  { value: 'cancelled', label: 'Cancelled' },
   { value: 'returned_to_sender', label: 'Returned to Sender' },
 ]
 
@@ -101,6 +105,43 @@ const copyText = async (value: string) => {
   await navigator.clipboard.writeText(value)
 }
 
+const extractApiError = (err: unknown, fallback: string) => {
+  const data = (err as { data?: { message?: string; error?: string } })?.data
+  return data?.error || data?.message || fallback
+}
+
+const extractCourierStatus = (payload: Record<string, unknown> | Array<unknown> | null | undefined): string | null => {
+  if (!payload) return null
+
+  if (Array.isArray(payload)) {
+    const latestEntry = [...payload]
+      .filter((entry): entry is Record<string, unknown> => typeof entry === 'object' && entry !== null && !Array.isArray(entry))
+      .sort((a, b) => String(b.created_at ?? '').localeCompare(String(a.created_at ?? '')))[0]
+
+    const listStatus = latestEntry?.status
+    return typeof listStatus === 'string' && listStatus.trim() !== '' ? listStatus.trim() : null
+  }
+
+  const candidates = [
+    payload.status,
+    payload.code,
+    payload.shipment_status,
+    payload.message,
+    (payload.data as Record<string, unknown> | undefined)?.status,
+    (payload.data as Record<string, unknown> | undefined)?.shipment_status,
+    (payload.result as Record<string, unknown> | undefined)?.status,
+    (payload.result as Record<string, unknown> | undefined)?.shipment_status,
+  ]
+
+  for (const candidate of candidates) {
+    if (typeof candidate === 'string' && candidate.trim() !== '') {
+      return candidate.trim()
+    }
+  }
+
+  return null
+}
+
 /* ─── stat card ────────────────────────────────────────────── */
 
 function StatCard({ label, value, bg, text, border, icon }: {
@@ -133,7 +174,7 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
   const [overdueFirst, setOverdueFirst] = useState(true)
   const [sortBy,      setSortBy]      = useState<'default' | 'customer_az' | 'amount_low_high'>('default')
   const [highlightedOrderId, setHighlightedOrderId] = useState<number | null>(null)
-  const [payloadPreview, setPayloadPreview] = useState<{ checkoutId: string; payload: Record<string, unknown> | null } | null>(null)
+  const [payloadPreview, setPayloadPreview] = useState<{ checkoutId: string; payload: Record<string, unknown> | Array<unknown> | null } | null>(null)
 
   const role       = (session?.user?.role ?? '').toLowerCase()
   const canApprove = role === 'super_admin' || role === 'admin' || role === 'merchant_admin'
@@ -158,6 +199,9 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
   const [rejectOrder]  = useRejectAdminOrderMutation()
   const [bookCourier] = useBookAdminOrderCourierMutation()
   const [trackCourier] = useTrackAdminOrderCourierMutation()
+  const [getCourierWaybill] = useGetAdminOrderCourierWaybillMutation()
+  const [cancelCourier] = useCancelAdminOrderCourierMutation()
+  const [getCourierEpod] = useGetAdminOrderCourierEpodMutation()
   const [updateShipmentStatus] = useUpdateAdminOrderShipmentStatusMutation()
 
   const visibleOrders = useMemo(() => {
@@ -268,7 +312,7 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
           : `${courier.toUpperCase()} booking returned no tracking number yet.`,
       )
     } catch (err: unknown) {
-      showErrorToast((err as { data?: { message?: string } })?.data?.message || 'Failed to book courier shipment.')
+      showErrorToast(extractApiError(err, 'Failed to book courier shipment.'))
     } finally { setBusyId(null) }
   }
 
@@ -277,9 +321,73 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
     try {
       const courier = courierByOrder[id] ?? 'jnt'
       const result = await trackCourier({ id, courier }).unwrap()
-      showSuccessToast(result.shipment_status ? `Latest status: ${result.shipment_status.replace(/_/g, ' ')}` : 'Tracking refreshed.')
+      if (result.payload && !result.shipment_status) {
+        setPayloadPreview({
+          checkoutId: visibleOrders.find((order) => order.id === id)?.checkout_id ?? `Order #${id}`,
+          payload: result.payload,
+        })
+      }
+      const noLogsYet = Array.isArray(result.payload) && result.payload.length === 0
+      showSuccessToast(
+        result.shipment_status
+          ? `Latest status: ${result.shipment_status.replace(/_/g, ' ')}`
+          : noLogsYet
+            ? 'No XDE status logs yet in staging.'
+            : 'Tracking refreshed.',
+      )
     } catch (err: unknown) {
-      showErrorToast((err as { data?: { message?: string } })?.data?.message || 'Failed to refresh courier tracking.')
+      showErrorToast(extractApiError(err, 'Failed to refresh courier tracking.'))
+    } finally { setBusyId(null) }
+  }
+
+  const handleOpenWaybill = async (id: number) => {
+    setBusyId(id)
+    try {
+      const courier = courierByOrder[id] ?? 'jnt'
+      const blob = await getCourierWaybill({ id, courier }).unwrap()
+      const blobUrl = URL.createObjectURL(blob)
+      window.open(blobUrl, '_blank', 'noopener,noreferrer')
+      window.setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000)
+      showSuccessToast(`${courier.toUpperCase()} waybill opened in a new tab.`)
+    } catch (err: unknown) {
+      showErrorToast(extractApiError(err, 'Failed to open courier waybill.'))
+    } finally { setBusyId(null) }
+  }
+
+  const handleCancelCourier = async (id: number) => {
+    setBusyId(id)
+    try {
+      const courier = courierByOrder[id] ?? 'jnt'
+      const result = await cancelCourier({ id, courier }).unwrap()
+      if (result.payload) {
+        setPayloadPreview({
+          checkoutId: visibleOrders.find((order) => order.id === id)?.checkout_id ?? `Order #${id}`,
+          payload: result.payload,
+        })
+      }
+      showSuccessToast(result.message || `${courier.toUpperCase()} shipment cancellation submitted.`)
+    } catch (err: unknown) {
+      showErrorToast(extractApiError(err, 'Failed to cancel courier shipment.'))
+    } finally { setBusyId(null) }
+  }
+
+  const handleOpenEpod = async (id: number) => {
+    const order = visibleOrders.find((entry) => entry.id === id)
+    if (order?.shipment_status !== 'delivered') {
+      showErrorToast('EPOD is only available after successful delivery.')
+      return
+    }
+
+    setBusyId(id)
+    try {
+      const courier = courierByOrder[id] ?? 'jnt'
+      const blob = await getCourierEpod({ id, courier }).unwrap()
+      const blobUrl = URL.createObjectURL(blob)
+      window.open(blobUrl, '_blank', 'noopener,noreferrer')
+      window.setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000)
+      showSuccessToast(`${courier.toUpperCase()} EPOD opened in a new tab.`)
+    } catch (err: unknown) {
+      showErrorToast(extractApiError(err, 'Failed to open courier EPOD.'))
     } finally { setBusyId(null) }
   }
 
@@ -455,6 +563,12 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                       const canTrackThisOrder   = canTrack && order.approval_status === 'approved'
                       const approval = APPROVAL_CONFIG[order.approval_status] ?? APPROVAL_CONFIG.pending
                       const sla      = order.sla?.state ? SLA_CONFIG[order.sla.state as keyof typeof SLA_CONFIG] : null
+                      const isCourierBooked = Boolean(order.courier && order.tracking_no)
+                      const rawCourierStatus = extractCourierStatus(order.shipment_payload)
+                      const isCourierCancelled =
+                        order.shipment_status === 'cancelled'
+                        || rawCourierStatus === 'package_cancelled'
+                        || rawCourierStatus === 'package cancelled'
 
                       return (
                         <tr
@@ -550,7 +664,7 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                                 ))}
                               </select>
                               <select
-                                disabled={isBusy || !canTrackThisOrder}
+                                disabled={isBusy || !canTrackThisOrder || isCourierBooked}
                                 value={(order.shipment_status as AdminShipmentStatus | undefined) ?? 'for_pickup'}
                                 onChange={e => handleShipmentStatusChange(order.id, e.target.value as AdminShipmentStatus)}
                                 className="text-xs border border-slate-200 rounded-xl px-2.5 py-2 bg-slate-50 text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500/30 disabled:opacity-50 transition"
@@ -561,23 +675,45 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                               </select>
                               <div className="flex flex-wrap gap-1.5">
                                 <button
-                                  disabled={isBusy || !canTrackThisOrder}
+                                  disabled={isBusy || !canTrackThisOrder || isCourierCancelled}
                                   onClick={() => handleBookCourier(order.id)}
                                   className="px-2.5 py-1.5 rounded-lg text-[11px] font-semibold bg-teal-50 text-teal-700 border border-teal-200 hover:bg-teal-100 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
                                 >
                                   Book
                                 </button>
                                 <button
-                                  disabled={isBusy || !canTrackThisOrder || !order.tracking_no}
+                                  disabled={isBusy || !canTrackThisOrder || !order.tracking_no || isCourierCancelled}
                                   onClick={() => handleTrackCourier(order.id)}
                                   className="px-2.5 py-1.5 rounded-lg text-[11px] font-semibold bg-slate-50 text-slate-700 border border-slate-200 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
                                 >
                                   Track
                                 </button>
+                                <button
+                                  disabled={isBusy || !canTrackThisOrder || courierByOrder[order.id] !== 'xde' || !order.tracking_no || isCourierCancelled}
+                                  onClick={() => handleOpenWaybill(order.id)}
+                                  className="px-2.5 py-1.5 rounded-lg text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                                >
+                                  A6 Waybill
+                                </button>
+                                <button
+                                  disabled={isBusy || !canTrackThisOrder || courierByOrder[order.id] !== 'xde' || !order.tracking_no || order.shipment_status !== 'delivered'}
+                                  onClick={() => handleOpenEpod(order.id)}
+                                  className="px-2.5 py-1.5 rounded-lg text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                                >
+                                  EPOD
+                                </button>
+                                <button
+                                  disabled={isBusy || !canTrackThisOrder || courierByOrder[order.id] !== 'xde' || !order.tracking_no || isCourierCancelled}
+                                  onClick={() => handleCancelCourier(order.id)}
+                                  className="px-2.5 py-1.5 rounded-lg text-[11px] font-semibold bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                                >
+                                  Cancel
+                                </button>
                               </div>
                               {order.courier || order.tracking_no || order.shipment_status ? (
                                 <div className="space-y-2 text-[11px] text-slate-500 leading-relaxed">
                                   {order.courier ? <p className="uppercase">Courier: {order.courier}</p> : null}
+                                  {rawCourierStatus ? <p className="capitalize">Courier Status: {rawCourierStatus.replace(/_/g, ' ')}</p> : null}
                                   {order.tracking_no ? (
                                     <div className="rounded-xl border border-teal-200 bg-teal-50 p-2">
                                       <p className="text-[10px] font-bold uppercase tracking-wide text-teal-700">Tracking Number</p>

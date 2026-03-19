@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import { ReferralTreeNode, useChangePasswordMutation, useMeQuery, useReferralTreeQuery, useUpdateProfileMutation } from '@/store/api/userApi';
+import { MeResponse, ReferralTreeNode, useChangePasswordMutation, useMeQuery, useReferralTreeQuery, useUpdateProfileMutation } from '@/store/api/userApi';
 import { signOut, useSession } from 'next-auth/react';
 import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import Loading from '../Loading';
@@ -70,7 +70,21 @@ type Tab = 'profile' | 'security' | 'preferences' | 'wallet' | 'encashment' | 'i
 type AlertMsg = { type: 'success' | 'error'; text: string };
 type TreeStatusFilter = 'all' | 'verified' | 'pending_review' | 'not_verified' | 'blocked';
 
-const ProfilePage = () => {
+type ProfilePageProps = {
+  initialProfile?: MeResponse | null;
+};
+
+const QrSkeleton = ({ sizeClass }: { sizeClass: string }) => (
+  <div className={`relative overflow-hidden rounded-xl border border-purple-200 bg-white ${sizeClass}`}>
+    <div className="absolute inset-0 animate-pulse bg-gradient-to-br from-purple-100 via-white to-indigo-100" />
+    <div className="absolute inset-[18%] rounded-lg border border-dashed border-purple-200/80" />
+    <div className="absolute inset-x-[24%] top-[24%] h-2 rounded-full bg-purple-200/70" />
+    <div className="absolute inset-x-[18%] top-[40%] h-2 rounded-full bg-purple-100/90" />
+    <div className="absolute inset-x-[28%] top-[56%] h-2 rounded-full bg-indigo-100/90" />
+  </div>
+);
+
+const ProfilePage = ({ initialProfile = null }: ProfilePageProps) => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { data: session, update: updateSession } = useSession();
@@ -108,68 +122,71 @@ const ProfilePage = () => {
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [isAvatarPreviewOpen, setIsAvatarPreviewOpen] = useState(false);
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
+  const [isReferralQrLoaded, setIsReferralQrLoaded] = useState(false);
+  const [isReferralPanelQrLoaded, setIsReferralPanelQrLoaded] = useState(false);
   const [addressForm, setAddressForm] = useState<AddressFormState>({ address: '', zipCode: '' });
   const msgTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const referralMsgTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mainContentRef = useRef<HTMLDivElement | null>(null);
   const phAddress = usePhAddress();
+  const profileData = data ?? initialProfile;
 
   useEffect(() => {
-    if (data || session) {
+    if (profileData || session) {
       setForm({
-        name: data?.name ?? session?.user?.name ?? '',
-        email: data?.email ?? session?.user?.email ?? '',
-        phone: data?.phone ?? '',
-        username: data?.username ?? '',
+        name: profileData?.name ?? session?.user?.name ?? '',
+        email: profileData?.email ?? session?.user?.email ?? '',
+        phone: profileData?.phone ?? '',
+        username: profileData?.username ?? '',
       });
     }
-  }, [data, session]);
+  }, [profileData, session]);
 
   useEffect(() => {
     if (!isAddressModalOpen) return;
     setAddressForm({
-      address: data?.address ?? '',
-      zipCode: data?.zip_code ?? '',
+      address: profileData?.address ?? '',
+      zipCode: profileData?.zip_code ?? '',
     });
-  }, [data?.address, data?.zip_code, isAddressModalOpen]);
+  }, [profileData?.address, profileData?.zip_code, isAddressModalOpen]);
 
   useEffect(() => {
-    if (!isAddressModalOpen || !data?.region || phAddress.regions.length === 0 || phAddress.regionCode) return;
-    const region = phAddress.regions.find((item) => item.name === data.region);
+    if (!isAddressModalOpen || !profileData?.region || phAddress.regions.length === 0 || phAddress.regionCode) return;
+    const region = phAddress.regions.find((item) => item.name === profileData.region);
     if (region) {
       phAddress.setRegion(region.code, region.name);
     }
-  }, [data?.region, isAddressModalOpen, phAddress, phAddress.regions, phAddress.regionCode]);
+  }, [profileData?.region, isAddressModalOpen, phAddress, phAddress.regions, phAddress.regionCode]);
 
   useEffect(() => {
     if (
       !isAddressModalOpen ||
-      !data?.province ||
+      !profileData?.province ||
       phAddress.noProvince ||
       phAddress.provinces.length === 0 ||
       phAddress.provinceCode
     ) return;
-    const province = phAddress.provinces.find((item) => item.name === data.province);
+    const province = phAddress.provinces.find((item) => item.name === profileData.province);
     if (province) {
       phAddress.setProvince(province.code, province.name);
     }
-  }, [data?.province, isAddressModalOpen, phAddress, phAddress.provinces, phAddress.provinceCode, phAddress.noProvince]);
+  }, [profileData?.province, isAddressModalOpen, phAddress, phAddress.provinces, phAddress.provinceCode, phAddress.noProvince]);
 
   useEffect(() => {
-    if (!isAddressModalOpen || !data?.city || phAddress.cities.length === 0 || phAddress.cityCode) return;
-    const city = phAddress.cities.find((item) => item.name === data.city);
+    if (!isAddressModalOpen || !profileData?.city || phAddress.cities.length === 0 || phAddress.cityCode) return;
+    const city = phAddress.cities.find((item) => item.name === profileData.city);
     if (city) {
       phAddress.setCity(city.code, city.name);
     }
-  }, [data?.city, isAddressModalOpen, phAddress, phAddress.cities, phAddress.cityCode]);
+  }, [profileData?.city, isAddressModalOpen, phAddress, phAddress.cities, phAddress.cityCode]);
 
   useEffect(() => {
-    if (!isAddressModalOpen || !data?.barangay || phAddress.address.barangay) return;
-    const barangay = phAddress.barangays.find((item) => item.name === data.barangay);
+    if (!isAddressModalOpen || !profileData?.barangay || phAddress.address.barangay) return;
+    const barangay = phAddress.barangays.find((item) => item.name === profileData.barangay);
     if (barangay) {
       phAddress.setBarangay(barangay.name);
     }
-  }, [data?.barangay, isAddressModalOpen, phAddress, phAddress.barangays, phAddress.address.barangay]);
+  }, [profileData?.barangay, isAddressModalOpen, phAddress, phAddress.barangays, phAddress.address.barangay]);
 
   useEffect(() => {
     const requestedTab = searchParams.get('tab');
@@ -180,7 +197,7 @@ const ProfilePage = () => {
     }
   }, [searchParams]);
 
-  const passwordChangeRequired = Boolean(session?.user?.passwordChangeRequired || data?.password_change_required);
+  const passwordChangeRequired = Boolean(session?.user?.passwordChangeRequired || profileData?.password_change_required);
   const passwordChangeRequiredFromQuery = searchParams.get('password-change-required') === '1';
 
   // Auto-dismiss alert messages
@@ -219,19 +236,19 @@ const ProfilePage = () => {
 
   const hasChanges = useMemo(
     () =>
-      form.name !== (data?.name ?? session?.user?.name ?? '') ||
-      form.phone !== (data?.phone ?? '') ||
-      form.username !== (data?.username ?? ''),
-    [data, form.name, form.phone, form.username, session?.user?.name],
+      form.name !== (profileData?.name ?? session?.user?.name ?? '') ||
+      form.phone !== (profileData?.phone ?? '') ||
+      form.username !== (profileData?.username ?? ''),
+    [profileData?.name, profileData?.phone, profileData?.username, form.name, form.phone, form.username, session?.user?.name],
   );
 
-  const verificationStatus = data?.verification_status ?? 'not_verified';
-  const isVerified = verificationStatus === 'verified' || data?.account_status === 1;
-  const isPendingVerification = verificationStatus === 'pending_review' || data?.account_status === 2;
+  const verificationStatus = profileData?.verification_status ?? 'not_verified';
+  const isVerified = verificationStatus === 'verified' || profileData?.account_status === 1;
+  const isPendingVerification = verificationStatus === 'pending_review' || profileData?.account_status === 2;
   const configuredAppUrl = (process.env.NEXT_PUBLIC_APP_URL ?? '').trim().replace(/\/+$/, '');
   const runtimeOrigin = (typeof window !== 'undefined' ? window.location.origin : '').trim().replace(/\/+$/, '');
   const siteOrigin = configuredAppUrl || runtimeOrigin || 'http://localhost:3000';
-  const referralCode = (form.username || data?.username || '').trim();
+  const referralCode = (form.username || profileData?.username || '').trim();
   const referralLink = referralCode
     ? `${siteOrigin}/ref/${encodeURIComponent(referralCode)}`
     : '';
@@ -263,7 +280,7 @@ const ProfilePage = () => {
       },
       {
         label: 'Upload profile photo',
-        done: Boolean(data?.avatar_url),
+        done: Boolean(profileData?.avatar_url),
       },
       {
         label: 'Submit KYC documents (ID front/back + selfie)',
@@ -274,7 +291,12 @@ const ProfilePage = () => {
         done: isVerified,
       },
     ];
-  }, [data?.avatar_url, form.name, form.phone, isPendingVerification, isVerified]);
+  }, [profileData?.avatar_url, form.name, form.phone, isPendingVerification, isVerified]);
+
+  useEffect(() => {
+    setIsReferralQrLoaded(false);
+    setIsReferralPanelQrLoaded(false);
+  }, [referralLink]);
 
   const onChange = (field: keyof ProfileFormState) => (e: ChangeEvent<HTMLInputElement>) =>
     setForm((prev) => ({ ...prev, [field]: e.target.value }));
@@ -624,7 +646,7 @@ const ProfilePage = () => {
       }
 
       await updateProfile({
-        name: form.name.trim() || data?.name || session?.user?.name || 'AF Home User',
+        name: form.name.trim() || profileData?.name || session?.user?.name || 'AF Home User',
         username: form.username.trim() || undefined,
         phone: form.phone.trim() || undefined,
         avatar_url: uploadResult.url,
@@ -681,7 +703,7 @@ const ProfilePage = () => {
     }
   };
 
-  const loyaltyTier: MemberTier = rankToTier(data?.rank ?? 0);
+  const loyaltyTier: MemberTier = rankToTier(profileData?.rank ?? 0);
 
   const accountStats = [
     { label: 'Orders', value: '14', Icon: Icon.Package, onClick: () => router.push('/orders') },
@@ -692,12 +714,12 @@ const ProfilePage = () => {
 
   const addresses = useMemo(() => {
     const fullAddress = [
-      data?.address,
-      data?.barangay,
-      data?.city,
-      data?.province,
-      data?.region,
-      data?.zip_code,
+      profileData?.address,
+      profileData?.barangay,
+      profileData?.city,
+      profileData?.province,
+      profileData?.region,
+      profileData?.zip_code,
     ]
       .filter(Boolean)
       .join(', ');
@@ -714,7 +736,7 @@ const ProfilePage = () => {
         isDefault: true,
       },
     ];
-  }, [data?.address, data?.barangay, data?.city, data?.province, data?.region, data?.zip_code, form.name, form.phone]);
+  }, [profileData?.address, profileData?.barangay, profileData?.city, profileData?.province, profileData?.region, profileData?.zip_code, form.name, form.phone]);
 
   const recentActivity = [
     { title: 'Updated profile details', time: '2 hours ago' },
@@ -846,9 +868,9 @@ const ProfilePage = () => {
                     {isUploadingAvatar && (
                       <span className="pointer-events-none absolute -inset-1 rounded-full border-2 border-transparent border-t-orange-500 border-r-orange-400 animate-spin z-10" />
                     )}
-                    {data?.avatar_url ? (
+                    {profileData?.avatar_url ? (
                       <img
-                        src={data.avatar_url}
+                        src={profileData.avatar_url}
                         alt={form.name || 'Profile photo'}
                         className="h-16 w-16 rounded-full object-cover ring-4 ring-white shadow-md"
                       />
@@ -884,7 +906,7 @@ const ProfilePage = () => {
                   </h2>
                   <p className="text-xs text-slate-500 mt-0.5 flex items-center gap-1.5 flex-wrap">
                     {form.email}
-                    {data?.email_verified
+                    {profileData?.email_verified
                       ? <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-emerald-600 bg-emerald-50 border border-emerald-200 rounded-full px-1.5 py-0.5 leading-none">&#10003; Verified</span>
                       : <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-amber-600 bg-amber-50 border border-amber-200 rounded-full px-1.5 py-0.5 leading-none">&#9888; Not Verified</span>
                     }
@@ -899,7 +921,7 @@ const ProfilePage = () => {
                 {isUploadingAvatar && (
                   <p className="mt-2 text-xs text-orange-600 font-medium">Uploading photo...</p>
                 )}
-                {data?.avatar_url && (
+                {profileData?.avatar_url && (
                   <button
                     type="button"
                     onClick={() => setIsAvatarPreviewOpen(true)}
@@ -943,12 +965,19 @@ const ProfilePage = () => {
                     </div>
                     {referralLink ? (
                       <>
-                        <div className="flex justify-center my-2">
-                          <img
-                            src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(referralLink)}`}
-                            alt="Referral QR code"
-                            className="h-32 w-32 rounded-lg border border-purple-200 bg-white p-2"
-                          />
+                        <div className="my-2 flex justify-center">
+                          <div className="relative h-32 w-32">
+                            {!isReferralQrLoaded && <QrSkeleton sizeClass="h-32 w-32 p-2" />}
+                            <img
+                              src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(referralLink)}`}
+                              alt="Referral QR code"
+                              loading="eager"
+                              onLoad={() => setIsReferralQrLoaded(true)}
+                              className={`h-32 w-32 rounded-lg border border-purple-200 bg-white p-2 transition-opacity duration-300 ${
+                                isReferralQrLoaded ? 'opacity-100' : 'opacity-0'
+                              }`}
+                            />
+                          </div>
                         </div>
                         <p className="text-[11px] text-purple-600 break-all mb-2">{referralLink}</p>
                         <div className="grid grid-cols-2 gap-2">
@@ -1164,7 +1193,7 @@ const ProfilePage = () => {
                           <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide flex items-center gap-1.5">
                             {label}
                             {isEmail && (
-                              data?.email_verified
+                              profileData?.email_verified
                                 ? <span className="normal-case tracking-normal font-semibold text-[10px] text-emerald-600 bg-emerald-50 border border-emerald-200 rounded-full px-1.5 py-0.5 leading-none">&#10003; Verified</span>
                                 : <span className="normal-case tracking-normal font-semibold text-[10px] text-amber-600 bg-amber-50 border border-amber-200 rounded-full px-1.5 py-0.5 leading-none">&#9888; Not Verified</span>
                             )}
@@ -1207,10 +1236,10 @@ const ProfilePage = () => {
                           type="button"
                           onClick={() =>
                             setForm({
-                              name: data?.name ?? session?.user?.name ?? '',
-                              email: data?.email ?? session?.user?.email ?? '',
-                              phone: data?.phone ?? '',
-                              username: data?.username ?? '',
+                              name: profileData?.name ?? session?.user?.name ?? '',
+                              email: profileData?.email ?? session?.user?.email ?? '',
+                              phone: profileData?.phone ?? '',
+                              username: profileData?.username ?? '',
                             })
                           }
                           className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
@@ -1595,11 +1624,18 @@ const ProfilePage = () => {
                     {isVerified && referralLink && (
                       <div className="flex flex-col sm:flex-row items-start gap-4 p-4 rounded-xl bg-gradient-to-br from-purple-50 to-indigo-50 border border-purple-100 mb-5">
                         <div className="shrink-0">
-                          <img
-                            src={`https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(referralLink)}`}
-                            alt="Referral QR"
-                            className="h-24 w-24 rounded-xl border border-purple-200 bg-white p-1.5 shadow-sm"
-                          />
+                          <div className="relative h-24 w-24">
+                            {!isReferralPanelQrLoaded && <QrSkeleton sizeClass="h-24 w-24 p-1.5 shadow-sm" />}
+                            <img
+                              src={`https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(referralLink)}`}
+                              alt="Referral QR"
+                              loading="eager"
+                              onLoad={() => setIsReferralPanelQrLoaded(true)}
+                              className={`h-24 w-24 rounded-xl border border-purple-200 bg-white p-1.5 shadow-sm transition-opacity duration-300 ${
+                                isReferralPanelQrLoaded ? 'opacity-100' : 'opacity-0'
+                              }`}
+                            />
+                          </div>
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-xs font-bold text-purple-800 mb-1">Your Referral Link</p>
@@ -1982,7 +2018,7 @@ const ProfilePage = () => {
           </motion.div>
         )}
 
-        {isAvatarPreviewOpen && data?.avatar_url && (
+        {isAvatarPreviewOpen && profileData?.avatar_url && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -2010,7 +2046,7 @@ const ProfilePage = () => {
               </div>
               <div className="relative mx-auto aspect-square w-full max-w-md overflow-hidden rounded-xl border border-slate-100 bg-slate-50">
                 <img
-                  src={data.avatar_url}
+                  src={profileData.avatar_url}
                   alt={form.name || 'Profile photo preview'}
                   className="h-full w-full object-cover"
                 />

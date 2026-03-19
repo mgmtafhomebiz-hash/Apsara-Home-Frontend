@@ -66,6 +66,10 @@ export interface CustomerOrder {
   shipping_fee: number
   payment_method: string
   shipping_address: string
+  courier?: string | null
+  tracking_no?: string | null
+  shipment_status?: string | null
+  shipped_at?: string | null
   created_at: string
   estimated_delivery?: string | null
 }

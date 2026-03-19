@@ -27,8 +27,20 @@ type Order = {
     shipping_fee: number;
     payment_method: string;
     shipping_address: string;
+    courier?: string | null;
+    tracking_no?: string | null;
+    shipment_status?: string | null;
+    shipped_at?: string | null;
     created_at: string;
     estimated_delivery?: string | null;
+};
+
+const copyText = async (value: string) => {
+    if (typeof navigator === 'undefined' || !navigator.clipboard?.writeText) {
+        throw new Error('Clipboard is not available in this browser.');
+    }
+
+    await navigator.clipboard.writeText(value);
 };
 
 const STATUS_CONFIG: Record<OrderStatus, { label: string; badge: string; dot: string; step: number }> = {
@@ -52,6 +64,8 @@ const OrderCard = ({ order }: OrderCardProps) => {
   const previewItems = order.items.slice(0, 3);
   const extraCount = order.items.length - 3;
   const isActive = !['cancelled', 'refunded', 'delivered'].includes(order.status);
+  const hasShipmentInfo = Boolean(order.courier || order.tracking_no || order.shipment_status);
+  const isShipmentCancelled = order.shipment_status === 'cancelled';
 
   return (
     <motion.div
@@ -74,6 +88,12 @@ const OrderCard = ({ order }: OrderCardProps) => {
             <span className={`h-1.5 w-1.5 rounded-full ${cfg.dot}`} />
             {cfg.label}
           </span>
+          {isShipmentCancelled && (
+            <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full border bg-red-50 text-red-600 border-red-200">
+              <span className="h-1.5 w-1.5 rounded-full bg-red-400" />
+              Shipment Cancelled
+            </span>
+          )}
           <button
             type="button"
             onClick={() => setExpanded((p) => !p)}
@@ -124,7 +144,7 @@ const OrderCard = ({ order }: OrderCardProps) => {
               <Icon.RefreshCw className="h-3.5 w-3.5" /> Reorder
             </button>
           )}
-          {isActive && (
+          {isActive && !isShipmentCancelled && (
             <button type="button" className="inline-flex items-center gap-1.5 rounded-xl bg-orange-500 hover:bg-orange-600 px-3.5 py-2 text-xs font-semibold text-white transition-colors">
               <Icon.Truck className="h-3.5 w-3.5" /> Track Order
             </button>
@@ -157,7 +177,15 @@ const OrderCard = ({ order }: OrderCardProps) => {
             <div className="border-t border-gray-100 px-5 py-4 space-y-4 bg-gray-50/50">
 
               {/* Tracking steps */}
-              {order.status !== 'cancelled' && order.status !== 'refunded' && (
+              {isShipmentCancelled ? (
+                <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3">
+                  <p className="text-xs font-bold uppercase tracking-widest text-red-600">Shipment Update</p>
+                  <p className="mt-1 text-sm font-semibold text-red-700">Courier booking was cancelled.</p>
+                  <p className="mt-1 text-xs text-red-600">
+                    Your order is still in the system, but the courier shipment was cancelled and may need to be rebooked by the seller.
+                  </p>
+                </div>
+              ) : order.status !== 'cancelled' && order.status !== 'refunded' && (
                 <div>
                   <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-3">Order Tracking</p>
                   <div className="relative flex items-start justify-between gap-1">
@@ -247,6 +275,48 @@ const OrderCard = ({ order }: OrderCardProps) => {
                   </div>
                 </div>
               </div>
+
+              {hasShipmentInfo && (
+                <div className="rounded-xl border border-teal-100 bg-teal-50/60 px-4 py-3 space-y-2.5">
+                  <p className="text-xs font-bold uppercase tracking-widest text-teal-700">Shipment Details</p>
+                  {order.courier && (
+                    <p className="text-xs text-gray-700">
+                      Courier: <span className="font-semibold uppercase">{order.courier}</span>
+                    </p>
+                  )}
+                  {order.shipment_status && (
+                    <p className="text-xs text-gray-700">
+                      Shipment Status: <span className="font-semibold capitalize">{order.shipment_status.replace(/_/g, ' ')}</span>
+                    </p>
+                  )}
+                  {order.tracking_no && (
+                    <div className="rounded-xl border border-teal-200 bg-white px-3 py-2.5">
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-teal-700">Tracking Number</p>
+                      <div className="mt-1.5 flex items-center gap-2">
+                        <p className="min-w-0 flex-1 break-all font-mono text-sm font-semibold text-gray-900">{order.tracking_no}</p>
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            try {
+                              await copyText(order.tracking_no as string);
+                            } catch {
+                              return;
+                            }
+                          }}
+                          className="shrink-0 rounded-lg border border-teal-200 bg-teal-50 px-2.5 py-1 text-[11px] font-semibold text-teal-700 transition hover:bg-teal-100"
+                        >
+                          Copy
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  {order.shipped_at && (
+                    <p className="text-xs text-gray-500">
+                      Shipped at: <span className="font-medium text-gray-700">{formatDate(order.shipped_at)}</span>
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
           </motion.div>
         )}

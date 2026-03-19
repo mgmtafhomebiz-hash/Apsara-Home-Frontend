@@ -18,6 +18,7 @@ export type AdminShipmentStatus =
   | 'out_for_delivery'
   | 'delivered'
   | 'failed_delivery'
+  | 'cancelled'
   | 'returned_to_sender'
 
 export type AdminCourier = 'jnt' | 'xde'
@@ -147,7 +148,7 @@ export const adminOrdersApi = baseApi.injectEndpoints({
       invalidatesTags: ['Orders', 'AdminNotifications'],
     }),
     trackAdminOrderCourier: builder.mutation<
-      { tracking_no: string; shipment_status?: string | null },
+      { tracking_no: string; shipment_status?: string | null; payload?: Record<string, unknown> | Array<unknown> | null },
       { id: number; courier: AdminCourier }
     >({
       query: ({ id, courier }) => ({
@@ -155,6 +156,37 @@ export const adminOrdersApi = baseApi.injectEndpoints({
         method: 'GET',
       }),
       invalidatesTags: ['Orders', 'AdminNotifications'],
+    }),
+    getAdminOrderCourierWaybill: builder.mutation<
+      Blob,
+      { id: number; courier: AdminCourier }
+    >({
+      query: ({ id, courier }) => ({
+        url: `/api/admin/orders/${id}/shipping/${courier}/waybill`,
+        method: 'GET',
+        responseHandler: async (response) => response.blob(),
+      }),
+    }),
+    cancelAdminOrderCourier: builder.mutation<
+      { message: string; tracking_no?: string | null; payload?: Record<string, unknown> | null },
+      { id: number; courier: AdminCourier }
+    >({
+      query: ({ id, courier }) => ({
+        url: `/api/admin/orders/${id}/shipping/${courier}/cancel`,
+        method: 'POST',
+      }),
+      invalidatesTags: ['Orders', 'AdminNotifications'],
+    }),
+    getAdminOrderCourierEpod: builder.mutation<
+      Blob,
+      { id: number; courier: AdminCourier; type?: 'document' | 'signature' }
+    >({
+      query: ({ id, courier, type }) => ({
+        url: `/api/admin/orders/${id}/shipping/${courier}/epod`,
+        method: 'GET',
+        params: type ? { type } : undefined,
+        responseHandler: async (response) => response.blob(),
+      }),
     }),
   }),
 })
@@ -167,4 +199,7 @@ export const {
   useUpdateAdminOrderShipmentStatusMutation,
   useBookAdminOrderCourierMutation,
   useTrackAdminOrderCourierMutation,
+  useGetAdminOrderCourierWaybillMutation,
+  useCancelAdminOrderCourierMutation,
+  useGetAdminOrderCourierEpodMutation,
 } = adminOrdersApi
