@@ -868,90 +868,87 @@ const ProfilePage = ({ initialProfile = null }: ProfilePageProps) => {
                 </div>
               </div>
 
-              <div className="px-5 pb-5">
-                {/* Avatar row */}
-                <div className="flex items-end justify-between -mt-8 mb-4">
-                  {/* Avatar */}
-                  <div className="relative group">
-                    {isUploadingAvatar && (
-                      <span className="pointer-events-none absolute -inset-1 rounded-full border-2 border-transparent border-t-orange-500 border-r-orange-400 animate-spin z-10" />
-                    )}
-                    {profileData?.avatar_url ? (
-                      <img
-                        src={profileData.avatar_url}
-                        alt={form.name || 'Profile photo'}
-                        className="h-16 w-16 rounded-full object-cover ring-4 ring-white shadow-md"
-                      />
-                    ) : (
-                      <div className="h-16 w-16 rounded-full bg-gradient-to-br from-orange-400 to-amber-500 text-white text-xl font-bold flex items-center justify-center ring-4 ring-white shadow-md">
-                        {initials}
-                      </div>
-                    )}
-                    <label
-                      className="absolute inset-0 flex cursor-pointer items-center justify-center rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity"
-                      title="Change photo"
-                    >
-                      <input
-                        type="file"
-                        accept="image/png,image/jpeg,image/webp,image/gif"
-                        className="hidden"
-                        onChange={handleAvatarUpload}
-                      />
-                      <Icon.Camera className="h-4 w-4 text-white" />
-                    </label>
-                  </div>
-
-                  {/* Tier label */}
-                  <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border ${TIER_COVER[loyaltyTier].pill} mt-10`}>
-                    <img src={TIER_BADGE_IMAGE[loyaltyTier]} alt={loyaltyTier} className="h-4 w-4 object-contain shrink-0" />
-                    <span className="text-[11px] font-bold">{loyaltyTier}</span>
-                  </div>
-                </div>
-
-                {/* User info */}
-                <div className="space-y-0.5">
-                  <h2 className="text-base font-bold text-slate-900">
-                    {form.name || 'AF Home User'}
-                  </h2>
-                  <p className="text-xs text-slate-500 mt-0.5 flex items-center gap-1.5 flex-wrap">
-                    {form.email}
-                    {profileData?.email_verified
-                      ? <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-emerald-600 bg-emerald-50 border border-emerald-200 rounded-full px-1.5 py-0.5 leading-none">&#10003; Verified</span>
-                      : <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-amber-600 bg-amber-50 border border-amber-200 rounded-full px-1.5 py-0.5 leading-none">&#9888; Not Verified</span>
-                    }
-                  </p>
-                  {form.username && (
-                    <span className="inline-block text-xs px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 font-mono font-medium mt-1">
-                      @{form.username}
-                    </span>
+              {/* Avatar — centered, floating over banner */}
+              <div className="flex flex-col items-center -mt-12 pb-5 px-5">
+                <div className="relative group mb-3">
+                  {isUploadingAvatar && (
+                    <span className="pointer-events-none absolute -inset-1.5 rounded-full border-[3px] border-transparent border-t-orange-400 border-r-amber-300 animate-spin z-10" />
                   )}
+                  {profileData?.avatar_url ? (
+                    <img
+                      src={profileData.avatar_url}
+                      alt={form.name || 'Profile photo'}
+                      className="h-24 w-24 rounded-full object-cover ring-4 ring-white shadow-xl"
+                    />
+                  ) : (
+                    <div className="h-24 w-24 rounded-full bg-gradient-to-br from-orange-400 to-amber-400 text-white text-2xl font-bold flex items-center justify-center ring-4 ring-white shadow-xl">
+                      {initials}
+                    </div>
+                  )}
+                  <label
+                    className="absolute inset-0 flex cursor-pointer items-center justify-center rounded-full bg-black/45 opacity-0 group-hover:opacity-100 transition-opacity"
+                    title="Change photo"
+                  >
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp,image/gif"
+                      className="hidden"
+                      onChange={handleAvatarUpload}
+                    />
+                    <Icon.Camera className="h-5 w-5 text-white" />
+                  </label>
+                  {/* Online dot */}
+                  <span className="absolute bottom-1 right-1 h-4 w-4 rounded-full bg-emerald-400 border-2 border-white shadow-sm" />
                 </div>
+
+                {/* Tier pill */}
+                <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full border ${TIER_COVER[loyaltyTier].pill} mb-3`}>
+                  <img src={TIER_BADGE_IMAGE[loyaltyTier]} alt={loyaltyTier} className="h-4 w-4 object-contain shrink-0" />
+                  <span className="text-[11px] font-bold">{loyaltyTier}</span>
+                </div>
+
+                {/* User info — centered */}
+                <h2 className="text-lg font-bold text-slate-900 text-center leading-tight">
+                  {form.name || 'AF Home User'}
+                </h2>
+                <p className="text-xs text-slate-500 mt-1 text-center flex items-center justify-center gap-1.5 flex-wrap">
+                  {form.email}
+                  {profileData?.email_verified
+                    ? <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-emerald-600 bg-emerald-50 border border-emerald-200 rounded-full px-1.5 py-0.5 leading-none">&#10003; Verified</span>
+                    : <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-amber-600 bg-amber-50 border border-amber-200 rounded-full px-1.5 py-0.5 leading-none">&#9888; Unverified</span>
+                  }
+                </p>
+                {form.username && (
+                  <span className="inline-block text-xs px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 font-mono font-medium mt-1.5 border border-slate-200">
+                    @{form.username}
+                  </span>
+                )}
 
                 {isUploadingAvatar && (
-                  <p className="mt-2 text-xs text-orange-600 font-medium">Uploading photo...</p>
+                  <p className="mt-2 text-xs text-orange-500 font-medium">Uploading photo...</p>
                 )}
                 {profileData?.avatar_url && (
                   <button
                     type="button"
                     onClick={() => setIsAvatarPreviewOpen(true)}
-                    className="mt-2 text-xs font-medium text-orange-500 hover:text-orange-600 hover:underline"
+                    className="mt-1.5 text-xs font-semibold text-orange-500 hover:text-orange-600 hover:underline"
                   >
                     View Photo
                   </button>
                 )}
 
                 {/* Profile completion */}
-                <div className="mt-4 p-3 rounded-xl bg-slate-50 border border-slate-100">
+                <div className="mt-4 w-full p-3.5 rounded-xl bg-orange-50/60 border border-orange-100">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-xs font-semibold text-slate-600">Profile Completion</span>
-                    <span className="text-xs font-bold text-slate-800">{completion}%</span>
+                    <span className="text-xs font-bold text-orange-600">{completion}%</span>
                   </div>
-                  <div className="h-1.5 rounded-full bg-slate-200 overflow-hidden">
+                  <div className="h-2 rounded-full bg-orange-100 overflow-hidden">
                     <motion.div
-                      className="h-full bg-gradient-to-r from-orange-400 to-amber-400 rounded-full"
+                      className="h-full rounded-full bg-gradient-to-r from-orange-400 to-amber-400"
                       initial={{ width: 0 }}
                       animate={{ width: `${completion}%` }}
-                      transition={{ duration: 0.6, ease: 'easeOut' }}
+                      transition={{ duration: 0.7, ease: 'easeOut' }}
                     />
                   </div>
                   <p className="mt-1.5 text-[11px] text-slate-400">
@@ -967,19 +964,19 @@ const ProfilePage = ({ initialProfile = null }: ProfilePageProps) => {
               {/* Referral section */}
               {isVerified && (
                 <div className="px-5 pb-5">
-                  <div className="rounded-2xl border border-[#2c5f4f]/20 bg-gradient-to-br from-[#2c5f4f]/5 to-[#d4a574]/5 p-4">
+                  <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                     {/* Header */}
                     <div className="flex items-center justify-between gap-2 mb-3">
                       <div className="flex items-center gap-2">
-                        <div className="h-7 w-7 rounded-lg bg-[#2c5f4f] flex items-center justify-center shrink-0">
-                          <svg className="h-3.5 w-3.5 text-white" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                        <div className="h-7 w-7 rounded-lg bg-emerald-50 border border-emerald-100 flex items-center justify-center shrink-0">
+                          <svg className="h-3.5 w-3.5 text-emerald-600" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
                             <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
                             <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
                           </svg>
                         </div>
-                        <p className="text-xs font-bold text-[#2c5f4f]">Affiliate Referral QR</p>
+                        <p className="text-xs font-bold text-slate-700">Affiliate Referral QR</p>
                       </div>
-                      <span className="rounded-full bg-[#2c5f4f] px-2.5 py-0.5 text-[10px] font-semibold text-white">&#10003; Verified</span>
+                      <span className="rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-[10px] font-semibold text-emerald-700">&#10003; Verified</span>
                     </div>
 
                     {referralLink ? (
@@ -993,7 +990,7 @@ const ProfilePage = ({ initialProfile = null }: ProfilePageProps) => {
                               alt="Referral QR code"
                               loading="eager"
                               onLoad={() => setIsReferralQrLoaded(true)}
-                              className={`h-36 w-36 rounded-xl border-2 border-[#2c5f4f]/20 bg-white p-2 shadow-sm transition-opacity duration-300 ${
+                              className={`h-36 w-36 rounded-xl border border-slate-200 bg-white p-2 shadow-sm transition-opacity duration-300 ${
                                 isReferralQrLoaded ? 'opacity-100' : 'opacity-0'
                               }`}
                             />
@@ -1001,9 +998,9 @@ const ProfilePage = ({ initialProfile = null }: ProfilePageProps) => {
                         </div>
 
                         {/* Referral link */}
-                        <div className="mb-3 rounded-xl bg-white border border-[#2c5f4f]/15 px-3 py-2">
-                          <p className="text-[10px] font-medium text-[#2c5f4f]/50 mb-0.5">Your referral link</p>
-                          <p className="text-[11px] text-[#2c5f4f] font-medium break-all leading-snug">{referralLink}</p>
+                        <div className="mb-3 rounded-xl bg-slate-50 border border-slate-200 px-3 py-2">
+                          <p className="text-[10px] font-medium text-slate-400 mb-0.5">Your referral link</p>
+                          <p className="text-[11px] text-slate-600 font-medium break-all leading-snug">{referralLink}</p>
                         </div>
 
                         {/* Action buttons */}
@@ -1011,7 +1008,7 @@ const ProfilePage = ({ initialProfile = null }: ProfilePageProps) => {
                           <button
                             type="button"
                             onClick={handleShareReferralLink}
-                            className="flex items-center justify-center gap-1.5 rounded-xl bg-[#2c5f4f] px-2 py-2 text-xs font-semibold text-white hover:bg-[#234d40] transition-colors shadow-sm"
+                            className="flex items-center justify-center gap-1.5 rounded-xl bg-orange-500 px-2 py-2 text-xs font-semibold text-white hover:bg-orange-600 transition-colors shadow-sm"
                           >
                             <svg className="h-3.5 w-3.5 shrink-0" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
                               <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13" />
@@ -1021,7 +1018,7 @@ const ProfilePage = ({ initialProfile = null }: ProfilePageProps) => {
                           <button
                             type="button"
                             onClick={handleCopyReferralLink}
-                            className="flex items-center justify-center gap-1.5 rounded-xl bg-white border border-[#2c5f4f]/25 px-2 py-2 text-xs font-semibold text-[#2c5f4f] hover:bg-[#2c5f4f]/5 transition-colors"
+                            className="flex items-center justify-center gap-1.5 rounded-xl bg-white border border-slate-200 px-2 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
                           >
                             <svg className="h-3.5 w-3.5 shrink-0" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
                               <rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
@@ -1041,33 +1038,33 @@ const ProfilePage = ({ initialProfile = null }: ProfilePageProps) => {
                     )}
 
                     {/* Network stats */}
-                    <div className="mt-4 border-t border-[#2c5f4f]/10 pt-3.5">
+                    <div className="mt-4 border-t border-slate-100 pt-3.5">
                       <div className="flex items-center justify-between gap-2 mb-3">
-                        <p className="text-xs font-bold text-[#2c5f4f]">Affiliate Network</p>
+                        <p className="text-xs font-bold text-slate-700">Affiliate Network</p>
                         {!isReferralTreeLoading && (
-                          <span className="text-[10px] font-semibold text-[#d4a574] bg-[#d4a574]/10 border border-[#d4a574]/30 px-2 py-0.5 rounded-full">
+                          <span className="text-[10px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
                             {referralTree?.summary?.total_network ?? 0} members
                           </span>
                         )}
                       </div>
                       <div className="grid grid-cols-3 gap-2 mb-3">
-                        <div className="rounded-xl border border-[#2c5f4f]/15 bg-white px-2 py-2.5 text-center">
-                          <p className="text-[10px] text-[#2c5f4f]/60 font-medium mb-0.5">Direct</p>
-                          <p className="text-base font-bold text-[#2c5f4f]">{referralTree?.summary?.direct_count ?? 0}</p>
+                        <div className="rounded-xl border border-slate-200 bg-slate-50 px-2 py-2.5 text-center">
+                          <p className="text-[10px] text-slate-500 font-medium mb-0.5">Direct</p>
+                          <p className="text-base font-bold text-slate-800">{referralTree?.summary?.direct_count ?? 0}</p>
                         </div>
-                        <div className="rounded-xl border border-[#d4a574]/25 bg-white px-2 py-2.5 text-center">
-                          <p className="text-[10px] font-medium mb-0.5" style={{ color: '#d4a574' }}>Level 2</p>
-                          <p className="text-base font-bold" style={{ color: '#c49060' }}>{referralTree?.summary?.second_level_count ?? 0}</p>
+                        <div className="rounded-xl border border-orange-100 bg-orange-50 px-2 py-2.5 text-center">
+                          <p className="text-[10px] text-orange-500 font-medium mb-0.5">Level 2</p>
+                          <p className="text-base font-bold text-orange-700">{referralTree?.summary?.second_level_count ?? 0}</p>
                         </div>
-                        <div className="rounded-xl border border-emerald-100 bg-white px-2 py-2.5 text-center">
+                        <div className="rounded-xl border border-emerald-100 bg-emerald-50 px-2 py-2.5 text-center">
                           <p className="text-[10px] text-emerald-500 font-medium mb-0.5">Total</p>
-                          <p className="text-base font-bold text-emerald-600">{referralTree?.summary?.total_network ?? 0}</p>
+                          <p className="text-base font-bold text-emerald-700">{referralTree?.summary?.total_network ?? 0}</p>
                         </div>
                       </div>
                       <button
                         type="button"
                         onClick={() => handleTabChange('referrals')}
-                        className="w-full flex items-center justify-center gap-2 rounded-xl bg-[#2c5f4f] px-3 py-2.5 text-xs font-semibold text-white hover:bg-[#234d40] transition-colors shadow-sm"
+                        className="w-full flex items-center justify-center gap-2 rounded-xl bg-orange-500 px-3 py-2.5 text-xs font-semibold text-white hover:bg-orange-600 transition-colors shadow-sm"
                       >
                         <svg className="h-3.5 w-3.5 shrink-0" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
                           <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
@@ -1631,8 +1628,8 @@ const ProfilePage = ({ initialProfile = null }: ProfilePageProps) => {
                         <p className="text-xs text-slate-500 mt-0.5">Your affiliate tree, referral link, and commission overview.</p>
                       </div>
                       {isVerified && (
-                        <span className="text-xs px-2.5 py-1 rounded-full bg-purple-50 text-purple-700 font-semibold border border-purple-100 whitespace-nowrap">
-                          Verified Affiliate
+                        <span className="text-xs px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 font-semibold whitespace-nowrap">
+                          &#10003; Verified Affiliate
                         </span>
                       )}
                     </div>
@@ -1640,10 +1637,10 @@ const ProfilePage = ({ initialProfile = null }: ProfilePageProps) => {
                     {/* Stats row */}
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
                       {[
-                        { label: 'Direct Referrals', value: referralTree?.summary?.direct_count ?? 0, bg: 'bg-indigo-50', text: 'text-indigo-700', border: 'border-indigo-100', val: 'text-indigo-900' },
-                        { label: 'Level 2', value: referralTree?.summary?.second_level_count ?? 0, bg: 'bg-purple-50', text: 'text-purple-700', border: 'border-purple-100', val: 'text-purple-900' },
-                        { label: 'Total Network', value: referralTree?.summary?.total_network ?? 0, bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-100', val: 'text-emerald-900' },
-                        { label: 'Total PV Earned', value: (referralTree?.summary as { total_pv?: number } | undefined)?.total_pv ?? 0, bg: 'bg-orange-50', text: 'text-orange-700', border: 'border-orange-100', val: 'text-orange-900' },
+                        { label: 'Direct Referrals', value: referralTree?.summary?.direct_count ?? 0, bg: 'bg-sky-50', text: 'text-sky-600', border: 'border-sky-100', val: 'text-sky-800' },
+                        { label: 'Level 2', value: referralTree?.summary?.second_level_count ?? 0, bg: 'bg-orange-50', text: 'text-orange-600', border: 'border-orange-100', val: 'text-orange-800' },
+                        { label: 'Total Network', value: referralTree?.summary?.total_network ?? 0, bg: 'bg-emerald-50', text: 'text-emerald-600', border: 'border-emerald-100', val: 'text-emerald-800' },
+                        { label: 'Total PV Earned', value: (referralTree?.summary as { total_pv?: number } | undefined)?.total_pv ?? 0, bg: 'bg-amber-50', text: 'text-amber-600', border: 'border-amber-100', val: 'text-amber-800' },
                       ].map((stat) => (
                         <div key={stat.label} className={`rounded-xl border ${stat.border} ${stat.bg} px-4 py-3`}>
                           <p className={`text-[11px] font-medium ${stat.text} mb-1`}>{stat.label}</p>
@@ -1654,7 +1651,7 @@ const ProfilePage = ({ initialProfile = null }: ProfilePageProps) => {
 
                     {/* Referral Link + QR */}
                     {isVerified && referralLink && (
-                      <div className="flex flex-col sm:flex-row items-start gap-4 p-4 rounded-xl bg-gradient-to-br from-purple-50 to-indigo-50 border border-purple-100 mb-5">
+                      <div className="flex flex-col sm:flex-row items-start gap-4 p-4 rounded-xl bg-orange-50/60 border border-orange-100 mb-5">
                         <div className="shrink-0">
                           <div className="relative h-24 w-24">
                             {!isReferralPanelQrLoaded && <QrSkeleton sizeClass="h-24 w-24 p-1.5 shadow-sm" />}
@@ -1663,16 +1660,16 @@ const ProfilePage = ({ initialProfile = null }: ProfilePageProps) => {
                               alt="Referral QR"
                               loading="eager"
                               onLoad={() => setIsReferralPanelQrLoaded(true)}
-                              className={`h-24 w-24 rounded-xl border border-purple-200 bg-white p-1.5 shadow-sm transition-opacity duration-300 ${
+                              className={`h-24 w-24 rounded-xl border border-orange-200 bg-white p-1.5 shadow-sm transition-opacity duration-300 ${
                                 isReferralPanelQrLoaded ? 'opacity-100' : 'opacity-0'
                               }`}
                             />
                           </div>
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-xs font-bold text-purple-800 mb-1">Your Referral Link</p>
-                          <div className="flex items-center gap-2 p-2 rounded-lg bg-white border border-purple-100 mb-3">
-                            <p className="text-[11px] text-purple-600 truncate flex-1">{referralLink}</p>
+                          <p className="text-xs font-bold text-slate-700 mb-1">Your Referral Link</p>
+                          <div className="flex items-center gap-2 p-2 rounded-lg bg-white border border-orange-100 mb-3">
+                            <p className="text-[11px] text-slate-600 truncate flex-1">{referralLink}</p>
                           </div>
                           {referralMsg && (
                             <p className={`mb-2 text-xs font-medium ${referralMsg.type === 'success' ? 'text-emerald-700' : 'text-red-600'}`}>
@@ -1683,17 +1680,17 @@ const ProfilePage = ({ initialProfile = null }: ProfilePageProps) => {
                             <button
                               type="button"
                               onClick={handleCopyReferralLink}
-                              className="flex items-center gap-1.5 rounded-xl bg-white border border-purple-200 px-3.5 py-2 text-xs font-semibold text-purple-700 hover:bg-purple-50 transition-colors"
+                              className="flex items-center gap-1.5 rounded-xl bg-white border border-slate-200 px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
                             >
-                              <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
+                              <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" /></svg>
                               Copy Link
                             </button>
                             <button
                               type="button"
                               onClick={handleShareReferralLink}
-                              className="flex items-center gap-1.5 rounded-xl bg-purple-600 px-3.5 py-2 text-xs font-semibold text-white hover:bg-purple-700 transition-colors shadow-sm shadow-purple-200"
+                              className="flex items-center gap-1.5 rounded-xl bg-orange-500 px-3.5 py-2 text-xs font-semibold text-white hover:bg-orange-600 transition-colors shadow-sm"
                             >
-                              <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" /></svg>
+                              <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13" /></svg>
                               Share
                             </button>
                           </div>
@@ -1729,13 +1726,13 @@ const ProfilePage = ({ initialProfile = null }: ProfilePageProps) => {
                               value={treeSearchQuery}
                               onChange={(e) => { setTreeSearchQuery(e.target.value); setReferralPage(1); }}
                               placeholder="Search name, username, email..."
-                              className="w-full pl-9 pr-3 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-200 focus:border-purple-300 bg-slate-50 text-slate-700 placeholder-slate-400"
+                              className="w-full pl-9 pr-3 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2c5f4f]/20 focus:border-[#2c5f4f]/40 bg-slate-50 text-slate-700 placeholder-slate-400"
                             />
                           </div>
                           <select
                             value={treeStatusFilter}
                             onChange={(e) => { setTreeStatusFilter(e.target.value as TreeStatusFilter); setReferralPage(1); }}
-                            className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-200 focus:border-purple-300"
+                            className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#2c5f4f]/20 focus:border-[#2c5f4f]/40"
                           >
                             <option value="all">All Status</option>
                             <option value="verified">Verified</option>
@@ -1776,7 +1773,7 @@ const ProfilePage = ({ initialProfile = null }: ProfilePageProps) => {
                                   }
                                 </p>
                                 {(treeSearchQuery || treeStatusFilter !== 'all') && (
-                                  <button type="button" onClick={() => { setTreeSearchQuery(''); setTreeStatusFilter('all'); setReferralPage(1); }} className="text-xs text-purple-500 hover:text-purple-600 font-medium">
+                                  <button type="button" onClick={() => { setTreeSearchQuery(''); setTreeStatusFilter('all'); setReferralPage(1); }} className="text-xs text-[#2c5f4f] hover:text-[#234d40] font-medium">
                                     Clear filters
                                   </button>
                                 )}
@@ -1794,7 +1791,7 @@ const ProfilePage = ({ initialProfile = null }: ProfilePageProps) => {
                                         type="button"
                                         disabled={referralPage <= 1}
                                         onClick={() => setReferralPage((p) => Math.max(1, p - 1))}
-                                        className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-600 hover:border-purple-300 hover:text-purple-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                        className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-600 hover:border-[#2c5f4f]/40 hover:text-[#2c5f4f] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                                       >
                                         <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6" /></svg>
                                         Prev
@@ -1806,7 +1803,7 @@ const ProfilePage = ({ initialProfile = null }: ProfilePageProps) => {
                                         type="button"
                                         disabled={referralPage >= totalPages}
                                         onClick={() => setReferralPage((p) => Math.min(totalPages, p + 1))}
-                                        className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-600 hover:border-purple-300 hover:text-purple-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                        className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-600 hover:border-[#2c5f4f]/40 hover:text-[#2c5f4f] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                                       >
                                         Next
                                         <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6" /></svg>
