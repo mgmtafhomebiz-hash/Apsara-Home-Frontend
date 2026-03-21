@@ -95,6 +95,11 @@ function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
   }
 }
 
+function rgbToHex(rgb: { r: number; g: number; b: number }): string {
+  const toHex = (value: number) => Math.max(0, Math.min(255, Math.round(value))).toString(16).padStart(2, '0')
+  return `#${toHex(rgb.r)}${toHex(rgb.g)}${toHex(rgb.b)}`
+}
+
 /** Returns true if the string looks like a CSS hex color */
 export function isHexColor(value: string): boolean {
   return /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(value.trim())
@@ -131,7 +136,7 @@ export function hexToColorName(hex: string): string {
  * If the stored name looks like a hex, converts it to a color name.
  * Otherwise returns the stored name as-is.
  */
-export function displayColorName(name: string, hex?: string): string {
+export function displayColorName(name: string): string {
   if (!name) return ''
   if (isHexColor(name)) return hexToColorName(name)
   return name
@@ -156,6 +161,38 @@ export function colorNameToHex(name: string): string | null {
 
   const includes = COLOR_PALETTE.find((color) => normalizeColorName(color.name).includes(normalized))
   if (includes) return includes.hex
+
+  const tokens = normalized.split(' ').filter(Boolean)
+  if (tokens.length > 1) {
+    const matchedColors = tokens
+      .map((token) => {
+        const tokenExact = COLOR_PALETTE.find((color) => normalizeColorName(color.name) === token)
+        if (tokenExact) return tokenExact
+
+        const tokenStartsWith = COLOR_PALETTE.find((color) => normalizeColorName(color.name).startsWith(token))
+        if (tokenStartsWith) return tokenStartsWith
+
+        return COLOR_PALETTE.find((color) => normalizeColorName(color.name).includes(token)) ?? null
+      })
+      .filter((color): color is (typeof COLOR_PALETTE)[number] => Boolean(color))
+
+    if (matchedColors.length > 0) {
+      const average = matchedColors.reduce(
+        (sum, color) => ({
+          r: sum.r + color.r,
+          g: sum.g + color.g,
+          b: sum.b + color.b,
+        }),
+        { r: 0, g: 0, b: 0 },
+      )
+
+      return rgbToHex({
+        r: average.r / matchedColors.length,
+        g: average.g / matchedColors.length,
+        b: average.b / matchedColors.length,
+      })
+    }
+  }
 
   return null
 }

@@ -171,6 +171,8 @@ const normalizeTextField = (value: string) => {
   return trimmed.length > 0 ? trimmed : null
 }
 
+const normalizeVariantLabel = (value: string) => value.trim().replace(/\s+/g, ' ')
+
 const normalizeFormForComparison = (form: FormState) => ({
   pd_name: form.pd_name.trim(),
   pd_catid: Number(form.pd_catid),
@@ -435,9 +437,11 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
 
   const addVariantColor = (index: number) => {
     const hex  = newColorInputs[index]?.hex ?? '#94a3b8'
-    const name = newColorInputs[index]?.name?.trim() || hex  // fix: use typed name, fallback to hex
+    const typedName = normalizeVariantLabel(newColorInputs[index]?.name ?? '')
+    const name = typedName || hexToColorName(hex)
     const existing = variants[index]?.pv_colors ?? []
-    if (existing.some(c => c.hex.toLowerCase() === hex.toLowerCase())) return
+    if (!name) return
+    if (existing.some((c) => normalizeVariantLabel(c.name).toLowerCase() === name.toLowerCase())) return
     setVariants(prev =>
       prev.map((item, i) => i === index ? { ...item, pv_colors: [...item.pv_colors, { name, hex }] } : item),
     )
@@ -1178,7 +1182,7 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
                                             const currentName = newColorInputs[index]?.name ?? ''
                                             setNewColorInputs(prev => ({
                                               ...prev,
-                                              [index]: { hex, name: currentName.trim() ? currentName : hexToColorName(hex) },
+                                              [index]: { hex, name: normalizeVariantLabel(currentName) || hexToColorName(hex) },
                                             }))
                                           }}
                                           className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
@@ -1193,14 +1197,18 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
                                             const matchedHex = colorNameToHex(name)
                                             setNewColorInputs(prev => ({
                                               ...prev,
-                                              [index]: { ...(prev[index] ?? { hex: '#94a3b8' }), name, hex: matchedHex ?? prev[index]?.hex ?? '#94a3b8' },
+                                              [index]: {
+                                                ...(prev[index] ?? { hex: '#94a3b8' }),
+                                                name,
+                                                hex: matchedHex ?? prev[index]?.hex ?? '#94a3b8',
+                                              },
                                             }))
                                           }}
                                           onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addVariantColor(index))}
-                                          placeholder="Color name (e.g. Midnight Blue)"
+                                          placeholder="Color / finish (e.g. Matte Black, Walnut Oak)"
                                           className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-teal-400 focus:border-teal-400"
                                         />
-                                        <p className="text-[10px] text-slate-400 px-0.5">Click the swatch to pick a color, or type a name</p>
+                                        <p className="text-[10px] text-slate-400 px-0.5">Use simple or complex labels like Black, Rose Gold, Walnut Oak, or Ash Gray.</p>
                                       </div>
                                       <button
                                         type="button"
