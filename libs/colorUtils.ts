@@ -136,7 +136,8 @@ export function hexToColorName(hex: string): string {
  * If the stored name looks like a hex, converts it to a color name.
  * Otherwise returns the stored name as-is.
  */
-export function displayColorName(name: string): string {
+export function displayColorName(name: string, _hex?: string): string {
+  void _hex
   if (!name) return ''
   if (isHexColor(name)) return hexToColorName(name)
   return name
