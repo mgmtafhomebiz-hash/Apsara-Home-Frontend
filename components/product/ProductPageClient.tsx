@@ -11,11 +11,13 @@ interface ProductPageClientProps {
     categoryLabel: string;
 }
 
+type VariantOption = NonNullable<CategoryProduct['variants']>[number];
+
 const ProductPageClient = ({ product, categoryLabel }: ProductPageClientProps) => {
     const [activeVariantImage, setActiveVariantImage] = useState<string | undefined>(undefined);
-    const [selectedVariant, setSelectedVariant] = useState<CategoryProduct['variants'] extends Array<infer T> ? T | undefined : undefined>(undefined);
+    const [selectedVariant, setSelectedVariant] = useState<VariantOption | undefined>(undefined);
 
-    const handleVariantChange = useCallback((variant?: CategoryProduct['variants'] extends Array<infer T> ? T : never) => {
+    const handleVariantChange = useCallback((variant?: VariantOption) => {
         setSelectedVariant(variant);
         setActiveVariantImage(variant?.images?.[0]);
     }, []);
