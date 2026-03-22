@@ -101,9 +101,9 @@ function getStatusInfo(status: VerificationStatus) {
 }
 
 export default function VerificationOverviewPage() {
-  const { data: session, status } = useSession();
+  const { data: session, status: sessionStatus } = useSession();
   const role = String(session?.user?.role ?? '').toLowerCase();
-  const isCustomerSession = status === 'authenticated' && (role === 'customer' || role === '');
+  const isCustomerSession = sessionStatus === 'authenticated' && (role === 'customer' || role === '');
   const { data: me } = useMeQuery(undefined, { skip: !isCustomerSession });
 
   const rawStatus = me?.verification_status ?? 'not_verified';
