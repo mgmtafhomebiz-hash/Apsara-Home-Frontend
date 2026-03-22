@@ -62,9 +62,11 @@ function readStoredReferral(): string {
 
 const CustomerCheckoutMain = ({ initialCategories = [] }: { initialCategories?: Category[] }) => {
     const router = useRouter();
-    const { status } = useSession();
-    const isLoggedIn = status === 'authenticated';
-    const { data: meData } = useMeQuery(undefined, { skip: !isLoggedIn });
+    const { data: session, status } = useSession();
+    const role = String(session?.user?.role ?? '').toLowerCase();
+    const isCustomerSession = status === 'authenticated' && (role === 'customer' || role === '');
+    const isLoggedIn = isCustomerSession;
+    const { data: meData } = useMeQuery(undefined, { skip: !isCustomerSession });
 
     const checkoutData = useMemo(() => readCheckoutDraft(), []);
     const storedReferral = useMemo(() => readStoredReferral(), []);

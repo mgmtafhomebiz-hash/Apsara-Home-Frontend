@@ -24,6 +24,7 @@ const ADMIN_ALLOWED_PREFIXES = [
   "/admin/products",
   "/admin/shipping",
   "/admin/webpages",
+  "/admin/settings/users",
 ];
 const MERCHANT_ALLOWED_PREFIXES = [
   "/admin/dashboard",
@@ -41,6 +42,8 @@ const AUTH_REQUIRED_PREFIXES = ["/profile", "/orders"]
 const SUPPLIER_ALLOWED_PREFIXES = [
   "/supplier/dashboard",
   "/supplier/products",
+  "/supplier/categories",
+  "/supplier/users",
   "/supplier/company",
 ];
 

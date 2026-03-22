@@ -101,9 +101,11 @@ const VERIFICATION_ID_TYPES = [
 
 const EncashmentTab = () => {
   const { data: session } = useSession();
-  const { data: meData } = useMeQuery();
   const role = String((session?.user as { role?: string } | undefined)?.role ?? '').toLowerCase();
   const isCustomerSession = role === 'customer' || role === '';
+  const { data: meData } = useMeQuery(undefined, {
+    skip: !isCustomerSession,
+  });
 
   const { data, isLoading, isFetching, isError, refetch, error } = useGetEncashmentRequestsQuery(undefined, {
     skip: !isCustomerSession,

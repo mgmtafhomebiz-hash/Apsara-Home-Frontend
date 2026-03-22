@@ -8,6 +8,11 @@ export interface SupplierItem {
   contact: string
   address: string
   status: number
+  assigned_categories?: Array<{
+    id: number
+    name: string
+    url: string
+  }>
 }
 
 export interface CreateSupplierPayload {
@@ -23,8 +28,43 @@ export interface InviteSupplierUserPayload {
   supplier_id: number
   fullname: string
   username: string
-  email: string
+  email?: string
   level_type?: number
+}
+
+export interface InviteSupplierUserResponse {
+  message: string
+  setup_url: string
+  delivery: 'link_only' | 'email_and_link'
+  invite: {
+    supplier_id: number
+    supplier_name: string
+    fullname: string
+    username: string
+    email: string | null
+    level_type: number
+    expires_at: string
+  }
+}
+
+export interface SupplierCategoriesResponse {
+  supplier_id: number
+  categories: Array<{
+    id: number
+    name: string
+    url: string
+  }>
+}
+
+export interface SupplierPortalUser {
+  id: number
+  supplier_id: number
+  fullname: string
+  username: string
+  email: string
+  level_type: number
+  is_main_supplier?: boolean
+  role_label?: string
 }
 
 export const suppliersApi = baseApi.injectEndpoints({
@@ -59,11 +99,44 @@ export const suppliersApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['Suppliers'],
     }),
-    inviteSupplierUser: builder.mutation<{ message: string }, InviteSupplierUserPayload>({
+    inviteSupplierUser: builder.mutation<InviteSupplierUserResponse, InviteSupplierUserPayload>({
       query: (body) => ({
         url: '/api/admin/supplier-users',
         method: 'POST',
         body,
+      }),
+      invalidatesTags: ['Suppliers'],
+    }),
+    getSupplierCategories: builder.query<SupplierCategoriesResponse, number>({
+      query: (supplierId) => ({
+        url: `/api/admin/suppliers/${supplierId}/categories`,
+        method: 'GET',
+      }),
+      providesTags: ['Suppliers', 'Categories'],
+    }),
+    updateSupplierCategories: builder.mutation<
+      SupplierCategoriesResponse & { message: string },
+      { supplierId: number; category_ids: number[] }
+    >({
+      query: ({ supplierId, category_ids }) => ({
+        url: `/api/admin/suppliers/${supplierId}/categories`,
+        method: 'PUT',
+        body: { category_ids },
+      }),
+      invalidatesTags: ['Suppliers', 'Categories'],
+    }),
+    getSupplierUsers: builder.query<{ supplier_id: number; users: SupplierPortalUser[] }, number | void>({
+      query: (supplierId) => ({
+        url: '/api/admin/supplier-users',
+        method: 'GET',
+        params: supplierId ? { supplier_id: supplierId } : undefined,
+      }),
+      providesTags: ['Suppliers'],
+    }),
+    deleteSupplierUser: builder.mutation<{ message: string }, number>({
+      query: (id) => ({
+        url: `/api/admin/supplier-users/${id}`,
+        method: 'DELETE',
       }),
       invalidatesTags: ['Suppliers'],
     }),
@@ -76,4 +149,8 @@ export const {
   useUpdateSupplierMutation,
   useDeleteSupplierMutation,
   useInviteSupplierUserMutation,
+  useGetSupplierCategoriesQuery,
+  useGetSupplierUsersQuery,
+  useUpdateSupplierCategoriesMutation,
+  useDeleteSupplierUserMutation,
 } = suppliersApi

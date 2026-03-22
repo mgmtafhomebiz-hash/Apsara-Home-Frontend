@@ -196,6 +196,7 @@ const ADMIN_VISIBLE_NAV_IDS = new Set([
   'products',
   'shipping',
   'webpages',
+  'settings',
 ])
 const MERCHANT_VISIBLE_NAV_IDS = new Set([
   'dashboard',

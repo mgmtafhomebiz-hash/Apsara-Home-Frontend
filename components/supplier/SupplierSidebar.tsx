@@ -8,6 +8,8 @@ import { clearAccessTokenCache } from '@/store/api/baseApi'
 const items = [
   { label: 'Dashboard', href: '/supplier/dashboard' },
   { label: 'Products', href: '/supplier/products' },
+  { label: 'Categories', href: '/supplier/categories' },
+  { label: 'Users', href: '/supplier/users' },
   { label: 'Company', href: '/supplier/company' },
 ]
 

@@ -32,9 +32,22 @@ interface AdminUsersQuery {
 export interface CreateAdminUserPayload {
   name: string
   username: string
-  email: string
+  email?: string
   user_level_id: number
   supplier_id?: number | null
+}
+
+export interface CreateAdminUserResponse {
+  message: string
+  setup_url: string
+  delivery: 'link_only' | 'email_and_link'
+  invite: {
+    name: string
+    username: string
+    email: string
+    role: string
+    expires_at: string
+  }
 }
 
 export interface UpdateAdminUserPayload {
@@ -61,7 +74,7 @@ export const adminUsersApi = baseApi.injectEndpoints({
       }),
       providesTags: ['AdminUsers'],
     }),
-    createAdminUser: builder.mutation<{ message: string }, CreateAdminUserPayload>({
+    createAdminUser: builder.mutation<CreateAdminUserResponse, CreateAdminUserPayload>({
       query: (body) => ({
         url: '/api/admin/users',
         method: 'POST',

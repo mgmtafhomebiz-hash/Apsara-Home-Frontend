@@ -1,12 +1,17 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { Fragment, useMemo, useState } from 'react'
 import { useSession } from 'next-auth/react'
+import { useGetCategoriesQuery } from '@/store/api/categoriesApi'
 import {
+  InviteSupplierUserResponse,
+  SupplierItem,
   useCreateSupplierMutation,
   useDeleteSupplierMutation,
+  useGetSupplierUsersQuery,
   useGetSuppliersQuery,
   useInviteSupplierUserMutation,
+  useUpdateSupplierCategoriesMutation,
   useUpdateSupplierMutation,
 } from '@/store/api/suppliersApi'
 
@@ -46,6 +51,7 @@ export default function SuppliersPageMain() {
   const { data: session } = useSession()
   const role = String(session?.user?.role ?? '').toLowerCase()
   const isSupplierPortal = role === 'supplier'
+  const isMainSupplier = Boolean(session?.user?.isMainSupplier)
   const isSupplierAdmin =
     role === 'supplier_admin' || isSupplierPortal || (session?.user?.userLevelId ?? 0) === 8
   const { data, isLoading, isError } = useGetSuppliersQuery()
@@ -54,6 +60,8 @@ export default function SuppliersPageMain() {
   const [deleteSupplier, { isLoading: isDeletingSupplier }] = useDeleteSupplierMutation()
   const [inviteSupplierUser, { isLoading: isInvitingSupplierUser }] =
     useInviteSupplierUserMutation()
+  const [updateSupplierCategories, { isLoading: isSavingSupplierCategories }] =
+    useUpdateSupplierCategoriesMutation()
   const [companyForm, setCompanyForm] = useState<SupplierCompanyForm>(
     defaultSupplierCompanyForm
   )
@@ -64,12 +72,23 @@ export default function SuppliersPageMain() {
     type: 'success' | 'error'
     message: string
   } | null>(null)
+  const [supplierOverrides, setSupplierOverrides] = useState<Record<number, SupplierItem>>({})
   const [inviteFeedback, setInviteFeedback] = useState<{
     type: 'success' | 'error'
     message: string
   } | null>(null)
+  const [supplierSearch, setSupplierSearch] = useState('')
+  const [supplierPage, setSupplierPage] = useState(1)
+  const [latestInvite, setLatestInvite] = useState<InviteSupplierUserResponse | null>(null)
   const [editingSupplierId, setEditingSupplierId] = useState<number | null>(null)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [expandedSupplierTreeId, setExpandedSupplierTreeId] = useState<number | null>(null)
+  const [categoryTarget, setCategoryTarget] = useState<SupplierItem | null>(null)
+  const [categorySelection, setCategorySelection] = useState<number[]>([])
+  const [categoryFeedback, setCategoryFeedback] = useState<{
+    type: 'success' | 'error'
+    message: string
+  } | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<{
     id: number
     company: string
@@ -78,11 +97,49 @@ export default function SuppliersPageMain() {
 
   const sortedSuppliers = useMemo(
     () =>
-      [...(data?.suppliers ?? [])].sort((a, b) =>
+      Object.values(
+        [...(data?.suppliers ?? []), ...Object.values(supplierOverrides)].reduce<Record<number, SupplierItem>>(
+          (acc, supplier) => {
+            acc[supplier.id] = supplier
+            return acc
+          },
+          {}
+        )
+      ).sort((a, b) =>
         (a.company || a.name).localeCompare(b.company || b.name)
       ),
-    [data?.suppliers]
+    [data?.suppliers, supplierOverrides]
   )
+  const linkedSupplierId = Number(session?.user?.supplierId ?? 0)
+  const { data: allCategoriesData } = useGetCategoriesQuery({ page: 1, per_page: 500 })
+  const allCategories = useMemo(
+    () => allCategoriesData?.categories ?? [],
+    [allCategoriesData?.categories]
+  )
+  const supplierInviteForm = useMemo(
+    () =>
+      isSupplierAdmin && linkedSupplierId > 0
+        ? { ...inviteForm, supplier_id: String(linkedSupplierId) }
+        : inviteForm,
+    [inviteForm, isSupplierAdmin, linkedSupplierId]
+  )
+  const filteredSuppliers = useMemo(() => {
+    const keyword = supplierSearch.trim().toLowerCase()
+    if (keyword === '') return sortedSuppliers
+
+    return sortedSuppliers.filter((supplier) =>
+      [supplier.company, supplier.name, supplier.email, supplier.contact]
+        .map((value) => String(value ?? '').toLowerCase())
+        .some((value) => value.includes(keyword))
+    )
+  }, [sortedSuppliers, supplierSearch])
+  const supplierPageSize = 8
+  const supplierTotalPages = Math.max(1, Math.ceil(filteredSuppliers.length / supplierPageSize))
+  const normalizedSupplierPage = Math.min(supplierPage, supplierTotalPages)
+  const paginatedSuppliers = useMemo(() => {
+    const start = (normalizedSupplierPage - 1) * supplierPageSize
+    return filteredSuppliers.slice(start, start + supplierPageSize)
+  }, [filteredSuppliers, normalizedSupplierPage])
 
   const getErrorMessage = (error: unknown, fallback: string) => {
     if (error && typeof error === 'object') {
@@ -126,7 +183,11 @@ export default function SuppliersPageMain() {
       }).unwrap()
 
       setCompanyFeedback({ type: 'success', message: created.message })
+      setSupplierOverrides((prev) => ({ ...prev, [created.supplier.id]: created.supplier }))
       setCompanyForm(defaultSupplierCompanyForm)
+      setLatestInvite(null)
+      setSupplierSearch('')
+      setSupplierPage(1)
       setInviteForm((prev) => ({
         ...prev,
         supplier_id: String(created.supplier.id),
@@ -159,6 +220,7 @@ export default function SuppliersPageMain() {
       }).unwrap()
 
       setCompanyFeedback({ type: 'success', message: updated.message })
+      setSupplierOverrides((prev) => ({ ...prev, [updated.supplier.id]: updated.supplier }))
       setEditingSupplierId(null)
       setIsEditModalOpen(false)
       setCompanyForm(defaultSupplierCompanyForm)
@@ -173,24 +235,59 @@ export default function SuppliersPageMain() {
   const handleInviteSupplier = async (event: React.FormEvent) => {
     event.preventDefault()
     setInviteFeedback(null)
+    setLatestInvite(null)
 
     try {
       const result = await inviteSupplierUser({
-        supplier_id: Number(inviteForm.supplier_id),
-        fullname: inviteForm.fullname.trim(),
-        username: inviteForm.username.trim(),
-        email: inviteForm.email.trim(),
+        supplier_id: Number(supplierInviteForm.supplier_id),
+        fullname: supplierInviteForm.fullname.trim(),
+        username: supplierInviteForm.username.trim(),
+        email: supplierInviteForm.email.trim() || undefined,
       }).unwrap()
 
       setInviteFeedback({ type: 'success', message: result.message })
+      setLatestInvite(result)
       setInviteForm((prev) => ({
         ...defaultSupplierInviteForm,
-        supplier_id: prev.supplier_id,
+        supplier_id:
+          isSupplierAdmin && linkedSupplierId > 0 ? String(linkedSupplierId) : prev.supplier_id,
       }))
     } catch (error) {
       setInviteFeedback({
         type: 'error',
-        message: getErrorMessage(error, 'Unable to send supplier invite.'),
+        message: getErrorMessage(error, 'Unable to create supplier invite.'),
+      })
+    }
+  }
+
+  const openCategoryManager = (supplier: SupplierItem) => {
+    setCategoryTarget(supplier)
+    setCategoryFeedback(null)
+    setCategorySelection((supplier.assigned_categories ?? []).map((category) => category.id))
+  }
+
+  const toggleCategorySelection = (categoryId: number) => {
+    setCategorySelection((prev) =>
+      prev.includes(categoryId) ? prev.filter((id) => id !== categoryId) : [...prev, categoryId]
+    )
+  }
+
+  const handleSaveSupplierCategories = async () => {
+    if (!categoryTarget) return
+
+    setCategoryFeedback(null)
+
+    try {
+      const result = await updateSupplierCategories({
+        supplierId: categoryTarget.id,
+        category_ids: categorySelection,
+      }).unwrap()
+
+      setCategoryFeedback({ type: 'success', message: result.message })
+    } catch (error) {
+      setCategoryFeedback({
+        type: 'error',
+        message: getErrorMessage(error, 'Unable to update supplier category access.'),
       })
     }
   }
@@ -230,6 +327,11 @@ export default function SuppliersPageMain() {
     try {
       const result = await deleteSupplier(deleteTarget.id).unwrap()
       setCompanyFeedback({ type: 'success', message: result.message })
+      setSupplierOverrides((prev) => {
+        const next = { ...prev }
+        delete next[deleteTarget.id]
+        return next
+      })
       if (editingSupplierId === deleteTarget.id) {
         cancelEditSupplier()
       }
@@ -298,6 +400,104 @@ export default function SuppliersPageMain() {
             value={supplier.status === 1 ? 'Active' : 'Inactive'}
           />
         </div>
+
+        <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <p className="text-xs font-bold uppercase tracking-[0.24em] text-slate-400">
+            Allowed Categories
+          </p>
+          <h2 className="mt-2 text-lg font-bold text-slate-900">Assigned Product Categories</h2>
+          <p className="mt-1 text-sm text-slate-500">
+            These are the only categories this supplier portal can use when creating or editing products.
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {(supplier.assigned_categories ?? []).length > 0 ? (
+              supplier.assigned_categories?.map((category) => (
+                <span
+                  key={category.id}
+                  className="inline-flex rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1.5 text-xs font-semibold text-cyan-700"
+                >
+                  {category.name}
+                </span>
+              ))
+            ) : (
+              <span className="rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
+                No categories assigned yet. Ask admin to assign your allowed product categories.
+              </span>
+            )}
+          </div>
+        </section>
+
+        <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="mb-5">
+            <p className="text-xs font-bold uppercase tracking-[0.24em] text-slate-400">
+              Supplier Access
+            </p>
+            <h2 className="mt-2 text-lg font-bold text-slate-900">
+              {isMainSupplier ? 'Invite Sub-Supplier User' : 'Supplier Access'}
+            </h2>
+            <p className="mt-1 text-sm text-slate-500">
+              {isMainSupplier
+                ? 'Give your staff their own supplier portal login. Email is optional, and you can copy the setup link manually after creating the invite.'
+                : 'This account is a sub-supplier account. Only the main supplier owner can invite additional supplier users.'}
+            </p>
+          </div>
+
+          {isMainSupplier ? (
+            <form onSubmit={handleInviteSupplier} className="space-y-4">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <FormField label="Full Name">
+                  <input
+                    value={supplierInviteForm.fullname}
+                    onChange={handleInviteInput('fullname')}
+                    required
+                    className={inputClassName}
+                  />
+                </FormField>
+                <FormField label="Username">
+                  <input
+                    value={supplierInviteForm.username}
+                    onChange={handleInviteInput('username')}
+                    required
+                    className={inputClassName}
+                  />
+                </FormField>
+              </div>
+
+              <FormField label="Email (Optional)">
+                <input
+                  type="email"
+                  value={supplierInviteForm.email}
+                  onChange={handleInviteInput('email')}
+                  className={inputClassName}
+                  placeholder="Leave blank if you will send the setup link manually"
+                />
+              </FormField>
+
+              {inviteFeedback ? (
+                <FeedbackBanner
+                  type={inviteFeedback.type}
+                  message={inviteFeedback.message}
+                />
+              ) : null}
+
+              {latestInvite ? (
+                <SetupLinkCard setupUrl={latestInvite.setup_url} delivery={latestInvite.delivery} />
+              ) : null}
+
+              <button
+                type="submit"
+                disabled={isInvitingSupplierUser}
+                className="rounded-2xl bg-cyan-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-cyan-500 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isInvitingSupplierUser ? 'Creating invite...' : 'Create Supplier Invite Link'}
+              </button>
+            </form>
+          ) : (
+            <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+              Main supplier owner only ang puwedeng mag-invite ng sub-supplier users.
+            </div>
+          )}
+        </section>
       </div>
     )
   }
@@ -405,8 +605,8 @@ export default function SuppliersPageMain() {
               Invite Supplier Login
             </h2>
             <p className="mt-1 text-sm text-slate-500">
-              This sends a supplier portal invite to their email so they can activate
-              their account and sign in.
+              Create the main supplier owner account here. That owner can later invite their own
+              sub-supplier users from the supplier portal.
             </p>
           </div>
 
@@ -451,8 +651,8 @@ export default function SuppliersPageMain() {
                 type="email"
                 value={inviteForm.email}
                 onChange={handleInviteInput('email')}
-                required
                 className={inputClassName}
+                placeholder="Optional"
               />
             </FormField>
 
@@ -463,18 +663,45 @@ export default function SuppliersPageMain() {
               />
             ) : null}
 
+            {latestInvite ? (
+              <SetupLinkCard setupUrl={latestInvite.setup_url} delivery={latestInvite.delivery} />
+            ) : null}
+
             <button
               type="submit"
               disabled={isInvitingSupplierUser}
               className="rounded-2xl bg-cyan-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-cyan-500 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {isInvitingSupplierUser ? 'Sending invite...' : 'Send Supplier Invite'}
+              {isInvitingSupplierUser ? 'Creating invite...' : 'Create Main Supplier Invite Link'}
             </button>
           </form>
         </section>
       </div>
 
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="flex flex-col gap-3 border-b border-slate-200 bg-slate-50 px-4 py-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <p className="text-sm font-semibold text-slate-800">Supplier Directory</p>
+            <p className="mt-1 text-xs text-slate-500">
+              Showing {paginatedSuppliers.length} of {filteredSuppliers.length} supplier companies
+            </p>
+          </div>
+          <div className="relative w-full md:max-w-sm">
+            <svg className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <input
+              type="text"
+              value={supplierSearch}
+              onChange={(event) => {
+                setSupplierSearch(event.target.value)
+                setSupplierPage(1)
+              }}
+              placeholder="Search supplier, email, or contact..."
+              className="w-full rounded-2xl border border-slate-200 bg-white py-3 pl-10 pr-4 text-sm text-slate-800 outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
+            />
+          </div>
+        </div>
         <table className="w-full text-sm">
           <thead className="bg-slate-50">
             <tr className="border-b border-slate-200">
@@ -496,51 +723,192 @@ export default function SuppliersPageMain() {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {sortedSuppliers.map((supplier) => (
-              <tr key={supplier.id}>
-                <td className="px-4 py-3">
-                  <p className="font-semibold text-slate-800">
-                    {supplier.company || supplier.name}
-                  </p>
-                  <p className="text-xs text-slate-400">{supplier.name}</p>
-                </td>
-                <td className="px-4 py-3 text-slate-600">{supplier.contact || '-'}</td>
-                <td className="px-4 py-3 text-slate-600">{supplier.email || '-'}</td>
-                <td className="px-4 py-3">
-                  <span
-                    className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] font-semibold ${
-                      supplier.status === 1
-                        ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-                        : 'border-slate-200 bg-slate-50 text-slate-600'
-                    }`}
-                  >
-                    {supplier.status === 1 ? 'Active' : 'Inactive'}
-                  </span>
-                </td>
-                <td className="px-4 py-3">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => startEditSupplier(supplier)}
-                      className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setDeleteTarget(supplier)}
-                      disabled={isDeletingSupplier}
-                      className="rounded-xl border border-red-200 px-3 py-2 text-xs font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      Delete
-                    </button>
-                  </div>
+            {paginatedSuppliers.length === 0 ? (
+              <tr>
+                <td colSpan={5} className="px-4 py-10 text-center text-sm text-slate-500">
+                  {supplierSearch.trim()
+                    ? `No suppliers found for "${supplierSearch.trim()}".`
+                    : 'No suppliers found.'}
                 </td>
               </tr>
+            ) : null}
+            {paginatedSuppliers.map((supplier) => (
+              <Fragment key={supplier.id}>
+                <tr>
+                  <td className="px-4 py-3">
+                    <p className="font-semibold text-slate-800">
+                      {supplier.company || supplier.name}
+                    </p>
+                    <p className="text-xs text-slate-400">{supplier.name}</p>
+                  </td>
+                  <td className="px-4 py-3 text-slate-600">{supplier.contact || '-'}</td>
+                  <td className="px-4 py-3 text-slate-600">{supplier.email || '-'}</td>
+                  <td className="px-4 py-3">
+                    <span
+                      className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] font-semibold ${
+                        supplier.status === 1
+                          ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                          : 'border-slate-200 bg-slate-50 text-slate-600'
+                      }`}
+                    >
+                      {supplier.status === 1 ? 'Active' : 'Inactive'}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setExpandedSupplierTreeId((prev) => (prev === supplier.id ? null : supplier.id))
+                        }
+                        className="rounded-xl border border-emerald-200 px-3 py-2 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-50"
+                      >
+                        {expandedSupplierTreeId === supplier.id ? 'Hide Users' : 'Users'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => openCategoryManager(supplier)}
+                        className="rounded-xl border border-cyan-200 px-3 py-2 text-xs font-semibold text-cyan-700 transition hover:bg-cyan-50"
+                      >
+                        Categories
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => startEditSupplier(supplier)}
+                        className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDeleteTarget(supplier)}
+                        disabled={isDeletingSupplier}
+                        className="rounded-xl border border-red-200 px-3 py-2 text-xs font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                {expandedSupplierTreeId === supplier.id ? (
+                  <tr className="bg-slate-50/70">
+                    <td colSpan={5} className="px-4 py-4">
+                      <SupplierUsersTree supplierId={supplier.id} />
+                    </td>
+                  </tr>
+                ) : null}
+              </Fragment>
             ))}
           </tbody>
         </table>
+        <div className="flex flex-col gap-3 border-t border-slate-200 bg-slate-50 px-4 py-4 md:flex-row md:items-center md:justify-between">
+          <p className="text-xs text-slate-500">
+            Page {normalizedSupplierPage} of {supplierTotalPages}
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setSupplierPage((prev) => Math.max(1, prev - 1))}
+              disabled={normalizedSupplierPage <= 1}
+              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Previous
+            </button>
+            <button
+              type="button"
+              onClick={() => setSupplierPage((prev) => Math.min(supplierTotalPages, prev + 1))}
+              disabled={normalizedSupplierPage >= supplierTotalPages}
+              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Next
+            </button>
+          </div>
+        </div>
       </div>
+
+      {categoryTarget ? (
+        <ModalShell onClose={() => setCategoryTarget(null)}>
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.22em] text-cyan-700">
+                Supplier Categories
+              </p>
+              <h3 className="mt-2 text-xl font-bold text-slate-900">
+                Assign Allowed Categories
+              </h3>
+              <p className="mt-2 text-sm text-slate-500">
+                {categoryTarget.company || categoryTarget.name} will only be able to use the
+                categories you enable here.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setCategoryTarget(null)}
+              className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
+            >
+              Close
+            </button>
+          </div>
+
+          <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            {allCategories.length === 0 ? (
+              <p className="text-sm text-amber-700">Create master categories first before assigning them to suppliers.</p>
+            ) : (
+              <div className="grid gap-3 sm:grid-cols-2">
+                {allCategories.map((category) => {
+                  const checked = categorySelection.includes(category.id)
+
+                  return (
+                    <label
+                      key={category.id}
+                      className={`flex cursor-pointer items-start gap-3 rounded-2xl border px-4 py-3 transition ${
+                        checked
+                          ? 'border-cyan-300 bg-cyan-50'
+                          : 'border-slate-200 bg-white hover:border-slate-300'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => toggleCategorySelection(category.id)}
+                        className="mt-1 h-4 w-4 accent-cyan-600"
+                      />
+                      <div>
+                        <p className="text-sm font-semibold text-slate-800">{category.name}</p>
+                        <p className="text-xs text-slate-500">/{category.url || 'no-slug'}</p>
+                      </div>
+                    </label>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+
+          {categoryFeedback ? (
+            <div className="mt-4">
+              <FeedbackBanner type={categoryFeedback.type} message={categoryFeedback.message} />
+            </div>
+          ) : null}
+
+          <div className="mt-6 flex justify-end gap-3">
+            <button
+              type="button"
+              onClick={() => setCategoryTarget(null)}
+              className="rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => void handleSaveSupplierCategories()}
+              disabled={isSavingSupplierCategories || allCategories.length === 0}
+              className="rounded-2xl bg-cyan-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-cyan-500 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isSavingSupplierCategories ? 'Saving access...' : 'Save Category Access'}
+            </button>
+          </div>
+        </ModalShell>
+      ) : null}
 
       {isEditModalOpen ? (
         <ModalShell onClose={cancelEditSupplier}>
@@ -681,6 +1049,65 @@ export default function SuppliersPageMain() {
   )
 }
 
+function SupplierUsersTree({ supplierId }: { supplierId: number }) {
+  const { data, isLoading, isError } = useGetSupplierUsersQuery(supplierId)
+  const users = data?.users ?? []
+
+  if (isLoading) {
+    return <p className="text-sm text-slate-500">Loading supplier users...</p>
+  }
+
+  if (isError) {
+    return (
+      <p className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        Failed to load supplier users.
+      </p>
+    )
+  }
+
+  if (users.length === 0) {
+    return (
+      <p className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+        No supplier users yet.
+      </p>
+    )
+  }
+
+  return (
+    <div className="space-y-3">
+      <div>
+        <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">Supplier User Tree</p>
+        <h4 className="mt-2 text-sm font-bold text-slate-900">Main Supplier and Sub-Suppliers</h4>
+      </div>
+      {users.map((user) => (
+        <div
+          key={user.id}
+          className={`rounded-2xl border px-4 py-3 ${
+            user.is_main_supplier
+              ? 'border-cyan-200 bg-cyan-50'
+              : 'border-slate-200 bg-white'
+          }`}
+        >
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-sm font-semibold text-slate-900">{user.fullname || user.username}</p>
+            <span
+              className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-semibold ${
+                user.is_main_supplier
+                  ? 'border-cyan-200 bg-white text-cyan-700'
+                  : 'border-slate-200 bg-slate-50 text-slate-600'
+              }`}
+            >
+              {user.role_label || (user.is_main_supplier ? 'Main Supplier' : 'Sub Supplier')}
+            </span>
+          </div>
+          <p className="mt-1 text-xs text-slate-500">@{user.username}</p>
+          <p className="mt-1 text-xs text-slate-500">{user.email || 'No email provided'}</p>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 function FormField({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block">
@@ -700,6 +1127,49 @@ function FeedbackBanner({ type, message }: { type: 'success' | 'error'; message:
       }`}
     >
       {message}
+    </div>
+  )
+}
+
+function SetupLinkCard({
+  setupUrl,
+  delivery,
+}: {
+  setupUrl: string
+  delivery: 'link_only' | 'email_and_link'
+}) {
+  const [copied, setCopied] = useState(false)
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(setupUrl)
+      setCopied(true)
+      window.setTimeout(() => setCopied(false), 1800)
+    } catch {
+      setCopied(false)
+    }
+  }
+
+  return (
+    <div className="rounded-2xl border border-cyan-200 bg-cyan-50 p-4">
+      <p className="text-xs font-bold uppercase tracking-[0.18em] text-cyan-700">
+        Setup Link Ready
+      </p>
+      <p className="mt-2 text-sm text-slate-600">
+        {delivery === 'email_and_link'
+          ? 'An email was sent, and you can also copy the setup link below.'
+          : 'No email was sent. Copy this setup link and send it manually to your supplier user.'}
+      </p>
+      <div className="mt-3 rounded-2xl border border-cyan-100 bg-white px-4 py-3 text-sm text-slate-700 break-all">
+        {setupUrl}
+      </div>
+      <button
+        type="button"
+        onClick={() => void handleCopy()}
+        className="mt-3 rounded-xl border border-cyan-200 bg-white px-3 py-2 text-xs font-semibold text-cyan-700 transition hover:bg-cyan-100"
+      >
+        {copied ? 'Copied' : 'Copy Link'}
+      </button>
     </div>
   )
 }

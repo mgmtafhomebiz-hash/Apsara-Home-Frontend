@@ -9,6 +9,8 @@ type TokenUser = {
     userLevelId?: number;
     supplierId?: number | null;
     supplierName?: string | null;
+    supplierLevelType?: number | null;
+    isMainSupplier?: boolean;
     passwordChangeRequired?: boolean;
 };
 
@@ -161,6 +163,8 @@ export const authOptions: NextAuthOptions = {
                         role: data.user.role,
                         supplierId: data.user.supplier_id ?? null,
                         supplierName: data.user.supplier_name ?? null,
+                        supplierLevelType: data.user.level_type ?? null,
+                        isMainSupplier: Boolean(data.user.is_main_supplier),
                     }
                 } catch {
                     return null
@@ -188,6 +192,8 @@ export const authOptions: NextAuthOptions = {
                 token.userLevelId = authUser.userLevelId;
                 token.supplierId = authUser.supplierId;
                 token.supplierName = authUser.supplierName;
+                token.supplierLevelType = authUser.supplierLevelType;
+                token.isMainSupplier = authUser.isMainSupplier;
                 token.passwordChangeRequired = authUser.passwordChangeRequired;
             }
             if (trigger === 'update' && session) {
@@ -208,6 +214,8 @@ export const authOptions: NextAuthOptions = {
                 sessionUser.userLevelId = authToken.userLevelId;
                 sessionUser.supplierId = authToken.supplierId;
                 sessionUser.supplierName = authToken.supplierName;
+                sessionUser.supplierLevelType = authToken.supplierLevelType;
+                sessionUser.isMainSupplier = authToken.isMainSupplier;
                 sessionUser.passwordChangeRequired = authToken.passwordChangeRequired;
             }
             return session

@@ -104,11 +104,13 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
   const { cartCount, setIsOpen } = useCart()
   const dispatch = useAppDispatch()
   const { data: session, status } = useSession();
-  const { data: meData } = useMeQuery(undefined, { skip: status !== 'authenticated' })
-  const [logoutApi] = useLogoutMutation();
-  const isLoggedIn = status === 'authenticated'
   const user = session?.user
-  const avatarUrl = meData?.avatar_url || user?.image || null
+  const role = String(user?.role ?? '').toLowerCase()
+  const isCustomerSession = status === 'authenticated' && (role === 'customer' || role === '')
+  const { data: meData } = useMeQuery(undefined, { skip: !isCustomerSession })
+  const [logoutApi] = useLogoutMutation();
+  const isLoggedIn = isCustomerSession
+  const avatarUrl = isCustomerSession ? (meData?.avatar_url || user?.image || null) : null
   const customerNotificationCacheKey = meData?.id ?? user?.id ?? 'guest'
   const {
     data: notificationsData,
@@ -116,7 +118,7 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
     isError: isNotificationsError,
     refetch: refetchNotifications,
   } = useGetCustomerNotificationsQuery(customerNotificationCacheKey, {
-    skip: !isLoggedIn,
+    skip: !isCustomerSession,
     pollingInterval: 30000,
     refetchOnFocus: true,
   })

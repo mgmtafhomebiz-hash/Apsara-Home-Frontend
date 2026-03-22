@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useSession } from 'next-auth/react'
 import {
   AdminUserItem,
+  CreateAdminUserResponse,
   useCreateAdminUserMutation,
   useDeleteAdminUserMutation,
   useGetAdminUsersQuery,
@@ -28,7 +29,7 @@ type EditForm = CreateForm & {
 }
 
 const initialForm: CreateForm = {
-  name: '', username: '', email: '', user_level_id: 2, supplier_id: null,
+  name: '', username: '', email: '', user_level_id: 3, supplier_id: null,
 }
 
 const initialEditForm: EditForm = {
@@ -271,14 +272,22 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 
 /* ─── RoleCardGrid ───────────────────────────────────────── */
 
-function RoleCardGrid({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+function RoleCardGrid({
+  value,
+  onChange,
+  options = ROLE_OPTIONS,
+}: {
+  value: number
+  onChange: (v: number) => void
+  options?: typeof ROLE_OPTIONS
+}) {
   return (
     <div className="space-y-2">
       <label className="text-xs font-semibold text-slate-600 block">
         Role <span className="text-red-400">*</span>
       </label>
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-        {ROLE_OPTIONS.map(role => {
+        {options.map(role => {
           const isSelected = value === role.value
           const styles = ROLE_CARD_STYLES[role.colorKey]
           return (
@@ -357,13 +366,14 @@ function SupplierSelect({
 /* ─── EditModal ──────────────────────────────────────────── */
 
 function EditModal({
-  target, form, busy, onChange, onSubmit, onClose, supplierOptions,
+  target, form, busy, onChange, onSubmit, onClose, supplierOptions, roleOptions,
 }: {
   target: AdminUserItem; form: EditForm; busy: boolean
   onChange: (patch: Partial<EditForm>) => void
   onSubmit: (e: React.SyntheticEvent) => void
   onClose: () => void
   supplierOptions: Array<{ id: number; label: string }>
+  roleOptions: typeof ROLE_OPTIONS
 }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -406,9 +416,17 @@ function EditModal({
             <InputField label="Full Name" placeholder="Full name" value={form.name} onChange={v => onChange({ name: v })} required icon={<UserIcon />} />
             <InputField label="Username"  placeholder="Username"  value={form.username} onChange={v => onChange({ username: v })} required icon={<AtIcon />} />
           </div>
-          <InputField label="Email Address" type="email" placeholder="Email" value={form.email} onChange={v => onChange({ email: v })} required icon={<MailIcon />} />
+          <InputField
+            label="Email Address"
+            type="email"
+            placeholder="Optional email"
+            value={form.email}
+            onChange={v => onChange({ email: v })}
+            icon={<MailIcon />}
+            helper="Optional. Leave blank if this account does not need email recovery."
+          />
           <SectionLabel>Role & Permissions</SectionLabel>
-          <RoleCardGrid value={form.user_level_id} onChange={v => onChange({ user_level_id: v })} />
+          <RoleCardGrid value={form.user_level_id} options={roleOptions} onChange={v => onChange({ user_level_id: v })} />
           {form.user_level_id === 8 && (
             <SupplierSelect
               value={form.supplier_id}
@@ -450,7 +468,11 @@ function EditModal({
 export default function AdminUsersPageMain() {
   const { data: session } = useSession()
   const role       = String(session?.user?.role ?? '').toLowerCase()
-  const isSuperAdmin = role === 'super_admin'
+  const userLevelId = Number((session?.user as { userLevelId?: number } | undefined)?.userLevelId ?? 0)
+  const isSuperAdmin = role === 'super_admin' || userLevelId === 1
+  const isAdmin = role === 'admin' || userLevelId === 2
+  const canManageUsers = isSuperAdmin || isAdmin
+  const [latestInvite, setLatestInvite] = useState<CreateAdminUserResponse | null>(null)
   const { data: suppliersData } = useGetSuppliersQuery(undefined, { skip: !isSuperAdmin })
 
   const [search,          setSearch]          = useState('')
@@ -475,13 +497,25 @@ export default function AdminUsersPageMain() {
     })),
     [suppliersData?.suppliers],
   )
+  const allowedRoleOptions = useMemo(() => {
+    if (isSuperAdmin) return ROLE_OPTIONS
+    if (isAdmin) return ROLE_OPTIONS.filter((roleOption) => [3, 4, 5, 6, 7].includes(roleOption.value))
+    return []
+  }, [isAdmin, isSuperAdmin])
 
   const handleCreate = async (e: React.SyntheticEvent) => {
     e.preventDefault()
     try {
-      await createAdminUser(createForm).unwrap()
-      showSuccessToast('Admin invite sent successfully.')
-      setCreateForm(initialForm)
+      const result = await createAdminUser({
+        ...createForm,
+        email: createForm.email.trim() || undefined,
+      }).unwrap()
+      showSuccessToast(result.message)
+      setLatestInvite(result)
+      setCreateForm({
+        ...initialForm,
+        user_level_id: isSuperAdmin ? 2 : 3,
+      })
     } catch (err: unknown) {
       const apiErr = err as { data?: { message?: string; errors?: Record<string, string[]> } }
       const msg = (apiErr?.data?.errors ? Object.values(apiErr.data.errors)[0]?.[0] : undefined)
@@ -536,7 +570,17 @@ export default function AdminUsersPageMain() {
   }
 
   /* ── Access guard ── */
-  if (!isSuperAdmin) {
+  const copyInviteLink = async () => {
+    if (!latestInvite?.setup_url) return
+    try {
+      await navigator.clipboard.writeText(latestInvite.setup_url)
+      showSuccessToast('Setup link copied.')
+    } catch {
+      showErrorToast('Unable to copy setup link.')
+    }
+  }
+
+  if (!canManageUsers) {
     return (
       <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 flex items-center gap-3">
         <div className="h-9 w-9 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center shrink-0">
@@ -546,7 +590,7 @@ export default function AdminUsersPageMain() {
         </div>
         <div>
           <p className="text-sm font-semibold text-amber-800">Access Restricted</p>
-          <p className="text-xs text-amber-600 mt-0.5">Only Super Admin can manage Users & Roles.</p>
+          <p className="text-xs text-amber-600 mt-0.5">Only admin managers can manage Users & Roles.</p>
         </div>
       </div>
     )
@@ -606,17 +650,22 @@ export default function AdminUsersPageMain() {
             />
           </div>
           <InputField
-            label="Email Address" type="email" placeholder="e.g. juan@afhome.com"
+            label="Email Address" type="email" placeholder="Optional email for resets and notices"
             value={createForm.email}
             onChange={v => setCreateForm(p => ({ ...p, email: v }))}
-            required icon={<MailIcon />}
+            icon={<MailIcon />}
+            helper="Optional. Leave blank if you will share the setup link manually."
           />
 
           {/* Role */}
           <SectionLabel>Role & Permissions</SectionLabel>
           <RoleCardGrid
             value={createForm.user_level_id}
-            onChange={v => setCreateForm(p => ({ ...p, user_level_id: v, supplier_id: v === 8 ? p.supplier_id : null }))}
+            options={allowedRoleOptions}
+            onChange={v => {
+              setLatestInvite(null)
+              setCreateForm(p => ({ ...p, user_level_id: v, supplier_id: v === 8 ? p.supplier_id : null }))
+            }}
           />
           {createForm.user_level_id === 8 && (
             <SupplierSelect
@@ -626,6 +675,35 @@ export default function AdminUsersPageMain() {
             />
           )}
         </div>
+
+        {latestInvite && (
+          <div className="mx-6 mb-5 rounded-2xl border border-teal-200 bg-teal-50 p-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <p className="text-sm font-bold text-teal-800">Sub-admin setup link ready</p>
+                <p className="mt-1 text-xs text-teal-700">
+                  {latestInvite.delivery === 'email_and_link'
+                    ? 'The invite email was sent, and you can also share this setup link manually.'
+                    : 'Share this setup link directly with your sub-admin so they can set their password.'}
+                </p>
+                <p className="mt-2 text-xs text-slate-500">
+                  Role: <span className="font-semibold text-slate-700 capitalize">{latestInvite.invite.role.replace(/_/g, ' ')}</span>
+                  {' '}· Username: <span className="font-semibold text-slate-700">{latestInvite.invite.username}</span>
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={copyInviteLink}
+                className="shrink-0 rounded-xl border border-teal-300 bg-white px-4 py-2 text-xs font-bold text-teal-700 hover:bg-teal-50 transition-colors"
+              >
+                Copy Link
+              </button>
+            </div>
+            <div className="mt-3 rounded-xl border border-teal-100 bg-white px-3 py-2 text-xs text-slate-600 break-all">
+              {latestInvite.setup_url}
+            </div>
+          </div>
+        )}
 
         {/* Form footer */}
         <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between gap-3">
@@ -644,7 +722,7 @@ export default function AdminUsersPageMain() {
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
                 </svg>
-                Send Invite
+                Create Invite Link
               </>
             )}
           </button>
@@ -815,6 +893,7 @@ export default function AdminUsersPageMain() {
             onSubmit={handleEditSubmit}
             onClose={() => { setEditTarget(null); setEditForm(initialEditForm) }}
             supplierOptions={supplierOptions}
+            roleOptions={allowedRoleOptions}
           />
         )}
       </AnimatePresence>

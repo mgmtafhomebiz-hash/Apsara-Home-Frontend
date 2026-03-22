@@ -18,9 +18,10 @@ import StepReview from "../StepReview";
 
 const BookingSection = ({ id }: { id?: string }) => {
   const router = useRouter();
-  const { status } = useSession();
-  const isAuthenticated = status === 'authenticated';
-  const { data: meData } = useMeQuery(undefined, { skip: !isAuthenticated });
+  const { data: session, status } = useSession();
+  const role = String(session?.user?.role ?? '').toLowerCase();
+  const isCustomerSession = status === 'authenticated' && (role === 'customer' || role === '');
+  const { data: meData } = useMeQuery(undefined, { skip: !isCustomerSession });
   const [createInteriorRequest, { isLoading: isSubmitting }] = useCreateInteriorRequestMutation();
 
   const [currentStep, setCurrentStep] = useState<FormStep>(1);
@@ -90,7 +91,7 @@ const BookingSection = ({ id }: { id?: string }) => {
       return;
     }
 
-    if (!isAuthenticated) {
+    if (!isCustomerSession) {
       setStepError('Please sign in first so your booking request can be saved to your account inbox.');
       return;
     }
@@ -203,7 +204,7 @@ const BookingSection = ({ id }: { id?: string }) => {
               <p className="mt-1 text-[0.78rem] leading-relaxed text-orange-900">
                 Requests are tied to the authenticated customer account so only that account receives admin replies, estimate updates, and schedule notices.
               </p>
-              {!isAuthenticated && (
+              {!isCustomerSession && (
                 <button
                   type="button"
                   onClick={() => router.push(`/login?callbackUrl=${encodeURIComponent('/interior-services#booking')}`)}

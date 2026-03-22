@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo } from 'react';
+import { useSession } from 'next-auth/react';
 import { useMeQuery } from '@/store/api/userApi';
 import { setStoredReferralCode } from '@/libs/referral';
 
@@ -11,9 +12,12 @@ type ReferralLandingPageProps = {
 
 const ReferralLandingPage = ({ referralCode }: ReferralLandingPageProps) => {
   const normalizedCode = useMemo(() => referralCode.trim(), [referralCode]);
-  const { data: me } = useMeQuery();
+  const { data: session, status } = useSession();
+  const role = String(session?.user?.role ?? '').toLowerCase();
+  const isCustomerSession = status === 'authenticated' && (role === 'customer' || role === '');
+  const { data: me } = useMeQuery(undefined, { skip: !isCustomerSession });
 
-  const isLoggedIn = Boolean(me);
+  const isLoggedIn = Boolean(me) && isCustomerSession;
   const isOwnLink = isLoggedIn && me?.username?.toLowerCase() === normalizedCode.toLowerCase();
 
   useEffect(() => {

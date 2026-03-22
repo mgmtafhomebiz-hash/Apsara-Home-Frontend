@@ -188,7 +188,7 @@ export default function AdminInviteSetupForm({ token }: Props) {
                 </div>
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Email</p>
-                  <p className="mt-1 text-sm font-medium text-white">{invite.email}</p>
+                  <p className="mt-1 text-sm font-medium text-white">{invite.email || 'Not provided'}</p>
                 </div>
               </div>
 

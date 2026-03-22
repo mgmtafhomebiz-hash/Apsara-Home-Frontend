@@ -22,10 +22,11 @@ const STATUS_TABS = [
 export default function ProductsToolbar({ search, onSearch, status, onStatus, catId, onCatId, resultCount, supplierId }: ProductsToolbarProps) {
   const { data: categoriesData } = useGetCategoriesQuery(
     supplierId && supplierId > 0
-      ? { supplier_id: supplierId, used_only: true }
+      ? { supplier_id: supplierId }
       : undefined
   )
   const categories = categoriesData?.categories ?? []
+  const hasSupplierScopedCategories = !supplierId || supplierId <= 0 || categories.length > 0
 
   return (
     <div className="flex flex-wrap items-center gap-3">
@@ -54,13 +55,14 @@ export default function ProductsToolbar({ search, onSearch, status, onStatus, ca
         <select
           value={catId ?? ''}
           onChange={e => onCatId(e.target.value === '' ? undefined : Number(e.target.value))}
+          disabled={!hasSupplierScopedCategories}
           className={`pl-9 pr-8 py-2.5 bg-white border rounded-xl text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-400 appearance-none cursor-pointer ${
             catId !== undefined
               ? 'border-teal-400 text-teal-700 bg-teal-50'
               : 'border-slate-200 text-slate-600'
-          }`}
+          } ${!hasSupplierScopedCategories ? 'cursor-not-allowed bg-slate-50 text-slate-400' : ''}`}
         >
-          <option value="">All Categories</option>
+          <option value="">{hasSupplierScopedCategories ? 'All Categories' : 'No categories assigned'}</option>
           {categories.map(cat => (
             <option key={cat.id} value={cat.id}>{cat.name}</option>
           ))}

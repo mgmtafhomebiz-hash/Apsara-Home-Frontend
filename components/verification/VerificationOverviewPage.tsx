@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
+import { useSession } from 'next-auth/react';
 import { useMeQuery } from '@/store/api/userApi';
 
 const requirementItems = [
@@ -100,7 +101,10 @@ function getStatusInfo(status: VerificationStatus) {
 }
 
 export default function VerificationOverviewPage() {
-  const { data: me } = useMeQuery();
+  const { data: session, status } = useSession();
+  const role = String(session?.user?.role ?? '').toLowerCase();
+  const isCustomerSession = status === 'authenticated' && (role === 'customer' || role === '');
+  const { data: me } = useMeQuery(undefined, { skip: !isCustomerSession });
 
   const rawStatus = me?.verification_status ?? 'not_verified';
   const status: VerificationStatus =

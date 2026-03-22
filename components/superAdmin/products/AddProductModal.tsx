@@ -252,11 +252,23 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const { data: session, status: authStatus } = useSession()
+  const role = String(session?.user?.role ?? '').toLowerCase()
+  const linkedSupplierId = Number(session?.user?.supplierId ?? 0)
+  const isSupplierScopedActor =
+    role === 'supplier' || role === 'supplier_admin' || (session?.user?.userLevelId ?? 0) === 8
   const hasToken       = Boolean(session?.user?.accessToken)
   const skipCategories = authStatus !== 'authenticated' || !hasToken
 
   const [createProduct, { isLoading }] = useCreateProductMutation()
-  const { data: categoriesData } = useGetCategoriesQuery({ page: 1, per_page: 500 }, { skip: skipCategories })
+  const { data: categoriesData } = useGetCategoriesQuery(
+    {
+      page: 1,
+      per_page: 500,
+      supplier_id: isSupplierScopedActor && linkedSupplierId > 0 ? linkedSupplierId : undefined,
+      used_only: isSupplierScopedActor && linkedSupplierId > 0 ? true : undefined,
+    },
+    { skip: skipCategories }
+  )
   const categories = useMemo(() => categoriesData?.categories ?? [], [categoriesData?.categories])
 
   const set = (key: keyof FormState, value: string | boolean) => {
