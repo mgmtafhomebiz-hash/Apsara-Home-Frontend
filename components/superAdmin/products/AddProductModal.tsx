@@ -68,6 +68,14 @@ interface VariantFormState {
   pv_images: string[]
 }
 
+interface AddProductDraft {
+  version: 1
+  form: FormState
+  variants: VariantFormState[]
+  uploadedUrls: string[]
+  roomTouched: boolean
+}
+
 /* ─── constants ──────────────────────────────────────────── */
 
 const defaultForm: FormState = {
@@ -150,6 +158,8 @@ const WARRANTY_OPTIONS = [
   '1 Year Warranty',
 ] as const
 
+const ADD_PRODUCT_DRAFT_KEY = 'afhome:add-product-draft'
+
 /* ─── helpers ────────────────────────────────────────────── */
 
 const generateSkuFromName = (name: string) => {
@@ -202,6 +212,18 @@ const getRequestErrorMessage = (err: unknown, fallback: string) => {
     : []
 
   return firstFieldErrors[0] ?? data?.message ?? fallback
+}
+
+const hasAddDraftContent = (draft: AddProductDraft) => {
+  const hasFormContent = Object.entries(draft.form).some(([key, value]) => {
+    if (key === 'pd_type') return value === '1'
+    if (key === 'pd_status') return value !== '1'
+    if (key === 'pd_verified') return value !== true
+    if (typeof value === 'boolean') return value
+    return String(value).trim().length > 0
+  })
+
+  return hasFormContent || draft.variants.length > 0 || draft.uploadedUrls.length > 0 || draft.roomTouched
 }
 
 /* ─── small components ───────────────────────────────────── */
@@ -262,6 +284,7 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
   const [variants,     setVariants]     = useState<VariantFormState[]>([])
   const [newColorInputs, setNewColorInputs] = useState<Record<number, { name: string; hex: string }>>({})
   const [roomTouched, setRoomTouched] = useState(false)
+  const [draftRestored, setDraftRestored] = useState(false)
   const activeImagePointerIndexRef = useRef<number | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -290,6 +313,53 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
     setErrors(p => ({ ...p, [key]: undefined }))
   }
 
+  const resetModalState = () => {
+    setForm(defaultForm)
+    setErrors({})
+    setServerError('')
+    setImageFiles([])
+    setImagePreviews([])
+    setUploadedUrls([])
+    setImageError('')
+    setVariants([])
+    setNewColorInputs({})
+    setRoomTouched(false)
+    setDraftRestored(false)
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
+  useEffect(() => {
+    if (!isOpen || typeof window === 'undefined') return
+
+    const savedDraft = window.localStorage.getItem(ADD_PRODUCT_DRAFT_KEY)
+    if (!savedDraft) {
+      setDraftRestored(false)
+      return
+    }
+
+    try {
+      const parsedDraft = JSON.parse(savedDraft) as Partial<AddProductDraft>
+      if (parsedDraft.version !== 1) return
+
+      const restoredUrls = Array.isArray(parsedDraft.uploadedUrls) ? parsedDraft.uploadedUrls : []
+
+      setForm({ ...defaultForm, ...parsedDraft.form })
+      setVariants(Array.isArray(parsedDraft.variants) ? parsedDraft.variants : [])
+      setUploadedUrls(restoredUrls)
+      setImagePreviews(restoredUrls)
+      setImageFiles([])
+      setRoomTouched(Boolean(parsedDraft.roomTouched))
+      setErrors({})
+      setServerError('')
+      setImageError('')
+      setNewColorInputs({})
+      setDraftRestored(true)
+    } catch {
+      window.localStorage.removeItem(ADD_PRODUCT_DRAFT_KEY)
+      setDraftRestored(false)
+    }
+  }, [isOpen])
+
   useEffect(() => {
     const selectedCategory = categories.find((category) => String(category.id) === form.pd_catid)
     const inferredRoomType = inferRoomTypeFromCategory(selectedCategory)
@@ -303,7 +373,26 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
     })
   }, [categories, form.pd_catid, form.pd_room_type, roomTouched])
 
+  useEffect(() => {
+    if (!isOpen || typeof window === 'undefined') return
+
+    const draft: AddProductDraft = {
+      version: 1,
+      form,
+      variants,
+      uploadedUrls,
+      roomTouched,
+    }
+
+    if (hasAddDraftContent(draft)) {
+      window.localStorage.setItem(ADD_PRODUCT_DRAFT_KEY, JSON.stringify(draft))
+    } else {
+      window.localStorage.removeItem(ADD_PRODUCT_DRAFT_KEY)
+    }
+  }, [form, isOpen, roomTouched, uploadedUrls, variants])
+
   const hasVariants = form.pd_type === '1'
+  const visibleImagePreviews = imageFiles.length > 0 ? imagePreviews : uploadedUrls
 
   /* ── image handlers ── */
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -322,6 +411,13 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
   }
 
   const handleRemoveImage = (index: number) => {
+    if (imageFiles.length === 0) {
+      const nextUploadedUrls = uploadedUrls.filter((_, i) => i !== index)
+      setUploadedUrls(nextUploadedUrls)
+      setImagePreviews(nextUploadedUrls)
+      return
+    }
+
     const next = imageFiles.filter((_, i) => i !== index)
     setImageFiles(next)
     setImagePreviews(next.map(f => URL.createObjectURL(f)))
@@ -341,6 +437,13 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
   const handleImagePointerEnter = (targetIndex: number) => {
     const sourceIndex = activeImagePointerIndexRef.current
     if (sourceIndex == null || sourceIndex === targetIndex) return
+
+    if (imageFiles.length === 0) {
+      setUploadedUrls((prev) => moveItem(prev, sourceIndex, targetIndex))
+      setImagePreviews((prev) => moveItem(prev, sourceIndex, targetIndex))
+      activeImagePointerIndexRef.current = targetIndex
+      return
+    }
 
     setImageFiles((prev) => moveItem(prev, sourceIndex, targetIndex))
     setImagePreviews((prev) => moveItem(prev, sourceIndex, targetIndex))
@@ -531,8 +634,12 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
     try {
       await createProduct(payload).unwrap()
       showSuccessToast('Product added successfully.')
+      if (typeof window !== 'undefined') {
+        window.localStorage.removeItem(ADD_PRODUCT_DRAFT_KEY)
+      }
       onSaved?.()
-      handleClose()
+      resetModalState()
+      onClose()
     } catch (err: unknown) {
       const message = getRequestErrorMessage(err, 'Failed to create product.')
       setServerError(message)
@@ -542,9 +649,6 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
 
   const handleClose = () => {
     if (isLoading || isUploading) return
-    setForm(defaultForm); setErrors({}); setServerError('')
-    setRoomTouched(false)
-    handleClearAllImages(); setVariants([]); setNewColorInputs({})
     onClose()
   }
 
@@ -609,6 +713,15 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
                     </div>
                   )}
 
+                  {draftRestored && (
+                    <div className="flex items-start gap-2.5 p-3.5 bg-amber-50 rounded-xl border border-amber-100">
+                      <svg className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                      </svg>
+                      <p className="text-xs text-amber-700">Local draft restored. Unsaved fields and uploaded image links are back in this form.</p>
+                    </div>
+                  )}
+
                   {/* ── Section: Product Image ── */}
                   <SectionLabel>Product Image</SectionLabel>
                   <input
@@ -620,7 +733,7 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
                     className="hidden"
                     id="product-image-input"
                   />
-                  {imagePreviews.length === 0 ? (
+                  {visibleImagePreviews.length === 0 ? (
                     <label
                       htmlFor="product-image-input"
                       className="flex flex-col items-center justify-center gap-2 w-full h-36 border-2 border-dashed border-slate-200 rounded-xl bg-slate-50 cursor-pointer hover:border-teal-400 hover:bg-teal-50/40 transition-all group"
@@ -638,7 +751,7 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
                   ) : (
                     <div>
                       <div className="grid grid-cols-4 gap-2">
-                        {imagePreviews.map((preview, index) => (
+                        {visibleImagePreviews.map((preview, index) => (
                           <div
                             key={preview}
                             onPointerDown={() => handleImagePointerDown(index)}

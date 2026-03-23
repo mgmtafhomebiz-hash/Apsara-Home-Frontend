@@ -6,6 +6,7 @@ import { Provider as ReduxProvider } from 'react-redux'
 import { SessionProvider } from 'next-auth/react'
 import { store } from '@/store/store'
 import { Toaster } from 'react-hot-toast'
+import GlobalVerificationPrompt from '@/components/verification/GlobalVerificationPrompt'
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   return (
@@ -13,6 +14,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
         <ReduxProvider store={store}>
           <CartProvider>
           {children}
+          <GlobalVerificationPrompt />
           <CartDrawer />
           <Toaster
             position="top-center"

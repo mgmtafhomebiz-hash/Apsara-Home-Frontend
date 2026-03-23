@@ -69,6 +69,15 @@ interface VariantFormState {
   pv_images: string[]
 }
 
+interface EditProductDraft {
+  version: 1
+  productId: number
+  form: FormState
+  variants: VariantFormState[]
+  imageUrls: string[]
+  roomTouched: boolean
+}
+
 type Errors = Partial<Record<keyof FormState, string>>
 
 /* ─── constants ──────────────────────────────────────────── */
@@ -117,6 +126,8 @@ const WARRANTY_OPTIONS = [
   '9 Months Warranty',
   '1 Year Warranty',
 ] as const
+
+const getEditProductDraftKey = (productId: number) => `afhome:edit-product-draft:${productId}`
 
 /* ─── helpers ────────────────────────────────────────────── */
 
@@ -212,6 +223,27 @@ const getRequestErrorMessage = (err: unknown, fallback: string) => {
     : []
 
   return firstFieldErrors[0] ?? data?.message ?? fallback
+}
+
+const hasEditDraftContent = (
+  currentForm: FormState,
+  initialForm: FormState | null,
+  currentVariants: VariantFormState[],
+  initialVariants: VariantFormState[],
+  currentImageUrls: string[],
+  initialImageUrls: string[],
+  roomTouched: boolean,
+) => {
+  const formChanged =
+    initialForm !== null &&
+    JSON.stringify(normalizeFormForComparison(currentForm)) !== JSON.stringify(normalizeFormForComparison(initialForm))
+  const variantsChanged =
+    JSON.stringify(normalizeVariantsForComparison(currentVariants)) !== JSON.stringify(normalizeVariantsForComparison(initialVariants))
+  const imageUrlsChanged =
+    currentImageUrls.length !== initialImageUrls.length ||
+    currentImageUrls.some((url, index) => url !== initialImageUrls[index])
+
+  return formChanged || variantsChanged || imageUrlsChanged || roomTouched
 }
 
 const normalizeFormForComparison = (form: FormState) => ({
@@ -354,6 +386,7 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
   const [variants,           setVariants]           = useState<VariantFormState[]>([])
   const [newColorInputs,     setNewColorInputs]     = useState<Record<number, { name: string; hex: string }>>({})
   const [roomTouched,        setRoomTouched]        = useState(false)
+  const [draftRestored,      setDraftRestored]      = useState(false)
   const activeExistingImagePointerIndexRef = useRef<number | null>(null)
   const activeNewImagePointerIndexRef = useRef<number | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -420,15 +453,36 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
     const existing = Array.isArray(openedProduct.images) && openedProduct.images.length > 0
       ? openedProduct.images.filter((img): img is string => Boolean(img))
       : (openedProduct.image ? [openedProduct.image] : [])
-    setExistingImageUrls(existing)
     setInitialImageUrls(existing)
     const nextVariants = Array.isArray(openedProduct.variants) ? openedProduct.variants.map(mapVariantToForm) : []
     setInitialVariants(nextVariants)
     setImageFiles([]); setImagePreviews([]); setUploadedUrls([])
-    setVariants(nextVariants)
     setNewColorInputs({})
-    setRoomTouched(false)
     setErrors({}); setServerError(''); setImageError('')
+    setDraftRestored(false)
+
+    if (typeof window !== 'undefined') {
+      try {
+        const savedDraft = window.localStorage.getItem(getEditProductDraftKey(openedProduct.id))
+        if (savedDraft) {
+          const parsedDraft = JSON.parse(savedDraft) as Partial<EditProductDraft>
+          if (parsedDraft.version === 1 && parsedDraft.productId === openedProduct.id) {
+            setForm({ ...nextForm, ...parsedDraft.form })
+            setExistingImageUrls(Array.isArray(parsedDraft.imageUrls) ? parsedDraft.imageUrls : existing)
+            setVariants(Array.isArray(parsedDraft.variants) ? parsedDraft.variants : nextVariants)
+            setRoomTouched(Boolean(parsedDraft.roomTouched))
+            setDraftRestored(true)
+            return
+          }
+        }
+      } catch {
+        window.localStorage.removeItem(getEditProductDraftKey(openedProduct.id))
+      }
+    }
+
+    setExistingImageUrls(existing)
+    setVariants(nextVariants)
+    setRoomTouched(false)
   }, [openedProduct])
 
   const set = (key: keyof FormState, value: string | boolean) => {
@@ -744,6 +798,9 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
         variants: hasVariants ? expandedVariants.map(mapExpandedVariantToProductVariant) : [],
       }
       showSuccessToast('Product updated successfully.')
+      if (typeof window !== 'undefined') {
+        window.localStorage.removeItem(getEditProductDraftKey(product.id))
+      }
       onSaved?.(updatedProduct)
       onClose()
     } catch (err: unknown) {
@@ -769,6 +826,38 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
   const hasChanged = baseChanged || variantsChangedNow || existingImagesChangedNow || imageFiles.length > 0
   /* Keep grid visible even after all existing images are removed so user can still add new ones */
   const showImageGrid = hasAnyImages || initialImageUrls.length > 0
+  const draftImageUrls = uploadedUrls.length > 0 ? uploadedUrls : existingImageUrls
+
+  useEffect(() => {
+    if (!isOpen || !openedProduct || typeof window === 'undefined') return
+
+    const draftKey = getEditProductDraftKey(openedProduct.id)
+    const shouldPersistDraft = hasEditDraftContent(
+      form,
+      initialForm,
+      variants,
+      initialVariants,
+      draftImageUrls,
+      initialImageUrls,
+      roomTouched,
+    )
+
+    if (!shouldPersistDraft) {
+      window.localStorage.removeItem(draftKey)
+      return
+    }
+
+    const draft: EditProductDraft = {
+      version: 1,
+      productId: openedProduct.id,
+      form,
+      variants,
+      imageUrls: draftImageUrls,
+      roomTouched,
+    }
+
+    window.localStorage.setItem(draftKey, JSON.stringify(draft))
+  }, [draftImageUrls, form, initialForm, initialImageUrls, initialVariants, isOpen, openedProduct, roomTouched, variants])
 
   /* ─── render ─────────────────────────────────────────────── */
   return (
@@ -832,6 +921,15 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
                   )}
 
                   {/* ── Section: Product Images ── */}
+                  {draftRestored && (
+                    <div className="flex items-start gap-2.5 p-3.5 bg-amber-50 rounded-xl border border-amber-100">
+                      <svg className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                      </svg>
+                      <p className="text-xs text-amber-700">Local draft restored. Unsaved edits and uploaded image links are back in this product form.</p>
+                    </div>
+                  )}
+
                   <SectionLabel>Product Images</SectionLabel>
                   <input
                     ref={fileInputRef}

@@ -805,8 +805,16 @@ const ProfilePage = ({ initialProfile = null }: ProfilePageProps) => {
   const pwStrength = getPasswordStrength(security.newPassword);
   const activeTabLabel = TABS.find((item) => item.key === activeTab)?.label ?? 'Profile';
 
-  const handleTabChange = (tab: Tab) => {
+  const handleTabChange = (tab: Tab, options?: { focus?: string }) => {
     setActiveTab(tab);
+    const nextParams = new URLSearchParams(searchParams.toString());
+    nextParams.set('tab', tab);
+    if (options?.focus) {
+      nextParams.set('focus', options.focus);
+    } else {
+      nextParams.delete('focus');
+    }
+    router.replace(`/profile?${nextParams.toString()}${options?.focus ? '#verification-form' : ''}`, { scroll: false });
     if (typeof window !== 'undefined' && window.innerWidth < 1280) {
       setIsMobileViewOpen(true);
     }
@@ -1197,7 +1205,7 @@ const ProfilePage = ({ initialProfile = null }: ProfilePageProps) => {
                     </div>
                     <button
                       type="button"
-                      onClick={() => handleTabChange('encashment')}
+                      onClick={() => handleTabChange('encashment', { focus: 'verification' })}
                       className="text-xs font-semibold text-amber-700 border border-amber-300 bg-white rounded-lg px-3 py-1.5 hover:bg-amber-100 transition-colors"
                     >
                       Open KYC Form

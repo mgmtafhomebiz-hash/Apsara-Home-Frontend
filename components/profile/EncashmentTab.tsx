@@ -1,7 +1,9 @@
 'use client';
 
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
+import { motion } from 'framer-motion';
 import { useMeQuery } from '@/store/api/userApi';
 import {
   EncashmentChannel,
@@ -99,10 +101,61 @@ const VERIFICATION_ID_TYPES = [
   'PhilHealth ID',
 ];
 
+function VerificationField({
+  label,
+  error,
+  required = false,
+  children,
+}: {
+  label: string;
+  error?: string;
+  required?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <label className="space-y-1.5">
+      <span className={`block text-xs font-semibold ${error ? 'text-red-700' : 'text-amber-900'}`}>
+        {label}
+        {required ? <span className="ml-1 text-red-500">*</span> : null}
+      </span>
+      {children}
+      {error ? <span className="block text-[11px] font-medium text-red-600">{error}</span> : null}
+    </label>
+  );
+}
+
+type VerificationFieldKey =
+  | 'fullName'
+  | 'birthDate'
+  | 'idType'
+  | 'idNumber'
+  | 'contactNumber'
+  | 'addressLine'
+  | 'region'
+  | 'province'
+  | 'city'
+  | 'barangay'
+  | 'postalCode'
+  | 'country'
+  | 'notes'
+  | 'idFrontUrl'
+  | 'idBackUrl'
+  | 'selfieUrl';
+
+type VerificationErrors = Partial<Record<VerificationFieldKey, string>>;
+
+const getApiErrorText = (err: unknown, fallback: string) => {
+  const apiErr = err as { data?: { message?: string; errors?: Record<string, string[]> } };
+  const firstValidation = apiErr?.data?.errors ? Object.values(apiErr.data.errors)[0]?.[0] : undefined;
+  return firstValidation || apiErr?.data?.message || fallback;
+};
+
 const EncashmentTab = () => {
+  const searchParams = useSearchParams();
   const { data: session } = useSession();
   const role = String((session?.user as { role?: string } | undefined)?.role ?? '').toLowerCase();
   const isCustomerSession = role === 'customer' || role === '';
+  const verificationFormRef = useRef<HTMLDivElement | null>(null);
   const { data: meData } = useMeQuery(undefined, {
     skip: !isCustomerSession,
   });
@@ -170,6 +223,8 @@ const EncashmentTab = () => {
     idBack: boolean;
     selfie: boolean;
   }>({ idFront: false, idBack: false, selfie: false });
+  const [verificationErrors, setVerificationErrors] = useState<VerificationErrors>({});
+  const [isVerificationSpotlightActive, setIsVerificationSpotlightActive] = useState(false);
   const phVerification = usePhAddress();
 
   const rows = useMemo(() => data?.requests ?? [], [data?.requests]);
@@ -200,6 +255,13 @@ const EncashmentTab = () => {
   const needsVerification = Boolean(eligibility && !eligibility.has_active_account);
   const isVerificationPending = verification?.status === 'pending_review';
   const showMessageInVerificationCard = Boolean(message) && needsVerification && !isVerificationPending;
+  const focusVerification = searchParams.get('focus') === 'verification';
+  const selectedVerificationRegion = phVerification.address.region || verificationForm.region.trim();
+  const selectedVerificationProvince = (phVerification.noProvince
+    ? (phVerification.address.region || verificationForm.province.trim())
+    : (phVerification.address.province || verificationForm.province.trim()));
+  const selectedVerificationCity = phVerification.address.city || verificationForm.city.trim();
+  const selectedVerificationBarangay = phVerification.address.barangay || verificationForm.barangay.trim();
 
   useEffect(() => {
     if (!needsVerification) return;
@@ -284,6 +346,21 @@ const EncashmentTab = () => {
     phVerification.noProvince,
   ]);
 
+  useEffect(() => {
+    if (!needsVerification || isVerificationPending || !focusVerification) return;
+
+    setIsVerificationSpotlightActive(true);
+    const rafId = window.requestAnimationFrame(() => {
+      verificationFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    const timeoutId = window.setTimeout(() => setIsVerificationSpotlightActive(false), 1800);
+
+    return () => {
+      window.cancelAnimationFrame(rafId);
+      window.clearTimeout(timeoutId);
+    };
+  }, [focusVerification, isVerificationPending, needsVerification]);
+
   const summary = useMemo(() => {
     return rows.reduce(
       (acc, item) => {
@@ -295,6 +372,34 @@ const EncashmentTab = () => {
       { total: 0, pending: 0, released: 0 },
     );
   }, [rows]);
+
+  const verificationInputClass = (field: VerificationFieldKey, extra = '') =>
+    [
+      'w-full rounded-xl px-3.5 py-2.5 text-sm bg-white/90 focus:outline-none focus:ring-2 transition-colors',
+      verificationErrors[field]
+        ? 'border border-red-300 text-red-900 placeholder:text-red-300 focus:ring-red-200'
+        : 'border border-amber-200 text-amber-900 focus:ring-amber-200',
+      extra,
+    ].join(' ');
+
+  const scrollToVerificationField = (field: VerificationFieldKey) => {
+    setIsVerificationSpotlightActive(true);
+    verificationFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    window.requestAnimationFrame(() => {
+      const target = document.querySelector<HTMLElement>(`[data-verification-field="${field}"]`);
+      target?.animate(
+        [
+          { transform: 'translateY(0px)', boxShadow: '0 0 0 rgba(239,68,68,0)' },
+          { transform: 'translateY(-2px)', boxShadow: '0 0 0 8px rgba(239,68,68,0.14)' },
+          { transform: 'translateY(0px)', boxShadow: '0 0 0 rgba(239,68,68,0)' },
+        ],
+        { duration: 700, easing: 'ease-out' },
+      );
+      target?.focus?.();
+      target?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+    window.setTimeout(() => setIsVerificationSpotlightActive(false), 1800);
+  };
 
   const mapMethodTypeToChannel = (methodType: PaymentMethodType): EncashmentChannel => {
     if (methodType === 'gcash') return 'gcash';
@@ -475,6 +580,7 @@ const EncashmentTab = () => {
     const loadingKey = field === 'idFrontUrl' ? 'idFront' : field === 'idBackUrl' ? 'idBack' : 'selfie';
     setVerificationUploadState((prev) => ({ ...prev, [loadingKey]: true }));
     setMessage(null);
+    setVerificationErrors((prev) => ({ ...prev, [field]: undefined }));
 
     try {
       const formData = new FormData();
@@ -502,38 +608,58 @@ const EncashmentTab = () => {
 
   const handleSubmitVerificationRequest = async () => {
     setMessage(null);
-    if (!verificationForm.fullName.trim()) {
-      setMessage({ type: 'error', text: 'Full name is required for verification.' });
+    const nextErrors: VerificationErrors = {};
+
+    if (!verificationForm.fullName.trim()) nextErrors.fullName = 'Full name is required.';
+    if (!verificationForm.birthDate) nextErrors.birthDate = 'Birth date is required.';
+    if (!verificationForm.idType.trim()) nextErrors.idType = 'ID type is required.';
+    if (!verificationForm.idNumber.trim()) nextErrors.idNumber = 'ID number is required.';
+    if (!verificationForm.contactNumber.trim()) nextErrors.contactNumber = 'Contact number is required.';
+    if (!verificationForm.addressLine.trim()) nextErrors.addressLine = 'Address line is required.';
+    if (!selectedVerificationRegion) nextErrors.region = 'Region is required.';
+    if (!selectedVerificationProvince) nextErrors.province = 'Province is required.';
+    if (!selectedVerificationCity) nextErrors.city = 'City / Municipality is required.';
+    if (!selectedVerificationBarangay) nextErrors.barangay = 'Barangay is required.';
+    if (!verificationForm.postalCode.trim()) nextErrors.postalCode = 'Postal code is required.';
+    if (!verificationForm.country.trim()) nextErrors.country = 'Country is required.';
+    if (!verificationForm.notes.trim()) nextErrors.notes = 'Verification notes are required.';
+    if (!verificationForm.idFrontUrl) nextErrors.idFrontUrl = 'ID front is required.';
+    if (!verificationForm.idBackUrl) nextErrors.idBackUrl = 'ID back is required.';
+    if (!verificationForm.selfieUrl) nextErrors.selfieUrl = 'Selfie is required.';
+
+    if (Object.keys(nextErrors).length > 0) {
+      setVerificationErrors(nextErrors);
+      const firstField = Object.keys(nextErrors)[0] as VerificationFieldKey;
+      setMessage({ type: 'error', text: nextErrors[firstField] ?? 'Please complete the required KYC fields.' });
+      scrollToVerificationField(firstField);
       return;
     }
-    if (!verificationForm.idFrontUrl || !verificationForm.selfieUrl) {
-      setMessage({ type: 'error', text: 'ID front and selfie are required before submitting verification.' });
-      return;
-    }
+
+    setVerificationErrors({});
     try {
       const composedAddressLine = [
         verificationForm.addressLine.trim(),
-        verificationForm.barangay.trim(),
+        selectedVerificationBarangay,
       ].filter(Boolean).join(', ');
       const composedNotes = [
         verificationForm.notes.trim(),
-        verificationForm.region.trim() ? `Region: ${verificationForm.region.trim()}` : '',
+        selectedVerificationRegion ? `Region: ${selectedVerificationRegion}` : '',
       ].filter(Boolean).join('\n');
 
       const res = await submitVerificationRequest({
         full_name: verificationForm.fullName.trim(),
-        birth_date: verificationForm.birthDate || undefined,
+        birth_date: verificationForm.birthDate,
         id_type: verificationForm.idType,
-        id_number: verificationForm.idNumber.trim() || undefined,
-        contact_number: verificationForm.contactNumber.trim() || undefined,
-        address_line: composedAddressLine || undefined,
-        city: verificationForm.city.trim() || undefined,
-        province: verificationForm.province.trim() || undefined,
-        postal_code: verificationForm.postalCode.trim() || undefined,
-        country: verificationForm.country.trim() || undefined,
-        notes: composedNotes || undefined,
+        id_number: verificationForm.idNumber.trim(),
+        contact_number: verificationForm.contactNumber.trim(),
+        address_line: composedAddressLine,
+        city: selectedVerificationCity,
+        province: selectedVerificationProvince,
+        postal_code: verificationForm.postalCode.trim(),
+        country: verificationForm.country.trim(),
+        notes: composedNotes,
         id_front_url: verificationForm.idFrontUrl,
-        id_back_url: verificationForm.idBackUrl || undefined,
+        id_back_url: verificationForm.idBackUrl,
         selfie_url: verificationForm.selfieUrl,
         profile_photo_url: meData?.avatar_url || undefined,
       }).unwrap();
@@ -543,10 +669,9 @@ const EncashmentTab = () => {
       });
       await refetch();
     } catch (err: unknown) {
-      const apiErr = err as { data?: { message?: string } };
       setMessage({
         type: 'error',
-        text: apiErr?.data?.message || 'Failed to submit verification request.',
+        text: getApiErrorText(err, 'Failed to submit verification request.'),
       });
     }
   };
@@ -931,7 +1056,27 @@ const EncashmentTab = () => {
       )}
 
       {isCustomerSession && needsVerification && !isVerificationPending && (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 md:p-6">
+        <motion.div
+          ref={verificationFormRef}
+          id="verification-form"
+          initial={{ opacity: 0, y: 20, scale: 0.98 }}
+          animate={{
+            opacity: 1,
+            y: 0,
+            scale: isVerificationSpotlightActive ? [1, 1.01, 1] : 1,
+            boxShadow: isVerificationSpotlightActive
+              ? [
+                  '0 0 0 rgba(245,158,11,0)',
+                  '0 0 0 12px rgba(245,158,11,0.16)',
+                  '0 0 0 rgba(245,158,11,0)',
+                ]
+              : '0 0 0 rgba(245,158,11,0)',
+          }}
+          transition={{ duration: 0.45, ease: 'easeOut' }}
+          className={`scroll-mt-28 rounded-2xl border bg-amber-50 p-5 md:p-6 transition-all duration-500 ${
+            isVerificationSpotlightActive ? 'border-amber-400 ring-4 ring-amber-200/70' : 'border-amber-200'
+          }`}
+        >
           <h3 className="text-base font-bold text-amber-900">Verification Required</h3>
           <p className="mt-1 text-sm text-amber-800">
             To submit an encashment request, your account must be verified and active first. Complete the form and required documents for Admin/KYC review.
@@ -948,131 +1093,212 @@ const EncashmentTab = () => {
             </div>
           )}
           <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
-            <input
-              type="text"
-              value={verificationForm.fullName}
-              onChange={(e) => setVerificationForm((prev) => ({ ...prev, fullName: e.target.value }))}
-              className="w-full rounded-xl border border-amber-200 px-3.5 py-2.5 text-sm text-amber-900 bg-white/90 focus:outline-none focus:ring-2 focus:ring-amber-200"
-              placeholder="Full Name (required)"
-            />
-            <input
-              type="date"
-              value={verificationForm.birthDate}
-              onChange={(e) => setVerificationForm((prev) => ({ ...prev, birthDate: e.target.value }))}
-              className="w-full rounded-xl border border-amber-200 px-3.5 py-2.5 text-sm text-amber-900 bg-white/90 focus:outline-none focus:ring-2 focus:ring-amber-200"
-            />
-            <select
-              value={verificationForm.idType}
-              onChange={(e) => setVerificationForm((prev) => ({ ...prev, idType: e.target.value }))}
-              className="w-full rounded-xl border border-amber-200 px-3.5 py-2.5 text-sm text-amber-900 bg-white/90 focus:outline-none focus:ring-2 focus:ring-amber-200"
-            >
-              {VERIFICATION_ID_TYPES.map((idType) => (
-                <option key={idType} value={idType}>{idType}</option>
-              ))}
-            </select>
-            <input
-              type="text"
-              value={verificationForm.idNumber}
-              onChange={(e) => setVerificationForm((prev) => ({ ...prev, idNumber: e.target.value }))}
-              className="w-full rounded-xl border border-amber-200 px-3.5 py-2.5 text-sm text-amber-900 bg-white/90 focus:outline-none focus:ring-2 focus:ring-amber-200"
-              placeholder="ID Number"
-            />
-            <input
-              type="text"
-              value={verificationForm.contactNumber}
-              onChange={(e) => setVerificationForm((prev) => ({ ...prev, contactNumber: e.target.value }))}
-              className="w-full rounded-xl border border-amber-200 px-3.5 py-2.5 text-sm text-amber-900 bg-white/90 focus:outline-none focus:ring-2 focus:ring-amber-200"
-              placeholder="Contact Number"
-            />
-            <input
-              type="text"
-              value={verificationForm.addressLine}
-              onChange={(e) => setVerificationForm((prev) => ({ ...prev, addressLine: e.target.value }))}
-              className="w-full rounded-xl border border-amber-200 px-3.5 py-2.5 text-sm text-amber-900 bg-white/90 focus:outline-none focus:ring-2 focus:ring-amber-200"
-              placeholder="Address Line"
-            />
-            <select
-              value={phVerification.regionCode}
-              onChange={(e) => {
-                const option = e.target.options[e.target.selectedIndex];
-                phVerification.setRegion(e.target.value, option.text);
-              }}
-              className="w-full rounded-xl border border-amber-200 px-3.5 py-2.5 text-sm text-amber-900 bg-white/90 focus:outline-none focus:ring-2 focus:ring-amber-200"
-            >
-              <option value="">Select Region</option>
-              {phVerification.regions.map((region) => (
-                <option key={region.code} value={region.code}>{region.name}</option>
-              ))}
-            </select>
-            {!phVerification.noProvince ? (
-              <select
-                value={phVerification.provinceCode}
-                disabled={!phVerification.regionCode || phVerification.loadingProvinces}
+            <VerificationField label="Full Name" required error={verificationErrors.fullName}>
+              <input
+                data-verification-field="fullName"
+                type="text"
+                required
+                value={verificationForm.fullName}
                 onChange={(e) => {
-                  const option = e.target.options[e.target.selectedIndex];
-                  phVerification.setProvince(e.target.value, option.text);
+                  setVerificationForm((prev) => ({ ...prev, fullName: e.target.value }));
+                  setVerificationErrors((prev) => ({ ...prev, fullName: undefined }));
                 }}
-                className="w-full rounded-xl border border-amber-200 px-3.5 py-2.5 text-sm text-amber-900 bg-white/90 focus:outline-none focus:ring-2 focus:ring-amber-200 disabled:bg-slate-100 disabled:text-slate-400"
+                className={verificationInputClass('fullName')}
+                placeholder="Enter full name"
+              />
+            </VerificationField>
+            <VerificationField label="Birth Date" required error={verificationErrors.birthDate}>
+              <input
+                data-verification-field="birthDate"
+                type="date"
+                required
+                value={verificationForm.birthDate}
+                onChange={(e) => {
+                  setVerificationForm((prev) => ({ ...prev, birthDate: e.target.value }));
+                  setVerificationErrors((prev) => ({ ...prev, birthDate: undefined }));
+                }}
+                className={verificationInputClass('birthDate')}
+              />
+            </VerificationField>
+            <VerificationField label="ID Type" required error={verificationErrors.idType}>
+              <select
+                data-verification-field="idType"
+                required
+                value={verificationForm.idType}
+                onChange={(e) => {
+                  setVerificationForm((prev) => ({ ...prev, idType: e.target.value }));
+                  setVerificationErrors((prev) => ({ ...prev, idType: undefined }));
+                }}
+                className={verificationInputClass('idType')}
               >
-                <option value="">{phVerification.loadingProvinces ? 'Loading provinces...' : 'Select Province'}</option>
-                {phVerification.provinces.map((province) => (
-                  <option key={province.code} value={province.code}>{province.name}</option>
+                {VERIFICATION_ID_TYPES.map((idType) => (
+                  <option key={idType} value={idType}>{idType}</option>
                 ))}
               </select>
-            ) : (
+            </VerificationField>
+            <VerificationField label="ID Number" required error={verificationErrors.idNumber}>
               <input
+                data-verification-field="idNumber"
                 type="text"
-                value={verificationForm.province}
-                disabled
-                className="w-full rounded-xl border border-amber-200 px-3.5 py-2.5 text-sm text-slate-400 bg-slate-100"
-                placeholder="Province"
+                required
+                value={verificationForm.idNumber}
+                onChange={(e) => {
+                  setVerificationForm((prev) => ({ ...prev, idNumber: e.target.value }));
+                  setVerificationErrors((prev) => ({ ...prev, idNumber: undefined }));
+                }}
+                className={verificationInputClass('idNumber')}
+                placeholder="Enter ID number"
               />
+            </VerificationField>
+            <VerificationField label="Contact Number" required error={verificationErrors.contactNumber}>
+              <input
+                data-verification-field="contactNumber"
+                type="text"
+                required
+                value={verificationForm.contactNumber}
+                onChange={(e) => {
+                  setVerificationForm((prev) => ({ ...prev, contactNumber: e.target.value }));
+                  setVerificationErrors((prev) => ({ ...prev, contactNumber: undefined }));
+                }}
+                className={verificationInputClass('contactNumber')}
+                placeholder="Enter contact number"
+              />
+            </VerificationField>
+            <VerificationField label="Address Line" required error={verificationErrors.addressLine}>
+              <input
+                data-verification-field="addressLine"
+                type="text"
+                required
+                value={verificationForm.addressLine}
+                onChange={(e) => {
+                  setVerificationForm((prev) => ({ ...prev, addressLine: e.target.value }));
+                  setVerificationErrors((prev) => ({ ...prev, addressLine: undefined }));
+                }}
+                className={verificationInputClass('addressLine')}
+                placeholder="House no., street, subdivision"
+              />
+            </VerificationField>
+            <VerificationField label="Region" required error={verificationErrors.region}>
+              <select
+                data-verification-field="region"
+                required
+                value={phVerification.regionCode}
+                onChange={(e) => {
+                  const option = e.target.options[e.target.selectedIndex];
+                  phVerification.setRegion(e.target.value, option.text);
+                  setVerificationErrors((prev) => ({ ...prev, region: undefined }));
+                }}
+                className={verificationInputClass('region')}
+              >
+                <option value="">Select Region</option>
+                {phVerification.regions.map((region) => (
+                  <option key={region.code} value={region.code}>{region.name}</option>
+                ))}
+              </select>
+            </VerificationField>
+            {!phVerification.noProvince ? (
+              <VerificationField label="Province" required error={verificationErrors.province}>
+                <select
+                  data-verification-field="province"
+                  required
+                  value={phVerification.provinceCode}
+                  disabled={!phVerification.regionCode || phVerification.loadingProvinces}
+                  onChange={(e) => {
+                    const option = e.target.options[e.target.selectedIndex];
+                    phVerification.setProvince(e.target.value, option.text);
+                    setVerificationErrors((prev) => ({ ...prev, province: undefined }));
+                  }}
+                  className={verificationInputClass('province', 'disabled:bg-slate-100 disabled:text-slate-400')}
+                >
+                  <option value="">{phVerification.loadingProvinces ? 'Loading provinces...' : 'Select Province'}</option>
+                  {phVerification.provinces.map((province) => (
+                    <option key={province.code} value={province.code}>{province.name}</option>
+                  ))}
+                </select>
+              </VerificationField>
+            ) : (
+              <VerificationField label="Province" required error={verificationErrors.province}>
+                <select
+                  data-verification-field="province"
+                  value=""
+                  disabled
+                  className={verificationInputClass('province', 'text-slate-400 bg-slate-100')}
+                >
+                  <option value="">
+                    {selectedVerificationProvince || 'Province not required for this region'}
+                  </option>
+                </select>
+              </VerificationField>
             )}
-            <select
-              value={phVerification.cityCode}
-              disabled={phVerification.noProvince ? !phVerification.regionCode : (!phVerification.provinceCode || phVerification.loadingCities)}
-              onChange={(e) => {
-                const option = e.target.options[e.target.selectedIndex];
-                phVerification.setCity(e.target.value, option.text);
-              }}
-              className="w-full rounded-xl border border-amber-200 px-3.5 py-2.5 text-sm text-amber-900 bg-white/90 focus:outline-none focus:ring-2 focus:ring-amber-200 disabled:bg-slate-100 disabled:text-slate-400"
-            >
-              <option value="">{phVerification.loadingCities || phVerification.loadingProvinces ? 'Loading cities...' : 'Select City / Municipality'}</option>
-              {phVerification.cities.map((city) => (
-                <option key={city.code} value={city.code}>{city.name}</option>
-              ))}
-            </select>
-            <select
-              value={verificationForm.barangay}
-              disabled={!phVerification.cityCode || phVerification.loadingBarangays}
-              onChange={(e) => {
-                phVerification.setBarangay(e.target.value);
-              }}
-              className="w-full rounded-xl border border-amber-200 px-3.5 py-2.5 text-sm text-amber-900 bg-white/90 focus:outline-none focus:ring-2 focus:ring-amber-200 disabled:bg-slate-100 disabled:text-slate-400"
-            >
-              <option value="">{phVerification.loadingBarangays ? 'Loading barangays...' : 'Select Barangay'}</option>
-              {phVerification.barangays.map((barangay) => (
-                <option key={barangay.code} value={barangay.name}>{barangay.name}</option>
-              ))}
-            </select>
-            <input
-              type="text"
-              value={verificationForm.postalCode}
-              onChange={(e) => setVerificationForm((prev) => ({ ...prev, postalCode: e.target.value }))}
-              className="w-full rounded-xl border border-amber-200 px-3.5 py-2.5 text-sm text-amber-900 bg-white/90 focus:outline-none focus:ring-2 focus:ring-amber-200"
-              placeholder="Postal Code"
-            />
-            <input
-              type="text"
-              value={verificationForm.country}
-              onChange={(e) => setVerificationForm((prev) => ({ ...prev, country: e.target.value }))}
-              className="w-full rounded-xl border border-amber-200 px-3.5 py-2.5 text-sm text-amber-900 bg-white/90 focus:outline-none focus:ring-2 focus:ring-amber-200"
-              placeholder="Country"
-            />
+            <VerificationField label="City / Municipality" required error={verificationErrors.city}>
+              <select
+                data-verification-field="city"
+                required
+                value={phVerification.cityCode}
+                disabled={phVerification.noProvince ? !phVerification.regionCode : (!phVerification.provinceCode || phVerification.loadingCities)}
+                onChange={(e) => {
+                  const option = e.target.options[e.target.selectedIndex];
+                  phVerification.setCity(e.target.value, option.text);
+                  setVerificationErrors((prev) => ({ ...prev, city: undefined }));
+                }}
+                className={verificationInputClass('city', 'disabled:bg-slate-100 disabled:text-slate-400')}
+              >
+                <option value="">{phVerification.loadingCities || phVerification.loadingProvinces ? 'Loading cities...' : 'Select City / Municipality'}</option>
+                {phVerification.cities.map((city) => (
+                  <option key={city.code} value={city.code}>{city.name}</option>
+                ))}
+              </select>
+            </VerificationField>
+            <VerificationField label="Barangay" required error={verificationErrors.barangay}>
+              <select
+                data-verification-field="barangay"
+                required
+                value={verificationForm.barangay}
+                disabled={!phVerification.cityCode || phVerification.loadingBarangays}
+                onChange={(e) => {
+                  phVerification.setBarangay(e.target.value);
+                  setVerificationErrors((prev) => ({ ...prev, barangay: undefined }));
+                }}
+                className={verificationInputClass('barangay', 'disabled:bg-slate-100 disabled:text-slate-400')}
+              >
+                <option value="">{phVerification.loadingBarangays ? 'Loading barangays...' : 'Select Barangay'}</option>
+                {phVerification.barangays.map((barangay) => (
+                  <option key={barangay.code} value={barangay.name}>{barangay.name}</option>
+                ))}
+              </select>
+            </VerificationField>
+            <VerificationField label="Postal Code" required error={verificationErrors.postalCode}>
+              <input
+                data-verification-field="postalCode"
+                type="text"
+                required
+                value={verificationForm.postalCode}
+                onChange={(e) => {
+                  setVerificationForm((prev) => ({ ...prev, postalCode: e.target.value }));
+                  setVerificationErrors((prev) => ({ ...prev, postalCode: undefined }));
+                }}
+                className={verificationInputClass('postalCode')}
+                placeholder="Enter postal code"
+              />
+            </VerificationField>
+            <VerificationField label="Country" required error={verificationErrors.country}>
+              <input
+                data-verification-field="country"
+                type="text"
+                required
+                value={verificationForm.country}
+                onChange={(e) => {
+                  setVerificationForm((prev) => ({ ...prev, country: e.target.value }));
+                  setVerificationErrors((prev) => ({ ...prev, country: undefined }));
+                }}
+                className={verificationInputClass('country')}
+                placeholder="Enter country"
+              />
+            </VerificationField>
           </div>
           <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3">
-            <label className="rounded-xl border border-amber-200 bg-white/90 px-3.5 py-2.5 text-xs text-amber-900">
-              ID Front (required)
+            <VerificationField label="ID Front" required error={verificationErrors.idFrontUrl}>
+              <span data-verification-field="idFrontUrl" className={`block rounded-xl bg-white/90 px-3.5 py-2.5 text-xs ${verificationErrors.idFrontUrl ? 'border border-red-300 text-red-900' : 'border border-amber-200 text-amber-900'}`}>
               <input
                 type="file"
                 accept="image/png,image/jpeg,image/webp,image/gif"
@@ -1084,9 +1310,10 @@ const EncashmentTab = () => {
                 }}
               />
               <span className="mt-1 block text-[11px] text-amber-700">{verificationUploadState.idFront ? 'Uploading...' : verificationForm.idFrontUrl ? 'Uploaded' : 'Not uploaded'}</span>
-            </label>
-            <label className="rounded-xl border border-amber-200 bg-white/90 px-3.5 py-2.5 text-xs text-amber-900">
-              ID Back (optional)
+              </span>
+            </VerificationField>
+            <VerificationField label="ID Back" required error={verificationErrors.idBackUrl}>
+              <span data-verification-field="idBackUrl" className={`block rounded-xl bg-white/90 px-3.5 py-2.5 text-xs ${verificationErrors.idBackUrl ? 'border border-red-300 text-red-900' : 'border border-amber-200 text-amber-900'}`}>
               <input
                 type="file"
                 accept="image/png,image/jpeg,image/webp,image/gif"
@@ -1098,9 +1325,10 @@ const EncashmentTab = () => {
                 }}
               />
               <span className="mt-1 block text-[11px] text-amber-700">{verificationUploadState.idBack ? 'Uploading...' : verificationForm.idBackUrl ? 'Uploaded' : 'Not uploaded'}</span>
-            </label>
-            <label className="rounded-xl border border-amber-200 bg-white/90 px-3.5 py-2.5 text-xs text-amber-900">
-              Selfie (required)
+              </span>
+            </VerificationField>
+            <VerificationField label="Selfie with ID" required error={verificationErrors.selfieUrl}>
+              <span data-verification-field="selfieUrl" className={`block rounded-xl bg-white/90 px-3.5 py-2.5 text-xs ${verificationErrors.selfieUrl ? 'border border-red-300 text-red-900' : 'border border-amber-200 text-amber-900'}`}>
               <input
                 type="file"
                 accept="image/png,image/jpeg,image/webp,image/gif"
@@ -1112,31 +1340,41 @@ const EncashmentTab = () => {
                 }}
               />
               <span className="mt-1 block text-[11px] text-amber-700">{verificationUploadState.selfie ? 'Uploading...' : verificationForm.selfieUrl ? 'Uploaded' : 'Not uploaded'}</span>
-            </label>
+              </span>
+            </VerificationField>
           </div>
           <div className="mt-3">
-            <textarea
-              rows={3}
-              value={verificationForm.notes}
-              onChange={(e) => setVerificationForm((prev) => ({ ...prev, notes: e.target.value }))}
-              className="w-full rounded-xl border border-amber-200 px-3.5 py-2.5 text-sm text-amber-900 bg-white/90 focus:outline-none focus:ring-2 focus:ring-amber-200"
-              placeholder="Verification notes (optional)"
-            />
+            <VerificationField label="Verification Notes" required error={verificationErrors.notes}>
+              <textarea
+                data-verification-field="notes"
+                rows={3}
+                required
+                value={verificationForm.notes}
+                onChange={(e) => {
+                  setVerificationForm((prev) => ({ ...prev, notes: e.target.value }));
+                  setVerificationErrors((prev) => ({ ...prev, notes: undefined }));
+                }}
+                className={verificationInputClass('notes')}
+                placeholder="Add verification notes"
+              />
+            </VerificationField>
           </div>
           <div className="mt-4">
-            <button
+            <motion.button
               type="button"
               onClick={handleSubmitVerificationRequest}
               disabled={isSubmittingVerification || verificationUploadState.idFront || verificationUploadState.idBack || verificationUploadState.selfie}
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.98 }}
               className="inline-flex items-center gap-2 rounded-xl bg-amber-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-amber-700 disabled:opacity-60"
             >
               {isSubmittingVerification ? 'Submitting...' : 'Submit for Verification Approval'}
-            </button>
+            </motion.button>
           </div>
           <p className="mt-2 text-xs text-amber-800/80">
             Verification requests are reviewed by the Admin/KYC team.
           </p>
-        </div>
+        </motion.div>
       )}
 
       {isCustomerSession && needsVerification && isVerificationPending && (
