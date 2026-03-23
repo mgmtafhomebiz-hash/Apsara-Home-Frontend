@@ -1131,11 +1131,6 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
                           <div>
                             <p className="text-[10px] font-semibold text-white/70 uppercase tracking-widest mb-0.5">Member Tier</p>
                             <p className="text-base font-bold text-white leading-tight">{tier}</p>
-                            <div className="flex items-center gap-1.5 mt-1.5">
-                              {Array.from({ length: 5 }).map((_, i) => (
-                                <span key={i} className={`h-1.5 rounded-full transition-all ${i < Math.max(rank, 1) ? 'w-4 bg-white' : 'w-2 bg-white/30'}`} />
-                              ))}
-                            </div>
                           </div>
                           <div className="rounded-2xl bg-white/25 backdrop-blur-md p-2 border border-white/40 shadow-xl shrink-0">
                             <img src={badgeImg} alt={tier} className="h-14 w-14 object-contain drop-shadow-lg" />
@@ -1145,9 +1140,10 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
                     );
                   })()}
 
-                  {/* Avatar overlapping the gradient */}
+                  {/* Avatar + info */}
                   <div className="px-4 -mt-8 pb-4 bg-white">
-                    <div className="flex items-end gap-3 mb-3">
+                    {/* Avatar row — overlapping the banner */}
+                    <div className="flex items-end justify-between mb-2">
                       <div className="relative shrink-0">
                         {avatarUrl ? (
                           <img
@@ -1162,15 +1158,16 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
                         )}
                         <span className="absolute -bottom-1 -right-1 h-4 w-4 rounded-full bg-emerald-400 border-2 border-white" />
                       </div>
-                      <div className="min-w-0 pb-1">
-                        <p className="text-sm font-bold text-gray-900 truncate leading-tight">{user?.name ?? 'User'}</p>
-                        {user?.email && (
-                          <p className="text-xs text-gray-400 truncate mt-0.5">{user.email}</p>
-                        )}
-                        {meData?.username && (
-                          <p className="text-xs text-orange-500 font-medium mt-0.5">@{meData.username}</p>
-                        )}
-                      </div>
+                    </div>
+                    {/* Name / email / username — clearly in white area */}
+                    <div className="mb-3">
+                      <p className="text-base font-bold text-gray-900 leading-tight">{user?.name ?? 'User'}</p>
+                      {user?.email && (
+                        <p className="text-xs text-gray-400 mt-0.5">{user.email}</p>
+                      )}
+                      {meData?.username && (
+                        <p className="text-xs text-orange-500 font-medium mt-0.5">@{meData.username}</p>
+                      )}
                     </div>
 
                     {/* Quick action links */}
