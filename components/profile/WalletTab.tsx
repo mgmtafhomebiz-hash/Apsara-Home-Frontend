@@ -42,8 +42,8 @@ const walletMeta = {
     subtitle: 'Review your available balance, deductions, and encashment activity.',
   },
   pv: {
-    title: 'PV Wallet',
-    subtitle: 'Monitor your AF Home PV balances, referral metrics, and approved PV history.',
+    title: 'AF Voucher',
+    subtitle: 'Monitor your AF Home voucher balances, referral metrics, and approved voucher history.',
   },
   rewards: {
     title: 'Rewards Center',
@@ -150,7 +150,7 @@ export default function WalletTab({ isVerified = false }: WalletTabProps) {
                 </div>
               ) : isError ? (
                 <div className="mt-5 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-700">
-                  Failed to load PV wallet data.
+                  Failed to load AF Voucher data.
                 </div>
               ) : (
                 <div className="mt-5">
