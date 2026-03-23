@@ -7,13 +7,21 @@ import MembersTable from "./MembersTable"
 import { useEffect, useMemo, useState } from "react"
 import { MemberStatus, MemberTier } from "@/types/members/types"
 import AddMemberModal from "./AddMemberModal"
-import { MembersResponse, MembersStatsResponse, useGetMembersQuery, useGetMembersStatsQuery } from "@/store/api/membersApi"
+import { MembersResponse, MembersStatsResponse, useGetMembersQuery, useGetMembersStatsQuery, useLazyGetMembersQuery } from "@/store/api/membersApi"
 import { useSearchParams } from "next/navigation"
 import { useSession } from "next-auth/react"
 
 interface MembersPageMainProps {
     initialData?: MembersResponse | null
     initialStats?: MembersStatsResponse | null
+}
+
+const csvEscape = (value: unknown) => {
+    const text = String(value ?? '')
+    if (/[",\n]/.test(text)) {
+        return `"${text.replace(/"/g, '""')}"`
+    }
+    return text
 }
 
 const MembersPageMain = ({ initialData = null, initialStats = null }: MembersPageMainProps) => {
@@ -26,6 +34,7 @@ const MembersPageMain = ({ initialData = null, initialStats = null }: MembersPag
     const [sort, setSort] = useState<'default' | 'earnings_low_high' | 'earnings_high_low'>('default')
     const [showModal, setShowModal] = useState(false);
     const [showEarningsModal, setShowEarningsModal] = useState(false);
+    const [isExporting, setIsExporting] = useState(false)
     const [page, setPage] = useState(1)
     const [stableData, setStableData] = useState<MembersResponse | null>(initialData)
     const [stableStats, setStableStats] = useState<MembersStatsResponse | null>(initialStats)
@@ -57,6 +66,7 @@ const MembersPageMain = ({ initialData = null, initialStats = null }: MembersPag
     const { data: statsData } = useGetMembersStatsQuery(undefined, {
         skip: shouldSkipMembersQuery || Boolean(initialStats),
     })
+    const [triggerExportMembers] = useLazyGetMembersQuery()
 
     const { data, isLoading, isFetching, isError } = useGetMembersQuery(
         {
@@ -120,6 +130,94 @@ const MembersPageMain = ({ initialData = null, initialStats = null }: MembersPag
         setPage(1)
     }
 
+    const handleExport = async () => {
+        if (isExporting) return
+
+        try {
+            setIsExporting(true)
+            const exportTotal = Math.max(meta?.total ?? members.length, members.length, 1)
+            const response = await triggerExportMembers({
+                page: 1,
+                perPage: exportTotal,
+                search: debouncedSearch !== '' ? debouncedSearch : undefined,
+                status: status === 'all' ? undefined : status,
+                tier: tier === 'all' ? undefined : tier,
+            }).unwrap()
+
+            const exportRows = [...(response.members ?? [])]
+            if (sort === 'earnings_low_high') {
+                exportRows.sort((a, b) => (a.earnings ?? 0) - (b.earnings ?? 0))
+            } else if (sort === 'earnings_high_low') {
+                exportRows.sort((a, b) => (b.earnings ?? 0) - (a.earnings ?? 0))
+            }
+
+            const headers = [
+                'Member ID',
+                'Name',
+                'Email',
+                'Status',
+                'Verification Status',
+                'Tier',
+                'Orders',
+                'Total Spent',
+                'Earnings',
+                'Wallet Cash Credits',
+                'Wallet PV Credits',
+                'Referrals',
+                'Joined',
+                'Address',
+                'Barangay',
+                'City',
+                'Province',
+                'Region',
+                'Zip Code',
+                'Full Address',
+            ]
+
+            const rows = exportRows.map((member) => [
+                member.id,
+                member.name,
+                member.email,
+                member.status,
+                member.verificationStatus ?? '',
+                member.tier,
+                member.orders,
+                member.totalSpent,
+                member.earnings,
+                Number(member.walletCashCredits ?? 0),
+                Number(member.walletPvCredits ?? 0),
+                member.referrals,
+                member.joinedAt,
+                member.addressLine ?? '',
+                member.barangay ?? '',
+                member.city ?? '',
+                member.province ?? '',
+                member.region ?? '',
+                member.zipCode ?? '',
+                member.fullAddress ?? '',
+            ])
+
+            const csv = [headers, ...rows]
+                .map((row) => row.map(csvEscape).join(','))
+                .join('\n')
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+            const url = URL.createObjectURL(blob)
+            const now = new Date()
+            const pad = (value: number) => String(value).padStart(2, '0')
+            const filename = `members-export-${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}.csv`
+            const link = document.createElement('a')
+            link.href = url
+            link.download = filename
+            document.body.appendChild(link)
+            link.click()
+            link.remove()
+            URL.revokeObjectURL(url)
+        } finally {
+            setIsExporting(false)
+        }
+    }
+
     return (
         <div className="space-y-5">
             {/* Header */}
@@ -156,6 +254,8 @@ const MembersPageMain = ({ initialData = null, initialStats = null }: MembersPag
                 sort={sort}
                 onSort={setSort}
                 resultCount={meta?.total ?? members.length}
+                onExport={handleExport}
+                isExporting={isExporting}
             />
 
             {authStatus === 'loading' && !effectiveData ? (

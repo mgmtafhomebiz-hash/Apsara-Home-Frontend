@@ -145,6 +145,7 @@ export const membersApi = baseApi.injectEndpoints({
 
 export const {
   useGetMembersQuery,
+  useLazyGetMembersQuery,
   useGetMembersStatsQuery,
   useGetMembersKycQuery,
   useApproveMemberKycMutation,

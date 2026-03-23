@@ -12,10 +12,12 @@ interface MembersToolbarProps {
   sort: 'default' | 'earnings_low_high' | 'earnings_high_low'
   onSort: (v: 'default' | 'earnings_low_high' | 'earnings_high_low') => void
   resultCount: number
+  onExport: () => void
+  isExporting?: boolean
 }
 
 const MembersToolbar = ({
-  search, onSearch, status, onStatus, tier, onTier, sort, onSort, resultCount
+  search, onSearch, status, onStatus, tier, onTier, sort, onSort, resultCount, onExport, isExporting = false
 }: MembersToolbarProps) => {
   const hasFilter = search !== '' || status !== 'all' || tier !== 'all' || sort !== 'default'
 
@@ -81,11 +83,16 @@ const MembersToolbar = ({
         </div>
 
         {/* Export */}
-        <button className="flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-sm font-medium transition-colors shrink-0">
+        <button
+          type="button"
+          onClick={onExport}
+          disabled={isExporting}
+          className="flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-sm font-medium transition-colors shrink-0 disabled:opacity-60 disabled:cursor-not-allowed"
+        >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
           </svg>
-          <span>Export</span>
+          <span>{isExporting ? 'Exporting...' : 'Export'}</span>
         </button>
       </div>
 
