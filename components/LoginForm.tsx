@@ -4,9 +4,10 @@ import Link from "next/link";
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { getSession, signIn } from "next-auth/react";
+import { getSession, signIn, signOut } from "next-auth/react";
 import Loading from '@/components/Loading'
 import { showErrorToast, showInfoToast, showSuccessToast } from '@/libs/toast'
+import { clearAccessTokenCache } from "@/store/api/baseApi";
 
 const REMEMBER_USER_EMAIL_KEY = 'afhome_user_login'
 
@@ -45,6 +46,9 @@ const LoginForm = ({ onSwitchToSignUp, onRequirePasswordChange }: LoginFormProps
         e.preventDefault();
         setError('');
         setIsLoading(true);
+
+        clearAccessTokenCache()
+        await signOut({ redirect: false })
 
         const result = await signIn('credentials', {
             email: form.email,
