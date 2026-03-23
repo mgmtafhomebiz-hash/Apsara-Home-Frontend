@@ -122,6 +122,8 @@ const ProfilePage = ({ initialProfile = null }: ProfilePageProps) => {
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [isAvatarPreviewOpen, setIsAvatarPreviewOpen] = useState(false);
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
+  const [isMobileReferralTreeOpen, setIsMobileReferralTreeOpen] = useState(false);
+  const [isMobileViewOpen, setIsMobileViewOpen] = useState(false);
   const [referralQrStatus, setReferralQrStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
   const [addressForm, setAddressForm] = useState<AddressFormState>({ address: '', zipCode: '' });
   const msgTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -805,10 +807,8 @@ const ProfilePage = ({ initialProfile = null }: ProfilePageProps) => {
 
   const handleTabChange = (tab: Tab) => {
     setActiveTab(tab);
-    if (typeof window !== 'undefined' && window.innerWidth < 1280) {
-      requestAnimationFrame(() => {
-        mainContentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      });
+    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+      setIsMobileViewOpen(true);
     }
   };
 
@@ -851,9 +851,41 @@ const ProfilePage = ({ initialProfile = null }: ProfilePageProps) => {
           <p className="mt-1 text-sm text-slate-500">Manage your personal information, security, and preferences.</p>
         </div>
 
-        {/* Tab navigation bar */}
+        {/* Tab navigation bar — mobile: 4×2 grid, desktop: horizontal bar */}
         <div className="sticky top-16 z-20 -mx-4 mb-6 bg-white/95 backdrop-blur-sm border-b border-slate-100">
-          <nav className="flex overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden px-4">
+          {/* Mobile horizontal scroll (hidden on md+) */}
+          <nav className="flex overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:hidden px-2 py-1 gap-1">
+            {(() => {
+              const shortLabel: Record<Tab, string> = {
+                profile: 'Profile',
+                security: 'Security',
+                preferences: 'Prefs',
+                wallet: 'Wallet',
+                encashment: 'Encash',
+                'interior-requests': 'Requests',
+                activity: 'Activity',
+                referrals: 'Referrals',
+              };
+              return TABS.map(({ key, Icon: TabIcon }) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => handleTabChange(key)}
+                  className={`shrink-0 flex flex-col items-center gap-1 rounded-xl px-3 py-2.5 text-[10px] font-medium transition-colors min-w-[60px] ${
+                    activeTab === key
+                      ? 'bg-orange-50 text-orange-600'
+                      : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'
+                  }`}
+                >
+                  <TabIcon className={`h-5 w-5 ${activeTab === key ? 'text-orange-500' : 'text-slate-400'}`} />
+                  {shortLabel[key]}
+                </button>
+              ));
+            })()}
+          </nav>
+
+          {/* Desktop horizontal bar (hidden below md) */}
+          <nav className="hidden md:flex overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden px-4">
             {TABS.map(({ key, label, Icon: TabIcon }) => (
               <button
                 key={key}
@@ -1000,7 +1032,7 @@ const ProfilePage = ({ initialProfile = null }: ProfilePageProps) => {
 
               {/* Referral section */}
               {isVerified && (
-                <div className="px-5 pb-5">
+                <div className="hidden md:block px-5 pb-5">
                   <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                     {/* Header */}
                     <div className="flex items-center justify-between gap-2 mb-3">
@@ -1111,7 +1143,13 @@ const ProfilePage = ({ initialProfile = null }: ProfilePageProps) => {
                       </div>
                       <button
                         type="button"
-                        onClick={() => handleTabChange('referrals')}
+                        onClick={() => {
+                          if (typeof window !== 'undefined' && window.innerWidth < 1280) {
+                            setIsMobileReferralTreeOpen(true);
+                          } else {
+                            handleTabChange('referrals');
+                          }
+                        }}
                         className="w-full flex items-center justify-center gap-2 rounded-xl bg-orange-500 px-3 py-2.5 text-xs font-semibold text-white hover:bg-orange-600 transition-colors shadow-sm"
                       >
                         <svg className="h-3.5 w-3.5 shrink-0" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
@@ -1127,7 +1165,7 @@ const ProfilePage = ({ initialProfile = null }: ProfilePageProps) => {
 
               {/* Verification reminder */}
               {!isVerified && (
-                <div className="px-5 pb-5">
+                <div className="hidden md:block px-5 pb-5">
                   <div className="rounded-xl border border-amber-200 bg-amber-50 p-3.5">
                     <p className="text-xs font-bold text-amber-800 mb-1">
                       {isPendingVerification ? 'Verification In Review' : 'Verification Required'}
@@ -1169,7 +1207,7 @@ const ProfilePage = ({ initialProfile = null }: ProfilePageProps) => {
               initial="hidden"
               animate="visible"
               custom={1}
-              className="rounded-2xl border border-slate-200 bg-white p-5"
+              className="hidden md:block rounded-2xl border border-slate-200 bg-white p-5"
             >
               <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3">Account Snapshot</h3>
               <div className="grid grid-cols-2 gap-2">
@@ -1194,7 +1232,7 @@ const ProfilePage = ({ initialProfile = null }: ProfilePageProps) => {
               initial="hidden"
               animate="visible"
               custom={2}
-              className="rounded-2xl border border-slate-200 bg-white p-5"
+              className="hidden md:block rounded-2xl border border-slate-200 bg-white p-5"
             >
               <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3">Quick Actions</h3>
               <div className="space-y-1.5">
@@ -1218,7 +1256,32 @@ const ProfilePage = ({ initialProfile = null }: ProfilePageProps) => {
           </aside>
 
           {/* â"€â"€ Main content â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ */}
-          <div ref={mainContentRef} className="xl:col-span-8 space-y-5">
+          <div
+            ref={mainContentRef}
+            className={`xl:col-span-8 space-y-5
+              fixed inset-0 z-50 bg-slate-50 overflow-y-auto transition-transform duration-300 ease-in-out
+              ${isMobileViewOpen ? 'translate-x-0' : 'translate-x-full pointer-events-none'}
+              md:relative md:inset-auto md:z-auto md:bg-transparent md:overflow-visible md:translate-x-0 md:pointer-events-auto md:transition-none md:block
+            `}
+          >
+            {/* Mobile back header — only shown in mobile full-screen view */}
+            {isMobileViewOpen && (
+              <div className="sticky top-0 z-10 bg-white border-b border-slate-100 px-4 py-3 flex items-center gap-3 md:hidden">
+                <button
+                  type="button"
+                  onClick={() => { setIsMobileViewOpen(false); setActiveTab('profile'); }}
+                  className="flex items-center gap-1.5 text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors"
+                  aria-label="Close"
+                >
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+                  </svg>
+                  Back
+                </button>
+                <h2 className="text-base font-bold text-slate-900">{activeTabLabel}</h2>
+              </div>
+            )}
+            <div className={isMobileViewOpen ? 'px-4 py-4 space-y-5 md:px-0 md:py-0 md:space-y-0' : ''}>
             <AnimatePresence mode="wait">
               {/* â"€â"€ Profile tab â"€â"€ */}
               {activeTab === 'profile' && (
@@ -1942,6 +2005,7 @@ const ProfilePage = ({ initialProfile = null }: ProfilePageProps) => {
                 </motion.div>
               )}
             </AnimatePresence>
+            </div>
           </div>
         </div>
       </div>
@@ -2099,6 +2163,224 @@ const ProfilePage = ({ initialProfile = null }: ProfilePageProps) => {
                 </div>
               </form>
             </motion.div>
+          </motion.div>
+        )}
+
+        {isMobileReferralTreeOpen && (
+          <motion.div
+            key="mobile-referral-tree"
+            initial={{ x: '100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '100%' }}
+            transition={{ type: 'tween', duration: 0.3, ease: 'easeInOut' }}
+            className="fixed inset-0 z-[70] bg-slate-50 flex flex-col xl:hidden"
+          >
+            {/* Sticky header */}
+            <div className="sticky top-0 z-10 bg-white border-b border-slate-100 px-4 py-3 flex items-center gap-3 shrink-0">
+              <button
+                type="button"
+                onClick={() => setIsMobileReferralTreeOpen(false)}
+                className="flex items-center gap-1.5 text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors"
+                aria-label="Close referral tree"
+              >
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+                </svg>
+                Back
+              </button>
+              <div className="flex-1">
+                <h2 className="text-base font-bold text-slate-900">Referral Tree</h2>
+              </div>
+              {isVerified && (
+                <span className="text-[10px] px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 font-semibold">
+                  ✓ Verified
+                </span>
+              )}
+            </div>
+
+            {/* Scrollable content */}
+            <div className="flex-1 overflow-y-auto px-4 py-5 space-y-5">
+              {/* Stats row */}
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  { label: 'Direct Referrals', value: referralTree?.summary?.direct_count ?? 0, bg: 'bg-sky-50', text: 'text-sky-600', border: 'border-sky-100', val: 'text-sky-800' },
+                  { label: 'Level 2', value: referralTree?.summary?.second_level_count ?? 0, bg: 'bg-orange-50', text: 'text-orange-600', border: 'border-orange-100', val: 'text-orange-800' },
+                  { label: 'Total Network', value: referralTree?.summary?.total_network ?? 0, bg: 'bg-emerald-50', text: 'text-emerald-600', border: 'border-emerald-100', val: 'text-emerald-800' },
+                  { label: 'Total PV Earned', value: (referralTree?.summary as { total_pv?: number } | undefined)?.total_pv ?? 0, bg: 'bg-amber-50', text: 'text-amber-600', border: 'border-amber-100', val: 'text-amber-800' },
+                ].map((stat) => (
+                  <div key={stat.label} className={`rounded-xl border ${stat.border} ${stat.bg} px-4 py-3`}>
+                    <p className={`text-[11px] font-medium ${stat.text} mb-1`}>{stat.label}</p>
+                    <p className={`text-xl font-bold ${stat.val}`}>{stat.value.toLocaleString()}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Referral link */}
+              {isVerified && referralLink && (
+                <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                  <p className="text-xs font-bold text-slate-700 mb-2">Your Referral Link</p>
+                  <div className="flex items-center gap-2 p-2 rounded-lg bg-slate-50 border border-slate-100 mb-3">
+                    <p className="text-[11px] text-slate-600 truncate flex-1">{referralLink}</p>
+                  </div>
+                  {referralMsg && (
+                    <p className={`mb-2 text-xs font-medium ${referralMsg.type === 'success' ? 'text-emerald-700' : 'text-red-600'}`}>
+                      {referralMsg.text}
+                    </p>
+                  )}
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleCopyReferralLink}
+                      className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-white border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+                    >
+                      <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" /></svg>
+                      Copy Link
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleShareReferralLink}
+                      className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-orange-500 px-3 py-2 text-xs font-semibold text-white hover:bg-orange-600 transition-colors shadow-sm"
+                    >
+                      <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13" /></svg>
+                      Share
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {!isVerified && (
+                <div className="flex items-start gap-3 p-4 rounded-xl bg-amber-50 border border-amber-100">
+                  <Icon.Warning className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-semibold text-amber-800">Verification Required</p>
+                    <p className="text-xs text-amber-700 mt-0.5">Complete KYC verification to unlock your referral link.</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Tree search + filter + list */}
+              <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                {isReferralTreeLoading ? (
+                  <div className="space-y-3 animate-pulse">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="h-20 rounded-2xl bg-slate-100" />
+                    ))}
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex flex-col gap-2 mb-3">
+                      <div className="relative flex-1">
+                        <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
+                        <input
+                          type="text"
+                          value={treeSearchQuery}
+                          onChange={(e) => { setTreeSearchQuery(e.target.value); setReferralPage(1); }}
+                          placeholder="Search name, username, email..."
+                          className="w-full pl-9 pr-3 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2c5f4f]/20 focus:border-[#2c5f4f]/40 bg-slate-50 text-slate-700 placeholder-slate-400"
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <select
+                          value={treeStatusFilter}
+                          onChange={(e) => { setTreeStatusFilter(e.target.value as TreeStatusFilter); setReferralPage(1); }}
+                          className="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#2c5f4f]/20 focus:border-[#2c5f4f]/40"
+                        >
+                          <option value="all">All Status</option>
+                          <option value="verified">Verified</option>
+                          <option value="pending_review">Pending Review</option>
+                          <option value="not_verified">Not Verified</option>
+                          <option value="blocked">Blocked</option>
+                        </select>
+                        <button
+                          type="button"
+                          onClick={handleExpandAllTreeNodes}
+                          className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-600 hover:border-orange-300 hover:text-orange-600 transition-colors"
+                        >
+                          Expand
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleCollapseAllTreeNodes}
+                          className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-600 hover:border-orange-300 hover:text-orange-600 transition-colors"
+                        >
+                          Collapse
+                        </button>
+                      </div>
+                    </div>
+
+                    {(() => {
+                      const totalPages = Math.ceil(filteredReferralChildren.length / REFERRAL_PAGE_SIZE);
+                      const pageStart = (referralPage - 1) * REFERRAL_PAGE_SIZE;
+                      const pageEnd = pageStart + REFERRAL_PAGE_SIZE;
+                      const pageItems = filteredReferralChildren.slice(pageStart, pageEnd);
+                      return (
+                        <>
+                          <div className="flex items-center justify-between mb-4">
+                            <p className="text-xs text-slate-500">
+                              {filteredReferralChildren.length > 0
+                                ? <>Showing <span className="font-semibold text-slate-700">{pageStart + 1}–{Math.min(pageEnd, filteredReferralChildren.length)}</span> of <span className="font-semibold text-slate-700">{filteredReferralChildren.length}</span> referral{filteredReferralChildren.length !== 1 ? 's' : ''}</>
+                                : 'No referrals found'
+                              }
+                            </p>
+                            {(treeSearchQuery || treeStatusFilter !== 'all') && (
+                              <button type="button" onClick={() => { setTreeSearchQuery(''); setTreeStatusFilter('all'); setReferralPage(1); }} className="text-xs text-[#2c5f4f] hover:text-[#234d40] font-medium">
+                                Clear filters
+                              </button>
+                            )}
+                          </div>
+
+                          {pageItems.length > 0 ? (
+                            <>
+                              <div className="space-y-2">
+                                {pageItems.map((node) => renderReferralNodeFull(node))}
+                              </div>
+
+                              {totalPages > 1 && (
+                                <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-100">
+                                  <button
+                                    type="button"
+                                    disabled={referralPage <= 1}
+                                    onClick={() => setReferralPage((p) => Math.max(1, p - 1))}
+                                    className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-600 hover:border-[#2c5f4f]/40 hover:text-[#2c5f4f] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                  >
+                                    <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6" /></svg>
+                                    Prev
+                                  </button>
+                                  <p className="text-xs text-slate-500 font-medium">
+                                    Page <span className="text-slate-800 font-bold">{referralPage}</span> / {totalPages}
+                                  </p>
+                                  <button
+                                    type="button"
+                                    disabled={referralPage >= totalPages}
+                                    onClick={() => setReferralPage((p) => Math.min(totalPages, p + 1))}
+                                    className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-600 hover:border-[#2c5f4f]/40 hover:text-[#2c5f4f] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                  >
+                                    Next
+                                    <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6" /></svg>
+                                  </button>
+                                </div>
+                              )}
+                            </>
+                          ) : (
+                            <div className="py-12 text-center">
+                              <div className="h-12 w-12 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-3">
+                                <Icon.Network className="h-6 w-6 text-slate-400" />
+                              </div>
+                              <p className="text-sm font-semibold text-slate-700">
+                                {(referralTree?.children?.length ?? 0) > 0 ? 'No matches found' : 'No referrals yet'}
+                              </p>
+                              <p className="text-xs text-slate-400 mt-1">
+                                {(referralTree?.children?.length ?? 0) > 0 ? 'Try a different search or filter' : 'Share your referral link to start building your network'}
+                              </p>
+                            </div>
+                          )}
+                        </>
+                      );
+                    })()}
+                  </>
+                )}
+              </div>
+            </div>
           </motion.div>
         )}
 

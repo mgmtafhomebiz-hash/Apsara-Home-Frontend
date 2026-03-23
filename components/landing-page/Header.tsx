@@ -2,13 +2,13 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ShoppingBag, Menu, X, User } from 'lucide-react';
 import { useSession } from 'next-auth/react';
+import Link from 'next/link';
 
 interface HeaderProps {
   cartCount: number;
-  onCartClick: () => void;
 }
 
-export default function Header({ cartCount, onCartClick }: HeaderProps) {
+export default function Header({ cartCount }: HeaderProps) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { status } = useSession();
@@ -79,37 +79,38 @@ export default function Header({ cartCount, onCartClick }: HeaderProps) {
           {/* Right Icons */}
           <div className="flex items-center gap-4">
             {/* User Icon with href */}
-            <motion.a
-              href={userHref}
+            <motion.div
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.95 }}
               className={`p-2 transition-colors ${isScrolled ? 'text-black' : 'text-white'}`}
             >
-              <User size={20} />
-            </motion.a>
+              <Link href={userHref} aria-label="User account">
+                <User size={20} />
+              </Link>
+            </motion.div>
 
             {/* Shopping Bag Icon with href */}
-            <motion.a
-              href="/shop"
+            <motion.div
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.95 }}
-              onClick={onCartClick}
               className={`relative p-2 transition-colors ${isScrolled ? 'text-black' : 'text-white'}`}
             >
-              <ShoppingBag size={20} />
-              <AnimatePresence>
-                {cartCount > 0 && (
-                  <motion.span
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    exit={{ scale: 0 }}
-                    className="absolute -top-1 -right-1 w-5 h-5 bg-af-brass text-white text-xs font-bold rounded-full flex items-center justify-center"
-                  >
-                    {cartCount}
-                  </motion.span>
-                )}
-              </AnimatePresence>
-            </motion.a>
+              <Link href="/shop" aria-label="Browse shop" className="block">
+                <ShoppingBag size={20} />
+                <AnimatePresence>
+                  {cartCount > 0 && (
+                    <motion.span
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      exit={{ scale: 0 }}
+                      className="absolute -top-1 -right-1 w-5 h-5 bg-af-brass text-white text-xs font-bold rounded-full flex items-center justify-center"
+                    >
+                      {cartCount}
+                    </motion.span>
+                  )}
+                </AnimatePresence>
+              </Link>
+            </motion.div>
 
             {/* Hamburger Menu - Visible only on mobile */}
             <motion.button

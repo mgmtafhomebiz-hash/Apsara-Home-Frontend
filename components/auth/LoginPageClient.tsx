@@ -18,18 +18,20 @@ export default function LoginPageClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { status, data: session } = useSession();
+  const role = String(session?.user?.role ?? '').toLowerCase();
+  const isCustomerSession = status === 'authenticated' && (role === 'customer' || role === '');
   const forcePasswordChange = searchParams.get('force-password-change') === '1';
   const passwordChangeRequired = Boolean(session?.user?.passwordChangeRequired);
   const hasReferral = Boolean(searchParams.get('ref') || searchParams.get('referred_by'));
   const [manualMode, setManualMode] = useState<'login' | 'signup' | null>(null);
 
   useEffect(() => {
-    if (status !== 'authenticated') return;
+    if (!isCustomerSession) return;
 
     if (!passwordChangeRequired && !forcePasswordChange) {
       router.replace('/shop');
     }
-  }, [forcePasswordChange, passwordChangeRequired, router, status]);
+  }, [forcePasswordChange, isCustomerSession, passwordChangeRequired, router]);
 
   const mode: Mode = passwordChangeRequired || forcePasswordChange
     ? 'force-password-change'

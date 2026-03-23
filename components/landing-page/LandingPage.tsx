@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { AnimatePresence } from "framer-motion";
 import Header from "@/components/landing-page/Header";
 import HeroSection from "@/components/landing-page/HeroSection";
@@ -22,7 +21,6 @@ import ScrollToTop from "@/components/landing-page/ScrollToTop";
 import type { Product } from "@/components/landing-page/ProductCard";
 
 export default function LandingPage() {
-  const router = useRouter();
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isQuickViewOpen, setIsQuickViewOpen] = useState(false);
   const [cartCount, setCartCount] = useState(0);
@@ -36,15 +34,11 @@ export default function LandingPage() {
     setCartCount((prev) => prev + quantity);
   };
 
-  const handleCartClick = () => {
-    router.push("/shop");
-  };
-
   return (
     <div className="min-h-screen bg-af-cream">
       <div className="fixed inset-0 noise-overlay pointer-events-none z-[100]" />
 
-      <Header cartCount={cartCount} onCartClick={handleCartClick} />
+      <Header cartCount={cartCount} />
 
       <main>
         <HeroSection />
