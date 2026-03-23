@@ -182,6 +182,12 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange }
     const displaySku = (selectedVariant?.sku && selectedVariant.sku.trim().length > 0)
         ? selectedVariant.sku
         : (product.sku && product.sku.trim().length > 0 ? product.sku : '');
+    const displayWidth = toPositiveNumber(selectedVariant?.width) ?? toPositiveNumber(product.pswidth);
+    const displayDimension = toPositiveNumber(selectedVariant?.dimension) ?? toPositiveNumber(product.pslenght);
+    const displayHeight = toPositiveNumber(selectedVariant?.height) ?? toPositiveNumber(product.psheight);
+    const hasDisplayDimensions = Boolean(displayWidth || displayDimension || displayHeight);
+    const selectedVariantImage = selectedVariant?.images?.find((image) => typeof image === 'string' && image.trim().length > 0);
+    const selectedVariantLabel = selectedVariant?.name?.trim() || selectedVariant?.size?.trim() || '';
     const isInStock = typeof displayStock !== 'number' || displayStock > 0;
     const productDescription = (product.description ?? '').trim();
     const plainDescription = productDescription ? stripHtml(productDescription) : '';
@@ -340,18 +346,51 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange }
                 <span className="text-sm font-semibold text-slate-700">
                     Type: <span className="text-orange-500">{productTypeLabel}</span>
                 </span>
-                {selectedVariant?.name?.trim() && !usesVariantNameSelection && (
-                    <span className="text-sm font-semibold text-slate-700">
-                        Variant: <span className="text-orange-500">{selectedVariant.name.trim()}</span>
-                    </span>
-                )}
             </div>
+
+            {hasRealVariants && (selectedVariantLabel || hasDisplayDimensions || selectedVariantImage) && (
+                <div className="flex items-center gap-3 rounded-2xl border border-orange-100 bg-orange-50/60 p-3">
+                    {selectedVariantImage ? (
+                        <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl border border-orange-200 bg-white">
+                            <Image
+                                src={selectedVariantImage}
+                                alt={selectedVariantLabel || product.name}
+                                fill
+                                className="object-cover"
+                                sizes="64px"
+                            />
+                        </div>
+                    ) : null}
+                    <div className="flex min-w-0 flex-col gap-1">
+                        {selectedVariantLabel ? (
+                            <span className="text-sm font-semibold text-slate-700">
+                                Selected Variant: <span className="text-orange-500">{selectedVariantLabel}</span>
+                            </span>
+                        ) : null}
+                        {selectedVariant?.size?.trim() && selectedVariant?.name?.trim() && (
+                            <span className="text-sm font-semibold text-slate-700">
+                                Size: <span className="text-orange-500">{selectedVariant.size.trim()}</span>
+                            </span>
+                        )}
+                        {hasDisplayDimensions && (
+                            <span className="text-sm font-semibold text-slate-700">
+                                Dimensions:{' '}
+                                <span className="text-orange-500">
+                                    {displayWidth ? `W ${displayWidth} cm` : 'W -'}
+                                    {' × '}
+                                    {displayDimension ? `D ${displayDimension} cm` : 'D -'}
+                                    {' × '}
+                                    {displayHeight ? `H ${displayHeight} cm` : 'H -'}
+                                </span>
+                            </span>
+                        )}
+                    </div>
+                </div>
+            )}
 
             {hasRealVariants && colorOptions.length > 0 && (
                 <div className="flex flex-col gap-2">
-                    <span className="text-sm font-semibold text-slate-700">
-                        Color: <span className="text-orange-500">{displayColorName(effectiveSelectedColor)}</span>
-                    </span>
+                    <span className="text-sm font-semibold text-slate-700">Color</span>
                     <div className="flex gap-2.5">
                         {colorOptions.map(c => (
                             <button
@@ -368,9 +407,7 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange }
 
             {hasRealVariants && sizeOptions.length > 0 && (
                 <div className="flex flex-col gap-2">
-                    <span className="text-sm font-semibold text-slate-700">
-                        Size: <span className="text-orange-500">{effectiveSelectedSize}</span>
-                    </span>
+                    <span className="text-sm font-semibold text-slate-700">Size</span>
                     <div className="flex gap-2 flex-wrap">
                         {sizeOptions.map(size => (
                             <button
@@ -390,9 +427,7 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange }
 
             {hasRealVariants && usesVariantNameSelection && (
                 <div className="flex flex-col gap-2">
-                    <span className="text-sm font-semibold text-slate-700">
-                        Variant: <span className="text-orange-500">{effectiveSelectedVariantName}</span>
-                    </span>
+                    <span className="text-sm font-semibold text-slate-700">Variant Options</span>
                     <div className="flex gap-2 flex-wrap">
                         {variantNameOptions.map((variantOption) => (
                             <button

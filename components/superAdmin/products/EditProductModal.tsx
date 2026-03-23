@@ -57,6 +57,9 @@ interface VariantFormState {
   pv_sku: string
   pv_colors: VariantColor[]
   pv_size: string
+  pv_width: string
+  pv_dimension: string
+  pv_height: string
   pv_price_srp: string
   pv_price_dp: string
   pv_price_member: string
@@ -118,7 +121,7 @@ const WARRANTY_OPTIONS = [
 /* ─── helpers ────────────────────────────────────────────── */
 
 const emptyVariant = (): VariantFormState => ({
-  pv_name: '', pv_sku: '', pv_colors: [], pv_size: '',
+  pv_name: '', pv_sku: '', pv_colors: [], pv_size: '', pv_width: '', pv_dimension: '', pv_height: '',
   pv_price_srp: '', pv_price_dp: '', pv_price_member: '', pv_prodpv: '', pv_qty: '',
   pv_status: '1', pv_images: [],
 })
@@ -141,6 +144,9 @@ const mapVariantToForm = (variant: ProductVariant): VariantFormState => ({
       ? [{ name: variant.color, hex: '#94a3b8' }]
       : [],
   pv_size: variant.size ?? '',
+  pv_width: toOptionalPositiveNumber(variant.width)?.toString() ?? '',
+  pv_dimension: toOptionalPositiveNumber(variant.dimension)?.toString() ?? '',
+  pv_height: toOptionalPositiveNumber(variant.height)?.toString() ?? '',
   pv_price_srp: toOptionalPositiveNumber(variant.priceSrp)?.toString() ?? '',
   pv_price_dp:  toOptionalPositiveNumber(variant.priceDp)?.toString() ?? '',
   pv_price_member: toOptionalPositiveNumber(variant.priceMember)?.toString() ?? '',
@@ -197,6 +203,17 @@ const moveItem = <T,>(items: T[], fromIndex: number, toIndex: number) => {
   return next
 }
 
+const getRequestErrorMessage = (err: unknown, fallback: string) => {
+  const data = (err as { data?: { message?: string; errors?: Record<string, string[] | string> } })?.data
+  const firstFieldErrors = data?.errors
+    ? Object.values(data.errors)
+        .flatMap((value) => Array.isArray(value) ? value : [value])
+        .filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
+    : []
+
+  return firstFieldErrors[0] ?? data?.message ?? fallback
+}
+
 const normalizeFormForComparison = (form: FormState) => ({
   pd_name: form.pd_name.trim(),
   pd_catid: Number(form.pd_catid),
@@ -234,6 +251,9 @@ const normalizeVariantsForComparison = (variants: VariantFormState[]) =>
       hex: color.hex.trim().toLowerCase(),
     })),
     pv_size: variant.pv_size.trim(),
+    pv_width: normalizeNumberField(variant.pv_width),
+    pv_dimension: normalizeNumberField(variant.pv_dimension),
+    pv_height: normalizeNumberField(variant.pv_height),
     pv_price_srp: normalizeNumberField(variant.pv_price_srp),
     pv_price_dp: normalizeNumberField(variant.pv_price_dp),
     pv_price_member: normalizeNumberField(variant.pv_price_member),
@@ -251,6 +271,9 @@ const mapExpandedVariantToProductVariant = (
   color: variant.pv_color,
   colorHex: variant.pv_color_hex,
   size: variant.pv_size,
+  width: variant.pv_width,
+  dimension: variant.pv_dimension,
+  height: variant.pv_height,
   priceSrp: variant.pv_price_srp,
   priceDp: variant.pv_price_dp,
   priceMember: variant.pv_price_member,
@@ -579,7 +602,7 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
   }
 
   const expandedVariants = variants
-    .filter(v => v.pv_name || v.pv_colors.length > 0 || v.pv_size || v.pv_sku || v.pv_images.length > 0)
+    .filter(v => v.pv_name || v.pv_colors.length > 0 || v.pv_size || v.pv_width || v.pv_dimension || v.pv_height || v.pv_sku || v.pv_images.length > 0)
     .flatMap((v, index) => {
       const autoSku    = buildVariantSku(form.pd_parent_sku || generateSkuFromName(form.pd_name, product?.id), index)
       const variantSku = v.pv_sku.trim() || autoSku
@@ -590,6 +613,9 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
         pv_name:      v.pv_name.trim() || undefined,
         pv_sku:       variantSku,
         pv_size:      v.pv_size || undefined,
+        pv_width:     toOptionalPositiveNumber(v.pv_width),
+        pv_dimension: toOptionalPositiveNumber(v.pv_dimension),
+        pv_height:    toOptionalPositiveNumber(v.pv_height),
         pv_price_srp: toOptionalPositiveNumber(v.pv_price_srp) ?? baseSrp,
         pv_price_dp:  toOptionalPositiveNumber(v.pv_price_dp)  ?? baseDp,
         pv_price_member: toOptionalPositiveNumber(v.pv_price_member) ?? baseMember,
@@ -721,7 +747,7 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
       onSaved?.(updatedProduct)
       onClose()
     } catch (err: unknown) {
-      const message = (err as { data?: { message?: string } })?.data?.message ?? 'Failed to update product.'
+      const message = getRequestErrorMessage(err, 'Failed to update product.')
       setServerError(message)
       showErrorToast(message)
     }
@@ -1213,6 +1239,11 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
                                     <p className="text-xs font-bold text-slate-700">
                                       {variant.pv_name.trim() || `Variant #${index + 1}`}
                                       {variant.pv_size && <span className="text-slate-400 font-normal ml-1">· {variant.pv_size}</span>}
+                                      {(variant.pv_width || variant.pv_dimension || variant.pv_height) && (
+                                        <span className="text-slate-400 font-normal ml-1">
+                                          · {variant.pv_width || '-'}W x {variant.pv_dimension || '-'}D x {variant.pv_height || '-'}H
+                                        </span>
+                                      )}
                                       {variant.pv_colors.length > 0 && (
                                         <span className="inline-flex items-center gap-1 ml-2">
                                           {variant.pv_colors.map((c, ci) => (
@@ -1254,6 +1285,20 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
                                       <div className="space-y-1">
                                         <label className="text-[11px] font-semibold text-slate-500 block">SKU <span className="font-normal text-slate-400">(optional)</span></label>
                                         <input value={variant.pv_sku} onChange={e => setVariant(index, 'pv_sku', e.target.value)} placeholder={autoSku} className={variantInputCls}/>
+                                      </div>
+                                    </div>
+                                    <div className="grid grid-cols-3 gap-2">
+                                      <div className="space-y-1">
+                                        <label className="text-[11px] font-semibold text-slate-500 block">Width / W (cm)</label>
+                                        <input type="number" value={variant.pv_width} onChange={e => setVariant(index, 'pv_width', e.target.value)} onBlur={e => setVariant(index, 'pv_width', toOptionalPositiveNumber(e.target.value)?.toString() ?? '')} placeholder="e.g. 120" className={variantInputCls}/>
+                                      </div>
+                                      <div className="space-y-1">
+                                        <label className="text-[11px] font-semibold text-slate-500 block">Dimension / D (cm)</label>
+                                        <input type="number" value={variant.pv_dimension} onChange={e => setVariant(index, 'pv_dimension', e.target.value)} onBlur={e => setVariant(index, 'pv_dimension', toOptionalPositiveNumber(e.target.value)?.toString() ?? '')} placeholder="e.g. 200" className={variantInputCls}/>
+                                      </div>
+                                      <div className="space-y-1">
+                                        <label className="text-[11px] font-semibold text-slate-500 block">Height / H (cm)</label>
+                                        <input type="number" value={variant.pv_height} onChange={e => setVariant(index, 'pv_height', e.target.value)} onBlur={e => setVariant(index, 'pv_height', toOptionalPositiveNumber(e.target.value)?.toString() ?? '')} placeholder="e.g. 35" className={variantInputCls}/>
                                       </div>
                                     </div>
                                   </div>

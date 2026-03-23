@@ -19,6 +19,9 @@ export interface CategoryProduct {
         color?: string;
         colorHex?: string;
         size?: string;
+        width?: number;
+        dimension?: number;
+        height?: number;
         priceSrp?: number;
         priceDp?: number;
         priceMember?: number;

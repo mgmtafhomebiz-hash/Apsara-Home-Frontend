@@ -43,6 +43,9 @@ export interface ProductVariant {
   color?: string
   colorHex?: string
   size?: string
+  width?: number
+  dimension?: number
+  height?: number
   priceSrp?: number
   priceDp?: number
   priceMember?: number
@@ -104,6 +107,9 @@ export interface CreateProductVariantPayload {
   pv_color?: string
   pv_color_hex?: string
   pv_size?: string
+  pv_width?: number
+  pv_dimension?: number
+  pv_height?: number
   pv_price_srp?: number
   pv_price_dp?: number
   pv_price_member?: number
@@ -168,6 +174,9 @@ export const normalizeProduct = (input: Product & Record<string, unknown>): Prod
           color: typeof row.color === 'string' ? row.color : (typeof row.pv_color === 'string' ? row.pv_color : undefined),
           colorHex: typeof row.colorHex === 'string' ? row.colorHex : (typeof row.pv_color_hex === 'string' ? row.pv_color_hex : undefined),
           size: typeof row.size === 'string' ? row.size : (typeof row.pv_size === 'string' ? row.pv_size : undefined),
+          width: typeof row.width === 'number' ? row.width : (typeof row.width === 'string' ? Number(row.width) : (typeof row.pv_width === 'number' ? row.pv_width : (typeof row.pv_width === 'string' ? Number(row.pv_width) : undefined))),
+          dimension: typeof row.dimension === 'number' ? row.dimension : (typeof row.dimension === 'string' ? Number(row.dimension) : (typeof row.pv_dimension === 'number' ? row.pv_dimension : (typeof row.pv_dimension === 'string' ? Number(row.pv_dimension) : undefined))),
+          height: typeof row.height === 'number' ? row.height : (typeof row.height === 'string' ? Number(row.height) : (typeof row.pv_height === 'number' ? row.pv_height : (typeof row.pv_height === 'string' ? Number(row.pv_height) : undefined))),
           priceSrp: typeof row.priceSrp === 'number' ? row.priceSrp : (typeof row.priceSrp === 'string' ? Number(row.priceSrp) : (typeof row.pv_price_srp === 'number' ? row.pv_price_srp : (typeof row.pv_price_srp === 'string' ? Number(row.pv_price_srp) : undefined))),
           priceDp: typeof row.priceDp === 'number' ? row.priceDp : (typeof row.priceDp === 'string' ? Number(row.priceDp) : (typeof row.pv_price_dp === 'number' ? row.pv_price_dp : (typeof row.pv_price_dp === 'string' ? Number(row.pv_price_dp) : undefined))),
           priceMember: typeof row.priceMember === 'number' ? row.priceMember : (typeof row.priceMember === 'string' ? Number(row.priceMember) : (typeof row.pv_price_member === 'number' ? row.pv_price_member : (typeof row.pv_price_member === 'string' ? Number(row.pv_price_member) : undefined))),
