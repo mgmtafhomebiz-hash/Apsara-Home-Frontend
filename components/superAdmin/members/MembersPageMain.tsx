@@ -135,16 +135,30 @@ const MembersPageMain = ({ initialData = null, initialStats = null }: MembersPag
 
         try {
             setIsExporting(true)
-            const exportTotal = Math.max(meta?.total ?? members.length, members.length, 1)
-            const response = await triggerExportMembers({
+            const exportPerPage = 100
+            const firstPage = await triggerExportMembers({
                 page: 1,
-                perPage: exportTotal,
+                perPage: exportPerPage,
                 search: debouncedSearch !== '' ? debouncedSearch : undefined,
                 status: status === 'all' ? undefined : status,
                 tier: tier === 'all' ? undefined : tier,
             }).unwrap()
 
-            const exportRows = [...(response.members ?? [])]
+            const exportRows = [...(firstPage.members ?? [])]
+            const lastPage = Math.max(firstPage.meta?.last_page ?? 1, 1)
+
+            for (let nextPage = 2; nextPage <= lastPage; nextPage += 1) {
+                const pageResponse = await triggerExportMembers({
+                    page: nextPage,
+                    perPage: exportPerPage,
+                    search: debouncedSearch !== '' ? debouncedSearch : undefined,
+                    status: status === 'all' ? undefined : status,
+                    tier: tier === 'all' ? undefined : tier,
+                }).unwrap()
+
+                exportRows.push(...(pageResponse.members ?? []))
+            }
+
             if (sort === 'earnings_low_high') {
                 exportRows.sort((a, b) => (a.earnings ?? 0) - (b.earnings ?? 0))
             } else if (sort === 'earnings_high_low') {
