@@ -1115,53 +1115,143 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
             className="md:hidden border-t border-gray-100 bg-white max-h-[70vh] overflow-y-auto"
           >
             <nav className="container mx-auto px-4 py-3 flex flex-col gap-0.5">
-              {isLoggedIn && (
-                <div className="mb-2 rounded-xl border border-gray-100 p-2">
-                  <Link
-                    href="/track-order"
-                    className="block px-3 py-2 text-sm font-medium text-orange-700 hover:bg-orange-50 rounded-lg transition-colors"
-                    onClick={() => setMobileOpen(false)}
-                  >
-                    Track Order
-                  </Link>
-                  <Link
-                    href="/profile"
-                    className="block px-3 py-2 text-sm font-medium text-gray-700 hover:text-orange-500 hover:bg-orange-50 rounded-lg transition-colors"
-                    onClick={() => setMobileOpen(false)}
-                  >
-                    My Profile
-                  </Link>
-                  <button
-                    onClick={() => handleCustomerLogout('/')}
-                    disabled={isLoggingOut}
-                    className="w-full text-left px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-2 disabled:opacity-60"
-                  >
-                    {isLoggingOut && (
-                      <svg className="animate-spin h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
-                      </svg>
-                    )}
-                    {isLoggingOut ? 'Logging out...' : 'Logout'}
-                  </button>
+              {isLoggedIn ? (
+                <div className="mb-3 rounded-2xl border border-orange-100 overflow-hidden shadow-sm">
+                  {/* Profile header */}
+                  {(() => {
+                    const rank = meData?.rank ?? 0;
+                    const tier = rank >= 5 ? 'Lifestyle Elite' : rank === 4 ? 'Lifestyle Consultant' : rank === 3 ? 'Home Stylist' : rank === 2 ? 'Home Builder' : 'Home Starter';
+                    const badgeImg = tier === 'Lifestyle Elite' ? '/Badge/lifestyleElite.png' : tier === 'Lifestyle Consultant' ? '/Badge/lifestyleConsultant.png' : tier === 'Home Stylist' ? '/Badge/homeStylist.png' : tier === 'Home Builder' ? '/Badge/homeBuilder.png' : '/Badge/homeStarter.png';
+                    const gradient = tier === 'Lifestyle Elite' ? 'from-amber-400 via-orange-400 to-rose-400' : tier === 'Lifestyle Consultant' ? 'from-violet-500 to-purple-600' : tier === 'Home Stylist' ? 'from-sky-400 to-blue-500' : tier === 'Home Builder' ? 'from-emerald-400 to-teal-500' : 'from-orange-400 to-amber-500';
+                    return (
+                      <div className={`bg-gradient-to-br ${gradient} px-4 pt-4 pb-10 relative overflow-hidden`}>
+                        <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(circle at 15% 60%, rgba(255,255,255,0.2) 0%, transparent 50%), radial-gradient(circle at 85% 15%, rgba(255,255,255,0.12) 0%, transparent 45%)' }} />
+                        <div className="absolute -bottom-6 -left-6 h-24 w-24 rounded-full bg-white/10 blur-2xl pointer-events-none" />
+                        <div className="relative flex items-center justify-between">
+                          <div>
+                            <p className="text-[10px] font-semibold text-white/70 uppercase tracking-widest mb-0.5">Member Tier</p>
+                            <p className="text-base font-bold text-white leading-tight">{tier}</p>
+                            <div className="flex items-center gap-1.5 mt-1.5">
+                              {Array.from({ length: 5 }).map((_, i) => (
+                                <span key={i} className={`h-1.5 rounded-full transition-all ${i < Math.max(rank, 1) ? 'w-4 bg-white' : 'w-2 bg-white/30'}`} />
+                              ))}
+                            </div>
+                          </div>
+                          <div className="rounded-2xl bg-white/25 backdrop-blur-md p-2 border border-white/40 shadow-xl shrink-0">
+                            <img src={badgeImg} alt={tier} className="h-14 w-14 object-contain drop-shadow-lg" />
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* Avatar overlapping the gradient */}
+                  <div className="px-4 -mt-8 pb-4 bg-white">
+                    <div className="flex items-end gap-3 mb-3">
+                      <div className="relative shrink-0">
+                        {avatarUrl ? (
+                          <img
+                            src={avatarUrl}
+                            alt={user?.name || 'Profile'}
+                            className="h-16 w-16 rounded-2xl object-cover ring-4 ring-white shadow-lg"
+                          />
+                        ) : (
+                          <span className="flex items-center justify-center h-16 w-16 rounded-2xl bg-gradient-to-br from-orange-400 to-amber-500 text-white text-xl font-bold ring-4 ring-white shadow-lg">
+                            {user?.name?.charAt(0)?.toUpperCase() ?? 'U'}
+                          </span>
+                        )}
+                        <span className="absolute -bottom-1 -right-1 h-4 w-4 rounded-full bg-emerald-400 border-2 border-white" />
+                      </div>
+                      <div className="min-w-0 pb-1">
+                        <p className="text-sm font-bold text-gray-900 truncate leading-tight">{user?.name ?? 'User'}</p>
+                        {user?.email && (
+                          <p className="text-xs text-gray-400 truncate mt-0.5">{user.email}</p>
+                        )}
+                        {meData?.username && (
+                          <p className="text-xs text-orange-500 font-medium mt-0.5">@{meData.username}</p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Quick action links */}
+                    <div className="grid grid-cols-2 gap-2 mb-3">
+                      {[
+                        { href: '/profile', label: 'My Profile', sub: 'View & edit info', icon: <><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></> },
+                        { href: '/orders', label: 'My Orders', sub: 'Track purchases', icon: <><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></> },
+                        { href: '/wishlist', label: 'Wishlist', sub: 'Saved items', icon: <path d="m12 21-1.45-1.32C5.4 15.36 2 12.28 2 8.5A4.5 4.5 0 0 1 6.5 4 5 5 0 0 1 12 6.09 5 5 0 0 1 17.5 4 4.5 4.5 0 0 1 22 8.5c0 3.78-3.4 6.86-8.55 11.18z"/> },
+                        { href: '/track-order', label: 'Track Order', sub: 'Order status', icon: <><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></> },
+                      ].map((item) => (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          onClick={() => setMobileOpen(false)}
+                          className="group flex items-center gap-2.5 rounded-xl border border-gray-100 bg-gray-50 hover:border-orange-200 hover:bg-orange-50 px-3 py-2.5 transition-colors"
+                        >
+                          <span className="flex items-center justify-center h-8 w-8 rounded-lg bg-white shadow-sm group-hover:bg-orange-100 transition-colors shrink-0">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-500 group-hover:text-orange-600 transition-colors">
+                              {item.icon}
+                            </svg>
+                          </span>
+                          <div className="min-w-0">
+                            <p className="text-xs font-semibold text-gray-800 leading-tight">{item.label}</p>
+                            <p className="text-[10px] text-gray-400 leading-tight">{item.sub}</p>
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+
+                    {/* Logout */}
+                    <button
+                      onClick={() => { handleCustomerLogout('/'); setMobileOpen(false); }}
+                      disabled={isLoggingOut}
+                      className="w-full flex items-center justify-center gap-2 rounded-xl border border-red-100 bg-red-50 hover:bg-red-100 px-4 py-2.5 text-sm font-semibold text-red-600 transition-colors disabled:opacity-60"
+                    >
+                      {isLoggingOut ? (
+                        <svg className="animate-spin h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                        </svg>
+                      ) : (
+                        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0">
+                          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                          <polyline points="16 17 21 12 16 7"/>
+                          <line x1="21" y1="12" x2="9" y2="12"/>
+                        </svg>
+                      )}
+                      {isLoggingOut ? 'Logging out...' : 'Sign Out'}
+                    </button>
+                  </div>
                 </div>
-              )}
-              {!isLoggedIn && (
-                <div className="mb-2 rounded-xl border border-gray-100 p-2">
-                  <Link
-                    href="/track-order"
-                    className="block px-3 py-2 text-sm font-medium text-orange-700 hover:bg-orange-50 rounded-lg transition-colors"
-                    onClick={() => setMobileOpen(false)}
-                  >
-                    Track Order
-                  </Link>
-                  <Link
-                    href="/login"
-                    className="block px-3 py-2 text-sm font-medium text-gray-700 hover:text-orange-500 hover:bg-orange-50 rounded-lg transition-colors"
-                    onClick={() => setMobileOpen(false)}
-                  >
-                    Sign in
-                  </Link>
+              ) : (
+                <div className="mb-3 rounded-2xl border border-gray-100 overflow-hidden">
+                  <div className="bg-gradient-to-br from-slate-700 to-slate-900 px-4 py-5 flex items-center gap-3">
+                    <span className="flex items-center justify-center h-12 w-12 rounded-xl bg-white/10 border border-white/20 shrink-0">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-white/70">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                        <circle cx="12" cy="7" r="4"/>
+                      </svg>
+                    </span>
+                    <div>
+                      <p className="text-sm font-bold text-white">Welcome to AF Home</p>
+                      <p className="text-xs text-white/60 mt-0.5">Sign in to access your account</p>
+                    </div>
+                  </div>
+                  <div className="bg-white px-4 py-3 flex gap-2">
+                    <Link
+                      href="/login"
+                      onClick={() => setMobileOpen(false)}
+                      className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-orange-500 hover:bg-orange-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors"
+                    >
+                      Sign In
+                    </Link>
+                    <Link
+                      href="/track-order"
+                      onClick={() => setMobileOpen(false)}
+                      className="flex-1 flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-gray-50 hover:bg-gray-100 px-4 py-2.5 text-sm font-semibold text-gray-700 transition-colors"
+                    >
+                      Track Order
+                    </Link>
+                  </div>
                 </div>
               )}
               {navLinks.map((link) => {

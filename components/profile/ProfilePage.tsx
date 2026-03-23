@@ -807,12 +807,8 @@ const ProfilePage = ({ initialProfile = null }: ProfilePageProps) => {
 
   const handleTabChange = (tab: Tab) => {
     setActiveTab(tab);
-    if (typeof window !== 'undefined' && window.innerWidth < 768) {
-      if (tab !== 'profile') {
-        setIsMobileViewOpen(true);
-      } else {
-        setIsMobileViewOpen(false);
-      }
+    if (typeof window !== 'undefined' && window.innerWidth < 1280) {
+      setIsMobileViewOpen(true);
     }
   };
 
@@ -857,8 +853,8 @@ const ProfilePage = ({ initialProfile = null }: ProfilePageProps) => {
 
         {/* Tab navigation bar — mobile: 4×2 grid, desktop: horizontal bar */}
         <div className="sticky top-16 z-20 -mx-4 mb-6 bg-white/95 backdrop-blur-sm border-b border-slate-100">
-          {/* Mobile horizontal scroll (hidden on md+) */}
-          <nav className="flex overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:hidden px-2 py-1 gap-1">
+          {/* Mobile/tablet horizontal scroll (hidden on xl+) */}
+          <nav className="flex overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden xl:hidden px-3 py-1 gap-1 md:justify-center md:gap-2">
             {(() => {
               const shortLabel: Record<Tab, string> = {
                 profile: 'Profile',
@@ -870,26 +866,32 @@ const ProfilePage = ({ initialProfile = null }: ProfilePageProps) => {
                 activity: 'Activity',
                 referrals: 'Referrals',
               };
-              return TABS.map(({ key, Icon: TabIcon }) => (
-                <button
-                  key={key}
-                  type="button"
-                  onClick={() => handleTabChange(key)}
-                  className={`shrink-0 flex flex-col items-center gap-1 rounded-xl px-3 py-2.5 text-[10px] font-medium transition-colors min-w-[60px] ${
-                    activeTab === key
-                      ? 'bg-orange-50 text-orange-600'
-                      : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'
-                  }`}
-                >
-                  <TabIcon className={`h-5 w-5 ${activeTab === key ? 'text-orange-500' : 'text-slate-400'}`} />
-                  {shortLabel[key]}
-                </button>
-              ));
+              return TABS.map(({ key, Icon: TabIcon }) => {
+                const isProfileHome = key === 'profile';
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => { if (!isProfileHome) handleTabChange(key); }}
+                    disabled={isProfileHome}
+                    className={`shrink-0 flex flex-col items-center gap-1 rounded-xl px-3 py-2.5 md:px-6 md:py-3 text-[10px] md:text-xs font-medium transition-colors min-w-[60px] md:min-w-[80px] ${
+                      isProfileHome
+                        ? 'text-slate-400 cursor-default opacity-50'
+                        : activeTab === key
+                          ? 'bg-orange-50 text-orange-600'
+                          : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'
+                    }`}
+                  >
+                    <TabIcon className={`h-5 w-5 md:h-6 md:w-6 ${activeTab === key && !isProfileHome ? 'text-orange-500' : 'text-slate-400'}`} />
+                    {shortLabel[key]}
+                  </button>
+                );
+              });
             })()}
           </nav>
 
-          {/* Desktop horizontal bar (hidden below md) */}
-          <nav className="hidden md:flex overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden px-4">
+          {/* Desktop horizontal bar (hidden below xl) */}
+          <nav className="hidden xl:flex overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden px-4">
             {TABS.map(({ key, label, Icon: TabIcon }) => (
               <button
                 key={key}
@@ -1036,7 +1038,7 @@ const ProfilePage = ({ initialProfile = null }: ProfilePageProps) => {
 
               {/* Referral section */}
               {isVerified && (
-                <div className="hidden md:block px-5 pb-5">
+                <div className="px-5 pb-5">
                   <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                     {/* Header */}
                     <div className="flex items-center justify-between gap-2 mb-3">
@@ -1169,7 +1171,7 @@ const ProfilePage = ({ initialProfile = null }: ProfilePageProps) => {
 
               {/* Verification reminder */}
               {!isVerified && (
-                <div className="hidden md:block px-5 pb-5">
+                <div className="px-5 pb-5">
                   <div className="rounded-xl border border-amber-200 bg-amber-50 p-3.5">
                     <p className="text-xs font-bold text-amber-800 mb-1">
                       {isPendingVerification ? 'Verification In Review' : 'Verification Required'}
@@ -1211,7 +1213,7 @@ const ProfilePage = ({ initialProfile = null }: ProfilePageProps) => {
               initial="hidden"
               animate="visible"
               custom={1}
-              className="hidden md:block rounded-2xl border border-slate-200 bg-white p-5"
+              className="rounded-2xl border border-slate-200 bg-white p-5"
             >
               <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3">Account Snapshot</h3>
               <div className="grid grid-cols-2 gap-2">
@@ -1236,7 +1238,7 @@ const ProfilePage = ({ initialProfile = null }: ProfilePageProps) => {
               initial="hidden"
               animate="visible"
               custom={2}
-              className="hidden md:block rounded-2xl border border-slate-200 bg-white p-5"
+              className="rounded-2xl border border-slate-200 bg-white p-5"
             >
               <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3">Quick Actions</h3>
               <div className="space-y-1.5">
@@ -1262,17 +1264,18 @@ const ProfilePage = ({ initialProfile = null }: ProfilePageProps) => {
           {/* â"€â"€ Main content â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ */}
           <div
             ref={mainContentRef}
-            className={`xl:col-span-8 space-y-5 ${
-              isMobileViewOpen
-                ? 'fixed inset-0 z-50 bg-slate-50 overflow-y-auto transition-transform duration-300 ease-in-out translate-x-0 md:relative md:inset-auto md:z-auto md:bg-transparent md:overflow-visible md:translate-x-0 md:transition-none'
-                : activeTab === 'profile'
-                  ? 'block md:block'
-                  : 'hidden md:block'
-            }`}
+            className={`
+              xl:col-span-8 space-y-5
+              fixed inset-0 z-50 bg-slate-50 overflow-y-auto
+              transition-transform duration-300 ease-in-out
+              ${isMobileViewOpen ? 'translate-x-0' : 'translate-x-full pointer-events-none'}
+              xl:relative xl:inset-auto xl:z-auto xl:bg-transparent xl:overflow-visible
+              xl:translate-x-0 xl:pointer-events-auto xl:transition-none xl:block
+            `}
           >
             {/* Mobile back header — only shown in mobile full-screen view */}
             {isMobileViewOpen && (
-              <div className="sticky top-0 z-10 bg-white border-b border-slate-100 px-4 py-3 flex items-center gap-3 md:hidden">
+              <div className="sticky top-0 z-10 bg-white border-b border-slate-100 px-4 py-3 flex items-center gap-3 xl:hidden">
                 <button
                   type="button"
                   onClick={() => { setIsMobileViewOpen(false); setActiveTab('profile'); }}
@@ -1287,7 +1290,7 @@ const ProfilePage = ({ initialProfile = null }: ProfilePageProps) => {
                 <h2 className="text-base font-bold text-slate-900">{activeTabLabel}</h2>
               </div>
             )}
-            <div className={isMobileViewOpen ? 'px-4 py-4 pb-8 space-y-5 md:px-0 md:py-0 md:space-y-0' : ''}>
+            <div className={isMobileViewOpen ? 'px-4 py-4 pb-8 space-y-5 xl:px-0 xl:py-0 xl:space-y-0' : ''}>
             <AnimatePresence mode="wait">
               {/* â"€â"€ Profile tab â"€â"€ */}
               {activeTab === 'profile' && (
