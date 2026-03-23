@@ -131,6 +131,7 @@ const navItems: NavItem[] = [
     children: [
       { label: 'All Products', path: '/admin/products' },
       { label: 'Categories', path: '/admin/products/categories' },
+      { label: 'Brands', path: '/admin/products/brands' },
       { label: 'Inventory', path: '/admin/products/inventory' },
       { label: 'Reviews', path: '/admin/products/reviews' },
     ],

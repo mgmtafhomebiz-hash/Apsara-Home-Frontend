@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useSession } from 'next-auth/react'
 import { Product, ProductVariant, useUpdateProductMutation, CreateProductPayload } from '@/store/api/productsApi'
 import { useGetCategoriesQuery } from '@/store/api/categoriesApi'
+import { useGetProductBrandsQuery } from '@/store/api/productBrandsApi'
 import { showErrorToast, showSuccessToast } from '@/libs/toast'
 import RichTextEditor from '@/components/ui/RichTextEditor'
 import { colorNameToHex, hexToColorName } from '@/libs/colorUtils'
@@ -23,6 +24,7 @@ interface FormState {
   pd_name: string
   pd_catid: string
   pd_room_type: string
+  pd_brand_type: string
   pd_description: string
   pd_price_srp: string
   pd_price_dp: string
@@ -250,6 +252,7 @@ const normalizeFormForComparison = (form: FormState) => ({
   pd_name: form.pd_name.trim(),
   pd_catid: Number(form.pd_catid),
   pd_room_type: form.pd_room_type.trim() ? Number(form.pd_room_type) : null,
+  pd_brand_type: form.pd_brand_type.trim() ? Number(form.pd_brand_type) : null,
   pd_description: normalizeTextField(form.pd_description),
   pd_price_srp: Number(form.pd_price_srp),
   pd_price_dp: normalizeNumberField(form.pd_price_dp),
@@ -365,7 +368,7 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
   const isOpen = product !== null
 
   const [form, setForm] = useState<FormState>({
-    pd_name: '', pd_catid: '', pd_room_type: '', pd_description: '', pd_price_srp: '',
+    pd_name: '', pd_catid: '', pd_room_type: '', pd_brand_type: '', pd_description: '', pd_price_srp: '',
     pd_price_dp: '', pd_price_member: '', pd_prodpv: '', pd_qty: '', pd_weight: '', pd_psweight: '',
     pd_pswidth: '', pd_pslenght: '', pd_psheight: '',
     pd_material: '', pd_warranty: '', pd_assembly_required: false,
@@ -410,6 +413,11 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
     { skip: skipCategories }
   )
   const categories = useMemo(() => categoriesData?.categories ?? [], [categoriesData?.categories])
+  const { data: brandsData } = useGetProductBrandsQuery(undefined, { skip: skipCategories })
+  const brands = useMemo(
+    () => (brandsData?.brands ?? []).filter((brand) => brand.status === 0 || brand.id === Number(form.pd_brand_type || 0)),
+    [brandsData?.brands, form.pd_brand_type],
+  )
   const openedProductRef = useRef<Product | null>(null)
   if (product && openedProductRef.current?.id !== product.id) {
     openedProductRef.current = product
@@ -426,6 +434,7 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
       pd_name:       openedProduct.name        ?? '',
       pd_catid:      String(openedProduct.catid ?? ''),
       pd_room_type:  openedProduct.roomType ? String(openedProduct.roomType) : '',
+      pd_brand_type: openedProduct.brandType ? String(openedProduct.brandType) : '',
       pd_description:openedProduct.description ?? '',
       pd_price_srp:  String(openedProduct.priceSrp ?? ''),
       pd_price_dp:   String(openedProduct.priceDp  ?? ''),
@@ -737,6 +746,7 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
       pd_name:        form.pd_name.trim(),
       pd_catid:       Number(form.pd_catid),
       pd_room_type:   form.pd_room_type.trim() ? Number(form.pd_room_type) : null,
+      pd_brand_type:  form.pd_brand_type.trim() ? Number(form.pd_brand_type) : null,
       pd_price_srp:   Number(form.pd_price_srp),
       pd_description: form.pd_description.trim() || undefined,
       pd_price_dp:    form.pd_price_dp  ? Number(form.pd_price_dp)  : undefined,
@@ -773,6 +783,8 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
         name: form.pd_name.trim(),
         catid: Number(form.pd_catid),
         roomType: form.pd_room_type ? Number(form.pd_room_type) : undefined,
+        brandType: form.pd_brand_type ? Number(form.pd_brand_type) : undefined,
+        brand: brands.find((brand) => brand.id === Number(form.pd_brand_type))?.name ?? product.brand ?? null,
         description: form.pd_description.trim() || null,
         priceSrp: Number(form.pd_price_srp),
         priceDp: form.pd_price_dp ? Number(form.pd_price_dp) : 0,
@@ -1112,6 +1124,19 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
                         </select>
                         <p className="text-[11px] text-slate-500">Auto-filled from category when possible, but still editable here.</p>
                       </div>
+                    </Field>
+
+                    <Field label="Brand">
+                      <select
+                        value={form.pd_brand_type}
+                        onChange={e => set('pd_brand_type', e.target.value)}
+                        className={inputCls()}
+                      >
+                        <option value="">Not assigned</option>
+                        {brands.map((brand) => (
+                          <option key={brand.id} value={String(brand.id)}>{brand.name}</option>
+                        ))}
+                      </select>
                     </Field>
 
                     <Field label="SKU (auto-generated)">

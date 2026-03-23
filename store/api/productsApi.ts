@@ -22,6 +22,8 @@ export interface Product {
   assemblyRequired?: boolean
   warranty?: string | null
   roomType?: number
+  brandType?: number
+  brand?: string | null
   type: number
   musthave: boolean
   bestseller: boolean
@@ -73,6 +75,7 @@ export interface CreateProductPayload {
   pd_name: string
   pd_catid: number
   pd_room_type?: number | null
+  pd_brand_type?: number | null
   pd_catsubid?: number
   pd_price_srp: number
   pd_price_dp?: number
@@ -214,6 +217,14 @@ export const normalizeProduct = (input: Product & Record<string, unknown>): Prod
       typeof input.roomType === 'number'
         ? input.roomType
         : (typeof input.pd_room_type === 'number' ? input.pd_room_type : (typeof input.pd_room_type === 'string' ? Number(input.pd_room_type) : undefined)),
+    brandType:
+      typeof input.brandType === 'number'
+        ? input.brandType
+        : (typeof input.pd_brand_type === 'number' ? input.pd_brand_type : (typeof input.pd_brand_type === 'string' ? Number(input.pd_brand_type) : undefined)),
+    brand:
+      typeof input.brand === 'string'
+        ? input.brand
+        : (typeof input.brand_name === 'string' ? input.brand_name : null),
     image: primaryImage ?? images[0] ?? null,
     images,
     variants: parsedVariants,
