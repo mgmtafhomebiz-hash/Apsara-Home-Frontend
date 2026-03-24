@@ -200,9 +200,27 @@ export const authOptions: NextAuthOptions = {
                 token.passwordChangeRequired = authUser.passwordChangeRequired;
             }
             if (trigger === 'update' && session) {
-                const nextSession = session as { passwordChangeRequired?: boolean };
+                const nextSession = session as {
+                    passwordChangeRequired?: boolean;
+                    role?: string;
+                    userLevelId?: number;
+                    adminPermissions?: string[];
+                    supplierId?: number | null;
+                };
                 if (typeof nextSession.passwordChangeRequired === 'boolean') {
                     token.passwordChangeRequired = nextSession.passwordChangeRequired;
+                }
+                if (typeof nextSession.role === 'string') {
+                    token.role = nextSession.role;
+                }
+                if (typeof nextSession.userLevelId === 'number') {
+                    token.userLevelId = nextSession.userLevelId;
+                }
+                if (Array.isArray(nextSession.adminPermissions)) {
+                    token.adminPermissions = nextSession.adminPermissions;
+                }
+                if (typeof nextSession.supplierId !== 'undefined') {
+                    token.supplierId = nextSession.supplierId;
                 }
             }
             return token;

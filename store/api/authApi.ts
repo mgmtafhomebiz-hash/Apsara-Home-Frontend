@@ -68,7 +68,18 @@ interface AdminLoginResponse {
     role?: string;
     user_level_id?: number;
     email?: string
+    admin_permissions?: string[]
   }
+}
+
+export interface AdminMeResponse {
+  id: number
+  name: string
+  email: string
+  role: string
+  user_level_id: number
+  supplier_id?: number | null
+  admin_permissions?: string[]
 }
 
 export const authApi = baseApi.injectEndpoints({
@@ -111,6 +122,13 @@ export const authApi = baseApi.injectEndpoints({
           method: 'POST',
           body,
         })
+    }),
+    getAdminMe: builder.query<AdminMeResponse, void>({
+      query: () => ({
+        url: '/api/admin/auth/me',
+        method: 'GET',
+      }),
+      providesTags: ['AdminUsers'],
     })
   }),
 })
@@ -121,4 +139,5 @@ export const {
   useResendRegisterOtpMutation,
   useLogoutMutation,
   useAdminLoginMutation,
+  useGetAdminMeQuery,
 } = authApi

@@ -6,7 +6,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import { signOut, useSession } from 'next-auth/react'
-import { useLogoutMutation } from '@/store/api/authApi'
+import { useGetAdminMeQuery, useLogoutMutation } from '@/store/api/authApi'
 import { membersApi } from '@/store/api/membersApi'
 import { useAppDispatch } from '@/store/hooks'
 import { clearAccessTokenCache } from '@/store/api/baseApi'
@@ -226,7 +226,7 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
   const pathname = usePathname()
   const router = useRouter()
   const dispatch = useAppDispatch()
-  const { data: session } = useSession()
+  const { data: session, update } = useSession()
   const [openMenus, setOpenMenus] = useState<string[]>([])
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [logoutApi] = useLogoutMutation()
@@ -240,7 +240,10 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
   const isFinanceOfficer = rawRole === 'finance_officer' || userLevelId === 6
   const isMerchantAdmin = rawRole === 'merchant_admin' || userLevelId === 7
   const isSupplierAdmin = rawRole === 'supplier_admin' || userLevelId === 8
-  const adminPermissions = normalizeAdminPermissions((session?.user as { adminPermissions?: string[] } | undefined)?.adminPermissions ?? [])
+  const isAdminPortalRole = isSuperAdmin || isAdmin || isAccounting || isFinanceOfficer || isMerchantAdmin || isSupplierAdmin
+  const { data: adminMe } = useGetAdminMeQuery(undefined, { skip: !isAdminPortalRole })
+  const effectiveAdminPermissions = normalizeAdminPermissions(adminMe?.admin_permissions ?? (session?.user as { adminPermissions?: string[] } | undefined)?.adminPermissions ?? [])
+  const adminPermissions = effectiveAdminPermissions
   const hasCustomAdminPermissions = isAdmin && adminPermissions.length > 0
   const customAdminNavIds = new Set(['dashboard', ...adminPermissions.map((permission) => ADMIN_PERMISSION_NAV_IDS[permission]).filter(Boolean)])
   const displayRole = isSuperAdmin
@@ -256,6 +259,28 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
           : formatRole(session?.user?.role)
   const displayInitials = getInitials(displayName)
   const avatarSrc = session?.user?.image
+
+  useEffect(() => {
+    if (!adminMe || !isAdminPortalRole) return
+
+    const sessionRole = String(session?.user?.role ?? '').toLowerCase()
+    const sessionLevel = Number((session?.user as { userLevelId?: number } | undefined)?.userLevelId ?? 0)
+    const sessionPermissions = normalizeAdminPermissions((session?.user as { adminPermissions?: string[] } | undefined)?.adminPermissions ?? [])
+    const latestPermissions = normalizeAdminPermissions(adminMe.admin_permissions ?? [])
+
+    const roleChanged = sessionRole !== String(adminMe.role ?? '').toLowerCase()
+    const levelChanged = sessionLevel !== Number(adminMe.user_level_id ?? 0)
+    const permissionsChanged = sessionPermissions.join('|') !== latestPermissions.join('|')
+
+    if (!roleChanged && !levelChanged && !permissionsChanged) return
+
+    void update({
+      role: adminMe.role,
+      userLevelId: adminMe.user_level_id,
+      adminPermissions: latestPermissions,
+      supplierId: adminMe.supplier_id ?? null,
+    })
+  }, [adminMe, isAdminPortalRole, session?.user, update])
 
   const toggleMenu = (id: string) =>
     setOpenMenus(prev => prev.includes(id) ? prev.filter(m => m !== id) : [...prev, id])
