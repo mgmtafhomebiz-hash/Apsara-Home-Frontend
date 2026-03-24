@@ -104,6 +104,8 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
   const [activeSearchField, setActiveSearchField] = useState<'desktop' | 'mobile' | null>(null)
   const [megaSearch, setMegaSearch] = useState('')
   const [mobileSearch, setMobileSearch] = useState('')
+  const [brandSearch, setBrandSearch] = useState('')
+  const [mobileBrandSearch, setMobileBrandSearch] = useState('')
   const { cartCount, setIsOpen } = useCart()
   const dispatch = useAppDispatch()
   const { data: session, status } = useSession();
@@ -362,6 +364,7 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
       .map((brand) => ({
         id: brand.id,
         label: brand.name.trim(),
+        image: brand.image ?? null,
         href: `/by-brand?brand=${encodeURIComponent(toSlug(brand.name))}`,
       }))
   }, [publicBrandsData?.brands])

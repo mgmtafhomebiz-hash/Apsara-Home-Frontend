@@ -2,7 +2,8 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { useSearchParams } from 'next/navigation'
 import { useGetPublicProductBrandsQuery } from '@/store/api/productBrandsApi'
 import { useGetPublicProductsQuery } from '@/store/api/productsApi'
@@ -11,165 +12,275 @@ const toSlug = (value: string) => value.toLowerCase().trim().replace(/\s+/g, '-'
 const formatPeso = (value: number) => `P${Number(value || 0).toLocaleString('en-PH', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`
 const getBrandInitials = (value: string) => value.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part.charAt(0).toUpperCase()).join('') || 'BR'
 
+const GRADIENT_PALETTES = [
+  'from-orange-400 to-rose-400',
+  'from-violet-400 to-purple-500',
+  'from-sky-400 to-blue-500',
+  'from-emerald-400 to-teal-500',
+  'from-amber-400 to-orange-500',
+  'from-pink-400 to-rose-500',
+  'from-indigo-400 to-violet-500',
+  'from-cyan-400 to-sky-500',
+]
+
+const getBrandGradient = (name: string) => {
+  let hash = 0
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash)
+  return GRADIENT_PALETTES[Math.abs(hash) % GRADIENT_PALETTES.length]
+}
+
+function BrandCardSkeleton() {
+  return (
+    <div className="animate-pulse rounded-2xl border border-gray-100 bg-white p-4">
+      <div className="flex items-center gap-4">
+        <div className="h-14 w-14 shrink-0 rounded-2xl bg-gray-200" />
+        <div className="flex-1 space-y-2">
+          <div className="h-4 w-3/4 rounded-full bg-gray-200" />
+          <div className="h-3 w-1/2 rounded-full bg-gray-100" />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function ProductCardSkeleton() {
+  return (
+    <div className="animate-pulse overflow-hidden rounded-2xl border border-gray-100 bg-white">
+      <div className="aspect-[4/3] bg-gray-200" />
+      <div className="space-y-2 p-4">
+        <div className="h-3 w-1/3 rounded-full bg-gray-200" />
+        <div className="h-4 w-full rounded-full bg-gray-200" />
+        <div className="h-4 w-4/5 rounded-full bg-gray-200" />
+        <div className="h-5 w-1/2 rounded-full bg-gray-200" />
+      </div>
+    </div>
+  )
+}
+
 export default function ByBrandPageMain() {
+  const router = useRouter()
   const searchParams = useSearchParams()
   const selectedBrand = searchParams.get('brand')?.trim().toLowerCase() ?? ''
+  const [letterFilter, setLetterFilter] = useState<string>('ALL')
   const { data, isFetching } = useGetPublicProductBrandsQuery()
 
+  const allBrands = useMemo(
+    () => (data?.brands ?? []).filter((brand) => brand.status === 0 && brand.name.trim().length > 0),
+    [data?.brands],
+  )
+
+  const availableLetters = useMemo(() => {
+    const letters = new Set(allBrands.map((b) => b.name.charAt(0).toUpperCase()))
+    return ['ALL', ...Array.from(letters).sort()]
+  }, [allBrands])
+
   const brands = useMemo(() => {
-    const rows = (data?.brands ?? []).filter((brand) => brand.status === 0 && brand.name.trim().length > 0)
-    if (!selectedBrand) return rows
-    return rows.filter((brand) => toSlug(brand.name) === selectedBrand)
-  }, [data?.brands, selectedBrand])
+    let rows = allBrands
+    if (selectedBrand) rows = rows.filter((brand) => toSlug(brand.name) === selectedBrand)
+    else if (letterFilter !== 'ALL') rows = rows.filter((b) => b.name.charAt(0).toUpperCase() === letterFilter)
+    return rows
+  }, [allBrands, selectedBrand, letterFilter])
+
   const selectedBrandItem = useMemo(
     () => (data?.brands ?? []).find((brand) => toSlug(brand.name) === selectedBrand) ?? null,
     [data?.brands, selectedBrand],
   )
   const { data: brandProductsData, isFetching: isFetchingProducts } = useGetPublicProductsQuery(
     selectedBrandItem
-      ? {
-          page: 1,
-          perPage: 24,
-          status: '1',
-          brandType: selectedBrandItem.id,
-        }
+      ? { page: 1, perPage: 24, status: '1', brandType: selectedBrandItem.id }
       : undefined,
-    {
-      skip: !selectedBrandItem,
-    },
+    { skip: !selectedBrandItem },
   )
   const brandProducts = brandProductsData?.products ?? []
 
   return (
-    <main className="container mx-auto px-4 py-16">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="text-sm font-semibold uppercase tracking-[0.28em] text-orange-500">Shop By Brand</p>
-          <h1 className="mt-2 text-3xl font-semibold text-gray-900">
-            {selectedBrand ? 'Selected Brand' : 'All Brands'}
+    <main className="min-h-screen bg-gray-50">
+      {/* Hero Header */}
+      <div className="relative overflow-hidden bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 px-4 py-20">
+        <button
+          onClick={() => router.back()}
+          className="absolute left-4 top-4 z-10 inline-flex items-center gap-1.5 rounded-xl bg-white/10 px-3 py-2 text-xs font-semibold text-white ring-1 ring-white/20 backdrop-blur-sm transition hover:bg-white/20 sm:left-6 sm:top-6"
+        >
+          ← Back
+        </button>
+        <div className="pointer-events-none absolute inset-0 opacity-10"
+          style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, #f97316 0%, transparent 50%), radial-gradient(circle at 80% 20%, #fb923c 0%, transparent 40%)' }}
+        />
+        <div className="relative container mx-auto">
+          <p className="text-xs font-bold uppercase tracking-[0.35em] text-orange-400">Shop by Brand</p>
+          <h1 className="mt-3 text-4xl font-bold text-white sm:text-5xl">
+            {selectedBrand && selectedBrandItem ? selectedBrandItem.name : 'All Brands'}
           </h1>
-          <p className="mt-3 max-w-2xl text-gray-600">
+          <p className="mt-3 max-w-xl text-gray-400">
             Browse featured product brands from the catalog. Pick a brand below to continue exploring.
           </p>
+          {selectedBrand && (
+            <Link
+              href="/by-brand"
+              className="mt-6 inline-flex items-center gap-2 rounded-xl bg-white/10 px-5 py-2.5 text-sm font-semibold text-white ring-1 ring-white/20 backdrop-blur-sm transition hover:bg-white/20"
+            >
+              ← Back to All Brands
+            </Link>
+          )}
         </div>
-        {selectedBrand && (
-          <Link
-            href="/by-brand"
-            className="inline-flex items-center justify-center rounded-xl border border-orange-200 bg-orange-50 px-4 py-2.5 text-sm font-semibold text-orange-600 transition-colors hover:bg-orange-100"
-          >
-            View All Brands
-          </Link>
-        )}
       </div>
 
-      <div className="mt-8 rounded-3xl border border-gray-200 bg-white p-5 shadow-sm">
-        {isFetching ? (
-          <p className="text-sm text-gray-500">Loading brands...</p>
-        ) : brands.length === 0 ? (
-          <p className="text-sm text-gray-500">No brands found.</p>
-        ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {brands.map((brand) => {
-              const brandSlug = toSlug(brand.name)
-              const isActive = brandSlug === selectedBrand
-
-              return (
-                <Link
-                  key={brand.id}
-                  href={`/by-brand?brand=${encodeURIComponent(brandSlug)}`}
-                  className={`group rounded-2xl border px-5 py-4 transition-all duration-200 ${
-                    isActive
-                      ? 'border-orange-300 bg-orange-50 text-orange-700 shadow-sm'
-                      : 'border-gray-200 bg-white text-gray-700 hover:border-orange-300 hover:bg-orange-50 hover:text-orange-600'
-                  }`}
-                >
-                  <div className="flex items-center gap-4">
-                    <div className={`relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl border ${
-                      isActive ? 'border-orange-200 bg-white' : 'border-gray-200 bg-gray-50'
-                    }`}>
-                      {brand.image ? (
-                        <Image src={brand.image} alt={brand.name} fill className="object-contain p-2" unoptimized />
-                      ) : (
-                        <span className="text-sm font-bold tracking-wide text-gray-400">
-                          {getBrandInitials(brand.name)}
-                        </span>
-                      )}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-base font-semibold">{brand.name}</p>
-                      <p className="mt-1 text-sm text-gray-400 group-hover:text-orange-500">
-                        View this brand
-                      </p>
-                    </div>
-                  </div>
-                </Link>
-              )
-            })}
+      <div className="container mx-auto px-4 py-10 space-y-8">
+        {/* Letter Filter — only when no brand selected */}
+        {!selectedBrand && (
+          <div className="flex flex-wrap gap-2">
+            {availableLetters.map((letter) => (
+              <button
+                key={letter}
+                onClick={() => setLetterFilter(letter)}
+                className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition-all ${
+                  letterFilter === letter
+                    ? 'bg-orange-500 text-white shadow-sm shadow-orange-200'
+                    : 'bg-white text-gray-500 ring-1 ring-gray-200 hover:ring-orange-300 hover:text-orange-500'
+                }`}
+              >
+                {letter}
+              </button>
+            ))}
           </div>
         )}
-      </div>
 
-      {selectedBrandItem && (
-        <div className="mt-8 rounded-3xl border border-gray-200 bg-white p-5 shadow-sm">
-          <div className="flex flex-col gap-2 border-b border-gray-100 pb-4 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.28em] text-orange-500">Brand Products</p>
-              <h2 className="mt-2 text-2xl font-semibold text-gray-900">{selectedBrandItem.name}</h2>
+        {/* Brand Grid */}
+        <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-gray-100">
+          {isFetching ? (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {Array.from({ length: 8 }).map((_, i) => <BrandCardSkeleton key={i} />)}
             </div>
-            <p className="text-sm text-gray-500">
-              {isFetchingProducts ? 'Loading products...' : `${brandProducts.length} product(s)`}
-            </p>
-          </div>
+          ) : brands.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 text-2xl">🏷️</div>
+              <p className="mt-4 font-semibold text-gray-700">No brands found</p>
+              <p className="mt-1 text-sm text-gray-400">Try a different letter filter</p>
+            </div>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {brands.map((brand) => {
+                const brandSlug = toSlug(brand.name)
+                const isActive = brandSlug === selectedBrand
+                const gradient = getBrandGradient(brand.name)
 
-          <div className="mt-6">
-            {isFetchingProducts ? (
-              <p className="text-sm text-gray-500">Loading products for this brand...</p>
-            ) : brandProducts.length === 0 ? (
-              <p className="text-sm text-gray-500">No products assigned to this brand yet.</p>
-            ) : (
-              <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-                {brandProducts.map((product) => {
-                  const slug = toSlug(product.name)
-                  const href = `/product/${slug}-i${product.id}`
-
-                  return (
-                    <Link
-                      key={product.id}
-                      href={href}
-                      className="group overflow-hidden rounded-2xl border border-gray-200 bg-white transition-all duration-200 hover:-translate-y-1 hover:border-orange-300 hover:shadow-lg"
-                    >
-                      <div className="relative aspect-[4/3] bg-gray-50">
-                        {product.image ? (
-                          <Image src={product.image} alt={product.name} fill className="object-cover transition-transform duration-300 group-hover:scale-[1.03]" unoptimized />
+                return (
+                  <Link
+                    key={brand.id}
+                    href={`/by-brand?brand=${encodeURIComponent(brandSlug)}`}
+                    className={`group relative overflow-hidden rounded-2xl border p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${
+                      isActive
+                        ? 'border-orange-300 bg-orange-50 shadow-sm shadow-orange-100'
+                        : 'border-gray-100 bg-white hover:border-orange-200'
+                    }`}
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className={`relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl ${brand.image ? 'bg-gray-100' : `bg-gradient-to-br ${gradient}`}`}>
+                        {brand.image ? (
+                          <Image src={brand.image} alt={brand.name} fill className="object-cover" unoptimized />
                         ) : (
-                          <div className="flex h-full items-center justify-center text-sm font-semibold text-gray-400">
-                            No Image
-                          </div>
+                          <span className="text-sm font-extrabold tracking-wider text-white">
+                            {getBrandInitials(brand.name)}
+                          </span>
                         )}
                       </div>
-                      <div className="space-y-2 p-4">
-                        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-orange-500">{selectedBrandItem.name}</p>
-                        <h3 className="line-clamp-2 min-h-[3.5rem] text-base font-semibold text-gray-900">
-                          {product.name}
-                        </h3>
-                        <div className="flex items-end justify-between gap-3">
-                          <div>
-                            <p className="text-xs text-gray-400">Member Price</p>
-                            <p className="text-lg font-bold text-orange-600">
-                              {formatPeso(product.priceMember ?? product.priceDp ?? product.priceSrp)}
-                            </p>
-                          </div>
-                          <span className="text-xs font-medium text-gray-400">SKU {product.sku || '-'}</span>
-                        </div>
+                      <div className="min-w-0 flex-1">
+                        <p className={`truncate text-sm font-bold ${isActive ? 'text-orange-700' : 'text-gray-900'}`}>
+                          {brand.name}
+                        </p>
+                        <p className={`mt-0.5 text-xs transition-colors ${isActive ? 'text-orange-500' : 'text-gray-400 group-hover:text-orange-500'}`}>
+                          View brand →
+                        </p>
                       </div>
-                    </Link>
-                  )
-                })}
-              </div>
-            )}
-          </div>
+                    </div>
+                    {isActive && (
+                      <div className="absolute right-3 top-3 h-2 w-2 rounded-full bg-orange-400" />
+                    )}
+                  </Link>
+                )
+              })}
+            </div>
+          )}
         </div>
-      )}
+
+        {/* Brand Products Section */}
+        {selectedBrandItem && (
+          <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-gray-100">
+            <div className="flex flex-col gap-2 border-b border-gray-100 pb-5 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.3em] text-orange-500">Brand Products</p>
+                <h2 className="mt-2 text-2xl font-bold text-gray-900">{selectedBrandItem.name}</h2>
+              </div>
+              <span className="inline-flex items-center rounded-full bg-orange-50 px-3 py-1 text-xs font-semibold text-orange-600 ring-1 ring-orange-200">
+                {isFetchingProducts ? 'Loading…' : `${brandProducts.length} product${brandProducts.length !== 1 ? 's' : ''}`}
+              </span>
+            </div>
+
+            <div className="mt-6">
+              {isFetchingProducts ? (
+                <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+                  {Array.from({ length: 8 }).map((_, i) => <ProductCardSkeleton key={i} />)}
+                </div>
+              ) : brandProducts.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-20 text-center">
+                  <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 text-2xl">📦</div>
+                  <p className="mt-4 font-semibold text-gray-700">No products yet</p>
+                  <p className="mt-1 text-sm text-gray-400">No products assigned to this brand yet.</p>
+                </div>
+              ) : (
+                <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+                  {brandProducts.map((product) => {
+                    const slug = toSlug(product.name)
+                    const href = `/product/${slug}-i${product.id}`
+
+                    return (
+                      <Link
+                        key={product.id}
+                        href={href}
+                        className="group overflow-hidden rounded-2xl border border-gray-100 bg-white transition-all duration-200 hover:-translate-y-1 hover:border-orange-200 hover:shadow-lg"
+                      >
+                        <div className="relative aspect-[4/3] bg-gray-50">
+                          {product.image ? (
+                            <Image
+                              src={product.image}
+                              alt={product.name}
+                              fill
+                              className="object-cover transition-transform duration-300 group-hover:scale-[1.04]"
+                              unoptimized
+                            />
+                          ) : (
+                            <div className="flex h-full items-center justify-center text-sm font-semibold text-gray-300">
+                              No Image
+                            </div>
+                          )}
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 transition-opacity duration-200 group-hover:opacity-100" />
+                        </div>
+                        <div className="space-y-2 p-4">
+                          <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-orange-500">{selectedBrandItem.name}</p>
+                          <h3 className="line-clamp-2 min-h-[2.75rem] text-sm font-semibold text-gray-900 leading-snug">
+                            {product.name}
+                          </h3>
+                          <div className="flex items-end justify-between gap-3 pt-1">
+                            <div>
+                              <p className="text-[10px] text-gray-400 uppercase tracking-wide">Member Price</p>
+                              <p className="text-base font-bold text-orange-600">
+                                {formatPeso(product.priceMember ?? product.priceDp ?? product.priceSrp)}
+                              </p>
+                            </div>
+                            <span className="rounded-lg bg-gray-50 px-2 py-1 text-[10px] font-medium text-gray-400 ring-1 ring-gray-100">
+                              {product.sku || 'N/A'}
+                            </span>
+                          </div>
+                        </div>
+                      </Link>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
     </main>
   )
 }

@@ -315,6 +315,10 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
     () => (brandsData?.brands ?? []).filter((brand) => brand.status === 0),
     [brandsData?.brands],
   )
+  const generatedParentSku = useMemo(
+    () => generateSkuFromName(form.pd_name),
+    [form.pd_name],
+  )
 
   const set = (key: keyof FormState, value: string | boolean) => {
     setForm(p => ({ ...p, [key]: value }))
@@ -628,7 +632,7 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
       pd_material:    form.pd_material.trim()  || undefined,
       pd_warranty:    form.pd_warranty.trim()   || undefined,
       pd_assembly_required: form.pd_assembly_required,
-      pd_parent_sku:  form.pd_parent_sku.trim() || undefined,
+      pd_parent_sku:  form.pd_parent_sku.trim() || generatedParentSku || undefined,
       pd_type:        Number(form.pd_type),
       pd_musthave:    form.pd_musthave,
       pd_bestseller:  form.pd_bestseller,
@@ -833,7 +837,7 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
                         setForm(prev => ({
                           ...prev,
                           pd_name: value,
-                          pd_parent_sku: value.trim() ? generateSkuFromName(value) : '',
+                          pd_parent_sku: prev.pd_parent_sku.trim() ? prev.pd_parent_sku : '',
                         }))
                         setErrors(prev => ({ ...prev, pd_name: undefined }))
                       }}
@@ -895,19 +899,19 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
                       </select>
                     </Field>
 
-                    <Field label="SKU (auto-generated)">
-                      {form.pd_name.trim() ? (
-                        <div className="flex items-center gap-2 px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl">
-                          <svg className="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"/>
-                          </svg>
-                          <span className="text-sm font-mono text-slate-600 truncate">{form.pd_parent_sku}</span>
-                        </div>
-                      ) : (
-                        <div className="px-3.5 py-2.5 bg-slate-50 border border-dashed border-slate-200 rounded-xl text-sm text-slate-400 italic">
-                          Auto-generated from name
-                        </div>
-                      )}
+                    <Field label="SKU">
+                      <div className="space-y-1">
+                        <input
+                          type="text"
+                          value={form.pd_parent_sku}
+                          onChange={e => set('pd_parent_sku', e.target.value.toUpperCase())}
+                          placeholder={generatedParentSku || 'Auto-generated from product name'}
+                          className={inputCls()}
+                        />
+                        <p className="text-[11px] text-slate-500">
+                          Leave this blank to auto-generate: <span className="font-mono">{generatedParentSku || 'Waiting for product name'}</span>
+                        </p>
+                      </div>
                     </Field>
                   </div>
 
