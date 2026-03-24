@@ -9,6 +9,7 @@ import { useGetPublicProductsQuery } from '@/store/api/productsApi'
 
 const toSlug = (value: string) => value.toLowerCase().trim().replace(/\s+/g, '-')
 const formatPeso = (value: number) => `P${Number(value || 0).toLocaleString('en-PH', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`
+const getBrandInitials = (value: string) => value.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part.charAt(0).toUpperCase()).join('') || 'BR'
 
 export default function ByBrandPageMain() {
   const searchParams = useSearchParams()
@@ -82,10 +83,25 @@ export default function ByBrandPageMain() {
                       : 'border-gray-200 bg-white text-gray-700 hover:border-orange-300 hover:bg-orange-50 hover:text-orange-600'
                   }`}
                 >
-                  <p className="text-base font-semibold">{brand.name}</p>
-                  <p className="mt-1 text-sm text-gray-400 group-hover:text-orange-500">
-                    View this brand
-                  </p>
+                  <div className="flex items-center gap-4">
+                    <div className={`relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl border ${
+                      isActive ? 'border-orange-200 bg-white' : 'border-gray-200 bg-gray-50'
+                    }`}>
+                      {brand.image ? (
+                        <Image src={brand.image} alt={brand.name} fill className="object-contain p-2" unoptimized />
+                      ) : (
+                        <span className="text-sm font-bold tracking-wide text-gray-400">
+                          {getBrandInitials(brand.name)}
+                        </span>
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-base font-semibold">{brand.name}</p>
+                      <p className="mt-1 text-sm text-gray-400 group-hover:text-orange-500">
+                        View this brand
+                      </p>
+                    </div>
+                  </div>
                 </Link>
               )
             })}
