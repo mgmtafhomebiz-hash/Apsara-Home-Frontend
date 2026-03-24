@@ -347,6 +347,7 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
     closeTimer.current = setTimeout(() => {
       setActiveDropdown(null)
       setMegaSearch('')
+      setBrandSearch('')
     }, 150)
   }
 
@@ -1027,49 +1028,85 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
             onMouseLeave={close}
           >
             <div className="container mx-auto px-4 py-4">
-              <div className="grid grid-cols-3 gap-1">
-                {(() => {
-                  const items = activeLink.label === 'Shop Category'
-                    ? (
-                        shopCategoryItems.length > 0
-                          ? shopCategoryItems
-                          : [{ label: 'No categories found', href: '#' }]
-                      )
-                    : activeLink.label === 'Shop By Brand'
-                      ? (
-                          navbarBrandItems.length > 0
-                            ? navbarBrandItems
-                            : [{ label: 'No brands found', href: '/by-brand' }]
-                        )
+              {activeLink.label === 'Shop By Brand' ? (
+                <div className="flex flex-col gap-3">
+                  {/* Brand search */}
+                  <div className="relative max-w-xs">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                      <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
+                    </svg>
+                    <input
+                      type="text"
+                      value={brandSearch}
+                      onChange={(e) => setBrandSearch(e.target.value)}
+                      placeholder="Search brands..."
+                      className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-400/50 focus:bg-white transition-all"
+                    />
+                    {brandSearch && (
+                      <button onClick={() => setBrandSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                      </button>
+                    )}
+                  </div>
+                  {/* Brand grid with logos */}
+                  <div className="grid grid-cols-4 gap-2">
+                    {(brandSearch
+                      ? shopBrandItems.filter((b) => b.label.toLowerCase().includes(brandSearch.toLowerCase()))
+                      : navbarBrandItems
+                    ).map((item) => (
+                      <Link
+                        key={item.id}
+                        href={item.href}
+                        className="flex items-center gap-2.5 rounded-xl border border-gray-100 px-3 py-2.5 text-sm text-gray-600 hover:border-orange-200 hover:bg-orange-50 hover:text-orange-600 transition-all duration-200 group"
+                      >
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-gray-100">
+                          {item.image ? (
+                            <Image src={item.image} alt={item.label} width={32} height={32} className="h-full w-full object-cover" unoptimized />
+                          ) : (
+                            <span className="text-[10px] font-bold text-gray-400">
+                              {item.label.split(/\s+/).slice(0, 2).map((p) => p[0]?.toUpperCase()).join('')}
+                            </span>
+                          )}
+                        </div>
+                        <span className="truncate text-xs font-medium">{item.label}</span>
+                      </Link>
+                    ))}
+                    {(brandSearch
+                      ? shopBrandItems.filter((b) => b.label.toLowerCase().includes(brandSearch.toLowerCase()))
+                      : navbarBrandItems
+                    ).length === 0 && (
+                      <p className="col-span-full py-4 text-center text-sm text-gray-400">No brands found</p>
+                    )}
+                  </div>
+                  <Link
+                    href="/by-brand"
+                    className="inline-flex items-center justify-center rounded-xl border border-orange-200 bg-orange-50 px-4 py-2.5 text-sm font-semibold text-orange-600 transition-colors hover:bg-orange-100"
+                  >
+                    View All Brands
+                  </Link>
+                </div>
+              ) : (
+                <div className="grid grid-cols-3 gap-1">
+                  {(() => {
+                    const items = activeLink.label === 'Shop Category'
+                      ? (shopCategoryItems.length > 0 ? shopCategoryItems : [{ label: 'No categories found', href: '#' }])
                       : activeLink.dropdown.map((item) => ({
                           label: item,
                           href: `${activeLink.href}/${item.toLowerCase().replace(/\s+/g, '-')}`,
                         }))
-
-                  return (
-                    <>
-                      {items.map((item) => (
-                        <Link
-                          key={`${activeLink.label}-${item.label}`}
-                          href={item.href}
-                          className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-gray-600 hover:bg-orange-50 hover:text-orange-600 transition-all duration-200 group"
-                        >
-                          <span className="w-1.5 h-1.5 rounded-full bg-gray-300 group-hover:bg-orange-400 transition-colors" />
-                          {item.label}
-                        </Link>
-                      ))}
-                      {activeLink.label === 'Shop By Brand' && shopBrandItems.length > 0 && (
-                        <Link
-                          href="/by-brand"
-                          className="col-span-full mt-2 inline-flex items-center justify-center rounded-xl border border-orange-200 bg-orange-50 px-4 py-3 text-sm font-semibold text-orange-600 transition-colors hover:bg-orange-100"
-                        >
-                          View All Brands
-                        </Link>
-                      )}
-                    </>
-                  )
-                })()}
-              </div>
+                    return items.map((item) => (
+                      <Link
+                        key={`${activeLink.label}-${item.label}`}
+                        href={item.href}
+                        className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-gray-600 hover:bg-orange-50 hover:text-orange-600 transition-all duration-200 group"
+                      >
+                        <span className="w-1.5 h-1.5 rounded-full bg-gray-300 group-hover:bg-orange-400 transition-colors" />
+                        {item.label}
+                      </Link>
+                    ))
+                  })()}
+                </div>
+              )}
             </div>
           </motion.div>
         )}
@@ -1324,6 +1361,7 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
                         onClick={() => {
                           setMobileExpanded(isExpanded ? null : link.label)
                           setMobileSearch('')
+                          setMobileBrandSearch('')
                         }}
                         className="w-full flex items-center justify-between px-4 py-2.5 text-sm font-medium text-gray-700 hover:text-orange-500 hover:bg-orange-50 rounded-xl transition-colors"
                       >
@@ -1407,6 +1445,53 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
                               });
                             })()}
                           </div>
+                        ) : link.label === 'Shop By Brand' ? (
+                          /* Brand dropdown — search + logos */
+                          <div className="ml-4 pl-4 border-l-2 border-orange-200 py-2 space-y-2">
+                            {/* Search */}
+                            <div className="relative">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                                <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
+                              </svg>
+                              <input
+                                type="text"
+                                value={mobileBrandSearch}
+                                onChange={(e) => setMobileBrandSearch(e.target.value)}
+                                placeholder="Search brands..."
+                                className="w-full pl-8 pr-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-400/40"
+                              />
+                            </div>
+                            {/* Brand list with logos */}
+                            {(mobileBrandSearch
+                              ? shopBrandItems.filter((b) => b.label.toLowerCase().includes(mobileBrandSearch.toLowerCase()))
+                              : navbarBrandItems
+                            ).map((item) => (
+                              <Link
+                                key={item.id}
+                                href={item.href}
+                                className="flex items-center gap-2.5 rounded-xl border border-gray-100 px-3 py-2 text-sm text-gray-500 hover:border-orange-200 hover:bg-orange-50 hover:text-orange-500 transition-colors"
+                                onClick={() => setMobileOpen(false)}
+                              >
+                                <div className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-gray-100">
+                                  {item.image ? (
+                                    <Image src={item.image} alt={item.label} width={28} height={28} className="h-full w-full object-cover" unoptimized />
+                                  ) : (
+                                    <span className="text-[9px] font-bold text-gray-400">
+                                      {item.label.split(/\s+/).slice(0, 2).map((p) => p[0]?.toUpperCase()).join('')}
+                                    </span>
+                                  )}
+                                </div>
+                                <span className="truncate text-xs">{item.label}</span>
+                              </Link>
+                            ))}
+                            <Link
+                              href="/by-brand"
+                              className="mt-1 inline-flex items-center rounded-lg bg-orange-50 px-3 py-2 text-sm font-semibold text-orange-600 transition-colors hover:bg-orange-100"
+                              onClick={() => setMobileOpen(false)}
+                            >
+                              View All Brands
+                            </Link>
+                          </div>
                         ) : (
                           /* Regular dropdown */
                           <div className="ml-4 pl-4 border-l-2 border-orange-200 py-1">
@@ -1420,15 +1505,6 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
                                 {item.label}
                               </Link>
                             ))}
-                            {link.label === 'Shop By Brand' && shopBrandItems.length > 0 && (
-                              <Link
-                                href="/by-brand"
-                                className="mt-1 inline-flex items-center rounded-lg bg-orange-50 px-3 py-2 text-sm font-semibold text-orange-600 transition-colors hover:bg-orange-100"
-                                onClick={() => setMobileOpen(false)}
-                              >
-                                View All Brands
-                              </Link>
-                            )}
                           </div>
                         )}
                       </div>

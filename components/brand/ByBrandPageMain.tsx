@@ -62,6 +62,7 @@ export default function ByBrandPageMain() {
   const searchParams = useSearchParams()
   const selectedBrand = searchParams.get('brand')?.trim().toLowerCase() ?? ''
   const [letterFilter, setLetterFilter] = useState<string>('ALL')
+  const [searchQuery, setSearchQuery] = useState('')
   const { data, isFetching } = useGetPublicProductBrandsQuery()
 
   const allBrands = useMemo(
@@ -77,9 +78,12 @@ export default function ByBrandPageMain() {
   const brands = useMemo(() => {
     let rows = allBrands
     if (selectedBrand) rows = rows.filter((brand) => toSlug(brand.name) === selectedBrand)
-    else if (letterFilter !== 'ALL') rows = rows.filter((b) => b.name.charAt(0).toUpperCase() === letterFilter)
+    else {
+      if (searchQuery.trim()) rows = rows.filter((b) => b.name.toLowerCase().includes(searchQuery.trim().toLowerCase()))
+      else if (letterFilter !== 'ALL') rows = rows.filter((b) => b.name.charAt(0).toUpperCase() === letterFilter)
+    }
     return rows
-  }, [allBrands, selectedBrand, letterFilter])
+  }, [allBrands, selectedBrand, letterFilter, searchQuery])
 
   const selectedBrandItem = useMemo(
     () => (data?.brands ?? []).find((brand) => toSlug(brand.name) === selectedBrand) ?? null,
@@ -126,22 +130,48 @@ export default function ByBrandPageMain() {
       </div>
 
       <div className="container mx-auto px-4 py-10 space-y-8">
-        {/* Letter Filter — only when no brand selected */}
+        {/* Search + Letter Filter — only when no brand selected */}
         {!selectedBrand && (
-          <div className="flex flex-wrap gap-2">
-            {availableLetters.map((letter) => (
-              <button
-                key={letter}
-                onClick={() => setLetterFilter(letter)}
-                className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition-all ${
-                  letterFilter === letter
-                    ? 'bg-orange-500 text-white shadow-sm shadow-orange-200'
-                    : 'bg-white text-gray-500 ring-1 ring-gray-200 hover:ring-orange-300 hover:text-orange-500'
-                }`}
-              >
-                {letter}
-              </button>
-            ))}
+          <div className="flex flex-col gap-3">
+            {/* Search input */}
+            <div className="relative max-w-sm">
+              <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
+              </svg>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => { setSearchQuery(e.target.value); setLetterFilter('ALL') }}
+                placeholder="Search brands..."
+                className="w-full rounded-xl border border-gray-200 bg-white py-2.5 pl-10 pr-10 text-sm text-gray-700 placeholder:text-gray-400 shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-400/30 transition-all"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                </button>
+              )}
+            </div>
+            {/* Letter filter pills — hidden when searching */}
+            {!searchQuery && (
+              <div className="flex flex-wrap gap-2">
+                {availableLetters.map((letter) => (
+                  <button
+                    key={letter}
+                    onClick={() => setLetterFilter(letter)}
+                    className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition-all ${
+                      letterFilter === letter
+                        ? 'bg-orange-500 text-white shadow-sm shadow-orange-200'
+                        : 'bg-white text-gray-500 ring-1 ring-gray-200 hover:ring-orange-300 hover:text-orange-500'
+                    }`}
+                  >
+                    {letter}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
