@@ -22,6 +22,23 @@ const money = new Intl.NumberFormat('en-PH', {
   maximumFractionDigits: 2,
 });
 
+const formatPhilippineDateTime = (value?: string | null) => {
+  if (!value) return 'N/A';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'N/A';
+
+  return date.toLocaleString('en-PH', {
+    timeZone: 'Asia/Manila',
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: true,
+  });
+};
+
 const formatCooldownRemaining = (minutes: number) => {
   const totalMinutes = Math.max(0, Math.ceil(Number(minutes || 0)));
   if (totalMinutes <= 0) return '0m';
@@ -225,7 +242,7 @@ const EncashmentTab = () => {
   }>({ idFront: false, idBack: false, selfie: false });
   const [verificationErrors, setVerificationErrors] = useState<VerificationErrors>({});
   const [isVerificationSpotlightActive, setIsVerificationSpotlightActive] = useState(false);
-  const phVerification = usePhAddress();
+  const phVerification = usePhAddress({ legacyNoProvinceRegions: true, source: 'psgc' });
 
   const rows = useMemo(() => data?.requests ?? [], [data?.requests]);
   const methods = useMemo<PaymentMethod[]>(
@@ -1190,7 +1207,7 @@ const EncashmentTab = () => {
                 }}
                 className={verificationInputClass('region')}
               >
-                <option value="">Select Region</option>
+                <option value="">- Select Region -</option>
                 {phVerification.regions.map((region) => (
                   <option key={region.code} value={region.code}>{region.name}</option>
                 ))}
@@ -1210,26 +1227,13 @@ const EncashmentTab = () => {
                   }}
                   className={verificationInputClass('province', 'disabled:bg-slate-100 disabled:text-slate-400')}
                 >
-                  <option value="">{phVerification.loadingProvinces ? 'Loading provinces...' : 'Select Province'}</option>
+                  <option value="">{phVerification.loadingProvinces ? 'Loading provinces...' : '- Select Province -'}</option>
                   {phVerification.provinces.map((province) => (
                     <option key={province.code} value={province.code}>{province.name}</option>
                   ))}
                 </select>
               </VerificationField>
-            ) : (
-              <VerificationField label="Province" required error={verificationErrors.province}>
-                <select
-                  data-verification-field="province"
-                  value=""
-                  disabled
-                  className={verificationInputClass('province', 'text-slate-400 bg-slate-100')}
-                >
-                  <option value="">
-                    {selectedVerificationProvince || 'Province not required for this region'}
-                  </option>
-                </select>
-              </VerificationField>
-            )}
+            ) : null}
             <VerificationField label="City / Municipality" required error={verificationErrors.city}>
               <select
                 data-verification-field="city"
@@ -1243,7 +1247,7 @@ const EncashmentTab = () => {
                 }}
                 className={verificationInputClass('city', 'disabled:bg-slate-100 disabled:text-slate-400')}
               >
-                <option value="">{phVerification.loadingCities || phVerification.loadingProvinces ? 'Loading cities...' : 'Select City / Municipality'}</option>
+                <option value="">{phVerification.loadingCities || phVerification.loadingProvinces ? 'Loading cities...' : '- Select City / Municipality -'}</option>
                 {phVerification.cities.map((city) => (
                   <option key={city.code} value={city.code}>{city.name}</option>
                 ))}
@@ -1253,7 +1257,7 @@ const EncashmentTab = () => {
               <select
                 data-verification-field="barangay"
                 required
-                value={verificationForm.barangay}
+                value={phVerification.address.barangay}
                 disabled={!phVerification.cityCode || phVerification.loadingBarangays}
                 onChange={(e) => {
                   phVerification.setBarangay(e.target.value);
@@ -1261,7 +1265,7 @@ const EncashmentTab = () => {
                 }}
                 className={verificationInputClass('barangay', 'disabled:bg-slate-100 disabled:text-slate-400')}
               >
-                <option value="">{phVerification.loadingBarangays ? 'Loading barangays...' : 'Select Barangay'}</option>
+                <option value="">{phVerification.loadingBarangays ? 'Loading barangays...' : '- Select Barangay -'}</option>
                 {phVerification.barangays.map((barangay) => (
                   <option key={barangay.code} value={barangay.name}>{barangay.name}</option>
                 ))}
@@ -1390,7 +1394,7 @@ const EncashmentTab = () => {
               </p>
               <div className="mt-2 text-xs text-blue-900/80 space-y-1">
                 <p>Reference: <span className="font-semibold">{verification?.reference_no || 'N/A'}</span></p>
-                <p>Submitted: <span className="font-semibold">{verification?.submitted_at ? new Date(verification.submitted_at).toLocaleString() : 'N/A'}</span></p>
+                <p>Submitted: <span className="font-semibold">{formatPhilippineDateTime(verification?.submitted_at)}</span></p>
                 <p>Status: <span className="font-semibold uppercase">Pending Review</span></p>
               </div>
             </div>
