@@ -15,6 +15,7 @@ type VariantOption = NonNullable<CategoryProduct['variants']>[number];
 
 const ProductPageClient = ({ product, categoryLabel }: ProductPageClientProps) => {
     const [selectedVariant, setSelectedVariant] = useState<VariantOption | undefined>(undefined);
+    const galleryKey = selectedVariant?.images?.join('|') || product.images?.join('|') || product.image;
 
     const handleVariantChange = useCallback((variant?: VariantOption) => {
         setSelectedVariant(variant);
@@ -23,7 +24,12 @@ const ProductPageClient = ({ product, categoryLabel }: ProductPageClientProps) =
     return (
         <>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
-                <ProductImageGallery product={product} selectedVariantImages={selectedVariant?.images} />
+                <ProductImageGallery
+                    key={galleryKey}
+                    product={product}
+                    selectedVariantImages={selectedVariant?.images}
+                    preferredActiveImage={selectedVariant?.images?.[0]}
+                />
                 <ProductInfo product={product} categoryLabel={categoryLabel} onVariantChange={handleVariantChange} />
             </div>
             <StickyAddToCart product={product} selectedVariant={selectedVariant} />

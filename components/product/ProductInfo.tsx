@@ -188,6 +188,7 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange }
     const hasDisplayDimensions = Boolean(displayWidth || displayDimension || displayHeight);
     const selectedVariantImage = selectedVariant?.images?.find((image) => typeof image === 'string' && image.trim().length > 0);
     const selectedVariantLabel = selectedVariant?.name?.trim() || selectedVariant?.size?.trim() || '';
+    const displayTitle = selectedVariant?.name?.trim() || product.name;
     const isInStock = typeof displayStock !== 'number' || displayStock > 0;
     const productDescription = (product.description ?? '').trim();
     const plainDescription = productDescription ? stripHtml(productDescription) : '';
@@ -240,7 +241,7 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange }
             </div>
 
             {/* TITLE */}
-            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 leading-tight">{product.name}</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 leading-tight">{displayTitle}</h1>
             {categoryLabel && (
                 <div className="inline-flex items-center gap-2 self-start rounded-full border border-orange-200 bg-orange-50 px-3 py-1">
                     <span className="text-[11px] font-semibold uppercase tracking-wide text-orange-600">Category</span>

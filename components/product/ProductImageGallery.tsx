@@ -3,11 +3,12 @@
 import { CategoryProduct } from '@/libs/CategoryData';
 import { AnimatePresence, motion } from 'framer-motion';
 import Image from 'next/image';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 interface ProductImageGalleryProps {
   product: CategoryProduct;
   selectedVariantImages?: string[];
+  preferredActiveImage?: string;
 }
 
 const HeartIcon = ({ filled }: { filled: boolean }) => (
@@ -31,12 +32,31 @@ const CloseIcon = () => (
   </svg>
 );
 
-const ProductImageGallery = ({ product, selectedVariantImages }: ProductImageGalleryProps) => {
-  const baseImages = product.images && product.images.length > 0 ? product.images : [product.image];
-  const variantImages = selectedVariantImages?.filter(Boolean) ?? [];
-  const galleryImages = variantImages.length > 0 ? variantImages : baseImages;
+const ProductImageGallery = ({ product, selectedVariantImages, preferredActiveImage }: ProductImageGalleryProps) => {
+  const primaryImage = product.image;
+  const baseImages = useMemo(
+    () => (product.images && product.images.length > 0 ? product.images.filter(Boolean) : [product.image].filter(Boolean)),
+    [product.image, product.images],
+  );
+  const variantImages = useMemo(
+    () => selectedVariantImages?.filter(Boolean) ?? [],
+    [selectedVariantImages],
+  );
+  const galleryImages = useMemo(() => {
+    const merged = Array.from(new Set([
+      primaryImage,
+      ...variantImages,
+      ...baseImages,
+    ].filter(Boolean)));
+    return merged;
+  }, [baseImages, primaryImage, variantImages]);
   const hasMultipleImages = galleryImages.length > 1;
-  const [activeImage, setActiveImage] = useState(0);
+  const initialActiveIndex = useMemo(() => {
+    if (!preferredActiveImage) return 0;
+    const matchedIndex = galleryImages.findIndex((image) => image === preferredActiveImage);
+    return matchedIndex >= 0 ? matchedIndex : 0;
+  }, [galleryImages, preferredActiveImage]);
+  const [activeImage, setActiveImage] = useState(initialActiveIndex);
   const [slideDirection, setSlideDirection] = useState<1 | -1>(1);
   const [isZoomed, setIsZoomed] = useState(false);
   const [isWishlisted, setIsWishlisted] = useState(false);
@@ -44,6 +64,7 @@ const ProductImageGallery = ({ product, selectedVariantImages }: ProductImageGal
     ? Math.min(Math.max(activeImage, 0), galleryImages.length - 1)
     : 0;
   const activeSrc = galleryImages[safeActiveImage] ?? product.image;
+
   const goNext = () => {
     setSlideDirection(1);
     setActiveImage((prev) => (prev + 1) % galleryImages.length);
