@@ -46,10 +46,6 @@ interface ProductInfoProps {
 }
 
 type VariantOption = NonNullable<CategoryProduct['variants']>[number];
-type VariantGroup = {
-    key: string;
-    variants: VariantOption[];
-};
 type SizeChoice = {
     key: string;
     label: string;
@@ -103,15 +99,10 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange }
         () =>
             (product.variants ?? []).filter((variant) =>
                 Boolean(
-                    variant.name ||
                     variant.color ||
                     variant.size ||
                     variant.sku ||
                     (variant.images && variant.images.length > 0) ||
-                    typeof variant.width === 'number' ||
-                    typeof variant.dimension === 'number' ||
-                    typeof variant.height === 'number' ||
-                    typeof variant.qty === 'number' ||
                     typeof variant.priceMember === 'number' ||
                     typeof variant.priceDp === 'number' ||
                     typeof variant.priceSrp === 'number',
@@ -169,6 +160,7 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange }
     const [selectedSizeKey, setSelectedSizeKey] = useState('');
     const effectiveSelectedColor = selectedColor || colorOptions[0]?.name || '';
     const effectiveSelectedSizeKey = selectedSizeKey || sizeChoices[0]?.key || '';
+    const effectiveSelectedSize = selectedSize || sizeChoices[0]?.label || '';
     const usesVariantNameSelection = variantNameOptions.length > 0 && sizeChoices.length === 0;
     const effectiveSelectedVariantName = selectedVariantName || (usesVariantNameSelection ? variantNameOptions[0]?.name || '' : '');
 
@@ -178,18 +170,15 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange }
             return;
         }
 
-        if (!selectedSizeKey || sizeChoices.some((choice) => choice.key === selectedSizeKey)) {
-            return;
-        }
-
+        if (sizeChoices.some((choice) => choice.key === effectiveSelectedSizeKey)) return;
         setSelectedSizeKey(sizeChoices[0]?.key ?? '');
-    }, [selectedSizeKey, sizeChoices]);
+    }, [effectiveSelectedSizeKey, selectedSizeKey, sizeChoices]);
 
     const selectedVariant = useMemo(() => {
         if (variantOptions.length === 0) return undefined;
-        const selectedSizeVariant = sizeChoices.find((choice) => choice.key === effectiveSelectedSizeKey)?.variant;
-        if (selectedSizeVariant) {
-            return selectedSizeVariant;
+        const selectedSizeChoice = sizeChoices.find((choice) => choice.key === effectiveSelectedSizeKey);
+        if (selectedSizeChoice) {
+            return selectedSizeChoice.variant;
         }
         if (usesVariantNameSelection && effectiveSelectedVariantName) {
             return (
@@ -198,12 +187,17 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange }
             );
         }
         return (
-            variantOptions.find((variant) => variant.color === effectiveSelectedColor && variant.size === selectedSize)
+            variantOptions.find((variant) =>
+                variant.color === effectiveSelectedColor &&
+                (((variant.size ?? '').trim() === effectiveSelectedSize) || ((variant.name ?? '').trim() === effectiveSelectedSize))
+            )
             ?? variantOptions.find((variant) => variant.color === effectiveSelectedColor)
-            ?? variantOptions.find((variant) => variant.size === selectedSize)
+            ?? variantOptions.find((variant) =>
+                ((variant.size ?? '').trim() === selectedSize) || ((variant.name ?? '').trim() === selectedSize)
+            )
             ?? variantOptions[0]
         );
-    }, [variantOptions, effectiveSelectedColor, effectiveSelectedSizeKey, effectiveSelectedVariantName, selectedSize, sizeChoices, usesVariantNameSelection]);
+    }, [variantOptions, effectiveSelectedColor, effectiveSelectedSize, effectiveSelectedSizeKey, effectiveSelectedVariantName, selectedSize, sizeChoices, usesVariantNameSelection]);
 
     useEffect(() => {
         onVariantChange?.(selectedVariant);
@@ -458,7 +452,7 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange }
             {hasRealVariants && sizeChoices.length > 0 && (
                 <div className="flex flex-col gap-2">
                     <span className="text-sm font-semibold text-slate-700">Size</span>
-                    <div className="flex gap-2 flex-wrap">
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                         {sizeChoices.map((sizeChoice) => (
                             <button
                                 key={sizeChoice.key}
@@ -466,14 +460,14 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange }
                                     setSelectedSize(sizeChoice.label);
                                     setSelectedSizeKey(sizeChoice.key);
                                 }}
-                                className={`px-4 py-2 text-left rounded-xl border-2 transition-all duration-200 ${effectiveSelectedSizeKey === sizeChoice.key
+                                className={`rounded-2xl border-2 px-4 py-3 text-left transition-all duration-200 ${effectiveSelectedSizeKey === sizeChoice.key
                                     ? 'border-orange-400 bg-orange-50 text-orange-600'
                                     : 'border-gray-200 text-slate-600 hover:border-orange-200'
                                     }`}
                             >
                                 <span className="block text-sm font-medium">{sizeChoice.label}</span>
                                 {sizeChoice.meta && (
-                                    <span className="mt-0.5 block text-[11px] font-medium text-slate-400">
+                                    <span className="mt-1 block text-[11px] font-medium text-slate-400">
                                         {sizeChoice.meta}
                                     </span>
                                 )}
