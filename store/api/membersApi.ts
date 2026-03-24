@@ -26,12 +26,57 @@ export interface MembersStatsResponse {
   totalReferrals: number
 }
 
+export type ReferralAdminStatus = 'active' | 'pending' | 'blocked' | 'kyc_review'
+
+export interface AdminReferralNode {
+  id: number
+  name: string
+  username: string
+  email: string
+  avatar?: string
+  tier: string
+  commissionEarned: number
+  referralCount: number
+  joinedAt: string
+  status: ReferralAdminStatus
+  children?: AdminReferralNode[]
+}
+
+export interface AdminReferralTreeResponse {
+  summary: {
+    totalMembers: number
+    activeMembers: number
+    pendingMembers: number
+    blockedMembers: number
+    totalReferrals: number
+    totalCommissionPaid: number
+    avgCommissionPerMember: number
+  }
+  roots: AdminReferralNode[]
+}
+
 interface MembersQueryParams {
   page?: number
   perPage?: number
   search?: string
   status?: MemberStatus
   tier?: MemberTier
+  sort?: 'default' | 'earnings_low_high' | 'earnings_high_low' | 'referrals_high_low'
+}
+
+export interface UpdateMemberPayload {
+  id: number
+  name: string
+  email: string
+  contactNumber?: string
+  status: MemberStatus
+  tier: MemberTier
+  addressLine?: string
+  barangay?: string
+  city?: string
+  province?: string
+  region?: string
+  zipCode?: string
 }
 
 export type MemberKycStatus = 'pending_review' | 'on_hold' | 'approved' | 'rejected'
@@ -100,6 +145,7 @@ export const membersApi = baseApi.injectEndpoints({
           q: params?.search,
           status: params?.status,
           tier: params?.tier,
+          sort: params?.sort,
         },
       }),
       keepUnusedDataFor: 300,
@@ -108,6 +154,11 @@ export const membersApi = baseApi.injectEndpoints({
     getMembersStats: builder.query<MembersStatsResponse, void>({
       query: () => '/api/admin/members/stats',
       keepUnusedDataFor: 300,
+      providesTags: ['Members'],
+    }),
+    getMembersReferralTree: builder.query<AdminReferralTreeResponse, void>({
+      query: () => '/api/admin/members/referrals',
+      keepUnusedDataFor: 120,
       providesTags: ['Members'],
     }),
     getMembersKyc: builder.query<MemberKycResponse, MemberKycQueryParams | void>({
@@ -123,6 +174,14 @@ export const membersApi = baseApi.injectEndpoints({
       }),
       keepUnusedDataFor: 120,
       providesTags: ['Members'],
+    }),
+    updateMember: builder.mutation<{ message: string }, UpdateMemberPayload>({
+      query: ({ id, ...body }) => ({
+        url: `/api/admin/members/${id}`,
+        method: 'PATCH',
+        body,
+      }),
+      invalidatesTags: ['Members'],
     }),
     approveMemberKyc: builder.mutation<{ message: string }, { id: number; notes?: string }>({
       query: ({ id, notes }) => ({
@@ -147,7 +206,9 @@ export const {
   useGetMembersQuery,
   useLazyGetMembersQuery,
   useGetMembersStatsQuery,
+  useGetMembersReferralTreeQuery,
   useGetMembersKycQuery,
+  useUpdateMemberMutation,
   useApproveMemberKycMutation,
   useRejectMemberKycMutation,
 } = membersApi

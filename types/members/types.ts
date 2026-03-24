@@ -11,6 +11,7 @@ export interface Member {
   id: number;
   name: string;
   email: string;
+  contactNumber?: string;
   avatar?: string;
   verificationStatus?: 'verified' | 'pending_review' | 'on_hold' | 'not_verified' | 'blocked';
   status: MemberStatus;

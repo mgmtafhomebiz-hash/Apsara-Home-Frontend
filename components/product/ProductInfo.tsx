@@ -50,6 +50,12 @@ type VariantGroup = {
     key: string;
     variants: VariantOption[];
 };
+type SizeChoice = {
+    key: string;
+    label: string;
+    meta: string;
+    variant: VariantOption;
+};
 
 const buildVariantGroupKey = (variant: VariantOption, index: number) => {
     const sku = (variant.sku ?? '').trim();
@@ -97,10 +103,15 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange }
         () =>
             (product.variants ?? []).filter((variant) =>
                 Boolean(
+                    variant.name ||
                     variant.color ||
                     variant.size ||
                     variant.sku ||
                     (variant.images && variant.images.length > 0) ||
+                    typeof variant.width === 'number' ||
+                    typeof variant.dimension === 'number' ||
+                    typeof variant.height === 'number' ||
+                    typeof variant.qty === 'number' ||
                     typeof variant.priceMember === 'number' ||
                     typeof variant.priceDp === 'number' ||
                     typeof variant.priceSrp === 'number',
@@ -128,20 +139,58 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange }
         return Array.from(map.entries()).map(([name, image]) => ({ name, image }));
     }, [variantOptions]);
 
-    const sizeOptions = useMemo(() => {
-        return Array.from(
-            new Set(variantOptions.map((variant) => variant.size).filter((size): size is string => Boolean(size)))
-        );
+    const sizeChoices = useMemo(() => {
+        return variantOptions.flatMap((variant, index) => {
+            const sizeLabel = (variant.size ?? '').trim();
+            if (!sizeLabel) return [];
+
+            const dimensionParts = [
+                variant.width ? `W ${variant.width}` : '',
+                variant.dimension ? `D ${variant.dimension}` : '',
+                variant.height ? `H ${variant.height}` : '',
+            ].filter(Boolean);
+
+            const metaParts = [
+                (variant.name ?? '').trim(),
+                variant.color ? displayColorName(variant.color) : '',
+                dimensionParts.length > 0 ? `${dimensionParts.join(' x ')} cm` : '',
+            ].filter((part) => part && part !== sizeLabel);
+
+            return [{
+                key: buildVariantGroupKey(variant, index),
+                label: sizeLabel,
+                meta: metaParts.join(' • '),
+                variant,
+            } satisfies SizeChoice];
+        });
     }, [variantOptions]);
 
     const [selectedVariantName, setSelectedVariantName] = useState('');
+    const [selectedSizeKey, setSelectedSizeKey] = useState('');
     const effectiveSelectedColor = selectedColor || colorOptions[0]?.name || '';
-    const effectiveSelectedSize = selectedSize || sizeOptions[0] || '';
-    const usesVariantNameSelection = variantNameOptions.length > 0 && sizeOptions.length === 0;
+    const effectiveSelectedSizeKey = selectedSizeKey || sizeChoices[0]?.key || '';
+    const usesVariantNameSelection = variantNameOptions.length > 0 && sizeChoices.length === 0;
     const effectiveSelectedVariantName = selectedVariantName || (usesVariantNameSelection ? variantNameOptions[0]?.name || '' : '');
+
+    useEffect(() => {
+        if (sizeChoices.length === 0) {
+            if (selectedSizeKey !== '') setSelectedSizeKey('');
+            return;
+        }
+
+        if (!selectedSizeKey || sizeChoices.some((choice) => choice.key === selectedSizeKey)) {
+            return;
+        }
+
+        setSelectedSizeKey(sizeChoices[0]?.key ?? '');
+    }, [selectedSizeKey, sizeChoices]);
 
     const selectedVariant = useMemo(() => {
         if (variantOptions.length === 0) return undefined;
+        const selectedSizeVariant = sizeChoices.find((choice) => choice.key === effectiveSelectedSizeKey)?.variant;
+        if (selectedSizeVariant) {
+            return selectedSizeVariant;
+        }
         if (usesVariantNameSelection && effectiveSelectedVariantName) {
             return (
                 variantOptions.find((variant) => (variant.name ?? '').trim() === effectiveSelectedVariantName)
@@ -149,12 +198,12 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange }
             );
         }
         return (
-            variantOptions.find((variant) => variant.color === effectiveSelectedColor && variant.size === effectiveSelectedSize)
+            variantOptions.find((variant) => variant.color === effectiveSelectedColor && variant.size === selectedSize)
             ?? variantOptions.find((variant) => variant.color === effectiveSelectedColor)
-            ?? variantOptions.find((variant) => variant.size === effectiveSelectedSize)
+            ?? variantOptions.find((variant) => variant.size === selectedSize)
             ?? variantOptions[0]
         );
-    }, [variantOptions, effectiveSelectedColor, effectiveSelectedSize, effectiveSelectedVariantName, usesVariantNameSelection]);
+    }, [variantOptions, effectiveSelectedColor, effectiveSelectedSizeKey, effectiveSelectedVariantName, selectedSize, sizeChoices, usesVariantNameSelection]);
 
     useEffect(() => {
         onVariantChange?.(selectedVariant);
@@ -406,20 +455,28 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange }
                 </div>
             )}
 
-            {hasRealVariants && sizeOptions.length > 0 && (
+            {hasRealVariants && sizeChoices.length > 0 && (
                 <div className="flex flex-col gap-2">
                     <span className="text-sm font-semibold text-slate-700">Size</span>
                     <div className="flex gap-2 flex-wrap">
-                        {sizeOptions.map(size => (
+                        {sizeChoices.map((sizeChoice) => (
                             <button
-                                key={size}
-                                onClick={() => setSelectedSize(size)}
-                                className={`px-4 py-1.5 text-sm rounded-xl border-2 font-medium transition-all duration-200 ${effectiveSelectedSize === size
+                                key={sizeChoice.key}
+                                onClick={() => {
+                                    setSelectedSize(sizeChoice.label);
+                                    setSelectedSizeKey(sizeChoice.key);
+                                }}
+                                className={`px-4 py-2 text-left rounded-xl border-2 transition-all duration-200 ${effectiveSelectedSizeKey === sizeChoice.key
                                     ? 'border-orange-400 bg-orange-50 text-orange-600'
                                     : 'border-gray-200 text-slate-600 hover:border-orange-200'
                                     }`}
                             >
-                                {size}
+                                <span className="block text-sm font-medium">{sizeChoice.label}</span>
+                                {sizeChoice.meta && (
+                                    <span className="mt-0.5 block text-[11px] font-medium text-slate-400">
+                                        {sizeChoice.meta}
+                                    </span>
+                                )}
                             </button>
                         ))}
                     </div>
@@ -570,7 +627,7 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange }
                 product={product}
                 quantity={quantity}
                 selectedColor={effectiveSelectedColor}
-                selectedSize={effectiveSelectedSize}
+                selectedSize={selectedVariant?.size?.trim() || selectedSize}
                 selectedType={productTypeLabel}
 
             />

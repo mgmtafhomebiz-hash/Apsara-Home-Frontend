@@ -4,8 +4,10 @@ import { Member } from "@/types/members/types"
 import { motion, AnimatePresence } from "framer-motion"
 import MembersStatusBadge from "./MembersStatusBadge"
 import TierBadge from "@/components/ui/TierBadge"
-import { useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import AdminPagination from '@/components/superAdmin/AdminPagination'
+import { MemberStatus, MemberTier } from "@/types/members/types"
+import { useUpdateMemberMutation } from "@/store/api/membersApi"
 
 const avatarColors = [
   'bg-teal-500', 'bg-blue-500', 'bg-purple-500', 'bg-pink-500',
@@ -13,6 +15,216 @@ const avatarColors = [
 ]
 const getAvatarColor = (name: string) => avatarColors[name.charCodeAt(0) % avatarColors.length]
 const getInitials = (name: string) => name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+
+interface EditMemberForm {
+  id: number
+  name: string
+  email: string
+  contactNumber: string
+  status: MemberStatus
+  tier: MemberTier
+  addressLine: string
+  barangay: string
+  city: string
+  province: string
+  region: string
+  zipCode: string
+}
+
+function getApiErrorMessage(error: any, fallback: string) {
+  const validationErrors = error?.data?.errors as Record<string, string[]> | undefined
+  const firstValidationError = validationErrors
+    ? Object.values(validationErrors).find((messages) => Array.isArray(messages) && messages.length > 0)?.[0]
+    : undefined
+
+  return String(error?.data?.message || firstValidationError || fallback)
+}
+
+function MemberAvatar({
+  member,
+  className,
+  initialsClassName,
+}: {
+  member: Member
+  className: string
+  initialsClassName: string
+}) {
+  const [failed, setFailed] = useState(false)
+
+  if (member.avatar && !failed) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={member.avatar}
+        alt={member.name}
+        className={`${className} object-cover`}
+        onError={() => setFailed(true)}
+      />
+    )
+  }
+
+  return (
+    <div className={`${getAvatarColor(member.name)} ${className} flex items-center justify-center`}>
+      <span className={initialsClassName}>{getInitials(member.name)}</span>
+    </div>
+  )
+}
+
+function EditMemberModal({
+  member,
+  onClose,
+}: {
+  member: Member
+  onClose: () => void
+}) {
+  const [updateMember, { isLoading }] = useUpdateMemberMutation()
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+  const [form, setForm] = useState<EditMemberForm>({
+    id: member.id,
+    name: member.name,
+    email: member.email,
+    contactNumber: member.contactNumber ?? '',
+    status: member.status,
+    tier: member.tier,
+    addressLine: member.addressLine ?? '',
+    barangay: member.barangay ?? '',
+    city: member.city ?? '',
+    province: member.province ?? '',
+    region: member.region ?? '',
+    zipCode: member.zipCode ?? '',
+  })
+
+  const updateField = <K extends keyof EditMemberForm>(key: K, value: EditMemberForm[K]) => {
+    setForm((prev) => ({ ...prev, [key]: value }))
+  }
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault()
+    setMessage(null)
+
+    try {
+      const response = await updateMember(form).unwrap()
+      setMessage({ type: 'success', text: response.message || 'Member updated successfully.' })
+      setTimeout(() => onClose(), 800)
+    } catch (error: any) {
+      setMessage({ type: 'error', text: getApiErrorMessage(error, 'Failed to update member.') })
+    }
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[120] bg-slate-900/50 backdrop-blur-sm p-4"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ opacity: 0, y: 12, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 10, scale: 0.98 }}
+        transition={{ duration: 0.2 }}
+        className="mx-auto mt-8 w-full max-w-3xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="border-b border-slate-100 bg-[linear-gradient(135deg,#f8fafc,#ffffff)] px-6 py-5">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-teal-600">Edit Member</p>
+              <h3 className="mt-1 text-xl font-bold text-slate-900">{member.name}</h3>
+              <p className="mt-1 text-sm text-slate-500">Update profile, tier, status, and address details.</p>
+            </div>
+            <button
+              onClick={onClose}
+              className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-5 px-6 py-5">
+          {message && (
+            <div className={`rounded-2xl border px-4 py-3 text-sm ${message.type === 'success' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-rose-200 bg-rose-50 text-rose-700'}`}>
+              {message.text}
+            </div>
+          )}
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <label className="block">
+              <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Full Name</span>
+              <input value={form.name} onChange={(e) => updateField('name', e.target.value)} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 focus:border-teal-400 focus:outline-none focus:ring-4 focus:ring-teal-100" />
+            </label>
+            <label className="block">
+              <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Email</span>
+              <input type="email" value={form.email} onChange={(e) => updateField('email', e.target.value)} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 focus:border-teal-400 focus:outline-none focus:ring-4 focus:ring-teal-100" />
+            </label>
+            <label className="block md:col-span-2">
+              <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Contact Number</span>
+              <input value={form.contactNumber} onChange={(e) => updateField('contactNumber', e.target.value)} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 focus:border-teal-400 focus:outline-none focus:ring-4 focus:ring-teal-100" />
+            </label>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <label className="block">
+              <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Status</span>
+              <select value={form.status} onChange={(e) => updateField('status', e.target.value as MemberStatus)} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 focus:border-teal-400 focus:outline-none focus:ring-4 focus:ring-teal-100">
+                <option value="active">Active</option>
+                <option value="pending">Pending</option>
+                <option value="blocked">Blocked</option>
+                <option value="kyc_review">KYC Review</option>
+              </select>
+            </label>
+            <label className="block">
+              <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Tier</span>
+              <select value={form.tier} onChange={(e) => updateField('tier', e.target.value as MemberTier)} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 focus:border-teal-400 focus:outline-none focus:ring-4 focus:ring-teal-100">
+                <option value="Home Starter">Home Starter</option>
+                <option value="Home Builder">Home Builder</option>
+                <option value="Home Stylist">Home Stylist</option>
+                <option value="Lifestyle Consultant">Lifestyle Consultant</option>
+                <option value="Lifestyle Elite">Lifestyle Elite</option>
+              </select>
+            </label>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <label className="block md:col-span-2">
+              <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Address Line</span>
+              <input value={form.addressLine} onChange={(e) => updateField('addressLine', e.target.value)} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 focus:border-teal-400 focus:outline-none focus:ring-4 focus:ring-teal-100" />
+            </label>
+            <label className="block">
+              <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Barangay</span>
+              <input value={form.barangay} onChange={(e) => updateField('barangay', e.target.value)} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 focus:border-teal-400 focus:outline-none focus:ring-4 focus:ring-teal-100" />
+            </label>
+            <label className="block">
+              <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">City</span>
+              <input value={form.city} onChange={(e) => updateField('city', e.target.value)} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 focus:border-teal-400 focus:outline-none focus:ring-4 focus:ring-teal-100" />
+            </label>
+            <label className="block">
+              <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Province</span>
+              <input value={form.province} onChange={(e) => updateField('province', e.target.value)} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 focus:border-teal-400 focus:outline-none focus:ring-4 focus:ring-teal-100" />
+            </label>
+            <label className="block">
+              <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Region</span>
+              <input value={form.region} onChange={(e) => updateField('region', e.target.value)} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 focus:border-teal-400 focus:outline-none focus:ring-4 focus:ring-teal-100" />
+            </label>
+            <label className="block">
+              <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Zip Code</span>
+              <input value={form.zipCode} onChange={(e) => updateField('zipCode', e.target.value)} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 focus:border-teal-400 focus:outline-none focus:ring-4 focus:ring-teal-100" />
+            </label>
+          </div>
+
+          <div className="flex items-center justify-end gap-3 border-t border-slate-100 pt-4">
+            <button type="button" onClick={onClose} className="rounded-2xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50">Cancel</button>
+            <button type="submit" disabled={isLoading} className="rounded-2xl bg-teal-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-teal-500/30 transition hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-60">
+              {isLoading ? 'Saving...' : 'Save Changes'}
+            </button>
+          </div>
+        </form>
+      </motion.div>
+    </motion.div>
+  )
+}
 
 const pageVariants = {
   initial: { opacity: 0 },
@@ -51,9 +263,24 @@ const MembersTable = ({
   to,
   onPageChange,
 }: MembersTableProps) => {
-  const canGoPrev = currentPage > 1
-  const canGoNext = currentPage < totalPages
   const [selectedMember, setSelectedMember] = useState<Member | null>(null)
+  const [editingMember, setEditingMember] = useState<Member | null>(null)
+  const [menuOpenFor, setMenuOpenFor] = useState<number | null>(null)
+  const [quickMessage, setQuickMessage] = useState<string | null>(null)
+  const [updateMember, { isLoading: isUpdating }] = useUpdateMemberMutation()
+
+  useEffect(() => {
+    if (!quickMessage) return
+    const timeout = setTimeout(() => setQuickMessage(null), 2200)
+    return () => clearTimeout(timeout)
+  }, [quickMessage])
+
+  const quickActions = useMemo(() => ([
+    { key: 'active', label: 'Set Active', description: 'Mark member as active and unlocked.' },
+    { key: 'pending', label: 'Set Pending', description: 'Move member back to pending state.' },
+    { key: 'kyc_review', label: 'Set KYC Review', description: 'Flag member for verification review.' },
+    { key: 'blocked', label: 'Block Member', description: 'Lock the account from normal use.' },
+  ]), [])
 
   const verificationBadge = (member: Member) => {
     const status = member.verificationStatus ?? 'not_verified'
@@ -67,6 +294,43 @@ const MembersTable = ({
       return <span className="inline-flex items-center rounded-full bg-red-100 px-2.5 py-1 text-xs font-semibold text-red-700">Blocked</span>
     }
     return <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">Not Verified</span>
+  }
+
+  const handleCopy = async (value: string, successText: string) => {
+    try {
+      if (!value.trim()) {
+        setQuickMessage('Nothing to copy.')
+        return
+      }
+      await navigator.clipboard.writeText(value)
+      setQuickMessage(successText)
+      setMenuOpenFor(null)
+    } catch {
+      setQuickMessage('Copy failed on this browser.')
+    }
+  }
+
+  const handleQuickStatus = async (member: Member, status: MemberStatus) => {
+    setMenuOpenFor(null)
+    try {
+      await updateMember({
+        id: member.id,
+        name: member.name,
+        email: member.email,
+        contactNumber: member.contactNumber ?? '',
+        status,
+        tier: member.tier,
+        addressLine: member.addressLine ?? '',
+        barangay: member.barangay ?? '',
+        city: member.city ?? '',
+        province: member.province ?? '',
+        region: member.region ?? '',
+        zipCode: member.zipCode ?? '',
+      }).unwrap()
+      setQuickMessage(`Member status updated to ${status.replace('_', ' ')}.`)
+    } catch (error: any) {
+      setQuickMessage(getApiErrorMessage(error, 'Failed to update member status.'))
+    }
   }
 
   if (rows.length === 0) {
@@ -85,6 +349,11 @@ const MembersTable = ({
 
   return (
     <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+      {quickMessage && (
+        <div className="border-b border-slate-100 bg-teal-50 px-4 py-2 text-sm text-teal-700">
+          {quickMessage}
+        </div>
+      )}
       <div className="overflow-x-auto">
         <table className="min-w-full text-sm">
           <thead>
@@ -119,14 +388,19 @@ const MembersTable = ({
                     className="hover:bg-slate-50/70 transition-colors group cursor-pointer"
                   >
                     {/* Member */}
-                    <td className="px-5 py-3.5">
-                      <div className="flex items-center gap-3">
-                        <div className={`${getAvatarColor(member.name)} h-9 w-9 rounded-full flex items-center justify-center shrink-0 shadow-sm`}>
-                          <span className="text-white font-bold text-xs">{getInitials(member.name)}</span>
-                        </div>
+                  <td className="px-5 py-3.5">
+                    <div className="flex items-center gap-3">
+                        <MemberAvatar
+                          member={member}
+                          className="h-9 w-9 rounded-full shrink-0 shadow-sm"
+                          initialsClassName="text-white font-bold text-xs"
+                        />
                         <div className="min-w-0">
                           <p className="font-semibold text-slate-800 text-sm truncate">{member.name}</p>
                           <p className="text-xs text-slate-400 truncate">{member.email}</p>
+                          {member.contactNumber && member.contactNumber !== '0' && (
+                            <p className="text-[11px] text-slate-400 truncate">{member.contactNumber}</p>
+                          )}
                         </div>
                       </div>
                     </td>
@@ -203,16 +477,92 @@ const MembersTable = ({
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                           </svg>
                         </button>
-                        <button title="Edit" className="h-7 w-7 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors flex items-center justify-center">
+                        <button
+                          title="Edit"
+                          onClick={() => setEditingMember(member)}
+                          className="h-7 w-7 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors flex items-center justify-center"
+                        >
                           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                           </svg>
                         </button>
-                        <button title="More options" className="h-7 w-7 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors flex items-center justify-center">
-                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/>
-                          </svg>
-                        </button>
+                        <div className="relative">
+                          <button
+                            title="More options"
+                            onClick={() => setMenuOpenFor((prev) => prev === member.id ? null : member.id)}
+                            className="h-7 w-7 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors flex items-center justify-center"
+                          >
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/>
+                            </svg>
+                          </button>
+                          <AnimatePresence>
+                            {menuOpenFor === member.id && (
+                              <motion.div
+                                initial={{ opacity: 0, y: 6, scale: 0.98 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                exit={{ opacity: 0, y: 6, scale: 0.98 }}
+                                className="absolute right-0 top-9 z-20 w-72 rounded-2xl border border-slate-200 bg-white p-2 shadow-xl"
+                              >
+                                <button
+                                  onClick={() => {
+                                    setSelectedMember(member)
+                                    setMenuOpenFor(null)
+                                  }}
+                                  className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+                                >
+                                  <span>Open member details</span>
+                                  <span className="text-xs text-slate-400">View</span>
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setEditingMember(member)
+                                    setMenuOpenFor(null)
+                                  }}
+                                  className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+                                >
+                                  <span>Edit member profile</span>
+                                  <span className="text-xs text-slate-400">Edit</span>
+                                </button>
+                                <button
+                                  onClick={() => handleCopy(member.email ?? '', 'Email copied to clipboard.')}
+                                  className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+                                >
+                                  <span>Copy email</span>
+                                  <span className="text-xs text-slate-400">Clipboard</span>
+                                </button>
+                                <button
+                                  onClick={() => handleCopy(member.contactNumber ?? '', 'Contact number copied to clipboard.')}
+                                  className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+                                >
+                                  <span>Copy contact number</span>
+                                  <span className="text-xs text-slate-400">Clipboard</span>
+                                </button>
+                                <button
+                                  onClick={() => handleCopy(member.fullAddress ?? '', 'Address copied to clipboard.')}
+                                  className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+                                >
+                                  <span>Copy full address</span>
+                                  <span className="text-xs text-slate-400">Clipboard</span>
+                                </button>
+
+                                <div className="my-2 border-t border-slate-100" />
+                                <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Quick status</p>
+                                {quickActions.map((action) => (
+                                  <button
+                                    key={action.key}
+                                    disabled={isUpdating}
+                                    onClick={() => handleQuickStatus(member, action.key as MemberStatus)}
+                                    className="block w-full rounded-xl px-3 py-2 text-left hover:bg-slate-50 disabled:opacity-60"
+                                  >
+                                    <p className="text-sm font-medium text-slate-700">{action.label}</p>
+                                    <p className="text-xs text-slate-400">{action.description}</p>
+                                  </button>
+                                ))}
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
                       </div>
                     </td>
                   </motion.tr>
@@ -263,20 +613,14 @@ const MembersTable = ({
               </div>
 
               <div className="mb-5 flex items-center gap-4 rounded-xl border border-slate-100 bg-slate-50 p-4">
-                {selectedMember.avatar ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={selectedMember.avatar}
-                    alt={selectedMember.name}
-                    className="h-16 w-16 rounded-full object-cover ring-2 ring-white shadow"
-                  />
-                ) : (
-                  <div className={`${getAvatarColor(selectedMember.name)} h-16 w-16 rounded-full flex items-center justify-center shrink-0 shadow-sm`}>
-                    <span className="text-white font-bold text-lg">{getInitials(selectedMember.name)}</span>
-                  </div>
-                )}
+                <MemberAvatar
+                  member={selectedMember}
+                  className="h-16 w-16 rounded-full shrink-0 ring-2 ring-white shadow"
+                  initialsClassName="text-white font-bold text-lg"
+                />
                 <div>
                   <p className="text-sm font-semibold text-slate-900">{selectedMember.email}</p>
+                  <p className="mt-1 text-xs text-slate-500">{selectedMember.contactNumber && selectedMember.contactNumber !== '0' ? selectedMember.contactNumber : 'No contact number'}</p>
                   <div className="mt-2 flex items-center gap-2">
                     <MembersStatusBadge status={selectedMember.status} />
                     {verificationBadge(selectedMember)}
@@ -316,6 +660,10 @@ const MembersTable = ({
                   <p className="mt-1 font-semibold text-indigo-700">+{Number(selectedMember.walletPvCredits ?? 0).toLocaleString()}</p>
                 </div>
                 <div className="rounded-xl border border-slate-100 p-3">
+                  <p className="text-xs text-slate-500">Contact Number</p>
+                  <p className="mt-1 font-semibold text-slate-800">{selectedMember.contactNumber && selectedMember.contactNumber !== '0' ? selectedMember.contactNumber : 'No contact number'}</p>
+                </div>
+                <div className="rounded-xl border border-slate-100 p-3">
                   <p className="text-xs text-slate-500">Referrals</p>
                   <p className="mt-1 font-semibold text-slate-800">{selectedMember.referrals}</p>
                 </div>
@@ -326,6 +674,12 @@ const MembersTable = ({
               </div>
             </motion.div>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {editingMember && (
+          <EditMemberModal member={editingMember} onClose={() => setEditingMember(null)} />
         )}
       </AnimatePresence>
     </div>

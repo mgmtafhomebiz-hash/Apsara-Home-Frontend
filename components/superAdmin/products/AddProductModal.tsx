@@ -9,6 +9,7 @@ import { useGetCategoriesQuery } from '@/store/api/categoriesApi'
 import { useGetProductBrandsQuery } from '@/store/api/productBrandsApi'
 import { showErrorToast, showSuccessToast } from '@/libs/toast'
 import RichTextEditor from '@/components/ui/RichTextEditor'
+import ProductDescriptionGenerator from '@/components/superAdmin/products/ProductDescriptionGenerator'
 import { colorNameToHex, hexToColorName } from '@/libs/colorUtils'
 import { ROOM_OPTIONS, inferRoomTypeFromCategory } from '@/libs/roomConfig'
 
@@ -318,6 +319,18 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
   const generatedParentSku = useMemo(
     () => generateSkuFromName(form.pd_name),
     [form.pd_name],
+  )
+  const selectedCategory = useMemo(
+    () => categories.find((category) => String(category.id) === form.pd_catid),
+    [categories, form.pd_catid],
+  )
+  const selectedBrand = useMemo(
+    () => brands.find((brand) => String(brand.id) === form.pd_brand_type),
+    [brands, form.pd_brand_type],
+  )
+  const selectedRoom = useMemo(
+    () => ROOM_OPTIONS.find((room) => String(room.id) === form.pd_room_type),
+    [form.pd_room_type],
   )
 
   const set = (key: keyof FormState, value: string | boolean) => {
@@ -916,10 +929,28 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
                   </div>
 
                   <Field label="Description">
-                    <RichTextEditor
-                      value={form.pd_description}
-                      onChange={html => set('pd_description', html)}
-                    />
+                    <div className="space-y-3">
+                      <ProductDescriptionGenerator
+                        input={{
+                          productName: form.pd_name,
+                          categoryName: selectedCategory?.name,
+                          roomLabel: selectedRoom?.label,
+                          brandName: selectedBrand?.name,
+                          material: form.pd_material,
+                          warranty: form.pd_warranty,
+                          assemblyRequired: form.pd_assembly_required,
+                          width: form.pd_pswidth,
+                          depth: form.pd_pslenght,
+                          height: form.pd_psheight,
+                        }}
+                        disabled={isLoading}
+                        onGenerate={(html) => set('pd_description', html)}
+                      />
+                      <RichTextEditor
+                        value={form.pd_description}
+                        onChange={html => set('pd_description', html)}
+                      />
+                    </div>
                   </Field>
 
                   {/* ── Section: Product Details ── */}

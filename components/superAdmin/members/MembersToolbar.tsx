@@ -9,8 +9,8 @@ interface MembersToolbarProps {
   onStatus: (v: 'all' | MemberStatus) => void
   tier: 'all' | MemberTier
   onTier: (v: 'all' | MemberTier) => void
-  sort: 'default' | 'earnings_low_high' | 'earnings_high_low'
-  onSort: (v: 'default' | 'earnings_low_high' | 'earnings_high_low') => void
+  sort: 'default' | 'earnings_low_high' | 'earnings_high_low' | 'referrals_high_low'
+  onSort: (v: 'default' | 'earnings_low_high' | 'earnings_high_low' | 'referrals_high_low') => void
   resultCount: number
   onExport: () => void
   isExporting?: boolean
@@ -73,12 +73,13 @@ const MembersToolbar = ({
           </select>
           <select
             value={sort}
-            onChange={(e) => onSort(e.target.value as 'default' | 'earnings_low_high' | 'earnings_high_low')}
+            onChange={(e) => onSort(e.target.value as 'default' | 'earnings_low_high' | 'earnings_high_low' | 'referrals_high_low')}
             className="px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-400 transition-all min-w-[170px] cursor-pointer"
           >
             <option value="default">Default Sort</option>
             <option value="earnings_low_high">Earnings: Low to High</option>
             <option value="earnings_high_low">Earnings: High to Low</option>
+            <option value="referrals_high_low">Highest Referrals</option>
           </select>
         </div>
 

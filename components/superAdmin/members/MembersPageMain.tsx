@@ -31,7 +31,7 @@ const MembersPageMain = ({ initialData = null, initialStats = null }: MembersPag
     const [debouncedSearch, setDebouncedSearch] = useState('')
     const [status, setStatus] = useState<'all' | MemberStatus>('all')
     const [tier, setTier] = useState<'all' | MemberTier>('all');
-    const [sort, setSort] = useState<'default' | 'earnings_low_high' | 'earnings_high_low'>('default')
+    const [sort, setSort] = useState<'default' | 'earnings_low_high' | 'earnings_high_low' | 'referrals_high_low'>('default')
     const [showModal, setShowModal] = useState(false);
     const [showEarningsModal, setShowEarningsModal] = useState(false);
     const [isExporting, setIsExporting] = useState(false)
@@ -75,6 +75,7 @@ const MembersPageMain = ({ initialData = null, initialStats = null }: MembersPag
             search: debouncedSearch !== '' ? debouncedSearch : undefined,
             status: status === 'all' ? undefined : status,
             tier: tier === 'all' ? undefined : tier,
+            sort,
         },
         {
             skip: shouldSkipMembersQuery || shouldSkipInitialMembersRefetch,
@@ -104,6 +105,9 @@ const MembersPageMain = ({ initialData = null, initialStats = null }: MembersPag
         if (sort === 'earnings_high_low') {
             return list.sort((a, b) => (b.earnings ?? 0) - (a.earnings ?? 0))
         }
+        if (sort === 'referrals_high_low') {
+            return list.sort((a, b) => (b.referrals ?? 0) - (a.referrals ?? 0))
+        }
         return list
     }, [members, sort])
     const meta = effectiveData?.meta
@@ -130,6 +134,11 @@ const MembersPageMain = ({ initialData = null, initialStats = null }: MembersPag
         setPage(1)
     }
 
+    const handleSort = (value: 'default' | 'earnings_low_high' | 'earnings_high_low' | 'referrals_high_low') => {
+        setSort(value)
+        setPage(1)
+    }
+
     const handleExport = async () => {
         if (isExporting) return
 
@@ -142,6 +151,7 @@ const MembersPageMain = ({ initialData = null, initialStats = null }: MembersPag
                 search: debouncedSearch !== '' ? debouncedSearch : undefined,
                 status: status === 'all' ? undefined : status,
                 tier: tier === 'all' ? undefined : tier,
+                sort,
             }).unwrap()
 
             const exportRows = [...(firstPage.members ?? [])]
@@ -154,6 +164,7 @@ const MembersPageMain = ({ initialData = null, initialStats = null }: MembersPag
                     search: debouncedSearch !== '' ? debouncedSearch : undefined,
                     status: status === 'all' ? undefined : status,
                     tier: tier === 'all' ? undefined : tier,
+                    sort,
                 }).unwrap()
 
                 exportRows.push(...(pageResponse.members ?? []))
@@ -163,6 +174,8 @@ const MembersPageMain = ({ initialData = null, initialStats = null }: MembersPag
                 exportRows.sort((a, b) => (a.earnings ?? 0) - (b.earnings ?? 0))
             } else if (sort === 'earnings_high_low') {
                 exportRows.sort((a, b) => (b.earnings ?? 0) - (a.earnings ?? 0))
+            } else if (sort === 'referrals_high_low') {
+                exportRows.sort((a, b) => (b.referrals ?? 0) - (a.referrals ?? 0))
             }
 
             const headers = [
@@ -266,7 +279,7 @@ const MembersPageMain = ({ initialData = null, initialStats = null }: MembersPag
                 tier={tier}
                 onTier={handleTier}
                 sort={sort}
-                onSort={setSort}
+                onSort={handleSort}
                 resultCount={meta?.total ?? members.length}
                 onExport={handleExport}
                 isExporting={isExporting}

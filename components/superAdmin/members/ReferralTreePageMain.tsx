@@ -1,239 +1,246 @@
 'use client'
 
-import { useState, useMemo } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { useEffect, useMemo, useState } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
+import AdminPagination from '@/components/superAdmin/AdminPagination'
+import { Member } from '@/types/members/types'
+import { AdminReferralNode, useGetMembersQuery, useGetMembersReferralTreeQuery } from '@/store/api/membersApi'
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-interface ReferralNode {
-  id: number
-  name: string
-  email: string
-  tier: string
-  commissionEarned: number
-  referralCount: number
-  joinedAt: string
-  status: 'active' | 'pending' | 'blocked'
-  children?: ReferralNode[]
-}
+type ReferralStatus = AdminReferralNode['status']
+type Tab = 'tree' | 'list'
 
-// ─── Mock Data ────────────────────────────────────────────────────────────────
-const MOCK_TREE: ReferralNode[] = [
-  {
-    id: 1,
-    name: 'Maria Santos',
-    email: 'maria.santos@email.com',
-    tier: 'Lifestyle Elite',
-    commissionEarned: 48500,
-    referralCount: 18,
-    joinedAt: '2023-01-15',
-    status: 'active',
-    children: [
-      {
-        id: 4,
-        name: 'Jose Reyes',
-        email: 'jose.reyes@email.com',
-        tier: 'Lifestyle Consultant',
-        commissionEarned: 22300,
-        referralCount: 7,
-        joinedAt: '2023-03-02',
-        status: 'active',
-        children: [
-          {
-            id: 8,
-            name: 'Ana Cruz',
-            email: 'ana.cruz@email.com',
-            tier: 'Home Stylist',
-            commissionEarned: 8700,
-            referralCount: 3,
-            joinedAt: '2023-05-10',
-            status: 'active',
-            children: [],
-          },
-          {
-            id: 9,
-            name: 'Pedro Lim',
-            email: 'pedro.lim@email.com',
-            tier: 'Home Builder',
-            commissionEarned: 4200,
-            referralCount: 1,
-            joinedAt: '2023-06-20',
-            status: 'pending',
-            children: [],
-          },
-        ],
-      },
-      {
-        id: 5,
-        name: 'Rosa Garcia',
-        email: 'rosa.garcia@email.com',
-        tier: 'Home Stylist',
-        commissionEarned: 11200,
-        referralCount: 4,
-        joinedAt: '2023-04-18',
-        status: 'active',
-        children: [
-          {
-            id: 10,
-            name: 'Carlos Tan',
-            email: 'carlos.tan@email.com',
-            tier: 'Home Starter',
-            commissionEarned: 1800,
-            referralCount: 0,
-            joinedAt: '2023-07-05',
-            status: 'active',
-            children: [],
-          },
-        ],
-      },
-    ],
-  },
-  {
-    id: 2,
-    name: 'Ramon dela Cruz',
-    email: 'ramon.delacruz@email.com',
-    tier: 'Lifestyle Consultant',
-    commissionEarned: 31200,
-    referralCount: 11,
-    joinedAt: '2023-02-08',
-    status: 'active',
-    children: [
-      {
-        id: 6,
-        name: 'Elena Bautista',
-        email: 'elena.bautista@email.com',
-        tier: 'Home Builder',
-        commissionEarned: 9600,
-        referralCount: 2,
-        joinedAt: '2023-04-01',
-        status: 'active',
-        children: [],
-      },
-    ],
-  },
-  {
-    id: 3,
-    name: 'Luisa Fernandez',
-    email: 'luisa.fernandez@email.com',
-    tier: 'Home Stylist',
-    commissionEarned: 15800,
-    referralCount: 6,
-    joinedAt: '2023-03-22',
-    status: 'active',
-    children: [
-      {
-        id: 7,
-        name: 'Miguel Torres',
-        email: 'miguel.torres@email.com',
-        tier: 'Home Starter',
-        commissionEarned: 2100,
-        referralCount: 0,
-        joinedAt: '2023-05-30',
-        status: 'blocked',
-        children: [],
-      },
-    ],
-  },
-]
-
-// Flatten tree for list view
-function flattenTree(nodes: ReferralNode[], depth = 0): (ReferralNode & { depth: number })[] {
-  return nodes.flatMap(n => [{ ...n, depth }, ...flattenTree(n.children ?? [], depth + 1)])
-}
-
-const ALL_FLAT = flattenTree(MOCK_TREE)
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 const TIER_COLORS: Record<string, string> = {
-  'Lifestyle Elite': 'bg-purple-100 text-purple-700 border-purple-200',
-  'Lifestyle Consultant': 'bg-blue-100 text-blue-700 border-blue-200',
-  'Home Stylist': 'bg-teal-100 text-teal-700 border-teal-200',
-  'Home Builder': 'bg-amber-100 text-amber-700 border-amber-200',
-  'Home Starter': 'bg-slate-100 text-slate-600 border-slate-200',
+  'Lifestyle Elite': 'border-fuchsia-200 bg-fuchsia-50 text-fuchsia-700',
+  'Lifestyle Consultant': 'border-blue-200 bg-blue-50 text-blue-700',
+  'Home Stylist': 'border-teal-200 bg-teal-50 text-teal-700',
+  'Home Builder': 'border-amber-200 bg-amber-50 text-amber-700',
+  'Home Starter': 'border-slate-200 bg-slate-50 text-slate-600',
 }
 
-const STATUS_CONFIG = {
-  active: { dot: 'bg-emerald-400', label: 'Active', text: 'text-emerald-600' },
-  pending: { dot: 'bg-amber-400', label: 'Pending', text: 'text-amber-600' },
-  blocked: { dot: 'bg-red-400', label: 'Blocked', text: 'text-red-600' },
+const STATUS_CONFIG: Record<ReferralStatus, { dot: string; label: string; text: string; soft: string }> = {
+  active: { dot: 'bg-emerald-400', label: 'Active', text: 'text-emerald-700', soft: 'bg-emerald-50' },
+  pending: { dot: 'bg-amber-400', label: 'Pending', text: 'text-amber-700', soft: 'bg-amber-50' },
+  blocked: { dot: 'bg-rose-400', label: 'Blocked', text: 'text-rose-700', soft: 'bg-rose-50' },
+  kyc_review: { dot: 'bg-sky-400', label: 'KYC Review', text: 'text-sky-700', soft: 'bg-sky-50' },
 }
 
 const getInitials = (name: string) =>
-  name.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase()
+  name.split(' ').filter(Boolean).slice(0, 2).map((word) => word[0]).join('').toUpperCase() || 'MB'
 
 const php = (n: number) =>
   new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', maximumFractionDigits: 0 }).format(n)
 
-// ─── TreeNode Component ───────────────────────────────────────────────────────
-function TreeNodeCard({ node, depth }: { node: ReferralNode; depth: number }) {
-  const [open, setOpen] = useState(depth < 1)
-  const hasChildren = (node.children?.length ?? 0) > 0
-  const status = STATUS_CONFIG[node.status]
-  const tierColor = TIER_COLORS[node.tier] ?? 'bg-slate-100 text-slate-600 border-slate-200'
+function Avatar({
+  name,
+  avatar,
+  className,
+  textClassName,
+  fallbackClassName,
+}: {
+  name: string
+  avatar?: string
+  className: string
+  textClassName: string
+  fallbackClassName: string
+}) {
+  const [failed, setFailed] = useState(false)
+  const canShowImage = Boolean(avatar) && !failed
+
+  if (canShowImage) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={avatar}
+        alt={name}
+        className={`${className} object-cover`}
+        onError={() => setFailed(true)}
+      />
+    )
+  }
 
   return (
-    <div className={`${depth > 0 ? 'ml-6 border-l-2 border-slate-100 pl-4' : ''}`}>
-      <div className={`group relative bg-white border rounded-2xl p-4 mb-2 transition-all duration-200 hover:shadow-md hover:border-teal-200 ${depth === 0 ? 'border-slate-200 shadow-sm' : 'border-slate-100'}`}>
+    <div className={`${className} ${fallbackClassName}`}>
+      <span className={textClassName}>{getInitials(name)}</span>
+    </div>
+  )
+}
+
+function formatJoined(value?: string) {
+  return value
+    ? new Date(value).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })
+    : 'N/A'
+}
+
+function filterTree(nodes: AdminReferralNode[], query: string): AdminReferralNode[] {
+  if (!query) return nodes
+
+  return nodes
+    .map((node) => ({
+      ...node,
+      children: filterTree(node.children ?? [], query),
+    }))
+    .filter((node) => {
+      const searchHaystack = [node.name, node.email, node.username, node.tier, STATUS_CONFIG[node.status].label]
+        .join(' ')
+        .toLowerCase()
+
+      return searchHaystack.includes(query) || (node.children?.length ?? 0) > 0
+    })
+}
+
+function buildReferralNodeMap(nodes: AdminReferralNode[], map = new Map<number, AdminReferralNode>()) {
+  nodes.forEach((node) => {
+    map.set(node.id, node)
+    buildReferralNodeMap(node.children ?? [], map)
+  })
+
+  return map
+}
+
+function countDescendants(node?: AdminReferralNode): number {
+  if (!node) return 0
+  return (node.children ?? []).reduce((sum, child) => sum + 1 + countDescendants(child), 0)
+}
+
+function NetworkPreviewNode({
+  node,
+  level = 0,
+  maxDepth = 3,
+}: {
+  node: AdminReferralNode
+  level?: number
+  maxDepth?: number
+}) {
+  const status = STATUS_CONFIG[node.status]
+  const tierColor = TIER_COLORS[node.tier] ?? 'border-slate-200 bg-slate-50 text-slate-600'
+  const childCount = node.children?.length ?? 0
+
+  return (
+    <div className={level > 0 ? 'ml-4 border-l border-slate-200/80 pl-4' : ''}>
+      <div className="rounded-2xl border border-slate-200/80 bg-white/90 p-3 shadow-[0_8px_24px_rgba(15,23,42,0.04)]">
         <div className="flex items-start gap-3">
-          {/* Avatar */}
           <div className="relative shrink-0">
-            <div className={`h-10 w-10 rounded-full flex items-center justify-center font-bold text-sm text-white ${depth === 0 ? 'bg-gradient-to-br from-teal-400 to-teal-600' : 'bg-gradient-to-br from-slate-400 to-slate-600'}`}>
-              {getInitials(node.name)}
-            </div>
+            <Avatar
+              name={node.name}
+              avatar={node.avatar}
+              className="h-10 w-10 rounded-2xl"
+              textClassName="text-xs font-bold text-white"
+              fallbackClassName={`flex items-center justify-center ${level === 0 ? 'bg-gradient-to-br from-cyan-500 via-teal-500 to-emerald-500' : 'bg-gradient-to-br from-slate-500 to-slate-700'}`}
+            />
             <span className={`absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-white ${status.dot}`} />
           </div>
 
-          {/* Info */}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-sm font-bold text-slate-800 truncate">{node.name}</span>
-              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border ${tierColor}`}>
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="truncate text-sm font-semibold text-slate-800">{node.name}</p>
+              <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold ${tierColor}`}>
                 {node.tier}
               </span>
+              <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${status.soft} ${status.text}`}>
+                <span className={`h-1.5 w-1.5 rounded-full ${status.dot}`} />
+                {status.label}
+              </span>
             </div>
-            <p className="text-xs text-slate-400 mt-0.5 truncate">{node.email}</p>
+            <p className="mt-1 truncate text-xs text-slate-400">{node.email || `@${node.username}`}</p>
+            <div className="mt-2 flex flex-wrap gap-4 text-[11px] text-slate-500">
+              <span>Commission: <span className="font-semibold text-teal-700">{php(node.commissionEarned)}</span></span>
+              <span>Direct: <span className="font-semibold text-slate-700">{node.referralCount}</span></span>
+              <span>Joined: <span className="font-semibold text-slate-700">{formatJoined(node.joinedAt)}</span></span>
+              <span>Next level: <span className="font-semibold text-slate-700">{childCount}</span></span>
+            </div>
+          </div>
+        </div>
+      </div>
 
-            <div className="flex items-center gap-4 mt-2.5 flex-wrap">
-              <div className="text-center">
-                <p className="text-[10px] text-slate-400 uppercase tracking-wide font-medium">Commission</p>
-                <p className="text-sm font-bold text-teal-600">{php(node.commissionEarned)}</p>
-              </div>
-              <div className="w-px h-7 bg-slate-100" />
-              <div className="text-center">
-                <p className="text-[10px] text-slate-400 uppercase tracking-wide font-medium">Referrals</p>
-                <p className="text-sm font-bold text-slate-700">{node.referralCount}</p>
-              </div>
-              <div className="w-px h-7 bg-slate-100" />
-              <div className="text-center">
-                <p className="text-[10px] text-slate-400 uppercase tracking-wide font-medium">Joined</p>
-                <p className="text-xs font-medium text-slate-600">{new Date(node.joinedAt).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: '2-digit' })}</p>
-              </div>
+      {level < maxDepth - 1 && childCount > 0 && (
+        <div className="mt-2 space-y-2">
+          {node.children?.map((child) => (
+            <NetworkPreviewNode key={child.id} node={child} level={level + 1} maxDepth={maxDepth} />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function TreeNodeCard({
+  node,
+  depth,
+  expandAll,
+}: {
+  node: AdminReferralNode
+  depth: number
+  expandAll: boolean
+}) {
+  const [open, setOpen] = useState(expandAll)
+  const hasChildren = (node.children?.length ?? 0) > 0
+  const status = STATUS_CONFIG[node.status]
+  const tierColor = TIER_COLORS[node.tier] ?? 'border-slate-200 bg-slate-50 text-slate-600'
+  const descendantCount = countDescendants(node)
+
+  useEffect(() => {
+    setOpen(expandAll)
+  }, [expandAll, node.id])
+
+  return (
+    <div className={depth > 0 ? 'ml-5 border-l border-slate-200/70 pl-4' : ''}>
+      <div className={`group relative overflow-hidden rounded-[28px] border bg-white/95 p-4 shadow-[0_18px_50px_rgba(15,23,42,0.06)] transition-all duration-200 hover:-translate-y-0.5 hover:border-cyan-200 hover:shadow-[0_20px_55px_rgba(13,148,136,0.12)] ${depth === 0 ? 'border-slate-200' : 'border-slate-100'}`}>
+        <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-cyan-400 via-teal-400 to-emerald-400 opacity-80" />
+        <div className="flex items-start gap-4">
+          <div className="relative shrink-0">
+            <Avatar
+              name={node.name}
+              avatar={node.avatar}
+              className="h-12 w-12 rounded-[18px] shadow-lg"
+              textClassName="text-sm font-bold text-white"
+              fallbackClassName={`flex items-center justify-center ${depth === 0 ? 'bg-gradient-to-br from-cyan-500 via-teal-500 to-emerald-500' : 'bg-gradient-to-br from-slate-500 to-slate-700'}`}
+            />
+            <span className={`absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-white ${status.dot}`} />
+          </div>
+
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="truncate text-base font-bold text-slate-900">{node.name}</span>
+              <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-semibold ${tierColor}`}>
+                {node.tier}
+              </span>
+              <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold ${status.soft} ${status.text}`}>
+                <span className={`h-1.5 w-1.5 rounded-full ${status.dot}`} />
+                {status.label}
+              </span>
+            </div>
+
+            <p className="mt-1 truncate text-sm text-slate-400">{node.email || `@${node.username}`}</p>
+
+            <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+              {[
+                { label: 'Commission', value: php(node.commissionEarned), valueClass: 'text-teal-700' },
+                { label: 'Direct Referrals', value: String(node.referralCount), valueClass: 'text-slate-900' },
+                { label: 'Network Size', value: String(descendantCount), valueClass: 'text-cyan-700' },
+                { label: 'Joined', value: formatJoined(node.joinedAt), valueClass: 'text-slate-700' },
+              ].map((item) => (
+                <div key={item.label} className="rounded-2xl border border-slate-100 bg-slate-50/80 px-3 py-2.5">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">{item.label}</p>
+                  <p className={`mt-1 text-sm font-bold ${item.valueClass}`}>{item.value}</p>
+                </div>
+              ))}
             </div>
           </div>
 
-          {/* Toggle */}
           {hasChildren && (
             <button
-              onClick={() => setOpen(p => !p)}
-              className="shrink-0 h-7 w-7 rounded-lg bg-slate-50 hover:bg-teal-50 border border-slate-200 hover:border-teal-200 text-slate-400 hover:text-teal-600 flex items-center justify-center transition-all"
+              onClick={() => setOpen((value) => !value)}
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-400 shadow-sm transition-all hover:border-cyan-200 hover:bg-cyan-50 hover:text-cyan-700"
+              aria-label={open ? 'Collapse referrals' : 'Expand referrals'}
             >
-              <svg className={`w-3.5 h-3.5 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className={`h-4 w-4 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
               </svg>
             </button>
           )}
         </div>
-
-        {/* Children count badge */}
-        {hasChildren && !open && (
-          <div className="absolute -bottom-px left-4">
-            <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-t-none rounded-b-lg font-medium">
-              {node.children!.length} direct {node.children!.length === 1 ? 'referral' : 'referrals'} hidden
-            </span>
-          </div>
-        )}
       </div>
 
-      {/* Children */}
       <AnimatePresence>
         {hasChildren && open && (
           <motion.div
@@ -241,11 +248,13 @@ function TreeNodeCard({ node, depth }: { node: ReferralNode; depth: number }) {
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.2 }}
-            className="overflow-hidden"
+            className="overflow-hidden pt-2"
           >
-            {node.children!.map(child => (
-              <TreeNodeCard key={child.id} node={child} depth={depth + 1} />
-            ))}
+            <div className="space-y-2">
+              {node.children?.map((child) => (
+                <TreeNodeCard key={child.id} node={child} depth={depth + 1} expandAll={expandAll} />
+              ))}
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -253,313 +262,401 @@ function TreeNodeCard({ node, depth }: { node: ReferralNode; depth: number }) {
   )
 }
 
-// ─── List Row ─────────────────────────────────────────────────────────────────
-function ListRow({ member }: { member: ReferralNode & { depth: number } }) {
+function ListRow({
+  member,
+  referralNode,
+}: {
+  member: Member
+  referralNode?: AdminReferralNode
+}) {
+  const [open, setOpen] = useState(false)
   const status = STATUS_CONFIG[member.status]
-  const tierColor = TIER_COLORS[member.tier] ?? 'bg-slate-100 text-slate-600 border-slate-200'
+  const tierColor = TIER_COLORS[member.tier] ?? 'border-slate-200 bg-slate-50 text-slate-600'
+  const directChildren = referralNode?.children ?? []
+  const totalNetwork = countDescendants(referralNode)
 
   return (
-    <tr className="hover:bg-slate-50 transition-colors group">
-      <td className="px-5 py-3">
-        <div className="flex items-center gap-3">
-          <div style={{ paddingLeft: member.depth * 16 }} className="flex items-center gap-3">
-            {member.depth > 0 && (
-              <span className="text-slate-300 text-xs select-none">{'└─'.repeat(1)}</span>
-            )}
-            <div className={`h-8 w-8 rounded-full shrink-0 flex items-center justify-center text-white text-xs font-bold ${member.depth === 0 ? 'bg-gradient-to-br from-teal-400 to-teal-600' : 'bg-gradient-to-br from-slate-300 to-slate-500'}`}>
-              {getInitials(member.name)}
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-slate-800">{member.name}</p>
-              <p className="text-xs text-slate-400">{member.email}</p>
+    <>
+      <tr className="group border-b border-slate-100/80 bg-white/90 transition-all hover:bg-cyan-50/40">
+        <td className="px-5 py-4">
+          <div className="flex items-center gap-3">
+            <Avatar
+              name={member.name}
+              avatar={member.avatar}
+              className="h-10 w-10 shrink-0 rounded-2xl shadow-md"
+              textClassName="text-xs font-bold text-white"
+              fallbackClassName="flex items-center justify-center bg-gradient-to-br from-cyan-500 via-teal-500 to-emerald-500"
+            />
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold text-slate-900">{member.name}</p>
+              <p className="truncate text-xs text-slate-400">{member.email || 'No email address'}</p>
             </div>
           </div>
-        </div>
-      </td>
-      <td className="px-4 py-3">
-        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold border ${tierColor}`}>
-          {member.tier}
-        </span>
-      </td>
-      <td className="px-4 py-3 text-sm font-bold text-teal-600">{php(member.commissionEarned)}</td>
-      <td className="px-4 py-3">
-        <span className="text-sm font-semibold text-slate-700">{member.referralCount}</span>
-      </td>
-      <td className="px-4 py-3">
-        <div className="flex items-center gap-1.5">
-          <span className={`h-2 w-2 rounded-full ${status.dot}`} />
-          <span className={`text-xs font-medium ${status.text}`}>{status.label}</span>
-        </div>
-      </td>
-      <td className="px-4 py-3 text-xs text-slate-500">
-        {new Date(member.joinedAt).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
-      </td>
-    </tr>
+        </td>
+        <td className="px-4 py-4">
+          <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-semibold ${tierColor}`}>
+            {member.tier}
+          </span>
+        </td>
+        <td className="px-4 py-4 text-sm font-bold text-teal-700">{php(member.earnings ?? 0)}</td>
+        <td className="px-4 py-4">
+          <div className="flex flex-col">
+            <span className="text-sm font-semibold text-slate-800">{member.referrals ?? 0}</span>
+            <span className="text-[11px] text-slate-400">{totalNetwork} in network</span>
+          </div>
+        </td>
+        <td className="px-4 py-4">
+          <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold ${status.soft} ${status.text}`}>
+            <span className={`h-1.5 w-1.5 rounded-full ${status.dot}`} />
+            {status.label}
+          </span>
+        </td>
+        <td className="px-4 py-4 text-xs text-slate-500">
+          <div className="flex items-center justify-between gap-3">
+            <span>{formatJoined(member.joinedAt)}</span>
+            <button
+              type="button"
+              onClick={() => setOpen((value) => !value)}
+              className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-[11px] font-semibold text-slate-600 shadow-sm transition-all hover:border-cyan-200 hover:bg-cyan-50 hover:text-cyan-700"
+              aria-label={open ? 'Hide network details' : 'Show network details'}
+            >
+              Explore
+              <svg className={`h-3.5 w-3.5 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+          </div>
+        </td>
+      </tr>
+
+      <AnimatePresence initial={false}>
+        {open && (
+          <tr className="bg-[linear-gradient(180deg,rgba(240,249,255,0.45),rgba(255,255,255,1))]">
+            <td colSpan={6} className="px-5 py-5">
+              <motion.div
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.18 }}
+                className="overflow-hidden rounded-[24px] border border-slate-200 bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.12),transparent_35%),radial-gradient(circle_at_bottom_right,rgba(16,185,129,0.10),transparent_35%),white] p-4 shadow-[0_16px_40px_rgba(15,23,42,0.06)]"
+              >
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Referral Explorer</p>
+                    <h3 className="mt-1 text-base font-bold text-slate-900">{member.name}&apos;s network</h3>
+                    <p className="mt-1 text-sm text-slate-500">
+                      Direct invites, plus the next invite levels under each person.
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                    {[
+                      { label: 'Direct', value: String(directChildren.length) },
+                      { label: 'Total Network', value: String(totalNetwork) },
+                      { label: 'Commission', value: php(member.earnings ?? 0) },
+                    ].map((item) => (
+                      <div key={item.label} className="rounded-2xl border border-white/70 bg-white/80 px-3 py-2 text-right shadow-sm">
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">{item.label}</p>
+                        <p className="mt-1 text-sm font-bold text-slate-900">{item.value}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {referralNode ? (
+                  <div className="mt-4 space-y-2">
+                    <NetworkPreviewNode node={referralNode} />
+                  </div>
+                ) : (
+                  <div className="mt-4 rounded-2xl border border-dashed border-slate-200 bg-white/70 px-4 py-6 text-center">
+                    <p className="text-sm font-semibold text-slate-700">No referral tree record found</p>
+                    <p className="mt-1 text-xs text-slate-400">This customer is in the customer table but has no visible referral branch yet.</p>
+                  </div>
+                )}
+              </motion.div>
+            </td>
+          </tr>
+        )}
+      </AnimatePresence>
+    </>
   )
 }
-
-// ─── Stats ────────────────────────────────────────────────────────────────────
-const STATS = [
-  {
-    label: 'Total Commission Paid',
-    value: php(145900),
-    icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-      </svg>
-    ),
-    color: 'from-teal-400 to-teal-600',
-    bg: 'bg-teal-50',
-    text: 'text-teal-600',
-  },
-  {
-    label: 'Active Referrers',
-    value: '47',
-    icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-      </svg>
-    ),
-    color: 'from-blue-400 to-blue-600',
-    bg: 'bg-blue-50',
-    text: 'text-blue-600',
-  },
-  {
-    label: 'Total Referrals',
-    value: '231',
-    icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-      </svg>
-    ),
-    color: 'from-purple-400 to-purple-600',
-    bg: 'bg-purple-50',
-    text: 'text-purple-600',
-  },
-  {
-    label: 'Avg. Commission/Member',
-    value: php(3104),
-    icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-      </svg>
-    ),
-    color: 'from-amber-400 to-amber-600',
-    bg: 'bg-amber-50',
-    text: 'text-amber-600',
-  },
-]
-
-// ─── Main Component ───────────────────────────────────────────────────────────
-type Tab = 'tree' | 'list'
 
 export default function ReferralTreePageMain() {
   const [tab, setTab] = useState<Tab>('tree')
   const [search, setSearch] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+  const [listPage, setListPage] = useState(1)
+  const [expandAll, setExpandAll] = useState(true)
+  const perPage = 10
 
-  const filteredFlat = useMemo(() => {
-    const q = search.trim().toLowerCase()
-    if (!q) return ALL_FLAT
-    return ALL_FLAT.filter(
-      m =>
-        m.name.toLowerCase().includes(q) ||
-        m.email.toLowerCase().includes(q) ||
-        m.tier.toLowerCase().includes(q)
-    )
+  const { data, isLoading, isFetching, isError } = useGetMembersReferralTreeQuery()
+  const {
+    data: listData,
+    isLoading: isListLoading,
+    isFetching: isListFetching,
+    isError: isListError,
+  } = useGetMembersQuery(
+    {
+      page: listPage,
+      perPage,
+      search: debouncedSearch !== '' ? debouncedSearch : undefined,
+    },
+    {
+      skip: tab !== 'list',
+    },
+  )
+
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      setDebouncedSearch(search.trim())
+    }, 300)
+
+    return () => clearTimeout(timeout)
   }, [search])
 
-  const filteredTree = useMemo(() => {
-    const q = search.trim().toLowerCase()
-    if (!q) return MOCK_TREE
-    const filterNodes = (nodes: ReferralNode[]): ReferralNode[] =>
-      nodes
-        .map(n => ({
-          ...n,
-          children: filterNodes(n.children ?? []),
-        }))
-        .filter(
-          n =>
-            n.name.toLowerCase().includes(q) ||
-            n.email.toLowerCase().includes(q) ||
-            n.tier.toLowerCase().includes(q) ||
-            n.children!.length > 0
-        )
-    return filterNodes(MOCK_TREE)
-  }, [search])
+  const normalizedSearch = search.trim().toLowerCase()
+  const filteredTree = useMemo(
+    () => filterTree(data?.roots ?? [], normalizedSearch),
+    [data?.roots, normalizedSearch],
+  )
+  const referralNodeMap = useMemo(
+    () => buildReferralNodeMap(data?.roots ?? []),
+    [data?.roots],
+  )
+  const summary = data?.summary
+  const listMembers = listData?.members ?? []
+  const listMeta = listData?.meta
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex items-start justify-between gap-4 flex-wrap"
+        className="overflow-hidden rounded-[32px] border border-slate-200 bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.18),transparent_32%),radial-gradient(circle_at_bottom_right,rgba(16,185,129,0.14),transparent_30%),linear-gradient(135deg,#ffffff,#f8fafc)] p-6 shadow-[0_30px_80px_rgba(15,23,42,0.08)]"
       >
-        <div>
-          <h1 className="text-xl font-bold text-slate-800">Commission / Referral Tree</h1>
-          <p className="text-sm text-slate-500 mt-0.5">
-            Track referral hierarchies and commission earnings across all members
-          </p>
+        <div className="flex flex-wrap items-start justify-between gap-5">
+          <div className="max-w-2xl">
+            <span className="inline-flex items-center rounded-full border border-cyan-100 bg-white/90 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-cyan-700 shadow-sm">
+              Modern Referral Explorer
+            </span>
+            <h1 className="mt-4 text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">Commission / Referral Tree</h1>
+            <p className="mt-2 max-w-xl text-sm leading-6 text-slate-500">
+              Explore the full customer network, inspect invite chains, and switch between hierarchy and paginated customer table views.
+            </p>
+          </div>
+
+          <div className="grid min-w-[250px] gap-3 sm:grid-cols-2">
+            <div className="rounded-2xl border border-white/70 bg-white/85 p-4 shadow-sm backdrop-blur">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">Visible roots</p>
+              <p className="mt-2 text-2xl font-black text-slate-900">{filteredTree.length}</p>
+              <p className="mt-1 text-xs text-slate-500">Top-level branches currently in view</p>
+            </div>
+            <div className="rounded-2xl border border-white/70 bg-white/85 p-4 shadow-sm backdrop-blur">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">Total members</p>
+              <p className="mt-2 text-2xl font-black text-slate-900">{summary?.totalMembers ?? 0}</p>
+              <p className="mt-1 text-xs text-slate-500">Based on the current customer database</p>
+            </div>
+          </div>
         </div>
-        <button className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 hover:border-slate-300 text-slate-700 rounded-xl text-sm font-semibold transition-all shadow-sm hover:shadow">
-          <svg className="w-4 h-4 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-          </svg>
-          Export CSV
-        </button>
       </motion.div>
 
-      {/* Stats */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.05 }}
-        className="grid grid-cols-2 lg:grid-cols-4 gap-4"
+        className="grid grid-cols-2 gap-4 xl:grid-cols-4"
       >
-        {STATS.map((stat, i) => (
-          <div key={i} className="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm flex items-center gap-3">
-            <div className={`h-10 w-10 rounded-xl ${stat.bg} ${stat.text} flex items-center justify-center shrink-0`}>
-              {stat.icon}
-            </div>
-            <div className="min-w-0">
-              <p className="text-xs text-slate-400 font-medium">{stat.label}</p>
-              <p className="text-base font-bold text-slate-800 truncate">{stat.value}</p>
+        {[
+          { label: 'Total Commission Paid', value: php(summary?.totalCommissionPaid ?? 0), accent: 'from-cyan-500 to-teal-500' },
+          { label: 'Active Members', value: String(summary?.activeMembers ?? 0), accent: 'from-blue-500 to-sky-500' },
+          { label: 'Total Referrals', value: String(summary?.totalReferrals ?? 0), accent: 'from-fuchsia-500 to-violet-500' },
+          { label: 'Avg. Commission/Member', value: php(summary?.avgCommissionPerMember ?? 0), accent: 'from-amber-500 to-orange-500' },
+        ].map((stat) => (
+          <div key={stat.label} className="group relative overflow-hidden rounded-[28px] border border-slate-200 bg-white p-4 shadow-[0_18px_50px_rgba(15,23,42,0.05)]">
+            <div className={`absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${stat.accent}`} />
+            <div className="flex items-center gap-3">
+              <div className={`flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br ${stat.accent} text-white shadow-md`}>
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">{stat.label}</p>
+                <p className="mt-1 truncate text-xl font-black text-slate-900">{stat.value}</p>
+              </div>
             </div>
           </div>
         ))}
       </motion.div>
 
-      {/* Toolbar */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm flex items-center gap-3 flex-wrap"
+        className="rounded-[28px] border border-slate-200 bg-white/95 p-4 shadow-[0_18px_50px_rgba(15,23,42,0.05)]"
       >
-        {/* Search */}
-        <div className="relative flex-1 min-w-[200px]">
-          <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-          <input
-            type="text"
-            placeholder="Search member, email or tier..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-400/40 focus:border-teal-400 bg-slate-50 text-slate-700 placeholder-slate-400 transition"
-          />
-          {search && (
-            <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          )}
-        </div>
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="relative min-w-[240px] flex-1">
+            <svg className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <input
+              type="text"
+              placeholder="Search member, email, username, or tier..."
+              value={search}
+              onChange={(event) => {
+                setSearch(event.target.value)
+                setListPage(1)
+              }}
+              className="w-full rounded-2xl border border-slate-200 bg-slate-50/90 py-3 pl-10 pr-4 text-sm text-slate-700 transition placeholder:text-slate-400 focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100"
+            />
+          </div>
 
-        {/* Tab toggle */}
-        <div className="flex items-center bg-slate-100 rounded-xl p-1 gap-1">
-          <button
-            onClick={() => setTab('tree')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${tab === 'tree' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M4 6h16M4 12h8m-8 6h16" />
-            </svg>
-            Tree View
-          </button>
-          <button
-            onClick={() => setTab('list')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${tab === 'list' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-            </svg>
-            List View
-          </button>
+          <div className="flex items-center gap-2">
+            {tab === 'tree' && (
+              <button
+                onClick={() => setExpandAll((value) => !value)}
+                className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-600 transition hover:border-cyan-200 hover:bg-cyan-50 hover:text-cyan-700"
+              >
+                {expandAll ? 'Collapse All' : 'Expand All'}
+              </button>
+            )}
+            <div className="flex items-center rounded-2xl border border-slate-200 bg-slate-50 p-1.5 shadow-inner">
+              <button
+                onClick={() => setTab('tree')}
+                className={`rounded-xl px-4 py-2.5 text-sm font-semibold transition-all ${tab === 'tree' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+              >
+                Tree View
+              </button>
+              <button
+                onClick={() => setTab('list')}
+                className={`rounded-xl px-4 py-2.5 text-sm font-semibold transition-all ${tab === 'list' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+              >
+                List View
+              </button>
+            </div>
+          </div>
         </div>
       </motion.div>
 
-      {/* Content */}
       <motion.div
         key={tab}
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.2 }}
       >
-        {tab === 'tree' ? (
-          <div className="space-y-2">
+        {isLoading || isFetching ? (
+          <div className="rounded-[28px] border border-slate-200 bg-white p-12 text-center shadow-[0_18px_50px_rgba(15,23,42,0.05)]">
+            <p className="text-sm text-slate-500">Loading referral tree...</p>
+          </div>
+        ) : isError ? (
+          <div className="rounded-[28px] border border-rose-200 bg-rose-50 p-12 text-center shadow-[0_18px_50px_rgba(15,23,42,0.05)]">
+            <p className="text-sm font-semibold text-rose-600">Failed to load referral tree data.</p>
+          </div>
+        ) : tab === 'tree' ? (
+          <div className="space-y-3">
             {filteredTree.length === 0 ? (
-              <div className="bg-white border border-slate-100 rounded-2xl p-12 text-center shadow-sm">
-                <div className="h-12 w-12 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-3">
-                  <svg className="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                </div>
+              <div className="rounded-[28px] border border-slate-200 bg-white p-12 text-center shadow-[0_18px_50px_rgba(15,23,42,0.05)]">
                 <p className="text-sm font-semibold text-slate-700">No results found</p>
-                <p className="text-xs text-slate-400 mt-1">Try a different search term</p>
+                <p className="mt-1 text-xs text-slate-400">Try a different search term</p>
               </div>
             ) : (
-              filteredTree.map(node => (
-                <TreeNodeCard key={node.id} node={node} depth={0} />
-              ))
+              filteredTree.map((node) => <TreeNodeCard key={node.id} node={node} depth={0} expandAll={expandAll} />)
             )}
           </div>
         ) : (
-          <div className="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden">
+          <div className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_18px_50px_rgba(15,23,42,0.05)]">
+            <div className="border-b border-slate-100 bg-[linear-gradient(180deg,#f8fafc,white)] px-5 py-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Customer Table View</p>
+                  <h2 className="mt-1 text-lg font-bold text-slate-900">Paginated customer list with referral explorer</h2>
+                </div>
+                <div className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-500">
+                  <span>Page records</span>
+                  <span className="font-bold text-slate-800">{listMembers.length}</span>
+                </div>
+              </div>
+            </div>
+
             <div className="overflow-x-auto">
-              <table className="w-full text-left">
+              <table className="w-full min-w-[820px] text-left">
                 <thead>
-                  <tr className="border-b border-slate-100 bg-slate-50">
-                    <th className="px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Member</th>
-                    <th className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Tier</th>
-                    <th className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Commission</th>
-                    <th className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Referrals</th>
-                    <th className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Status</th>
-                    <th className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Joined</th>
+                  <tr className="border-b border-slate-100 bg-slate-50/90">
+                    <th className="px-5 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Member</th>
+                    <th className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Tier</th>
+                    <th className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Commission</th>
+                    <th className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Network</th>
+                    <th className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Status</th>
+                    <th className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Joined / Explore</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-50">
-                  {filteredFlat.length === 0 ? (
+                <tbody>
+                  {isListLoading || (isListFetching && !listData) ? (
                     <tr>
-                      <td colSpan={6} className="px-5 py-12 text-center">
-                        <p className="text-sm text-slate-500">No members found</p>
+                      <td colSpan={6} className="px-5 py-12 text-center text-sm text-slate-500">
+                        Loading customers...
+                      </td>
+                    </tr>
+                  ) : isListError ? (
+                    <tr>
+                      <td colSpan={6} className="px-5 py-12 text-center text-sm text-rose-600">
+                        Failed to load customer table data.
+                      </td>
+                    </tr>
+                  ) : listMembers.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="px-5 py-12 text-center text-sm text-slate-500">
+                        No members found
                       </td>
                     </tr>
                   ) : (
-                    filteredFlat.map(m => <ListRow key={`${m.id}-${m.depth}`} member={m} />)
+                    listMembers.map((member) => (
+                      <ListRow
+                        key={member.id}
+                        member={member}
+                        referralNode={referralNodeMap.get(member.id)}
+                      />
+                    ))
                   )}
                 </tbody>
               </table>
             </div>
 
-            {/* Table footer */}
-            <div className="px-5 py-3 border-t border-slate-100 flex items-center justify-between">
+            <div className="flex items-center justify-between border-t border-slate-100 px-5 py-3">
               <p className="text-xs text-slate-400">
-                Showing <span className="font-semibold text-slate-600">{filteredFlat.length}</span> members
+                Showing <span className="font-semibold text-slate-700">{listMembers.length}</span> customer records on this page
               </p>
               <div className="text-xs text-slate-400">
-                Total commission:{' '}
-                <span className="font-bold text-teal-600">
-                  {php(filteredFlat.reduce((sum, m) => sum + m.commissionEarned, 0))}
+                Page earnings:{' '}
+                <span className="font-bold text-teal-700">
+                  {php(listMembers.reduce((sum, member) => sum + (member.earnings ?? 0), 0))}
                 </span>
               </div>
             </div>
+
+            <AdminPagination
+              currentPage={listMeta?.current_page ?? 1}
+              totalPages={listMeta?.last_page ?? 1}
+              from={listMeta?.from ?? null}
+              to={listMeta?.to ?? null}
+              totalRecords={listMeta?.total ?? listMembers.length}
+              onPageChange={setListPage}
+            />
           </div>
         )}
       </motion.div>
 
-      {/* Legend */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.2 }}
-        className="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm"
+        className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-[0_18px_50px_rgba(15,23,42,0.05)]"
       >
-        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Tier Legend</p>
+        <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Tier Legend</p>
         <div className="flex flex-wrap gap-2">
           {Object.entries(TIER_COLORS).map(([tier, color]) => (
-            <span key={tier} className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${color}`}>
+            <span key={tier} className={`inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-semibold ${color}`}>
               {tier}
             </span>
           ))}
