@@ -54,7 +54,10 @@ const resolveAccessToken = async (): Promise<string | undefined> => {
 
 const baseQuery = fetchBaseQuery({
     baseUrl: process.env.NEXT_PUBLIC_LARAVEL_API_URL,
-    credentials: 'include',
+    // Laravel API requests authenticate via bearer tokens from NextAuth sessions.
+    // Omitting browser cookies avoids Sanctum accidentally resolving a different
+    // actor (for example a customer web session) before the intended admin token.
+    credentials: 'omit',
     prepareHeaders: async (headers) => {
         const accessToken = await resolveAccessToken()
 
