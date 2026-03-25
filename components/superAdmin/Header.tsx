@@ -13,6 +13,7 @@ import {
     useMarkAllAdminNotificationsReadMutation,
 } from "@/store/api/adminNotificationsApi";
 import { useGetAdminMeQuery } from "@/store/api/authApi";
+import { baseApi, clearAccessTokenCache } from "@/store/api/baseApi";
 import { useAppDispatch } from "@/store/hooks";
 import Pusher from "pusher-js";
 
@@ -87,7 +88,11 @@ const Header = ({ onMenuClick }: HeaderProps) => {
     const [notifOpen, setNotifOpen] = useState(false);
     const [userOpen, setUserOpen] = useState(false);
     const { data: session } = useSession();
-    const { data: adminMe } = useGetAdminMeQuery();
+    const sessionAccessToken = String((session?.user as { accessToken?: string } | undefined)?.accessToken ?? '');
+    const adminIdentityKey = sessionAccessToken
+        ? `${String((session?.user as { id?: string } | undefined)?.id ?? 'unknown')}:${sessionAccessToken}`
+        : undefined;
+    const { data: adminMe } = useGetAdminMeQuery(adminIdentityKey, { skip: !sessionAccessToken });
     const router = useRouter();
     const pathname = usePathname();
     const searchParams = useSearchParams();
@@ -505,7 +510,11 @@ const Header = ({ onMenuClick }: HeaderProps) => {
                                 ))}
                                 <div className="border-t border-slate-100 mt-1 pt-1">
                                     <button
-                                        onClick={() => signOut({ callbackUrl: '/admin/login' })}
+                                        onClick={() => {
+                                            dispatch(baseApi.util.resetApiState());
+                                            clearAccessTokenCache();
+                                            void signOut({ callbackUrl: '/admin/login' });
+                                        }}
                                         className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 transition-colors text-left"
                                     >
                                         Logout

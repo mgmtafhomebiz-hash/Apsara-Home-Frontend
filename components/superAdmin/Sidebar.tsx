@@ -236,13 +236,15 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
   const [openMenus, setOpenMenus] = useState<string[]>([])
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [logoutApi] = useLogoutMutation()
-  const { data: adminMe } = useGetAdminMeQuery()
-  const displayName = String(adminMe?.name ?? session?.user?.name ?? '').trim() || 'Admin'
-  const displayEmail = String(adminMe?.email ?? session?.user?.email ?? '').trim() || 'admin@afhome.com'
-  const rawRole = String(session?.user?.role ?? '').toLowerCase()
-  const userLevelId = Number((session?.user as { userLevelId?: number } | undefined)?.userLevelId ?? 0)
-  const effectiveRole = String(adminMe?.role ?? rawRole).toLowerCase()
-  const effectiveUserLevelId = Number(adminMe?.user_level_id ?? userLevelId)
+  const sessionAccessToken = String((session?.user as { accessToken?: string } | undefined)?.accessToken ?? '')
+  const adminIdentityKey = sessionAccessToken
+    ? `${String((session?.user as { id?: string } | undefined)?.id ?? 'unknown')}:${sessionAccessToken}`
+    : undefined
+  const { data: adminMe, isLoading: isAdminMeLoading } = useGetAdminMeQuery(adminIdentityKey, { skip: !sessionAccessToken })
+  const displayName = String(adminMe?.name ?? '').trim() || 'Admin'
+  const displayEmail = String(adminMe?.email ?? '').trim() || 'admin@afhome.com'
+  const effectiveRole = String(adminMe?.role ?? '').toLowerCase()
+  const effectiveUserLevelId = Number(adminMe?.user_level_id ?? 0)
   const isSuperAdmin = effectiveRole === 'super_admin' || effectiveUserLevelId === 1
   const isAdmin = effectiveRole === 'admin' || effectiveUserLevelId === 2
   const isAccounting = effectiveRole === 'accounting' || effectiveUserLevelId === 5
@@ -250,10 +252,11 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
   const isMerchantAdmin = effectiveRole === 'merchant_admin' || effectiveUserLevelId === 7
   const isSupplierAdmin = effectiveRole === 'supplier_admin' || effectiveUserLevelId === 8
   const isAdminPortalRole = isSuperAdmin || isAdmin || isAccounting || isFinanceOfficer || isMerchantAdmin || isSupplierAdmin
-  const effectiveAdminPermissions = normalizeAdminPermissions(adminMe?.admin_permissions ?? (session?.user as { adminPermissions?: string[] } | undefined)?.adminPermissions ?? [])
+  const effectiveAdminPermissions = normalizeAdminPermissions(adminMe?.admin_permissions ?? [])
   const adminPermissions = effectiveAdminPermissions
   const hasCustomAdminPermissions = isAdmin && adminPermissions.length > 0
   const customAdminNavIds = new Set(['dashboard', ...adminPermissions.map((permission) => ADMIN_PERMISSION_NAV_IDS[permission]).filter(Boolean)])
+  const canManageAdminUsers = isSuperAdmin || isAdmin
   const displayRole = isSuperAdmin
     ? 'Super Admin'
     : isAccounting
@@ -264,7 +267,7 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
         ? 'Merchant Admin'
         : isSupplierAdmin
           ? 'Supplier Admin'
-      : formatRole(adminMe?.role ?? session?.user?.role)
+      : formatRole(adminMe?.role)
   const displayInitials = getInitials(displayName)
   const avatarSrc = session?.user?.image
 
@@ -300,6 +303,7 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
     } catch (error) {
       console.log(error)
     }
+    dispatch(baseApi.util.resetApiState())
     clearAccessTokenCache()
     await signOut({ callbackUrl: '/admin/login' })
   }
@@ -307,10 +311,21 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
   const isActive = (path: string) => pathname === path
   const isChildActive = (children?: SubItem[]) => children?.some(c => pathname === c.path) ?? false
 
-  const visibleNavItems = navItems
+  const visibleNavItems = (isAdminMeLoading && sessionAccessToken ? [] : navItems)
     .map((item) => {
-      if (hasCustomAdminPermissions && item.id === 'settings') {
-        const settingsChildren = item.children?.filter((child) => child.path === '/admin/settings/users') ?? []
+      if (item.id === 'settings') {
+        const settingsChildren = (item.children ?? []).filter((child) => {
+          if (child.path === '/admin/settings/users') {
+            return canManageAdminUsers
+          }
+          return !isMerchantAdmin && !isSupplierAdmin && !isAccounting && !isFinanceOfficer
+        })
+
+        if (hasCustomAdminPermissions) {
+          const permissionScopedChildren = settingsChildren.filter((child) => child.path === '/admin/settings/users')
+          return permissionScopedChildren.length > 0 ? { ...item, children: permissionScopedChildren } : null
+        }
+
         return settingsChildren.length > 0 ? { ...item, children: settingsChildren } : null
       }
       return item

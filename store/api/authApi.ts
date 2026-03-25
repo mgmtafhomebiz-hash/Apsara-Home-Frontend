@@ -123,11 +123,12 @@ export const authApi = baseApi.injectEndpoints({
           body,
         })
     }),
-    getAdminMe: builder.query<AdminMeResponse, void>({
+    getAdminMe: builder.query<AdminMeResponse, string | void>({
       query: () => ({
         url: '/api/admin/auth/me',
         method: 'GET',
       }),
+      keepUnusedDataFor: 0,
       providesTags: ['AdminUsers'],
     })
   }),

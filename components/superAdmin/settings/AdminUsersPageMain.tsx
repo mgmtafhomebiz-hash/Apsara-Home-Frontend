@@ -576,7 +576,11 @@ export default function AdminUsersPageMain() {
   const { data: session } = useSession()
   const sessionRole = String(session?.user?.role ?? '').toLowerCase()
   const sessionUserLevelId = Number((session?.user as { userLevelId?: number } | undefined)?.userLevelId ?? 0)
-  const { data: adminMe } = useGetAdminMeQuery()
+  const sessionAccessToken = String((session?.user as { accessToken?: string } | undefined)?.accessToken ?? '')
+  const adminIdentityKey = sessionAccessToken
+    ? `${String((session?.user as { id?: string } | undefined)?.id ?? 'unknown')}:${sessionAccessToken}`
+    : undefined
+  const { data: adminMe } = useGetAdminMeQuery(adminIdentityKey, { skip: !sessionAccessToken })
   const role = String(adminMe?.role ?? sessionRole).toLowerCase()
   const userLevelId = Number(adminMe?.user_level_id ?? sessionUserLevelId)
   const isSuperAdmin = role === 'super_admin' || userLevelId === 1

@@ -330,7 +330,11 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
   const formContentRef = useRef<HTMLDivElement>(null)
 
   const { data: session } = useSession()
-  const { data: adminMe } = useGetAdminMeQuery()
+  const sessionAccessToken = String((session?.user as { accessToken?: string } | undefined)?.accessToken ?? '')
+  const adminIdentityKey = sessionAccessToken
+    ? `${String((session?.user as { id?: string } | undefined)?.id ?? 'unknown')}:${sessionAccessToken}`
+    : undefined
+  const { data: adminMe } = useGetAdminMeQuery(adminIdentityKey, { skip: !sessionAccessToken })
   const role = String(adminMe?.role ?? session?.user?.role ?? '').toLowerCase()
   const linkedSupplierId = Number(adminMe?.supplier_id ?? session?.user?.supplierId ?? 0)
   const isSupplierScopedActor =
