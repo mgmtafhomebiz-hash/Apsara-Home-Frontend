@@ -873,7 +873,7 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
     const payload: Partial<CreateProductPayload> = {
       pd_name:        form.pd_name.trim(),
       pd_catid:       Number(form.pd_catid),
-      pd_room_type:   form.pd_room_type.trim() ? Number(form.pd_room_type) : null,
+      pd_room_type:   form.pd_room_type.trim() ? Number(form.pd_room_type) : undefined,
       pd_brand_type:  form.pd_brand_type.trim() ? Number(form.pd_brand_type) : null,
       pd_price_srp:   Number(form.pd_price_srp),
       pd_description: form.pd_description.trim() || undefined,
