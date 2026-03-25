@@ -1095,7 +1095,7 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
                     <Field label="Width / W (cm)">
                       <input type="number" value={form.pd_pswidth} onChange={e => set('pd_pswidth', e.target.value)} placeholder="0" className={inputCls()}/>
                     </Field>
-                    <Field label="Depth / D (cm)" error={errors.pd_pslenght}>
+                    <Field label="Length / L (cm)" error={errors.pd_pslenght}>
                       <input type="number" value={form.pd_pslenght} onChange={e => set('pd_pslenght', e.target.value)} placeholder="0" className={inputCls(!!errors.pd_pslenght)}/>
                     </Field>
                     <Field label="Height / H (cm)" error={errors.pd_psheight}>
@@ -1278,7 +1278,7 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
                                         <input type="number" value={variant.pv_width} onChange={e => setVariant(index, 'pv_width', e.target.value)} onBlur={e => setVariant(index, 'pv_width', toOptionalPositiveNumber(e.target.value)?.toString() ?? '')} placeholder="e.g. 120" className={variantInputCls}/>
                                       </div>
                                       <div className="space-y-1">
-                                        <label className="text-[11px] font-semibold text-slate-500 block">Dimension / D (cm)</label>
+                                        <label className="text-[11px] font-semibold text-slate-500 block">Length / L (cm)</label>
                                         <input type="number" value={variant.pv_dimension} onChange={e => setVariant(index, 'pv_dimension', e.target.value)} onBlur={e => setVariant(index, 'pv_dimension', toOptionalPositiveNumber(e.target.value)?.toString() ?? '')} placeholder="e.g. 200" className={variantInputCls}/>
                                       </div>
                                       <div className="space-y-1">
