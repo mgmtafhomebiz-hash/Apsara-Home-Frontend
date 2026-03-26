@@ -4,10 +4,11 @@ import { Member } from "@/types/members/types"
 import { motion, AnimatePresence } from "framer-motion"
 import MembersStatusBadge from "./MembersStatusBadge"
 import TierBadge from "@/components/ui/TierBadge"
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import AdminPagination from '@/components/superAdmin/AdminPagination'
 import { MemberStatus, MemberTier } from "@/types/members/types"
 import { useUpdateMemberMutation } from "@/store/api/membersApi"
+import { createPortal } from "react-dom"
 
 const avatarColors = [
   'bg-teal-500', 'bg-blue-500', 'bg-purple-500', 'bg-pink-500',
@@ -236,6 +237,135 @@ function EditMemberModal({
   )
 }
 
+/* ── Portal dropdown ─────────────────────────────────────── */
+
+function MemberMenuPortal({
+  member,
+  isUpdating,
+  onView,
+  onEdit,
+  onBanToggle,
+  onCopy,
+  onQuickStatus,
+}: {
+  member: Member
+  isUpdating: boolean
+  onView: () => void
+  onEdit: () => void
+  onBanToggle: () => void
+  onCopy: (value: string, label: string) => void
+  onQuickStatus: (status: MemberStatus) => void
+}) {
+  const btnRef = useRef<HTMLButtonElement>(null)
+  const [pos, setPos] = useState<{ top: number; right: number } | null>(null)
+
+  const MENU_HEIGHT = 340 // approximate dropdown height
+
+  const openMenu = () => {
+    if (!btnRef.current) return
+    const rect = btnRef.current.getBoundingClientRect()
+    const spaceBelow = window.innerHeight - rect.bottom
+    const flipUp = spaceBelow < MENU_HEIGHT && rect.top > MENU_HEIGHT
+    setPos({
+      top: flipUp ? rect.top - MENU_HEIGHT - 6 : rect.bottom + 6,
+      right: window.innerWidth - rect.right,
+    })
+  }
+
+  const closeMenu = () => setPos(null)
+
+  useEffect(() => {
+    if (!pos) return
+    const handler = (e: MouseEvent | KeyboardEvent) => {
+      if (e instanceof KeyboardEvent && e.key !== 'Escape') return
+      closeMenu()
+    }
+    document.addEventListener('mousedown', handler)
+    document.addEventListener('keydown', handler)
+    return () => {
+      document.removeEventListener('mousedown', handler)
+      document.removeEventListener('keydown', handler)
+    }
+  }, [pos])
+
+  const quickActions = [
+    { key: 'active',     label: 'Set Active',     desc: 'Mark member as active and unlocked.' },
+    { key: 'pending',    label: 'Set Pending',     desc: 'Move member back to pending state.' },
+    { key: 'kyc_review', label: 'Set KYC Review',  desc: 'Flag member for verification review.' },
+    { key: 'blocked',    label: 'Block Member',    desc: 'Lock the account from normal use.' },
+  ]
+
+  return (
+    <>
+      <button
+        ref={btnRef}
+        title="More options"
+        onClick={e => { e.stopPropagation(); pos ? closeMenu() : openMenu() }}
+        className="h-7 w-7 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors flex items-center justify-center"
+      >
+        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/>
+        </svg>
+      </button>
+      {typeof window !== 'undefined' && createPortal(
+        <AnimatePresence>
+          {pos && (
+            <motion.div
+              initial={{ opacity: 0, y: 6, scale: 0.97 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 4, scale: 0.97 }}
+              transition={{ duration: 0.15, ease: 'easeOut' }}
+              onMouseDown={e => e.stopPropagation()}
+              style={{ position: 'fixed', top: pos.top, right: pos.right, zIndex: 9999 }}
+              className="w-72 rounded-2xl border border-slate-200 bg-white p-2 shadow-xl shadow-slate-300/60"
+            >
+              <button onClick={() => { onView(); closeMenu() }}
+                className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50">
+                <span>Open member details</span><span className="text-xs text-slate-400">View</span>
+              </button>
+              <button onClick={() => { onEdit(); closeMenu() }}
+                className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50">
+                <span>Edit member profile</span><span className="text-xs text-slate-400">Edit</span>
+              </button>
+              <button onClick={() => { onBanToggle(); closeMenu() }}
+                className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm hover:bg-slate-50 ${
+                  member.status === 'blocked' ? 'text-emerald-700' : 'text-rose-700'
+                }`}>
+                <span>{member.status === 'blocked' ? 'Unban member account' : 'Ban member account'}</span>
+                <span className="text-xs text-slate-400">{member.status === 'blocked' ? 'Restore' : 'Restrict'}</span>
+              </button>
+              <button onClick={() => { onCopy(member.email ?? '', 'Email copied to clipboard.'); closeMenu() }}
+                className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50">
+                <span>Copy email</span><span className="text-xs text-slate-400">Clipboard</span>
+              </button>
+              <button onClick={() => { onCopy(member.contactNumber ?? '', 'Contact number copied.'); closeMenu() }}
+                className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50">
+                <span>Copy contact number</span><span className="text-xs text-slate-400">Clipboard</span>
+              </button>
+              <button onClick={() => { onCopy(member.fullAddress ?? '', 'Address copied.'); closeMenu() }}
+                className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50">
+                <span>Copy full address</span><span className="text-xs text-slate-400">Clipboard</span>
+              </button>
+
+              <div className="my-2 border-t border-slate-100" />
+              <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Quick Status</p>
+              {quickActions.map(a => (
+                <button key={a.key} disabled={isUpdating}
+                  onClick={() => { onQuickStatus(a.key as MemberStatus); closeMenu() }}
+                  className="block w-full rounded-xl px-3 py-2 text-left hover:bg-slate-50 disabled:opacity-60">
+                  <p className="text-sm font-medium text-slate-700">{a.label}</p>
+                  <p className="text-xs text-slate-400">{a.desc}</p>
+                </button>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body,
+      )}
+    </>
+  )
+}
+
 const pageVariants = {
   initial: { opacity: 0 },
   animate: {
@@ -275,7 +405,7 @@ const MembersTable = ({
 }: MembersTableProps) => {
   const [selectedMember, setSelectedMember] = useState<Member | null>(null)
   const [editingMember, setEditingMember] = useState<Member | null>(null)
-  const [menuOpenFor, setMenuOpenFor] = useState<number | null>(null)
+  const [banTarget, setBanTarget] = useState<Member | null>(null)
   const [quickMessage, setQuickMessage] = useState<string | null>(null)
   const [updateMember, { isLoading: isUpdating }] = useUpdateMemberMutation()
 
@@ -284,13 +414,6 @@ const MembersTable = ({
     const timeout = setTimeout(() => setQuickMessage(null), 2200)
     return () => clearTimeout(timeout)
   }, [quickMessage])
-
-  const quickActions = useMemo(() => ([
-    { key: 'active', label: 'Set Active', description: 'Mark member as active and unlocked.' },
-    { key: 'pending', label: 'Set Pending', description: 'Move member back to pending state.' },
-    { key: 'kyc_review', label: 'Set KYC Review', description: 'Flag member for verification review.' },
-    { key: 'blocked', label: 'Block Member', description: 'Lock the account from normal use.' },
-  ]), [])
 
   const verificationBadge = (member: Member) => {
     const status = member.verificationStatus ?? 'not_verified'
@@ -314,14 +437,12 @@ const MembersTable = ({
       }
       await navigator.clipboard.writeText(value)
       setQuickMessage(successText)
-      setMenuOpenFor(null)
     } catch {
       setQuickMessage('Copy failed on this browser.')
     }
   }
 
   const handleQuickStatus = async (member: Member, status: MemberStatus) => {
-    setMenuOpenFor(null)
     try {
       await updateMember({
         id: member.id,
@@ -340,6 +461,38 @@ const MembersTable = ({
       setQuickMessage(`Member status updated to ${status.replace('_', ' ')}.`)
     } catch (error: unknown) {
       setQuickMessage(getApiErrorMessage(error, 'Failed to update member status.'))
+    }
+  }
+
+  const handleBanToggle = async () => {
+    if (!banTarget) return
+
+    const nextStatus: MemberStatus = banTarget.status === 'blocked' ? 'active' : 'blocked'
+
+    try {
+      await updateMember({
+        id: banTarget.id,
+        name: banTarget.name,
+        email: banTarget.email,
+        contactNumber: banTarget.contactNumber ?? '',
+        status: nextStatus,
+        tier: banTarget.tier,
+        addressLine: banTarget.addressLine ?? '',
+        barangay: banTarget.barangay ?? '',
+        city: banTarget.city ?? '',
+        province: banTarget.province ?? '',
+        region: banTarget.region ?? '',
+        zipCode: banTarget.zipCode ?? '',
+      }).unwrap()
+
+      setQuickMessage(
+        nextStatus === 'blocked'
+          ? `${banTarget.name} has been banned successfully.`
+          : `${banTarget.name} has been unbanned successfully.`,
+      )
+      setBanTarget(null)
+    } catch (error: unknown) {
+      setQuickMessage(getApiErrorMessage(error, 'Failed to update member ban status.'))
     }
   }
 
@@ -496,83 +649,15 @@ const MembersTable = ({
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                           </svg>
                         </button>
-                        <div className="relative z-20">
-                          <button
-                            title="More options"
-                            onClick={() => setMenuOpenFor((prev) => prev === member.id ? null : member.id)}
-                            className="h-7 w-7 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors flex items-center justify-center"
-                          >
-                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/>
-                            </svg>
-                          </button>
-                          <AnimatePresence>
-                            {menuOpenFor === member.id && (
-                              <motion.div
-                                initial={{ opacity: 0, y: 6, scale: 0.98 }}
-                                animate={{ opacity: 1, y: 0, scale: 1 }}
-                                exit={{ opacity: 0, y: 6, scale: 0.98 }}
-                                className="absolute right-0 top-9 z-30 w-72 rounded-2xl border border-slate-200 bg-white p-2 shadow-xl shadow-slate-300/60"
-                              >
-                                <button
-                                  onClick={() => {
-                                    setSelectedMember(member)
-                                    setMenuOpenFor(null)
-                                  }}
-                                  className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
-                                >
-                                  <span>Open member details</span>
-                                  <span className="text-xs text-slate-400">View</span>
-                                </button>
-                                <button
-                                  onClick={() => {
-                                    setEditingMember(member)
-                                    setMenuOpenFor(null)
-                                  }}
-                                  className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
-                                >
-                                  <span>Edit member profile</span>
-                                  <span className="text-xs text-slate-400">Edit</span>
-                                </button>
-                                <button
-                                  onClick={() => handleCopy(member.email ?? '', 'Email copied to clipboard.')}
-                                  className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
-                                >
-                                  <span>Copy email</span>
-                                  <span className="text-xs text-slate-400">Clipboard</span>
-                                </button>
-                                <button
-                                  onClick={() => handleCopy(member.contactNumber ?? '', 'Contact number copied to clipboard.')}
-                                  className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
-                                >
-                                  <span>Copy contact number</span>
-                                  <span className="text-xs text-slate-400">Clipboard</span>
-                                </button>
-                                <button
-                                  onClick={() => handleCopy(member.fullAddress ?? '', 'Address copied to clipboard.')}
-                                  className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
-                                >
-                                  <span>Copy full address</span>
-                                  <span className="text-xs text-slate-400">Clipboard</span>
-                                </button>
-
-                                <div className="my-2 border-t border-slate-100" />
-                                <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Quick status</p>
-                                {quickActions.map((action) => (
-                                  <button
-                                    key={action.key}
-                                    disabled={isUpdating}
-                                    onClick={() => handleQuickStatus(member, action.key as MemberStatus)}
-                                    className="block w-full rounded-xl px-3 py-2 text-left hover:bg-slate-50 disabled:opacity-60"
-                                  >
-                                    <p className="text-sm font-medium text-slate-700">{action.label}</p>
-                                    <p className="text-xs text-slate-400">{action.description}</p>
-                                  </button>
-                                ))}
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
-                        </div>
+                        <MemberMenuPortal
+                          member={member}
+                          isUpdating={isUpdating}
+                          onView={() => setSelectedMember(member)}
+                          onEdit={() => setEditingMember(member)}
+                          onBanToggle={() => setBanTarget(member)}
+                          onCopy={handleCopy}
+                          onQuickStatus={(status) => handleQuickStatus(member, status)}
+                        />
                       </div>
                     </td>
                   </motion.tr>
@@ -690,6 +775,74 @@ const MembersTable = ({
       <AnimatePresence>
         {editingMember && (
           <EditMemberModal member={editingMember} onClose={() => setEditingMember(null)} />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {banTarget && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[130] bg-slate-900/55 backdrop-blur-sm p-4"
+            onClick={() => setBanTarget(null)}
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 12, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 10, scale: 0.98 }}
+              transition={{ duration: 0.2 }}
+              className="mx-auto mt-24 w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-start gap-4">
+                <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${
+                  banTarget.status === 'blocked' ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'
+                }`}>
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    {banTarget.status === 'blocked' ? (
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    ) : (
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636l-1.414-1.414L12 9.172 7.05 4.222 5.636 5.636 10.586 10.586 5.636 15.536l1.414 1.414L12 12l4.95 4.95 1.414-1.414-4.95-4.95 4.95-4.95z" />
+                    )}
+                  </svg>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Member Account</p>
+                  <h3 className="mt-1 text-xl font-bold text-slate-900">
+                    {banTarget.status === 'blocked' ? 'Unban Member' : 'Ban Member'}
+                  </h3>
+                  <p className="mt-2 text-sm leading-relaxed text-slate-500">
+                    {banTarget.status === 'blocked'
+                      ? <>Allow <span className="font-semibold text-slate-700">{banTarget.name}</span> to access their member account again?</>
+                      : <>Ban <span className="font-semibold text-slate-700">{banTarget.name}</span>? They will be marked as blocked and normal member access will be restricted.</>}
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-6 flex items-center justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setBanTarget(null)}
+                  className="rounded-2xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleBanToggle}
+                  disabled={isUpdating}
+                  className={`rounded-2xl px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                    banTarget.status === 'blocked'
+                      ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-500/30'
+                      : 'bg-amber-500 hover:bg-amber-600 shadow-amber-500/30'
+                  }`}
+                >
+                  {isUpdating ? (banTarget.status === 'blocked' ? 'Unbanning...' : 'Banning...') : (banTarget.status === 'blocked' ? 'Unban Member' : 'Ban Member')}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>

@@ -4,12 +4,14 @@ import Link from "next/link";
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { getSession, signIn, signOut } from "next-auth/react";
 import Loading from '@/components/Loading'
 import { showErrorToast, showInfoToast, showSuccessToast } from '@/libs/toast'
 import { clearAccessTokenCache } from "@/store/api/baseApi";
 
 const REMEMBER_USER_EMAIL_KEY = 'afhome_user_login'
+const BLOCKED_KEYWORDS = ['banned', 'blocked', 'contact support']
 
 function getRememberedUserEmail() {
     if (typeof window === 'undefined') return ''
@@ -27,6 +29,7 @@ interface LoginFormProps {
 
 const LoginForm = ({ onSwitchToSignUp, onRequirePasswordChange }: LoginFormProps) => {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const [showPass, setShowPass] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
@@ -36,6 +39,8 @@ const LoginForm = ({ onSwitchToSignUp, onRequirePasswordChange }: LoginFormProps
         password: '',
         rememberMe: rememberedEmail !== '',
     })
+
+    const blockedFromRedirect = searchParams.get('blocked') === '1'
 
     const set = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) =>
         setForm(f => ({ ...f, [field]: e.target.value }))
@@ -80,7 +85,11 @@ const LoginForm = ({ onSwitchToSignUp, onRequirePasswordChange }: LoginFormProps
             showSuccessToast('Login successful. Welcome back!')
             router.replace('/shop');
         } else {
-            const message = 'Invalid email or password. Please try again.'
+            const rawError = String(result?.error ?? '').trim()
+            const isBlockedError = BLOCKED_KEYWORDS.some((keyword) => rawError.toLowerCase().includes(keyword))
+            const message = isBlockedError
+                ? 'Your account has been banned. Please contact support for assistance.'
+                : 'Invalid email or password. Please try again.'
             setError(message)
             showErrorToast(message)
         }
@@ -100,6 +109,11 @@ const LoginForm = ({ onSwitchToSignUp, onRequirePasswordChange }: LoginFormProps
                 {error && (
                     <div className="bg-red-500/20 border border-red-400/20 rounded-xl px-4 py-2.5 text-sm text-red-300">
                         {error}
+                    </div>
+                )}
+                {!error && blockedFromRedirect && (
+                    <div className="bg-red-500/20 border border-red-400/20 rounded-xl px-4 py-2.5 text-sm text-red-300">
+                        Your account has been banned. Please contact support for assistance.
                     </div>
                 )}
                 <div>

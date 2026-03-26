@@ -47,13 +47,18 @@ export const authOptions: NextAuthOptions = {
 
                     console.log('[Auth] Laravel response status:', res.status)
 
+                    const data = await res.json().catch(() => null)
+
                     if (!res.ok) {
-                        const errBody = await res.text()
-                        console.log('[Auth] Laravel error body:', errBody)
-                        return null
+                        const message =
+                            data?.message ||
+                            data?.errors?.email?.[0] ||
+                            data?.errors?.login?.[0] ||
+                            'Invalid email or password. Please try again.'
+                        console.log('[Auth] Laravel error body:', data)
+                        throw new Error(message)
                     }
 
-                    const data = await res.json()
                     console.log('[Auth] Laravel data keys:', Object.keys(data))
 
                     if (!data.user || !data.token) return null
@@ -68,7 +73,7 @@ export const authOptions: NextAuthOptions = {
                     }
                 } catch (e) {
                     console.log('[Auth] Fetch error:', e)
-                    return null
+                    throw e instanceof Error ? e : new Error('Unable to sign in right now.')
                 }
             }
         }),

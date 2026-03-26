@@ -91,9 +91,23 @@ const baseQueryWithBanCheck: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQ
     ) {
         banSignOutInFlight = true
         const { signOut } = await import('next-auth/react')
+        const pathname = window.location.pathname || ''
+        const isAdminRoute = pathname.startsWith('/admin')
+        const loginPath = isAdminRoute ? '/admin/login?suspended=1' : '/login?blocked=1'
+
+        if (!isAdminRoute) {
+            window.dispatchEvent(new CustomEvent('afhome:customer-blocked'))
+            window.setTimeout(async () => {
+                await signOut({ redirect: false })
+                clearAccessTokenCache()
+                window.location.replace(loginPath)
+            }, 1800)
+            return result
+        }
+
         await signOut({ redirect: false })
         clearAccessTokenCache()
-        window.location.replace('/admin/login?suspended=1')
+        window.location.replace(loginPath)
     }
 
     return result
