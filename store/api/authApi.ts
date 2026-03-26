@@ -69,6 +69,8 @@ interface AdminLoginResponse {
     user_level_id?: number;
     email?: string
     admin_permissions?: string[]
+    avatar_url?: string
+    supplier_id?: number | null
   }
 }
 
@@ -80,6 +82,17 @@ export interface AdminMeResponse {
   user_level_id: number
   supplier_id?: number | null
   admin_permissions?: string[]
+  avatar_url?: string
+}
+
+interface UpdateAdminMePayload {
+  name?: string
+  avatar_url?: string | null
+}
+
+interface UpdateAdminMeResponse {
+  message: string
+  profile: AdminMeResponse
 }
 
 export const authApi = baseApi.injectEndpoints({
@@ -130,7 +143,15 @@ export const authApi = baseApi.injectEndpoints({
       }),
       keepUnusedDataFor: 0,
       providesTags: ['AdminUsers'],
-    })
+    }),
+    updateAdminMe: builder.mutation<UpdateAdminMeResponse, UpdateAdminMePayload>({
+      query: (body) => ({
+        url: '/api/admin/auth/me',
+        method: 'PUT',
+        body,
+      }),
+      invalidatesTags: ['AdminUsers'],
+    }),
   }),
 })
 
@@ -141,4 +162,5 @@ export const {
   useLogoutMutation,
   useAdminLoginMutation,
   useGetAdminMeQuery,
+  useUpdateAdminMeMutation,
 } = authApi

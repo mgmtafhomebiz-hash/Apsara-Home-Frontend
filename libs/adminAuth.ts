@@ -8,6 +8,8 @@ type TokenUser = {
   userLevelId?: number;
   adminPermissions?: string[];
   supplierId?: number | null;
+  image?: string | null;
+  picture?: string | null;
 };
 
 const isProd = process.env.NODE_ENV === 'production';
@@ -58,6 +60,7 @@ export const adminAuthOptions: NextAuthOptions = {
             userLevelId: data.user.user_level_id,
             adminPermissions: data.user.admin_permissions ?? [],
             supplierId: data.user.supplier_id ?? null,
+            image: data.user.avatar_url ?? null,
           };
         } catch {
           return null;
@@ -114,6 +117,7 @@ export const adminAuthOptions: NextAuthOptions = {
         token.userLevelId = authUser.userLevelId;
         token.adminPermissions = authUser.adminPermissions;
         token.supplierId = authUser.supplierId;
+        token.picture = authUser.image ?? null;
       }
       if (trigger === 'update' && session) {
         const nextSession = session as {
@@ -121,6 +125,7 @@ export const adminAuthOptions: NextAuthOptions = {
           userLevelId?: number;
           adminPermissions?: string[];
           supplierId?: number | null;
+          image?: string | null;
         };
         if (typeof nextSession.role === 'string') {
           token.role = nextSession.role;
@@ -133,6 +138,9 @@ export const adminAuthOptions: NextAuthOptions = {
         }
         if (typeof nextSession.supplierId !== 'undefined') {
           token.supplierId = nextSession.supplierId;
+        }
+        if (typeof nextSession.image !== 'undefined') {
+          token.picture = nextSession.image;
         }
       }
       return token;
@@ -147,6 +155,7 @@ export const adminAuthOptions: NextAuthOptions = {
         sessionUser.userLevelId = authToken.userLevelId;
         sessionUser.adminPermissions = authToken.adminPermissions;
         sessionUser.supplierId = authToken.supplierId;
+        sessionUser.image = typeof authToken.picture === 'string' ? authToken.picture : null;
       }
       return session;
     }

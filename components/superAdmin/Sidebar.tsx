@@ -273,7 +273,7 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
           ? 'Supplier Admin'
       : formatRole(adminMe?.role)
   const displayInitials = getInitials(displayName)
-  const avatarSrc = session?.user?.image
+  const avatarSrc = adminMe?.avatar_url || session?.user?.image
 
   useEffect(() => {
     if (!adminMe || !isAdminPortalRole) return

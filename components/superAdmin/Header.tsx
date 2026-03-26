@@ -118,8 +118,13 @@ const Header = ({ onMenuClick }: HeaderProps) => {
     const displayName = String(adminMe?.name ?? session?.user?.name ?? '').trim() || 'Admin';
     const displayRole = formatRole(adminMe?.role ?? session?.user?.role);
     const displayInitials = getInitials(displayName);
-    const avatarSrc = session?.user?.image;
+    const avatarSrc = adminMe?.avatar_url || session?.user?.image;
     const accessToken = session?.user?.accessToken;
+    const userMenuItems = [
+        { label: 'My Profile', href: '/admin/profile' },
+        { label: 'Settings', href: '/admin/settings/general' },
+        { label: 'Help Center', href: '/admin/settings/notifications' },
+    ] as const;
 
     useEffect(() => {
         setHeaderSearch(searchParams.get('q') ?? '');
@@ -504,9 +509,16 @@ const Header = ({ onMenuClick }: HeaderProps) => {
                                 exit={{ opacity: 0, y: 8, scale: 0.95 }}
                                 className="absolute right-0 top-full mt-2 w-48 bg-white rounded-2xl shadow-xl border border-slate-100 z-50 overflow-hidden py-1"
                             >
-                                {['My Profile', 'Settings', 'Help Center'].map((item) => (
-                                    <button key={item} className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50 transition-colors text-left">
-                                        {item}
+                                {userMenuItems.map((item) => (
+                                    <button
+                                        key={item.label}
+                                        onClick={() => {
+                                            setUserOpen(false);
+                                            router.push(item.href);
+                                        }}
+                                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50 transition-colors text-left"
+                                    >
+                                        {item.label}
                                     </button>
                                 ))}
                                 <div className="border-t border-slate-100 mt-1 pt-1">
