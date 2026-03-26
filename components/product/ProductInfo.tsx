@@ -52,7 +52,8 @@ type SizeChoice = {
     key: string;
     label: string;
     meta: string;
-    variant: VariantOption;
+    variant?: VariantOption;
+    groupVariants?: VariantOption[];
 };
 
 const buildVariantGroupKey = (variant: VariantOption, index: number) => {
@@ -61,6 +62,42 @@ const buildVariantGroupKey = (variant: VariantOption, index: number) => {
     if (typeof variant.id === 'number') return `id:${variant.id}`;
     return `row:${index}`;
 };
+
+const normalizeVariantLabel = (value?: string | null) => (value ?? '').trim().replace(/\s+/g, ' ').toLowerCase();
+
+const normalizeSkuSegment = (value?: string | null) =>
+    (value ?? '')
+        .trim()
+        .toUpperCase()
+        .replace(/[^A-Z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '') || 'COLOR';
+
+const stripVariantColorSuffix = (sku?: string | null, colorName?: string | null) => {
+    const normalizedSku = (sku ?? '').trim();
+    const normalizedColorSegment = normalizeSkuSegment(colorName);
+
+    if (!normalizedSku || !normalizedColorSegment) return normalizedSku;
+
+    const suffix = `-${normalizedColorSegment}`;
+    return normalizedSku.toUpperCase().endsWith(suffix)
+        ? normalizedSku.slice(0, -suffix.length)
+        : normalizedSku;
+};
+
+const getVariantCoreGroupKey = (variant: VariantOption) => [
+    normalizeVariantLabel(variant.name),
+    normalizeVariantLabel(variant.size),
+    String(variant.width ?? ''),
+    String(variant.dimension ?? ''),
+    String(variant.height ?? ''),
+    String(variant.priceSrp ?? ''),
+    String(variant.priceDp ?? ''),
+    String(variant.priceMember ?? ''),
+    String(variant.prodpv ?? ''),
+    String(variant.qty ?? ''),
+    String(variant.status ?? ''),
+    variant.images?.filter(Boolean).join('|') ?? '',
+].join('|');
 
 const looksLikeHtml = (value: string) => /<[^>]+>/.test(value);
 
@@ -136,6 +173,53 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange }
         return Array.from(map.entries()).map(([name, image]) => ({ name, image }));
     }, [variantOptions]);
 
+    const groupedVariantChoices = useMemo(() => {
+        const groupedSkuCounts = variantOptions.reduce((map, variant) => {
+            const groupKey = `${getVariantCoreGroupKey(variant)}|${stripVariantColorSuffix(variant.sku, variant.color)}`;
+            map.set(groupKey, (map.get(groupKey) ?? 0) + 1);
+            return map;
+        }, new Map<string, number>());
+
+        const grouped = variantOptions.reduce((map, variant, index) => {
+            const coreKey = getVariantCoreGroupKey(variant);
+            const strippedSku = stripVariantColorSuffix(variant.sku, variant.color);
+            const candidateKey = `${coreKey}|${strippedSku}`;
+            const resolvedSku = (groupedSkuCounts.get(candidateKey) ?? 0) > 1
+                ? strippedSku
+                : (variant.sku ?? '').trim();
+            const groupKey = `${coreKey}|${resolvedSku || buildVariantGroupKey(variant, index)}`;
+            const existing = map.get(groupKey);
+
+            if (existing) {
+                existing.groupVariants = [...(existing.groupVariants ?? []), variant];
+                return map;
+            }
+
+            const sizeLabel = (variant.size ?? '').trim();
+            const dimensionParts = [
+                variant.width ? `W ${variant.width}` : '',
+                variant.dimension ? `D ${variant.dimension}` : '',
+                variant.height ? `H ${variant.height}` : '',
+            ].filter(Boolean);
+
+            const metaParts = [
+                (variant.name ?? '').trim(),
+                dimensionParts.length > 0 ? `${dimensionParts.join(' x ')} cm` : '',
+            ].filter((part) => part && part !== sizeLabel);
+
+            map.set(groupKey, {
+                key: groupKey,
+                label: sizeLabel || (variant.name ?? '').trim() || `Variant ${index + 1}`,
+                meta: metaParts.join(' • '),
+                groupVariants: [variant],
+            });
+
+            return map;
+        }, new Map<string, SizeChoice>());
+
+        return Array.from(grouped.values());
+    }, [variantOptions]);
+
     const sizeChoices = useMemo(() => {
         return variantOptions.flatMap((variant, index) => {
             const sizeLabel = (variant.size ?? '').trim();
@@ -162,30 +246,24 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange }
         });
     }, [variantOptions]);
 
+    const logicalSizeChoices = useMemo(() => {
+        return groupedVariantChoices.filter((choice) =>
+            Boolean(choice.groupVariants?.some((variant) => (variant.size ?? '').trim() || (variant.name ?? '').trim())),
+        );
+    }, [groupedVariantChoices]);
+
     const [selectedVariantName, setSelectedVariantName] = useState('');
     const [selectedSizeKey, setSelectedSizeKey] = useState('');
     const effectiveSelectedColor = selectedColor || colorOptions[0]?.name || '';
     const displayedSizeChoices = useMemo(() => {
         const filteredChoices = effectiveSelectedColor
-            ? sizeChoices.filter((choice) => !choice.variant.color || choice.variant.color === effectiveSelectedColor)
-            : sizeChoices;
-        const uniqueChoices = new Map<string, SizeChoice>();
+            ? logicalSizeChoices.filter((choice) =>
+                (choice.groupVariants ?? []).some((variant) => !variant.color || variant.color === effectiveSelectedColor),
+            )
+            : logicalSizeChoices;
 
-        filteredChoices.forEach((choice) => {
-            const dedupeKey = [
-                choice.label.toLowerCase(),
-                String(choice.variant.width ?? ''),
-                String(choice.variant.dimension ?? ''),
-                String(choice.variant.height ?? ''),
-            ].join('|');
-
-            if (!uniqueChoices.has(dedupeKey)) {
-                uniqueChoices.set(dedupeKey, choice);
-            }
-        });
-
-        return Array.from(uniqueChoices.values());
-    }, [effectiveSelectedColor, sizeChoices]);
+        return filteredChoices;
+    }, [effectiveSelectedColor, logicalSizeChoices]);
     const effectiveSelectedSizeKey = selectedSizeKey || displayedSizeChoices[0]?.key || '';
     const effectiveSelectedSize = selectedSize || displayedSizeChoices[0]?.label || '';
     const usesVariantNameSelection = variantNameOptions.length > 0 && displayedSizeChoices.length === 0;
@@ -195,7 +273,11 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange }
         if (variantOptions.length === 0) return undefined;
         const selectedSizeChoice = displayedSizeChoices.find((choice) => choice.key === effectiveSelectedSizeKey);
         if (selectedSizeChoice) {
-            return selectedSizeChoice.variant;
+            const groupedVariants = selectedSizeChoice.groupVariants ?? (selectedSizeChoice.variant ? [selectedSizeChoice.variant] : []);
+            return (
+                groupedVariants.find((variant) => variant.color === effectiveSelectedColor)
+                ?? groupedVariants[0]
+            );
         }
         if (usesVariantNameSelection && effectiveSelectedVariantName) {
             return (
