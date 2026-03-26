@@ -298,6 +298,8 @@ function RoleCardGrid({
   onChange: (v: number) => void
   options?: typeof ROLE_OPTIONS
 }) {
+  const latestInviteExpiresAt = null
+
   return (
     <div className="space-y-2">
       <label className="text-xs font-semibold text-slate-600 block">
@@ -332,6 +334,10 @@ function RoleCardGrid({
                 </p>
                 <p className="text-[10px] text-slate-400 leading-snug mt-0.5">
                   {role.description}
+                </p>
+                <p className="mt-1 text-xs text-slate-500">
+                  Manual setup link: <span className="font-semibold text-slate-700">always available</span>
+                  {latestInviteExpiresAt ? <> {' '}Â· Valid until: <span className="font-semibold text-slate-700">{latestInviteExpiresAt}</span></> : null}
                 </p>
                 <p className="mt-1 text-xs text-slate-500">
                   Manual setup link: <span className="font-semibold text-slate-700">always available</span>
