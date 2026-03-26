@@ -141,15 +141,19 @@ const AdminLoginForm = () => {
                                 </p>
                             </div>
 
-                            {!isSuspendedRedirect && (
-                                <button
-                                    type="button"
-                                    onClick={() => { setBanMessage(''); setForm({ login: '', password: '' }) }}
-                                    className="w-full py-2.5 rounded-xl border border-slate-700 text-slate-400 hover:text-slate-200 hover:border-slate-500 text-sm font-medium transition-all"
-                                >
-                                    Back to Login
-                                </button>
-                            )}
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setBanMessage('');
+                                    setForm({ login: '', password: '' });
+                                    if (isSuspendedRedirect) {
+                                        router.replace('/admin/login');
+                                    }
+                                }}
+                                className="w-full py-2.5 rounded-xl border border-slate-700 text-slate-400 hover:text-slate-200 hover:border-slate-500 text-sm font-medium transition-all"
+                            >
+                                Back to Login
+                            </button>
                         </motion.div>
                     ) : (
                     <div className="p-8">

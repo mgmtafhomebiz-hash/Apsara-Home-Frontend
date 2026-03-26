@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSession, signOut } from "next-auth/react";
+import { useGetAdminMeQuery } from "@/store/api/authApi";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
 
@@ -15,6 +16,9 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const { data: session } = useSession();
     const isBanned = (session?.user as { isBanned?: boolean } | undefined)?.isBanned === true;
+
+    // Poll /me every 12 seconds — baseQueryWithBanCheck intercepts 401 reason:banned and auto-signs out
+    useGetAdminMeQuery(undefined, { pollingInterval: 12_000, skip: isBanned });
 
     return (
         <div className="flex h-screen bg-slate-100 overflow-hidden">
@@ -37,7 +41,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
-                        className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+                        className="fixed inset-0 z-9999 flex items-center justify-center p-4"
                         style={{ backdropFilter: 'blur(12px)', backgroundColor: 'rgba(2, 6, 23, 0.85)' }}
                     >
                         {/* Glow behind card */}
