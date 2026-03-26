@@ -11,6 +11,7 @@ import { useGetProductBrandsQuery } from '@/store/api/productBrandsApi'
 import { showErrorToast, showSuccessToast } from '@/libs/toast'
 import RichTextEditor from '@/components/ui/RichTextEditor'
 import ProductDescriptionGenerator from '@/components/superAdmin/products/ProductDescriptionGenerator'
+import ImagePositionEditorModal from '@/components/superAdmin/products/ImagePositionEditorModal'
 import { colorNameToHex, hexToColorName } from '@/libs/colorUtils'
 import { ROOM_OPTIONS, inferRoomTypeFromCategory } from '@/libs/roomConfig'
 
@@ -325,6 +326,7 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
   const [newColorInputs, setNewColorInputs] = useState<Record<number, { name: string; hex: string }>>({})
   const [roomTouched, setRoomTouched] = useState(false)
   const [draftRestored, setDraftRestored] = useState(false)
+  const [activeImageAdjustIndex, setActiveImageAdjustIndex] = useState<number | null>(null)
   const activeImagePointerIndexRef = useRef<number | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const formContentRef = useRef<HTMLDivElement>(null)
@@ -390,6 +392,7 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
     setNewColorInputs({})
     setRoomTouched(false)
     setDraftRestored(false)
+    setActiveImageAdjustIndex(null)
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
@@ -530,6 +533,17 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
 
   const stopImagePointerDrag = () => {
     activeImagePointerIndexRef.current = null
+  }
+
+  const handleApplyAdjustedImage = async (nextFile: File) => {
+    if (activeImageAdjustIndex == null) return
+
+    const nextFiles = [...imageFiles]
+    nextFiles[activeImageAdjustIndex] = nextFile
+    setImageFiles(nextFiles)
+    setImagePreviews(nextFiles.map((file) => URL.createObjectURL(file)))
+    setUploadedUrls([])
+    setActiveImageAdjustIndex(null)
   }
 
   /* ── variant handlers ── */
@@ -853,13 +867,16 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
                     <div>
                       <div className="grid grid-cols-4 gap-2">
                         {visibleImagePreviews.map((preview, index) => (
-                          <div
+                          <motion.div
                             key={preview}
                             onPointerDown={() => handleImagePointerDown(index)}
                             onPointerEnter={() => handleImagePointerEnter(index)}
                             onPointerUp={stopImagePointerDrag}
                             onPointerCancel={stopImagePointerDrag}
                             className="relative h-24 cursor-grab rounded-xl overflow-hidden bg-slate-100 border border-slate-200 group active:cursor-grabbing"
+                            layout
+                            whileTap={{ scale: 0.97 }}
+                            transition={{ type: 'spring', stiffness: 340, damping: 28 }}
                           >
                             <Image
                               src={preview}
@@ -868,19 +885,30 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
                               className="object-cover pointer-events-none"
                               unoptimized
                             />
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveImage(index)}
-                              className="absolute top-1 right-1 h-6 w-6 rounded-full bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                            >
-                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12"/>
-                              </svg>
-                            </button>
+                            <div className="absolute right-1 top-1 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                              {imageFiles.length > 0 && (
+                                <button
+                                  type="button"
+                                  onClick={() => setActiveImageAdjustIndex(index)}
+                                  className="h-6 rounded-full bg-white/90 px-2 text-[10px] font-bold text-slate-700 shadow-sm"
+                                >
+                                  Adjust
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveImage(index)}
+                                className="h-6 w-6 rounded-full bg-black/60 text-white flex items-center justify-center"
+                              >
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12"/>
+                                </svg>
+                              </button>
+                            </div>
                             {index === 0 && (
                               <span className="absolute bottom-1 left-1 text-[9px] font-bold bg-teal-500 text-white px-1.5 py-0.5 rounded-md">Main</span>
                             )}
-                          </div>
+                          </motion.div>
                         ))}
                         {imagePreviews.length < 10 && (
                           <label htmlFor="product-image-input" onDragOver={preventFileDropNavigation} onDrop={handleMainImageDrop} className="flex flex-col items-center justify-center gap-1 h-24 rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 cursor-pointer hover:border-teal-400 hover:bg-teal-50/30 transition-all">
@@ -1520,6 +1548,13 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
           </div>
         </>
       )}
+      <ImagePositionEditorModal
+        isOpen={activeImageAdjustIndex != null}
+        imageSrc={activeImageAdjustIndex != null ? imagePreviews[activeImageAdjustIndex] ?? null : null}
+        fileName={activeImageAdjustIndex != null ? imageFiles[activeImageAdjustIndex]?.name : undefined}
+        onClose={() => setActiveImageAdjustIndex(null)}
+        onSave={handleApplyAdjustedImage}
+      />
     </AnimatePresence>
   )
 }

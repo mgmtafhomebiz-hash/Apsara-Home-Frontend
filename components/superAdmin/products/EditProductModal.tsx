@@ -11,6 +11,7 @@ import { useGetProductBrandsQuery } from '@/store/api/productBrandsApi'
 import { showErrorToast, showSuccessToast } from '@/libs/toast'
 import RichTextEditor from '@/components/ui/RichTextEditor'
 import ProductDescriptionGenerator from '@/components/superAdmin/products/ProductDescriptionGenerator'
+import ImagePositionEditorModal from '@/components/superAdmin/products/ImagePositionEditorModal'
 import { colorNameToHex, hexToColorName } from '@/libs/colorUtils'
 import { ROOM_OPTIONS, inferRoomTypeFromCategory } from '@/libs/roomConfig'
 
@@ -463,6 +464,7 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
   const [newColorInputs,     setNewColorInputs]     = useState<Record<number, { name: string; hex: string }>>({})
   const [roomTouched,        setRoomTouched]        = useState(false)
   const [draftRestored,      setDraftRestored]      = useState(false)
+  const [activeNewImageAdjustIndex, setActiveNewImageAdjustIndex] = useState<number | null>(null)
   const activeExistingImagePointerIndexRef = useRef<number | null>(null)
   const activeNewImagePointerIndexRef = useRef<number | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -564,6 +566,7 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
     setNewColorInputs({})
     setErrors({}); setServerError(''); setImageError('')
     setDraftRestored(false)
+    setActiveNewImageAdjustIndex(null)
 
     if (typeof window !== 'undefined') {
       try {
@@ -687,6 +690,17 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
 
   const stopNewImagePointerDrag = () => {
     activeNewImagePointerIndexRef.current = null
+  }
+
+  const handleApplyAdjustedNewImage = async (nextFile: File) => {
+    if (activeNewImageAdjustIndex == null) return
+
+    const nextFiles = [...imageFiles]
+    nextFiles[activeNewImageAdjustIndex] = nextFile
+    setImageFiles(nextFiles)
+    setImagePreviews(nextFiles.map((file) => URL.createObjectURL(file)))
+    setUploadedUrls([])
+    setActiveNewImageAdjustIndex(null)
   }
 
   /* ── variant handlers ── */
@@ -1090,13 +1104,16 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
                       <div className="grid grid-cols-4 gap-2">
                         {/* Existing images */}
                         {existingImageUrls.map((url, index) => (
-                          <div
+                          <motion.div
                             key={`existing-${index}`}
                             onPointerDown={() => handleExistingImagePointerDown(index)}
                             onPointerEnter={() => handleExistingImagePointerEnter(index)}
                             onPointerUp={stopExistingImagePointerDrag}
                             onPointerCancel={stopExistingImagePointerDrag}
                             className="relative h-24 cursor-grab rounded-xl overflow-hidden bg-slate-100 border border-slate-200 group active:cursor-grabbing"
+                            layout
+                            whileTap={{ scale: 0.97 }}
+                            transition={{ type: 'spring', stiffness: 340, damping: 28 }}
                           >
                             <Image
                               src={url}
@@ -1118,17 +1135,20 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12"/>
                               </svg>
                             </button>
-                          </div>
+                          </motion.div>
                         ))}
                         {/* New (pending upload) images */}
                         {imagePreviews.map((preview, index) => (
-                          <div
+                          <motion.div
                             key={`new-${index}`}
                             onPointerDown={() => handleNewImagePointerDown(index)}
                             onPointerEnter={() => handleNewImagePointerEnter(index)}
                             onPointerUp={stopNewImagePointerDrag}
                             onPointerCancel={stopNewImagePointerDrag}
                             className="relative h-24 cursor-grab rounded-xl overflow-hidden bg-slate-100 border-2 border-emerald-400 group active:cursor-grabbing"
+                            layout
+                            whileTap={{ scale: 0.97 }}
+                            transition={{ type: 'spring', stiffness: 340, damping: 28 }}
                           >
                             <Image
                               src={preview}
@@ -1138,16 +1158,25 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
                               unoptimized
                             />
                             <span className="absolute bottom-1 left-1 text-[9px] font-bold bg-emerald-500 text-white px-1.5 py-0.5 rounded-md">New</span>
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveImage(index)}
-                              className="absolute top-1 right-1 h-6 w-6 rounded-full bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                            >
-                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12"/>
-                              </svg>
-                            </button>
-                          </div>
+                            <div className="absolute right-1 top-1 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                              <button
+                                type="button"
+                                onClick={() => setActiveNewImageAdjustIndex(index)}
+                                className="h-6 rounded-full bg-white/90 px-2 text-[10px] font-bold text-slate-700 shadow-sm"
+                              >
+                                Adjust
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveImage(index)}
+                                className="h-6 w-6 rounded-full bg-black/60 text-white flex items-center justify-center"
+                              >
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12"/>
+                                </svg>
+                              </button>
+                            </div>
+                          </motion.div>
                         ))}
                         {/* Add more slot */}
                         {existingImageUrls.length + imagePreviews.length < 10 && (
@@ -1806,6 +1835,13 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
           </div>
         </>
       )}
+      <ImagePositionEditorModal
+        isOpen={activeNewImageAdjustIndex != null}
+        imageSrc={activeNewImageAdjustIndex != null ? imagePreviews[activeNewImageAdjustIndex] ?? null : null}
+        fileName={activeNewImageAdjustIndex != null ? imageFiles[activeNewImageAdjustIndex]?.name : undefined}
+        onClose={() => setActiveNewImageAdjustIndex(null)}
+        onSave={handleApplyAdjustedNewImage}
+      />
     </AnimatePresence>
   )
 }
