@@ -1,6 +1,7 @@
 export type VariantOptionLabels = {
   primaryLabel?: string
   secondaryLabel?: string
+  pricingTier?: string
 }
 
 const META_PREFIX = '<!--AFHOME_VARIANT_OPTIONS:'
@@ -23,10 +24,11 @@ export const extractVariantOptionLabels = (specifications?: string | null): Vari
   if (!payload) return {}
 
   try {
-    const parsed = JSON.parse(payload) as { primaryLabel?: string; secondaryLabel?: string }
+    const parsed = JSON.parse(payload) as { primaryLabel?: string; secondaryLabel?: string; pricingTier?: string }
     return {
       primaryLabel: normalizeLabel(parsed.primaryLabel),
       secondaryLabel: normalizeLabel(parsed.secondaryLabel),
+      pricingTier: normalizeLabel(parsed.pricingTier),
     }
   } catch {
     return {}
@@ -53,14 +55,16 @@ export const mergeVariantOptionLabelsMeta = (
   const cleaned = stripVariantOptionLabelsMeta(specifications)
   const primaryLabel = normalizeLabel(labels.primaryLabel)
   const secondaryLabel = normalizeLabel(labels.secondaryLabel)
+  const pricingTier = normalizeLabel(labels.pricingTier)
 
-  if (!primaryLabel && !secondaryLabel) {
+  if (!primaryLabel && !secondaryLabel && !pricingTier) {
     return cleaned || undefined
   }
 
   const payload = JSON.stringify({
     ...(primaryLabel ? { primaryLabel } : {}),
     ...(secondaryLabel ? { secondaryLabel } : {}),
+    ...(pricingTier ? { pricingTier } : {}),
   })
 
   return [cleaned, `${META_PREFIX}${payload}${META_SUFFIX}`].filter(Boolean).join('\n\n').trim()

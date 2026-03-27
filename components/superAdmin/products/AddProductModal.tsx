@@ -36,6 +36,7 @@ interface FormState {
   pd_price_member: string
   pd_primary_option_label: string
   pd_secondary_option_label: string
+  pd_pricing_tier: string
   pd_reversed_pv_multiplier: string
   pd_prodpv: string
   pd_qty: string
@@ -104,6 +105,7 @@ const defaultForm: FormState = {
   pd_price_member: '',
   pd_primary_option_label: '',
   pd_secondary_option_label: '',
+  pd_pricing_tier: 'low_end',
   pd_reversed_pv_multiplier: '',
   pd_prodpv: '',
   pd_qty: '',
@@ -131,6 +133,11 @@ const emptyVariant = (): VariantFormState => ({
   pv_price_srp: '', pv_price_dp: '', pv_price_member: '', pv_reversed_pv_multiplier: '', pv_prodpv: '', pv_qty: '',
   pv_status: '1', pv_images: [],
 })
+
+const PRICING_TIER_OPTIONS = [
+  { value: 'low_end', label: 'Low-End' },
+  { value: 'high_end', label: 'High-End' },
+] as const
 
 const FLAG_CARDS: {
   key: 'pd_musthave' | 'pd_bestseller' | 'pd_salespromo' | 'pd_verified'
@@ -351,18 +358,18 @@ const GROUP_PURCHASE_RATE = 0.06
 const PERSONAL_CASHBACK_RATE = 0.04
 const GLOBAL_PURCHASE_BONUS_RATE = 0.01
 const AFFILIATE_PERFORMANCE_RATE = 0.1
-const INCENTIVE_ALLOC_RATE = 0.01
 const TOTAL_PAYOUT_RATE =
   GROUP_PURCHASE_RATE +
   PERSONAL_CASHBACK_RATE +
   GLOBAL_PURCHASE_BONUS_RATE +
-  AFFILIATE_PERFORMANCE_RATE +
-  INCENTIVE_ALLOC_RATE
+  AFFILIATE_PERFORMANCE_RATE
 const VAT_RATE = 0.12
 
 type PricingSummary = {
+  pricingTier: string
   effectiveMemberPrice: number
   transferPrice: number
+  formulaPv: number
   computedPv: number
   retailProfit: number
   reversedMultiplier: number
@@ -370,7 +377,6 @@ type PricingSummary = {
   personalCashback: number
   globalPurchaseBonus: number
   affiliatePerformanceBonus: number
-  incentiveAllocation: number
   totalAllocation: number
   vatOnMemberPrice: number
   dealerDiscount: number
@@ -392,6 +398,31 @@ const roundTo = (value: number, digits = 6) => {
 const formatDecimalInput = (value: number, digits = 6) => {
   const rounded = roundTo(value, digits)
   return rounded.toFixed(digits).replace(/\.?0+$/, '')
+}
+
+const deriveLowEndMultiplier = (transfer: string | number | null | undefined) => {
+  const transferValue = Math.max(toSafeNumber(transfer), 0)
+  if (transferValue <= 999) return 0.5
+  if (transferValue <= 5000) return 0.4
+  if (transferValue <= 15000) return 0.3
+  if (transferValue < 25000) return 0.3
+  return 0.2
+}
+
+const resolvePricingMultiplier = ({
+  pricingTier,
+  transfer,
+  multiplier,
+}: {
+  pricingTier?: string | null | undefined
+  transfer: string | number | null | undefined
+  multiplier: string | number | null | undefined
+}) => {
+  if (pricingTier === 'high_end') {
+    return Math.max(toSafeNumber(multiplier), 0)
+  }
+
+  return deriveLowEndMultiplier(transfer)
 }
 
 const deriveComputedPv = ({
@@ -420,27 +451,40 @@ const deriveMultiplierFromPv = ({
 }
 
 const buildPricingSummary = ({
+  pricingTier,
   srp,
   dealer,
   member,
+  pv,
   multiplier,
 }: {
+  pricingTier?: string | null | undefined
   srp: string | number | null | undefined
   dealer: string | number | null | undefined
   member: string | number | null | undefined
+  pv?: string | number | null | undefined
   multiplier: string | number | null | undefined
 }): PricingSummary => {
   const srpValue = Math.max(toSafeNumber(srp), 0)
   const dealerValue = Math.max(toSafeNumber(dealer), 0)
   const memberValue = Math.max(toSafeNumber(member), 0)
-  const multiplierValue = Math.max(toSafeNumber(multiplier), 0)
-  const pvValue = deriveComputedPv({ transfer: dealerValue, multiplier: multiplierValue })
+  const inputPvValue = Math.max(toSafeNumber(pv), 0)
+  const normalizedPricingTier = pricingTier === 'high_end' ? 'high_end' : 'low_end'
+  const multiplierValue = resolvePricingMultiplier({
+    pricingTier: normalizedPricingTier,
+    transfer: dealerValue,
+    multiplier,
+  })
+  const formulaPv = deriveComputedPv({ transfer: dealerValue, multiplier: multiplierValue })
+  const pvValue = inputPvValue > 0 ? inputPvValue : formulaPv
   const effectiveMemberPrice = memberValue
-  const retailProfit = srpValue > 0 && memberValue > 0 ? srpValue - memberValue : 0
+  const retailProfit = srpValue > 0 || memberValue > 0 ? srpValue - memberValue : 0
 
   return {
+    pricingTier: normalizedPricingTier,
     effectiveMemberPrice,
     transferPrice: dealerValue,
+    formulaPv,
     computedPv: pvValue,
     retailProfit,
     reversedMultiplier: multiplierValue,
@@ -448,7 +492,6 @@ const buildPricingSummary = ({
     personalCashback: pvValue * PERSONAL_CASHBACK_RATE,
     globalPurchaseBonus: pvValue * GLOBAL_PURCHASE_BONUS_RATE,
     affiliatePerformanceBonus: pvValue * AFFILIATE_PERFORMANCE_RATE,
-    incentiveAllocation: pvValue * INCENTIVE_ALLOC_RATE,
     totalAllocation: pvValue * TOTAL_PAYOUT_RATE,
     vatOnMemberPrice: effectiveMemberPrice * VAT_RATE,
     dealerDiscount: srpValue > 0 && dealerValue > 0 ? srpValue - dealerValue : 0,
@@ -502,16 +545,17 @@ function PricingSummaryPanel({
   const fmt = (v: number) => v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
   const fmtPv = (v: number) => v.toLocaleString(undefined, { maximumFractionDigits: 4 })
   const pvStr = fmtPv(summary.computedPv)
+  const formulaPvStr = fmtPv(summary.formulaPv)
   const mp = fmt(summary.effectiveMemberPrice)
   const transfer = fmt(summary.transferPrice)
   const mult = summary.reversedMultiplier.toFixed(4)
+  const pricingTierLabel = summary.pricingTier === 'high_end' ? 'High-End' : 'Low-End'
 
-  const bonusRows: { label: string; rate: string; value: number }[] = [
-    { label: 'Group Purchase',        rate: '6%',  value: summary.groupPurchase },
-    { label: 'Personal Cashback',     rate: '4%',  value: summary.personalCashback },
-    { label: 'Global Purchase Bonus', rate: '1%',  value: summary.globalPurchaseBonus },
-    { label: 'Affiliate Performance', rate: '10%', value: summary.affiliatePerformanceBonus },
-    { label: 'Incentive Allocation',  rate: '1%',  value: summary.incentiveAllocation },
+  const bonusRows: { label: string; rate: string; value: number; note: string }[] = [
+    { label: 'Group Purchase', rate: '6%', value: summary.groupPurchase, note: 'Reference only.' },
+    { label: 'Personal Cashback', rate: '4%', value: summary.personalCashback, note: 'For personal purchase only.' },
+    { label: 'Global Purchase Bonus', rate: '1%', value: summary.globalPurchaseBonus, note: 'Year-end only for top 10 qualifiers.' },
+    { label: 'Affiliate Performance', rate: '10%', value: summary.affiliatePerformanceBonus, note: 'Depends on downline, up to 10 levels with compression rules.' },
   ]
 
   return (
@@ -541,14 +585,15 @@ function PricingSummaryPanel({
           <div className="rounded-xl bg-white border border-teal-100 px-3 py-3">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="text-[10px] md:text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Transfer Price × Multiplier</p>
+                <p className="text-[10px] md:text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Transfer Price × Reversed PV Multiplier = PV Product</p>
                 <div className="flex items-center gap-2 font-mono text-sm md:text-base flex-wrap">
                   <span className="font-semibold text-slate-700">{transfer}</span>
                   <span className="text-slate-300 text-base md:text-lg">×</span>
                   <span className="font-semibold text-slate-700">{mult}</span>
                   <span className="text-slate-300 text-base md:text-lg">=</span>
-                  <span className="font-bold text-teal-600 text-base md:text-lg">{pvStr} PV</span>
+                  <span className="font-bold text-teal-600 text-base md:text-lg">{formulaPvStr} PV</span>
                 </div>
+                <p className="text-[10px] md:text-xs text-slate-400 mt-2">Encoded PV Product used in summary: <span className="font-semibold text-slate-600">{pvStr} PV</span></p>
               </div>
               <div className="shrink-0 text-right bg-teal-50 rounded-lg px-3 py-2 border border-teal-100">
                 <p className="text-[9px] md:text-[11px] font-semibold text-teal-500 uppercase tracking-wide">Auto PV</p>
@@ -561,10 +606,10 @@ function PricingSummaryPanel({
 
         {/* ── Section 2: Price breakdown ── */}
         <div className="px-4 py-3">
-          <p className="text-[9px] md:text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-2">Price Breakdown</p>
+          <p className="text-[9px] md:text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-2">Low-End Price Breakdown</p>
           <div className="rounded-xl bg-white border border-slate-100 overflow-hidden divide-y divide-slate-50">
             <CalcRow
-              label="Retail Profit"
+              label="Retail Profit (SRP - Member Price)"
               a={`SRP ₱${fmt(summary.retailProfit + summary.effectiveMemberPrice)}`}
               op="−"
               b={`MP ₱${mp}`}
@@ -584,11 +629,11 @@ function PricingSummaryPanel({
         {/* ── Section 3: Bonus distribution ── */}
         <div className="px-4 py-3">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-[9px] md:text-[11px] font-bold uppercase tracking-widest text-slate-400">Bonus Distribution</p>
-            <span className="rounded-full bg-blue-600 px-2 py-0.5 text-[9px] md:text-[11px] font-bold text-white">22% of PV</span>
+            <p className="text-[9px] md:text-[11px] font-bold uppercase tracking-widest text-slate-400">Reference Bonus Distribution</p>
+            <span className="rounded-full bg-blue-600 px-2 py-0.5 text-[9px] md:text-[11px] font-bold text-white">21% of PV</span>
           </div>
           <div className="rounded-xl bg-white border border-slate-100 overflow-hidden divide-y divide-slate-50">
-            {bonusRows.map(({ label, rate, value }) => (
+            {bonusRows.map(({ label, rate, value, note }) => (
               <div key={label} className="flex items-center justify-between px-3 py-2 gap-2">
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5">
@@ -598,16 +643,17 @@ function PricingSummaryPanel({
                   <p className="font-mono text-[11px] md:text-xs text-slate-400 mt-0.5">
                     {pvStr} PV <span className="text-slate-300">×</span> {rate} <span className="text-slate-300">=</span> <span className="font-semibold text-slate-600">₱ {fmt(value)}</span>
                   </p>
+                  <p className="text-[10px] md:text-[11px] text-slate-400 mt-1">{note}</p>
                 </div>
                 <span className="shrink-0 text-sm md:text-base font-bold text-slate-800 tabular-nums">₱ {fmt(value)}</span>
               </div>
             ))}
             <div className="flex items-center justify-between px-3 py-2.5 bg-blue-600">
               <div className="flex items-center gap-2">
-                <span className="shrink-0 rounded-full bg-white/20 px-1.5 py-0.5 text-[9px] md:text-[11px] font-bold text-white">22%</span>
+                <span className="shrink-0 rounded-full bg-white/20 px-1.5 py-0.5 text-[9px] md:text-[11px] font-bold text-white">21%</span>
                 <div>
-                  <p className="text-[11px] md:text-sm font-semibold text-white">Total Allocation</p>
-                  <p className="font-mono text-[10px] md:text-xs text-blue-200">{pvStr} PV × 22%</p>
+                  <p className="text-[11px] md:text-sm font-semibold text-white">Total Reference Allocation</p>
+                  <p className="font-mono text-[10px] md:text-xs text-blue-200">{pvStr} PV × 21%</p>
                 </div>
               </div>
               <span className="text-base md:text-lg font-bold text-white tabular-nums">₱ {fmt(summary.totalAllocation)}</span>
@@ -615,10 +661,16 @@ function PricingSummaryPanel({
           </div>
         </div>
 
+        <div className="px-4 py-3">
+          <p className="text-[10px] md:text-xs text-blue-700 bg-blue-50 border border-blue-100 rounded-lg px-3 py-2">
+            {pricingTierLabel} pricing is shown here for costing reference only. Actual bonus payout still depends on qualification rules.
+          </p>
+        </div>
+
         {memberFallbackToSrp && (
           <div className="px-4 py-3">
             <p className="text-[10px] md:text-xs text-amber-600 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
-              Enter a Member Price to unlock Retail Profit and VAT calculations.
+              Enter a Member Price to compute Low-End retail profit and VAT.
             </p>
           </div>
         )}
@@ -771,12 +823,14 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
   )
   const mainPricingSummary = useMemo(
     () => buildPricingSummary({
+      pricingTier: form.pd_pricing_tier,
       srp: form.pd_price_srp,
       dealer: form.pd_price_dp,
       member: form.pd_price_member,
+      pv: form.pd_prodpv,
       multiplier: form.pd_reversed_pv_multiplier,
     }),
-    [form.pd_price_srp, form.pd_price_dp, form.pd_price_member, form.pd_reversed_pv_multiplier],
+    [form.pd_pricing_tier, form.pd_price_srp, form.pd_price_dp, form.pd_price_member, form.pd_reversed_pv_multiplier],
   )
 
   const set = (key: keyof FormState, value: string | boolean) => {
@@ -1227,9 +1281,11 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
       transfer: form.pd_price_dp,
       multiplier: form.pd_reversed_pv_multiplier,
     })
+    const resolvedMainPv = toOptionalPositiveNumber(form.pd_prodpv) ?? (computedMainPv > 0 ? computedMainPv : undefined)
     const nextSpecifications = mergeVariantOptionLabelsMeta(form.pd_specifications, {
       primaryLabel: form.pd_primary_option_label,
       secondaryLabel: form.pd_secondary_option_label,
+      pricingTier: form.pd_pricing_tier,
     })
 
     const payload: CreateProductPayload = {
@@ -1242,7 +1298,7 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
       pd_specifications: nextSpecifications,
       pd_price_dp:    form.pd_price_dp  ? Number(form.pd_price_dp)  : undefined,
       pd_price_member: form.pd_price_member ? Number(form.pd_price_member) : undefined,
-      pd_prodpv:      computedMainPv > 0 ? computedMainPv : undefined,
+      pd_prodpv:      resolvedMainPv,
       pd_qty:         form.pd_qty       ? Number(form.pd_qty)       : undefined,
       pd_weight:      form.pd_weight    ? Number(form.pd_weight)    : undefined,
       pd_psweight:    form.pd_psweight  ? Number(form.pd_psweight)  : undefined,
@@ -1615,7 +1671,17 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
 
                   {/* ── Section: Pricing ── */}
                   <SectionLabel>Pricing</SectionLabel>
-                  <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                  <div className="grid grid-cols-2 gap-3 lg:grid-cols-6">
+                    <Field label="PV Pricing Tier">
+                      <div className="space-y-1">
+                        <select value={form.pd_pricing_tier} onChange={e => set('pd_pricing_tier', e.target.value)} className={inputCls()}>
+                          {PRICING_TIER_OPTIONS.map((option) => (
+                            <option key={option.value} value={option.value}>{option.label}</option>
+                          ))}
+                        </select>
+                        <p className="text-[11px] text-slate-500">Low-End is active for the current formula. High-End will follow once its formula is finalized.</p>
+                      </div>
+                    </Field>
                     <Field label="SRP Price (₱)" required error={errors.pd_price_srp}>
                       <input type="number" value={form.pd_price_srp} onChange={e => set('pd_price_srp', e.target.value)} placeholder="0.00" className={inputCls(!!errors.pd_price_srp)}/>
                     </Field>
@@ -1629,6 +1695,12 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
                       <div className="space-y-1">
                         <input type="number" value={form.pd_price_member} onChange={e => set('pd_price_member', e.target.value)} placeholder="0.00" className={inputCls(!!errors.pd_price_member)}/>
                         <p className="text-[11px] text-slate-500">Shown to member accounts. If blank, SRP will be used.</p>
+                      </div>
+                    </Field>
+                    <Field label="PV Product">
+                      <div className="space-y-1">
+                        <input type="number" value={form.pd_prodpv} onChange={e => set('pd_prodpv', e.target.value)} placeholder="0.00" className={inputCls()}/>
+                        <p className="text-[11px] text-slate-500">Enter the product PV value for this item.</p>
                       </div>
                     </Field>
                     <Field label="Reversed PV Multiplier" error={errors.pd_prodpv}>
@@ -2129,9 +2201,11 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
                                         <input
                                           type="text"
                                           value={formatDecimalInput(buildPricingSummary({
+                                            pricingTier: form.pd_pricing_tier,
                                             srp: variant.pv_price_srp,
                                             dealer: variant.pv_price_dp || form.pd_price_dp,
                                             member: variant.pv_price_member || form.pd_price_member,
+                                            pv: variant.pv_prodpv,
                                             multiplier: variant.pv_reversed_pv_multiplier || form.pd_reversed_pv_multiplier,
                                           }).computedPv, 2)}
                                           readOnly
@@ -2144,9 +2218,11 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
                                         <input
                                           type="text"
                                           value={formatDecimalInput(buildPricingSummary({
+                                            pricingTier: form.pd_pricing_tier,
                                             srp: variant.pv_price_srp,
                                             dealer: variant.pv_price_dp || form.pd_price_dp,
                                             member: variant.pv_price_member || form.pd_price_member,
+                                            pv: variant.pv_prodpv,
                                             multiplier: variant.pv_reversed_pv_multiplier || form.pd_reversed_pv_multiplier,
                                           }).retailProfit, 2)}
                                           readOnly
@@ -2159,9 +2235,11 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
                                     <PricingSummaryPanel
                                       title="Variant PV Summary"
                                       summary={buildPricingSummary({
+                                        pricingTier: form.pd_pricing_tier,
                                         srp: variant.pv_price_srp,
                                         dealer: variant.pv_price_dp,
                                         member: variant.pv_price_member || form.pd_price_member,
+                                        pv: variant.pv_prodpv,
                                         multiplier: variant.pv_reversed_pv_multiplier || form.pd_reversed_pv_multiplier,
                                       })}
                                       memberFallbackToSrp={!(variant.pv_price_member || form.pd_price_member).trim()}
