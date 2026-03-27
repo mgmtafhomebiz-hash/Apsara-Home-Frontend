@@ -1,9 +1,11 @@
 'use client';
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSession, signOut } from "next-auth/react";
+import { usePathname } from "next/navigation";
 import { useGetAdminMeQuery } from "@/store/api/authApi";
+import { useHeartbeatAdminPresenceMutation } from "@/store/api/adminUsersApi";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
 
@@ -15,10 +17,28 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const { data: session } = useSession();
+    const pathname = usePathname();
     const isBanned = (session?.user as { isBanned?: boolean } | undefined)?.isBanned === true;
+    const sessionAccessToken = String((session?.user as { accessToken?: string } | undefined)?.accessToken ?? '');
+    const [heartbeatAdminPresence] = useHeartbeatAdminPresenceMutation();
 
     // Poll /me every 12 seconds — baseQueryWithBanCheck intercepts 401 reason:banned and auto-signs out
     useGetAdminMeQuery(undefined, { pollingInterval: 12_000, skip: isBanned });
+
+    useEffect(() => {
+        if (!sessionAccessToken || isBanned) {
+            return;
+        }
+
+        const currentPath = pathname || '/admin/dashboard';
+        void heartbeatAdminPresence({ path: currentPath });
+
+        const intervalId = window.setInterval(() => {
+            void heartbeatAdminPresence({ path: currentPath });
+        }, 30_000);
+
+        return () => window.clearInterval(intervalId);
+    }, [heartbeatAdminPresence, isBanned, pathname, sessionAccessToken]);
 
     return (
         <div className="flex h-screen bg-slate-100 overflow-hidden">

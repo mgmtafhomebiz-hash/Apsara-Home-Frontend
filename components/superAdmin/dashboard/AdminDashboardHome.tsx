@@ -3,6 +3,7 @@ import RecentOrders from "@/components/superAdmin/dashboard/RecentOrders";
 import SalesChart from "@/components/superAdmin/dashboard/SalesChart";
 import StatsGrid from "@/components/superAdmin/dashboard/StatsGrid";
 import TopProducts from "@/components/superAdmin/dashboard/TopProducts";
+import RecentAdminProductActivity from "@/components/superAdmin/dashboard/RecentAdminProductActivity";
 
 export default function AdminDashboardHome() {
   return (
@@ -25,6 +26,8 @@ export default function AdminDashboardHome() {
           <TopProducts />
         </div>
       </div>
+
+      <RecentAdminProductActivity />
     </div>
   );
 }

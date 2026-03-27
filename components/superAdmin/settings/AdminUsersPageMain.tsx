@@ -9,6 +9,7 @@ import {
   useBanAdminUserMutation,
   useCreateAdminUserMutation,
   useDeleteAdminUserMutation,
+  useGetAdminUserActivityQuery,
   useGetAdminUsersQuery,
   useUnbanAdminUserMutation,
   useUpdateAdminUserMutation,
@@ -172,6 +173,14 @@ function formatDateTime(value?: string | null) {
   if (Number.isNaN(parsed.getTime())) return value
 
   return parsed.toLocaleString()
+}
+
+function formatMinutesSinceActive(value?: number | null) {
+  if (value === null || value === undefined) return 'No recent activity'
+  const normalized = Math.max(0, Math.floor(value))
+  if (normalized <= 0) return 'Active now'
+  if (normalized === 1) return 'Active 1 minute ago'
+  return `Active ${normalized} minutes ago`
 }
 
 /* ─── icons ──────────────────────────────────────────────── */
@@ -509,6 +518,100 @@ function ConfirmModal({
 
 /* ─── EditModal ──────────────────────────────────────────── */
 
+function AdminActivityModal({
+  target,
+  onClose,
+}: {
+  target: AdminUserItem
+  onClose: () => void
+}) {
+  const [page, setPage] = useState(1)
+  const { data, isLoading } = useGetAdminUserActivityQuery({ id: target.id, page, perPage: 8 })
+  const logs = data?.logs ?? []
+  const meta = data?.meta
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <motion.div
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        onClick={onClose}
+        className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"
+      />
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 16 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 16 }}
+        onClick={e => e.stopPropagation()}
+        className="relative z-10 w-full max-w-3xl max-h-[86vh] overflow-hidden rounded-3xl bg-white shadow-2xl border border-slate-200"
+      >
+        <div className="px-6 py-5 border-b border-slate-100 flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Account Activity</p>
+            <h3 className="mt-1 text-xl font-bold text-slate-800">{target.name}</h3>
+            <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+              <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full border ${target.is_online ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-50 text-slate-600 border-slate-200'}`}>
+                <span className={`h-2 w-2 rounded-full ${target.is_online ? 'bg-emerald-500' : 'bg-slate-300'}`} />
+                {target.is_online ? 'Active' : 'Offline'}
+              </span>
+              <span>@{target.username}</span>
+              <span>{formatMinutesSinceActive(target.minutes_since_active)}</span>
+              {target.last_active_path ? <span>{target.last_active_path}</span> : null}
+            </div>
+          </div>
+          <button type="button" onClick={onClose} className="h-9 w-9 rounded-full border border-slate-200 text-slate-400 hover:text-slate-600 hover:border-slate-300 transition flex items-center justify-center">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
+        </div>
+
+        <div className="px-6 py-5 max-h-[58vh] overflow-y-auto space-y-3">
+          {isLoading ? (
+            Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-18 rounded-2xl bg-slate-100 animate-pulse" />)
+          ) : logs.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-5 py-10 text-center">
+              <p className="text-sm font-semibold text-slate-600">No recorded actions yet</p>
+              <p className="mt-1 text-sm text-slate-400">Recent product actions for this account will appear here.</p>
+            </div>
+          ) : (
+            logs.map((log) => (
+              <div key={log.id} className="rounded-2xl border border-slate-200 px-4 py-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className={`inline-flex px-2.5 py-1 rounded-full border text-[11px] font-semibold ${
+                        log.action === 'created' ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                        : log.action === 'updated' ? 'bg-amber-50 text-amber-700 border-amber-200'
+                        : 'bg-red-50 text-red-700 border-red-200'
+                      }`}>
+                        {log.action}
+                      </span>
+                      <span className="text-sm font-semibold text-slate-800">{log.productName}</span>
+                      <span className={`inline-flex px-2 py-1 rounded-full text-[11px] font-semibold ${
+                        log.status === 'failed' ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-600'
+                      }`}>
+                        {log.status}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-xs text-slate-500">SKU: {log.productSku?.trim() ? log.productSku : 'N/A'}</p>
+                  </div>
+                  <span className="text-xs text-slate-400 shrink-0">{formatDateTime(log.createdAt)}</span>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        <div className="px-6 py-4 border-t border-slate-100 bg-slate-50 flex items-center justify-between text-xs text-slate-500">
+          <span>Page <span className="font-semibold text-slate-700">{meta?.current_page ?? 1}</span> / <span className="font-semibold text-slate-700">{meta?.last_page ?? 1}</span></span>
+          <div className="flex items-center gap-2">
+            <button type="button" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={(meta?.current_page ?? 1) <= 1} className="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-white disabled:opacity-40 transition">Prev</button>
+            <button type="button" onClick={() => setPage(p => Math.min(meta?.last_page ?? 1, p + 1))} disabled={(meta?.current_page ?? 1) >= (meta?.last_page ?? 1)} className="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-white disabled:opacity-40 transition">Next</button>
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  )
+}
+
 function EditModal({
   target, form, busy, onChange, onSubmit, onClose, supplierOptions, roleOptions,
 }: {
@@ -667,10 +770,13 @@ export default function AdminUsersPageMain() {
   const { data: suppliersData } = useGetSuppliersQuery(undefined, { skip: !isSuperAdmin })
 
   const [search,          setSearch]          = useState('')
+  const [roleFilter,      setRoleFilter]      = useState('')
+  const [activityFilter,  setActivityFilter]  = useState<'active' | 'inactive' | ''>('')
   const [page,            setPage]            = useState(1)
   const [createForm,      setCreateForm]      = useState<CreateForm>(initialForm)
   const [busyUpdateId,    setBusyUpdateId]    = useState<number | null>(null)
   const [editTarget,      setEditTarget]      = useState<AdminUserItem | null>(null)
+  const [activityTarget,  setActivityTarget]  = useState<AdminUserItem | null>(null)
   const [editForm,        setEditForm]        = useState<EditForm>(initialEditForm)
   const createPermissionsRef = useRef<HTMLDivElement | null>(null)
   const [isCreatePermissionsSpotlightActive, setIsCreatePermissionsSpotlightActive] = useState(false)
@@ -678,11 +784,14 @@ export default function AdminUsersPageMain() {
   const { data, isLoading, isError } = useGetAdminUsersQuery(
     {
       search: search.trim() || undefined,
+      role: roleFilter || undefined,
+      activityStatus: activityFilter || undefined,
       page,
       perPage: 15,
     },
     {
       skip: !canManageUsers,
+      pollingInterval: 20_000,
     },
   )
   const [createAdminUser, { isLoading: isCreating }] = useCreateAdminUserMutation()
@@ -1026,6 +1135,37 @@ export default function AdminUsersPageMain() {
               className="w-full pl-9 pr-4 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-400 bg-slate-50 text-slate-700 placeholder-slate-400 transition"
             />
           </div>
+          <select
+            value={activityFilter}
+            onChange={e => { setActivityFilter(e.target.value as 'active' | 'inactive' | ''); setPage(1) }}
+            className="px-3 py-2.5 text-sm border border-slate-200 rounded-xl bg-slate-50 text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-400 transition"
+          >
+            <option value="">All Status</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+          </select>
+          <select
+            value={roleFilter}
+            onChange={e => { setRoleFilter(e.target.value); setPage(1) }}
+            className="px-3 py-2.5 text-sm border border-slate-200 rounded-xl bg-slate-50 text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-400 transition"
+          >
+            <option value="">All Roles</option>
+            {allowedRoleOptions.map((option) => (
+              <option key={option.value} value={
+                option.value === 1 ? 'super_admin'
+                : option.value === 2 ? 'admin'
+                : option.value === 3 ? 'csr'
+                : option.value === 4 ? 'web_content'
+                : option.value === 5 ? 'accounting'
+                : option.value === 6 ? 'finance_officer'
+                : option.value === 7 ? 'merchant_admin'
+                : option.value === 8 ? 'supplier_admin'
+                : ''
+              }>
+                {option.label}
+              </option>
+            ))}
+          </select>
           <span className="text-xs text-slate-400 bg-slate-50 border border-slate-100 px-2.5 py-1 rounded-full font-medium shrink-0">
             {data?.meta?.total ?? 0} accounts
           </span>
@@ -1072,13 +1212,21 @@ export default function AdminUsersPageMain() {
                   const roleCls = ROLE_COLORS[roleKey] ?? 'bg-slate-100 text-slate-600 border-slate-200'
                   const isBusy  = busyUpdateId === row.id
                   return (
-                    <tr key={row.id} className="hover:bg-slate-50/70 transition-colors">
+                    <tr key={row.id} className="hover:bg-slate-50/70 transition-colors cursor-pointer" onClick={() => setActivityTarget(row)}>
                       <td className="px-5 py-3.5">
                         <div className="flex items-center gap-3">
-                          <div className={`h-9 w-9 rounded-full bg-linear-to-br ${avatarGrad(row.name)} flex items-center justify-center text-white text-xs font-bold shrink-0`}>
-                            {getInitials(row.name)}
+                          <div className="relative shrink-0">
+                            <div className={`h-9 w-9 rounded-full bg-linear-to-br ${avatarGrad(row.name)} flex items-center justify-center text-white text-xs font-bold`}>
+                              {getInitials(row.name)}
+                            </div>
+                            <span className={`absolute -right-0.5 -bottom-0.5 h-3 w-3 rounded-full border-2 border-white ${row.is_online ? 'bg-emerald-500' : 'bg-slate-300'}`} />
                           </div>
-                          <p className="text-sm font-semibold text-slate-800">{row.name}</p>
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold text-slate-800">{row.name}</p>
+                            <p className={`text-[11px] mt-0.5 ${row.is_online ? 'text-emerald-600' : 'text-slate-400'}`}>
+                              {row.is_online ? 'Active now' : formatMinutesSinceActive(row.minutes_since_active)}
+                            </p>
+                          </div>
                         </div>
                       </td>
                       <td className="px-5 py-3.5">
@@ -1110,7 +1258,7 @@ export default function AdminUsersPageMain() {
                           {/* Edit */}
                           <button
                             disabled={isBusy}
-                            onClick={() => openEditModal(row)}
+                            onClick={(event) => { event.stopPropagation(); openEditModal(row) }}
                             title="Edit account"
                             className="group relative h-8 w-8 rounded-lg border border-slate-200 text-slate-500 hover:border-teal-300 hover:bg-teal-50 hover:text-teal-600 disabled:opacity-40 transition-all flex items-center justify-center"
                           >
@@ -1121,7 +1269,7 @@ export default function AdminUsersPageMain() {
                           {/* Ban / Unban */}
                           <button
                             disabled={isBusy}
-                            onClick={() => setBanTarget(row)}
+                            onClick={(event) => { event.stopPropagation(); setBanTarget(row) }}
                             title={row.is_banned ? 'Unban account' : 'Ban account'}
                             className={`h-8 w-8 rounded-lg border flex items-center justify-center disabled:opacity-40 transition-all ${
                               row.is_banned
@@ -1142,12 +1290,23 @@ export default function AdminUsersPageMain() {
                           {/* Delete */}
                           <button
                             disabled={isBusy}
-                            onClick={() => setDeleteTarget(row)}
+                            onClick={(event) => { event.stopPropagation(); setDeleteTarget(row) }}
                             title="Delete account"
                             className="h-8 w-8 rounded-lg border border-red-100 text-red-400 hover:border-red-300 hover:bg-red-50 hover:text-red-600 disabled:opacity-40 transition-all flex items-center justify-center"
                           >
                             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                          <button
+                            disabled={isBusy}
+                            onClick={(event) => { event.stopPropagation(); setActivityTarget(row) }}
+                            title="View activity"
+                            className="h-8 w-8 rounded-lg border border-slate-200 text-slate-500 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-600 disabled:opacity-40 transition-all flex items-center justify-center"
+                          >
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                             </svg>
                           </button>
                         </div>
@@ -1215,6 +1374,15 @@ export default function AdminUsersPageMain() {
       </AnimatePresence>
 
       {/* ── Delete Confirm Modal ── */}
+      <AnimatePresence>
+        {activityTarget && (
+          <AdminActivityModal
+            target={activityTarget}
+            onClose={() => setActivityTarget(null)}
+          />
+        )}
+      </AnimatePresence>
+
       <AnimatePresence>
         {deleteTarget && (
           <ConfirmModal

@@ -11,6 +11,10 @@ export interface AdminUserItem {
   supplier_name?: string | null
   admin_permissions?: string[]
   is_banned?: boolean
+  is_online?: boolean
+  last_seen_at?: string | null
+  minutes_since_active?: number | null
+  last_active_path?: string | null
 }
 
 export interface AdminUsersResponse {
@@ -27,8 +31,32 @@ export interface AdminUsersResponse {
 
 interface AdminUsersQuery {
   search?: string
+  role?: string
+  activityStatus?: 'active' | 'inactive'
   page?: number
   perPage?: number
+}
+
+export interface AdminUserActivityLog {
+  id: number
+  action: string
+  status: string
+  productName: string
+  productSku?: string | null
+  createdAt?: string | null
+}
+
+export interface AdminUserActivityResponse {
+  user: AdminUserItem
+  logs: AdminUserActivityLog[]
+  meta: {
+    current_page: number
+    last_page: number
+    per_page: number
+    total: number
+    from: number | null
+    to: number | null
+  }
 }
 
 export interface CreateAdminUserPayload {
@@ -74,11 +102,33 @@ export const adminUsersApi = baseApi.injectEndpoints({
         method: 'GET',
         params: {
           q: params?.search,
+          role: params?.role,
+          activity_status: params?.activityStatus,
           page: params?.page ?? 1,
           per_page: params?.perPage ?? 20,
         },
       }),
       providesTags: ['AdminUsers'],
+    }),
+    getAdminUserActivity: builder.query<AdminUserActivityResponse, { id: number; page?: number; perPage?: number }>({
+      query: ({ id, page = 1, perPage = 12 }) => ({
+        url: `/api/admin/users/${id}/activity`,
+        method: 'GET',
+        params: {
+          page,
+          per_page: perPage,
+        },
+      }),
+      providesTags: ['AdminUsers'],
+    }),
+    heartbeatAdminPresence: builder.mutation<{ message: string; last_seen_at?: string; last_active_path?: string | null }, { path?: string | null } | void>({
+      query: (body) => ({
+        url: '/api/admin/users/presence/heartbeat',
+        method: 'POST',
+        body: {
+          path: body?.path ?? null,
+        },
+      }),
     }),
     createAdminUser: builder.mutation<CreateAdminUserResponse, CreateAdminUserPayload>({
       query: (body) => ({
@@ -122,6 +172,8 @@ export const adminUsersApi = baseApi.injectEndpoints({
 
 export const {
   useGetAdminUsersQuery,
+  useGetAdminUserActivityQuery,
+  useHeartbeatAdminPresenceMutation,
   useCreateAdminUserMutation,
   useUpdateAdminUserMutation,
   useDeleteAdminUserMutation,
