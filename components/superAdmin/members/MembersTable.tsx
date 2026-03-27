@@ -461,6 +461,7 @@ const MembersTable = ({
       await updateMember({
         id: member.id,
         name: member.name,
+        username: member.username ?? '',
         email: member.email,
         contactNumber: member.contactNumber ?? '',
         status,
@@ -487,6 +488,7 @@ const MembersTable = ({
       await updateMember({
         id: banTarget.id,
         name: banTarget.name,
+        username: banTarget.username ?? '',
         email: banTarget.email,
         contactNumber: banTarget.contactNumber ?? '',
         status: nextStatus,
