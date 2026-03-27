@@ -2633,26 +2633,20 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
                                         <input type="number" value={variant.pv_price_member} onChange={e => setVariant(index, 'pv_price_member', e.target.value)} onBlur={e => setVariant(index, 'pv_price_member', toOptionalPositiveNumber(e.target.value)?.toString() ?? '')} placeholder="Inherit" className={variantInputCls}/>
                                       </div>
                                       <div className="space-y-1">
-                                        <label className="text-[11px] font-semibold text-slate-500 block">PV Multiplier</label>
+                                        <label className="text-[11px] font-semibold text-slate-500 block">Reversed PV Multiplier</label>
                                         <input type="number" value={variant.pv_reversed_pv_multiplier} onChange={e => setVariant(index, 'pv_reversed_pv_multiplier', e.target.value)} placeholder="Inherit" className={variantInputCls}/>
                                       </div>
                                     </div>
                                     <div className="grid grid-cols-2 gap-3">
                                       <div className="space-y-1">
-                                        <label className="text-[11px] font-semibold text-slate-500 block">PV (auto)</label>
+                                        <label className="text-[11px] font-semibold text-slate-500 block">PV Product</label>
                                         <input
-                                          type="text"
-                                          value={formatDecimalInput(buildPricingSummary({
-                                            pricingTier: form.pd_pricing_tier,
-                                            srp: variant.pv_price_srp,
-                                            dealer: variant.pv_price_dp || form.pd_price_dp,
-                                            member: variant.pv_price_member || form.pd_price_member,
-                                            pv: variant.pv_prodpv,
-                                            multiplier: variant.pv_reversed_pv_multiplier || form.pd_reversed_pv_multiplier,
-                                          }).computedPv, 2)}
-                                          readOnly
-                                          placeholder="Auto"
-                                          className={`${variantInputCls} bg-slate-50 text-slate-600`}
+                                          type="number"
+                                          value={variant.pv_prodpv}
+                                          onChange={e => setVariant(index, 'pv_prodpv', e.target.value)}
+                                          onBlur={e => setVariant(index, 'pv_prodpv', toOptionalPositiveNumber(e.target.value)?.toString() ?? '')}
+                                          placeholder="0.00"
+                                          className={variantInputCls}
                                         />
                                       </div>
                                       <div className="space-y-1">
