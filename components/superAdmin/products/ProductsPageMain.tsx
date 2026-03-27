@@ -133,6 +133,35 @@ export default function ProductsPageMain({ initialData = null }: ProductsPageMai
     return mergedProducts.filter((product) => Number(product.supplierId ?? 0) === linkedSupplierId)
   }, [data?.products, initialData?.products, isSupplierPortal, linkedSupplierId, productOverrides, useInitialData])
 
+  const visibleProducts = useMemo(() => {
+    const keyword = debouncedSearch.trim().toLowerCase()
+    if (!keyword) return products
+
+    const terms = keyword.split(/\s+/).filter(Boolean)
+    if (terms.length === 0) return products
+
+    return products.filter((product) => {
+      const haystacks = [
+        product.name,
+        product.sku,
+        product.description,
+        product.specifications,
+        product.material,
+        product.brand,
+        ...(product.variants ?? []).flatMap((variant) => [
+          variant.sku,
+          variant.name,
+          variant.color,
+          variant.size,
+        ]),
+      ]
+        .filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
+        .map((value) => value.toLowerCase())
+
+      return terms.every((term) => haystacks.some((value) => value.includes(term)))
+    })
+  }, [debouncedSearch, products])
+
   const meta = useMemo(() => {
     const rawMeta = data?.meta ?? (useInitialData ? initialData?.meta : undefined)
 
@@ -148,17 +177,32 @@ export default function ProductsPageMain({ initialData = null }: ProductsPageMai
     }
   }, [data?.meta, initialData?.meta, isSupplierPortal, linkedSupplierId, products.length, useInitialData])
 
+  const visibleMeta = useMemo(() => {
+    if (!debouncedSearch) {
+      return meta
+    }
+
+    return {
+      current_page: 1,
+      last_page: 1,
+      per_page: visibleProducts.length || perPage,
+      total: visibleProducts.length,
+      from: visibleProducts.length > 0 ? 1 : 0,
+      to: visibleProducts.length,
+    }
+  }, [debouncedSearch, meta, perPage, visibleProducts.length])
+
   /* Low-stock count from current page */
-  const lowStockCount = useMemo(() => products.filter(p => p.qty > 0 && p.qty <= 5).length, [products])
+  const lowStockCount = useMemo(() => visibleProducts.filter(p => p.qty > 0 && p.qty <= 5).length, [visibleProducts])
 
   const handleSearch = (v: string) => { setSearch(v); setPage(1) }
   const handleStatus = (v: string) => { setStatus(v); setPage(1) }
   const handleCatId  = (v: number | undefined) => { setCatId(v); setPage(1) }
 
   useEffect(() => {
-    const rowIds = new Set(products.map(p => p.id))
+    const rowIds = new Set(visibleProducts.map(p => p.id))
     setSelectedIds(prev => prev.filter(id => rowIds.has(id)))
-  }, [products])
+  }, [visibleProducts])
 
   const handleDelete = async (id: number) => {
     setDeletingIds(prev => [...prev, id])
@@ -211,8 +255,8 @@ export default function ProductsPageMain({ initialData = null }: ProductsPageMai
   }
 
   const selectedProducts = useMemo(
-    () => products.filter((product) => selectedIds.includes(product.id)),
-    [products, selectedIds],
+    () => visibleProducts.filter((product) => selectedIds.includes(product.id)),
+    [visibleProducts, selectedIds],
   )
 
   const loadErrorMessage = useMemo(() => {
@@ -312,7 +356,7 @@ export default function ProductsPageMain({ initialData = null }: ProductsPageMai
           search={search} onSearch={handleSearch}
           status={status} onStatus={handleStatus}
           catId={catId}   onCatId={handleCatId}
-          resultCount={meta?.total ?? products.length}
+          resultCount={visibleMeta?.total ?? visibleProducts.length}
           supplierId={isSupplierPortal && linkedSupplierId > 0 ? linkedSupplierId : undefined}
         />
       </motion.div>
@@ -369,12 +413,12 @@ export default function ProductsPageMain({ initialData = null }: ProductsPageMai
           )}
 
           <ProductsTable
-            rows={products}
-            currentPage={meta?.current_page ?? 1}
-            totalPages={meta?.last_page ?? 1}
-            totalRecords={meta?.total ?? products.length}
-            from={meta?.from ?? null}
-            to={meta?.to ?? null}
+            rows={visibleProducts}
+            currentPage={visibleMeta?.current_page ?? 1}
+            totalPages={visibleMeta?.last_page ?? 1}
+            totalRecords={visibleMeta?.total ?? visibleProducts.length}
+            from={visibleMeta?.from ?? null}
+            to={visibleMeta?.to ?? null}
             onPageChange={setPage}
             onEdit={setEditProduct}
             onDelete={handleDelete}

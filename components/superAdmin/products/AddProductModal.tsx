@@ -1674,17 +1674,17 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
                           <div className="mt-4 rounded-xl border border-teal-100 bg-white/80 p-3 space-y-4">
                             <div className="grid gap-3 md:grid-cols-[1.2fr_1fr]">
                               <div className="space-y-1">
-                                <label className="text-xs font-semibold text-slate-600 block">Additional Variant Header</label>
+                                <label className="text-xs font-semibold text-slate-600 block">Variant Header</label>
                                 <input
                                   value={form.pd_primary_option_label}
                                   onChange={(e) => set('pd_primary_option_label', e.target.value)}
                                   placeholder="e.g. Thickness"
                                   className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-400/40 focus:border-teal-400"
                                 />
-                                <p className="text-[11px] text-slate-400">Set the title for your additional custom options.</p>
+                                <p className="text-[11px] text-slate-400">Set the display title shown on the product page for these variant values.</p>
                               </div>
                               <div className="space-y-1">
-                                <label className="text-xs font-semibold text-slate-600 block">Add Option Values</label>
+                                <label className="text-xs font-semibold text-slate-600 block">Add Variant Values</label>
                                 <div className="flex gap-2">
                                   <input
                                     value={newGlobalPrimaryValue}
