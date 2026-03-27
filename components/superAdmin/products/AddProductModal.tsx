@@ -5,7 +5,7 @@ import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useSession } from 'next-auth/react'
 import { useGetAdminMeQuery } from '@/store/api/authApi'
-import { useCreateProductMutation, CreateProductPayload } from '@/store/api/productsApi'
+import { useCreateProductMutation, CreateProductPayload, Product, normalizeProduct } from '@/store/api/productsApi'
 import { useGetCategoriesQuery } from '@/store/api/categoriesApi'
 import { useGetProductBrandsQuery } from '@/store/api/productBrandsApi'
 import { showErrorToast, showSuccessToast } from '@/libs/toast'
@@ -21,7 +21,7 @@ import { ROOM_OPTIONS, inferRoomTypeFromCategory } from '@/libs/roomConfig'
 interface AddProductModalProps {
   isOpen: boolean
   onClose: () => void
-  onSaved?: () => void
+  onSaved?: (createdProduct?: Product) => void
 }
 
 interface FormState {
@@ -1265,12 +1265,15 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
     }
 
     try {
-      await createProduct(payload).unwrap()
+      const response = await createProduct(payload).unwrap()
+      const createdProduct = response.product
+        ? normalizeProduct(response.product as Product & Record<string, unknown>)
+        : undefined
       showSuccessToast('Product added successfully.')
       if (typeof window !== 'undefined') {
         window.localStorage.removeItem(ADD_PRODUCT_DRAFT_KEY)
       }
-      onSaved?.()
+      onSaved?.(createdProduct)
       resetModalState()
       onClose()
     } catch (err: unknown) {

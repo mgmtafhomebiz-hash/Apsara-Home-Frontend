@@ -64,6 +64,7 @@ export default function ProductsPageMain({ initialData = null }: ProductsPageMai
   const [deletingIds,     setDeletingIds]     = useState<number[]>([])
   const [selectedIds,     setSelectedIds]     = useState<number[]>([])
   const [productOverrides, setProductOverrides] = useState<Record<number, Product>>({})
+  const [createdProducts, setCreatedProducts] = useState<Product[]>([])
   const [useInitialData,  setUseInitialData]  = useState(Boolean(initialData))
   const defaultPerPage = 25
   const searchPerPage = 500
@@ -110,6 +111,10 @@ export default function ProductsPageMain({ initialData = null }: ProductsPageMai
     setUseInitialData(false)
     if (updatedProduct) {
       setProductOverrides((prev) => ({ ...prev, [updatedProduct.id]: updatedProduct }))
+      setCreatedProducts((prev) => {
+        const next = [updatedProduct, ...prev.filter((product) => product.id !== updatedProduct.id)]
+        return next
+      })
     }
     router.refresh()
     void revalidateStorefront()
@@ -127,13 +132,24 @@ export default function ProductsPageMain({ initialData = null }: ProductsPageMai
       ? data.products
       : (useInitialData ? (initialData?.products ?? []) : [])
     const mergedProducts = rawProducts.map((product) => productOverrides[product.id] ?? product)
+    const mergedById = new Map<number, Product>()
+
+    createdProducts.forEach((product) => {
+      mergedById.set(product.id, productOverrides[product.id] ?? product)
+    })
+
+    mergedProducts.forEach((product) => {
+      mergedById.set(product.id, product)
+    })
+
+    const mergedProductList = Array.from(mergedById.values())
 
     if (!isSupplierPortal || linkedSupplierId <= 0) {
-      return mergedProducts
+      return mergedProductList
     }
 
-    return mergedProducts.filter((product) => Number(product.supplierId ?? 0) === linkedSupplierId)
-  }, [data?.products, initialData?.products, isSupplierPortal, linkedSupplierId, productOverrides, useInitialData])
+    return mergedProductList.filter((product) => Number(product.supplierId ?? 0) === linkedSupplierId)
+  }, [createdProducts, data?.products, initialData?.products, isSupplierPortal, linkedSupplierId, productOverrides, useInitialData])
 
   const visibleProducts = useMemo(() => {
     const keyword = debouncedSearch.trim().toLowerCase()
@@ -216,6 +232,7 @@ export default function ProductsPageMain({ initialData = null }: ProductsPageMai
         delete next[id]
         return next
       })
+      setCreatedProducts((prev) => prev.filter((product) => product.id !== id))
       setSelectedIds(prev => prev.filter(item => item !== id))
       showSuccessToast('Product deleted successfully.')
     } catch {
@@ -247,6 +264,7 @@ export default function ProductsPageMain({ initialData = null }: ProductsPageMai
         ids.forEach((id) => delete next[id])
         return next
       })
+      setCreatedProducts((prev) => prev.filter((product) => !ids.includes(product.id)))
       setSelectedIds([])
       showSuccessToast(`${ids.length} product(s) deleted successfully.`)
     } catch {
