@@ -10,6 +10,9 @@ type PageProps = {
   params: Promise<{
     partner: string
   }>
+  searchParams?: Promise<{
+    category?: string
+  }>
 }
 
 type ApiCategoriesResponse = {
@@ -33,7 +36,7 @@ export async function generateMetadata({ params }: PageProps) {
   })
 }
 
-async function getPartnerStorefrontData(partnerSlug: string) {
+async function getPartnerStorefrontData(partnerSlug: string, selectedCategoryId?: number) {
   const apiUrl = process.env.LARAVEL_API_URL ?? process.env.NEXT_PUBLIC_LARAVEL_API_URL
   if (!apiUrl) return null
 
@@ -77,13 +80,16 @@ async function getPartnerStorefrontData(partnerSlug: string) {
 
     const categories = filterPartnerCategories(categoriesJson.categories ?? [], partner)
     const products = filterPartnerProducts(productsJson.products ?? [], partner)
+    const selectedProducts = selectedCategoryId
+      ? products.filter((product) => product.catid === selectedCategoryId)
+      : products
 
     return {
       partner,
       data: {
         items: webPagesJson.items ?? [],
         categories,
-        products,
+        products: selectedProducts,
       },
     }
   } catch {
@@ -91,9 +97,14 @@ async function getPartnerStorefrontData(partnerSlug: string) {
   }
 }
 
-export default async function PartnerShopPage({ params }: PageProps) {
+export default async function PartnerShopPage({ params, searchParams }: PageProps) {
   const resolved = await params
-  const payload = await getPartnerStorefrontData(resolved.partner)
+  const resolvedSearchParams = searchParams ? await searchParams : undefined
+  const selectedCategoryId = Number.parseInt(String(resolvedSearchParams?.category ?? ''), 10)
+  const payload = await getPartnerStorefrontData(
+    resolved.partner,
+    Number.isFinite(selectedCategoryId) && selectedCategoryId > 0 ? selectedCategoryId : undefined,
+  )
 
   if (!payload) {
     notFound()

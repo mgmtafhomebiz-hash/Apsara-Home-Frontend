@@ -13,7 +13,7 @@ import ShopNewsletterSignup from './ShopNewsletterSignup'
 import type { Category } from '@/store/api/categoriesApi'
 import type { Product } from '@/store/api/productsApi'
 import type { WebPageItem } from '@/store/api/webPagesApi'
-import { buildPartnerShopLink } from '@/libs/partnerStorefront'
+import { buildPartnerCategoryLink, buildPartnerShopLink } from '@/libs/partnerStorefront'
 
 type ShopSectionPayload = {
   fields?: Record<string, string>
@@ -91,7 +91,7 @@ export default function ShopBuilderSections({ data = null, partnerSlug }: ShopBu
       return {
         id: category.id,
         name: category.name,
-        url: category.url,
+        url: buildPartnerCategoryLink(partnerSlug, category),
         count: category.product_count ?? 0,
         image: getField(categoryGrid, `card_${index + 1}_image`) || category.image || fallbackImage,
       }
@@ -103,7 +103,7 @@ export default function ShopBuilderSections({ data = null, partnerSlug }: ShopBu
     .map((category) => ({
       id: category.id,
       name: category.name,
-      url: category.url,
+      url: buildPartnerCategoryLink(partnerSlug, category),
       count: category.product_count ?? 0,
       image: category.image || fallbackImage,
     }))

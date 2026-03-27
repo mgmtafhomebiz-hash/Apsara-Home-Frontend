@@ -23,6 +23,12 @@ const builderCards: ContentCard[] = [
     badge: 'CMS Direction',
   },
   {
+    title: 'Partner Storefronts',
+    description: 'Create client-specific shop pages with custom logo, branding, and category filtering.',
+    href: '/admin/webpages/partner-storefronts',
+    badge: 'B2B',
+  },
+  {
     title: 'Banners & Promos',
     description: 'Control promo strips, hero banners, campaign links, and schedule windows for active creatives.',
     href: '/admin/webpages/banners',

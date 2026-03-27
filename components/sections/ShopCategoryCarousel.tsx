@@ -57,7 +57,7 @@ export default function ShopCategoryCarousel({
               className="flex-none"
             >
               <Link
-                href={`/category/${card.url}`}
+                href={card.url.startsWith('/') ? card.url : `/category/${card.url}`}
                 className="group relative block h-64 min-w-[280px] snap-start overflow-hidden rounded-2xl shadow-sm transition-shadow duration-500 hover:shadow-xl md:h-80 md:min-w-[320px]"
               >
                 <Image src={card.image} alt={card.name} fill className="object-cover transition-transform duration-700 group-hover:scale-110" unoptimized />

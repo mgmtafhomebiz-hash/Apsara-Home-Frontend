@@ -17,10 +17,30 @@ export type PartnerStorefrontConfig = {
   allowedCategoryIds: number[]
   featuredProductIds: number[]
   notificationEmail: string
+  enableAiSupport: boolean
 }
 
 const defaultThemeColor = '#0f766e'
 const defaultAccentColor = '#f97316'
+
+export const slugifyLabel = (value: string) =>
+  value
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, '-')
+
+export const normalizeCategorySlug = (rawUrl: string | null | undefined, fallbackName: string) => {
+  const source = (rawUrl ?? '').trim()
+  if (!source || source === '0') return slugifyLabel(fallbackName)
+
+  const withoutDomain = source.replace(/^https?:\/\/[^/]+/i, '')
+  const cleaned = withoutDomain
+    .replace(/^\/+/, '')
+    .replace(/^category\//i, '')
+    .replace(/\/+$/, '')
+
+  return cleaned || slugifyLabel(fallbackName)
+}
 
 export const parseIdList = (value: string) =>
   value
@@ -30,6 +50,16 @@ export const parseIdList = (value: string) =>
 
 const getPayloadFields = (item: WebPageItem | undefined): Record<string, string> =>
   (((item?.payload ?? {}) as PartnerStorefrontPayload).fields ?? {})
+
+const toBoolean = (value: unknown) => {
+  if (typeof value === 'boolean') return value
+  if (typeof value === 'number') return value === 1
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase()
+    return normalized === '1' || normalized === 'true' || normalized === 'yes' || normalized === 'on'
+  }
+  return false
+}
 
 export const getPartnerStorefrontConfig = (item: WebPageItem | undefined): PartnerStorefrontConfig | null => {
   if (!item) return null
@@ -49,6 +79,7 @@ export const getPartnerStorefrontConfig = (item: WebPageItem | undefined): Partn
     allowedCategoryIds: parseIdList(String(fields.allowed_category_ids ?? '')),
     featuredProductIds: parseIdList(String(fields.featured_product_ids ?? '')),
     notificationEmail: String(fields.notification_email ?? '').trim(),
+    enableAiSupport: toBoolean(fields.enable_ai_support),
   }
 }
 
@@ -69,4 +100,10 @@ export const buildPartnerShopLink = (href: string, partnerSlug?: string) => {
   const value = href.trim()
   if (value === '' || !value.startsWith('/shop')) return value
   return value.replace(/^\/shop(?=\/|\?|$)/, `/shop/${partnerSlug}`)
+}
+
+export const buildPartnerCategoryLink = (partnerSlug: string | undefined, category: Pick<Category, 'url' | 'name'>) => {
+  const categorySlug = normalizeCategorySlug(category.url, category.name)
+  if (!partnerSlug) return `/category/${categorySlug}`
+  return `/shop/${partnerSlug}/category/${categorySlug}`
 }
