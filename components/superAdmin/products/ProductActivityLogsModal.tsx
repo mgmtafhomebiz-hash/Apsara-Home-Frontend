@@ -50,6 +50,17 @@ const actionBadgeClass = (action: string) => {
   }
 }
 
+const statusBadgeClass = (status: string) => {
+  switch (status) {
+    case 'failed':
+      return 'bg-red-50 text-red-600 border-red-200'
+    case 'success':
+      return 'bg-emerald-50 text-emerald-600 border-emerald-200'
+    default:
+      return 'bg-slate-50 text-slate-500 border-slate-200'
+  }
+}
+
 function ActivityRow({ log }: { log: ProductActivityLog }) {
   return (
     <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3">
@@ -73,7 +84,7 @@ function ActivityRow({ log }: { log: ProductActivityLog }) {
             </div>
           )}
         </div>
-        <div className="shrink-0 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+        <div className={`shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] ${statusBadgeClass(log.status)}`}>
           {log.status}
         </div>
       </div>
@@ -125,7 +136,7 @@ export default function ProductActivityLogsModal({ isOpen, onClose }: ProductAct
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <h2 className="text-xl font-bold text-slate-800">Recent Product Activity</h2>
-                  <p className="mt-1 text-sm text-slate-500">Check if a product was really added, updated, or deleted and who did it.</p>
+                  <p className="mt-1 text-sm text-slate-500">Check if a product was really added, updated, deleted, or failed and who did it.</p>
                 </div>
                 <button
                   onClick={onClose}
@@ -172,7 +183,7 @@ export default function ProductActivityLogsModal({ isOpen, onClose }: ProductAct
                       </svg>
                     </div>
                     <p className="text-sm font-semibold text-slate-700">No product activity found</p>
-                    <p className="mt-1 text-sm text-slate-500">Newly added or updated products will appear here once saved.</p>
+                    <p className="mt-1 text-sm text-slate-500">Successful and failed product actions for this account will appear here.</p>
                   </div>
                 </div>
               ) : (
