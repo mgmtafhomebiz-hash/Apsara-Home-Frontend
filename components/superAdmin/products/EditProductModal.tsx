@@ -563,6 +563,38 @@ const dedupeVariantValues = (values: string[]) => {
     })
 }
 
+const getVariantCombinationKey = (variant: Pick<VariantFormState, 'pv_name' | 'pv_size'>) =>
+  `${normalizeVariantLabel(variant.pv_name).toLowerCase()}::${normalizeVariantLabel(variant.pv_size).toLowerCase()}`
+
+const buildGeneratedVariantRows = (
+  existingVariants: VariantFormState[],
+  globalPrimaryValues: string[],
+  globalSizeValues: string[],
+  globalColors: VariantColor[],
+) => {
+  const primaryValues = globalPrimaryValues.length > 0 ? globalPrimaryValues : ['']
+  const sizeValues = globalSizeValues.length > 0 ? globalSizeValues : ['']
+  const comboKeys = new Set<string>()
+  const generatedRows = primaryValues.flatMap((value) =>
+    sizeValues.map((sizeValue) => {
+      const combo = { pv_name: value, pv_size: sizeValue }
+      const comboKey = getVariantCombinationKey(combo)
+      comboKeys.add(comboKey)
+      const existing = existingVariants.find((variant) => getVariantCombinationKey(variant) === comboKey)
+
+      return {
+        ...(existing ?? emptyVariant()),
+        pv_name: value,
+        pv_size: sizeValue,
+        pv_colors: dedupeVariantColors([...(existing?.pv_colors ?? []), ...globalColors.map((color) => ({ ...color }))]),
+      }
+    }),
+  )
+
+  const manualRows = existingVariants.filter((variant) => !comboKeys.has(getVariantCombinationKey(variant)))
+  return [...generatedRows, ...manualRows]
+}
+
 const collectVariantNames = (variants: VariantFormState[]) =>
   dedupeVariantValues(variants.map((variant) => variant.pv_name))
 
@@ -1182,6 +1214,18 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
   }, [categories, form.pd_catid, form.pd_room_type, product, roomTouched])
 
   const hasVariants = form.pd_type === '1'
+
+  useEffect(() => {
+    if (!hasVariants) return
+    if (globalPrimaryValues.length === 0 && globalSizeValues.length === 0) return
+
+    setVariants((prev) => {
+      const next = buildGeneratedVariantRows(prev, globalPrimaryValues, globalSizeValues, globalColors)
+      return JSON.stringify(normalizeVariantsForComparison(prev)) === JSON.stringify(normalizeVariantsForComparison(next))
+        ? prev
+        : next
+    })
+  }, [globalColors, globalPrimaryValues, globalSizeValues, hasVariants])
 
   /* ── image handlers ── */
   const applySelectedImages = (files: File[]) => {

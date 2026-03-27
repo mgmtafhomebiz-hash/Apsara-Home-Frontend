@@ -257,6 +257,60 @@ const dedupeVariantValues = (values: string[]) => {
     })
 }
 
+const getVariantCombinationKey = (variant: Pick<VariantFormState, 'pv_name' | 'pv_size'>) =>
+  `${normalizeVariantLabel(variant.pv_name).toLowerCase()}::${normalizeVariantLabel(variant.pv_size).toLowerCase()}`
+
+const buildGeneratedVariantRows = (
+  existingVariants: VariantFormState[],
+  globalPrimaryValues: string[],
+  globalSizeValues: string[],
+  globalColors: VariantColor[],
+) => {
+  const primaryValues = globalPrimaryValues.length > 0 ? globalPrimaryValues : ['']
+  const sizeValues = globalSizeValues.length > 0 ? globalSizeValues : ['']
+  const comboKeys = new Set<string>()
+  const generatedRows = primaryValues.flatMap((value) =>
+    sizeValues.map((sizeValue) => {
+      const combo = { pv_name: value, pv_size: sizeValue }
+      const comboKey = getVariantCombinationKey(combo)
+      comboKeys.add(comboKey)
+      const existing = existingVariants.find((variant) => getVariantCombinationKey(variant) === comboKey)
+
+      return {
+        ...(existing ?? emptyVariant()),
+        pv_name: value,
+        pv_size: sizeValue,
+        pv_colors: dedupeVariantColors([...(existing?.pv_colors ?? []), ...globalColors.map((color) => ({ ...color }))]),
+      }
+    }),
+  )
+
+  const manualRows = existingVariants.filter((variant) => !comboKeys.has(getVariantCombinationKey(variant)))
+  return [...generatedRows, ...manualRows]
+}
+
+const normalizeVariantsForSync = (variants: VariantFormState[]) =>
+  variants.map((variant) => ({
+    pv_name: variant.pv_name.trim(),
+    pv_sku: variant.pv_sku.trim(),
+    pv_colors: variant.pv_colors.map((color) => ({
+      name: color.name.trim(),
+      hex: color.hex.trim().toLowerCase(),
+    })),
+    pv_size: variant.pv_size.trim(),
+    pv_width: variant.pv_width.trim(),
+    pv_dimension: variant.pv_dimension.trim(),
+    pv_height: variant.pv_height.trim(),
+    pv_price_srp: variant.pv_price_srp.trim(),
+    pv_price_dp: variant.pv_price_dp.trim(),
+    pv_price_member: variant.pv_price_member.trim(),
+    pv_reversed_pv_multiplier: variant.pv_reversed_pv_multiplier.trim(),
+    pv_prodpv: variant.pv_prodpv.trim(),
+    pv_qty: variant.pv_qty.trim(),
+    pv_status: variant.pv_status.trim(),
+    pv_images: variant.pv_images.filter(Boolean),
+  }))
+
 const moveItem = <T,>(items: T[], fromIndex: number, toIndex: number) => {
   if (fromIndex === toIndex || fromIndex < 0 || toIndex < 0 || fromIndex >= items.length || toIndex >= items.length) {
     return items
@@ -833,6 +887,18 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
   }, [form, globalColors, globalPrimaryValues, globalSizeValues, isOpen, roomTouched, uploadedUrls, variants])
 
   const hasVariants = form.pd_type === '1'
+
+  useEffect(() => {
+    if (!hasVariants) return
+    if (globalPrimaryValues.length === 0 && globalSizeValues.length === 0) return
+
+    setVariants((prev) => {
+      const next = buildGeneratedVariantRows(prev, globalPrimaryValues, globalSizeValues, globalColors)
+      return JSON.stringify(normalizeVariantsForSync(prev)) === JSON.stringify(normalizeVariantsForSync(next))
+        ? prev
+        : next
+    })
+  }, [globalColors, globalPrimaryValues, globalSizeValues, hasVariants])
   const visibleImagePreviews = imageFiles.length > 0 ? imagePreviews : uploadedUrls
 
   /* ── image handlers ── */

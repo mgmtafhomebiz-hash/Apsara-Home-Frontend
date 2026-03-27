@@ -129,6 +129,8 @@ export function useAiSupport() {
                 cards: data.brand_cards.slice(0, 10),
                 viewAllUrl: data.brand_view_all_url ?? '',
               });
+            if (data.category_cards?.length)
+              next.push({ kind: 'category_cards', cards: data.category_cards.slice(0, 10) });
           } else {
             next.push({ kind: 'text', role: 'bot', text: 'I could not process your request right now.' });
           }

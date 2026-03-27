@@ -18,6 +18,12 @@ export interface BrandCardData {
   url: string;
 }
 
+export interface CategoryCardData {
+  name: string;
+  count: number;
+  url: string;
+}
+
 export interface ProductCardsMessage {
   kind: 'cards';
   cards: ProductCardData[];
@@ -29,13 +35,19 @@ export interface BrandCardsMessage {
   viewAllUrl: string;
 }
 
-export type ChatMessage = TextMessage | ProductCardsMessage | BrandCardsMessage;
+export interface CategoryCardsMessage {
+  kind: 'category_cards';
+  cards: CategoryCardData[];
+}
+
+export type ChatMessage = TextMessage | ProductCardsMessage | BrandCardsMessage | CategoryCardsMessage;
 
 export interface ApiResponse {
   status: 'ok' | 'error';
   reply?: string;
   product_cards?: ProductCardData[];
   brand_cards?: BrandCardData[];
+  category_cards?: CategoryCardData[];
   brand_view_all_url?: string;
   quick_replies?: string[];
 }

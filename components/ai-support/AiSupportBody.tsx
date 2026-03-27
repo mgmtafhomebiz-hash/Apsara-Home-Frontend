@@ -5,6 +5,7 @@ import type { ChatMessage } from './types';
 import { TextMessage } from './messages/TextMessage';
 import { ProductCards } from './messages/ProductCards';
 import { BrandCards } from './messages/BrandCards';
+import { CategoryCards } from './messages/CategoryCards';
 
 interface Props {
   messages: ChatMessage[];
@@ -24,6 +25,7 @@ export function AiSupportBody({ messages, isLoading }: Props) {
         if (msg.kind === 'text') return <TextMessage key={i} message={msg} />;
         if (msg.kind === 'cards') return <ProductCards key={i} message={msg} />;
         if (msg.kind === 'brand_cards') return <BrandCards key={i} message={msg} />;
+        if (msg.kind === 'category_cards') return <CategoryCards key={i} message={msg} />;
         return null;
       })}
 
