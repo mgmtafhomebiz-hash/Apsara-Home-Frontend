@@ -404,6 +404,38 @@ const buildPricingSummary = ({
   }
 }
 
+function CalcRow({
+  label, a, op, b, result, resultAccent, badge,
+}: {
+  label: string
+  a: string
+  op: '×' | '−' | '+'
+  b: string
+  result: string
+  resultAccent?: 'teal' | 'emerald' | 'rose' | 'blue'
+  badge?: string
+}) {
+  const rc = resultAccent === 'teal' ? 'text-teal-600' : resultAccent === 'emerald' ? 'text-emerald-600' : resultAccent === 'rose' ? 'text-rose-500' : resultAccent === 'blue' ? 'text-blue-600' : 'text-slate-800'
+  return (
+    <div className="flex items-center justify-between px-3 py-2.5 gap-2">
+      <div className="min-w-0">
+        <div className="flex items-center gap-1 flex-wrap">
+          {badge && <span className="shrink-0 rounded-full bg-blue-50 px-1.5 py-0.5 text-[9px] md:text-[11px] font-bold text-blue-500">{badge}</span>}
+          <span className="text-[11px] md:text-sm font-semibold text-slate-500">{label}</span>
+        </div>
+        <div className="flex items-center gap-1 mt-0.5 font-mono text-[11px] md:text-xs text-slate-400 flex-wrap">
+          <span>{a}</span>
+          <span className="text-slate-300">{op}</span>
+          <span>{b}</span>
+          <span className="text-slate-300">=</span>
+          <span className={`font-bold ${rc}`}>{result}</span>
+        </div>
+      </div>
+      <span className={`shrink-0 text-sm md:text-base font-bold tabular-nums ${rc}`}>{result}</span>
+    </div>
+  )
+}
+
 function PricingSummaryPanel({
   summary,
   title = 'PV Summary',
@@ -413,46 +445,129 @@ function PricingSummaryPanel({
   title?: string
   memberFallbackToSrp?: boolean
 }) {
-  const rows = [
-    ['Transfer Price', `PHP ${summary.transferPrice.toLocaleString(undefined, { maximumFractionDigits: 2 })}`],
-    ['Auto PV', `${summary.computedPv.toLocaleString(undefined, { maximumFractionDigits: 2 })} PV`],
-    ['Reversed PV Multiplier', summary.reversedMultiplier.toFixed(6)],
-    ['Retail Profit', `PHP ${summary.retailProfit.toLocaleString(undefined, { maximumFractionDigits: 2 })}`],
-    ['Group Purchase 6%', `PHP ${summary.groupPurchase.toLocaleString(undefined, { maximumFractionDigits: 2 })}`],
-    ['Personal Cashback 4%', `PHP ${summary.personalCashback.toLocaleString(undefined, { maximumFractionDigits: 2 })}`],
-    ['Global Purchase Bonus 1%', `PHP ${summary.globalPurchaseBonus.toLocaleString(undefined, { maximumFractionDigits: 2 })}`],
-    ['Affiliate Performance Bonus 10%', `PHP ${summary.affiliatePerformanceBonus.toLocaleString(undefined, { maximumFractionDigits: 2 })}`],
-    ['Incentive Alloc 1%', `PHP ${summary.incentiveAllocation.toLocaleString(undefined, { maximumFractionDigits: 2 })}`],
-    ['Total Allocation 22%', `PHP ${summary.totalAllocation.toLocaleString(undefined, { maximumFractionDigits: 2 })}`],
-    ['VAT (12% of MP)', `PHP ${summary.vatOnMemberPrice.toLocaleString(undefined, { maximumFractionDigits: 2 })}`],
-  ] as const
+  const fmt = (v: number) => v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  const fmtPv = (v: number) => v.toLocaleString(undefined, { maximumFractionDigits: 4 })
+  const pvStr = fmtPv(summary.computedPv)
+  const mp = fmt(summary.effectiveMemberPrice)
+  const transfer = fmt(summary.transferPrice)
+  const mult = summary.reversedMultiplier.toFixed(4)
+
+  const bonusRows: { label: string; rate: string; value: number }[] = [
+    { label: 'Group Purchase',        rate: '6%',  value: summary.groupPurchase },
+    { label: 'Personal Cashback',     rate: '4%',  value: summary.personalCashback },
+    { label: 'Global Purchase Bonus', rate: '1%',  value: summary.globalPurchaseBonus },
+    { label: 'Affiliate Performance', rate: '10%', value: summary.affiliatePerformanceBonus },
+    { label: 'Incentive Allocation',  rate: '1%',  value: summary.incentiveAllocation },
+  ]
 
   return (
-    <div className="rounded-2xl border border-blue-100 bg-[linear-gradient(135deg,#f8fbff,#eef6ff)] p-4">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-blue-500">{title}</p>
-          <p className="mt-1 text-xs text-slate-500">
-            Live preview based on transfer price, member price, and reversed PV multiplier.
-            {memberFallbackToSrp ? ' Enter a member price to unlock MP-based calculations.' : ''}
-          </p>
+    <div className="rounded-2xl border border-blue-100 overflow-hidden shadow-sm">
+      {/* ── Header ── */}
+      <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-500">
+        <div className="flex items-center gap-2">
+          <svg className="w-3.5 h-3.5 text-white/80 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 11h.01M12 11h.01M15 11h.01M4 19h16a2 2 0 002-2V7a2 2 0 00-2-2H4a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+          </svg>
+          <span className="text-[10px] md:text-xs font-bold uppercase tracking-widest text-white">{title}</span>
+          <span className="text-[10px] md:text-xs text-blue-200">— live computation</span>
         </div>
-        <div className="rounded-2xl bg-white/80 px-3 py-2 text-right shadow-sm">
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Member Price</p>
-          <p className="text-sm font-bold text-slate-800">
-            {summary.effectiveMemberPrice > 0
-              ? `PHP ${summary.effectiveMemberPrice.toLocaleString(undefined, { maximumFractionDigits: 2 })}`
-              : 'Waiting for MP'}
+        <div className="text-right shrink-0">
+          <p className="text-[9px] md:text-[11px] font-semibold uppercase tracking-wide text-blue-200">Member Price</p>
+          <p className="text-sm md:text-base font-bold text-white leading-none mt-0.5">
+            {summary.effectiveMemberPrice > 0 ? `₱ ${mp}` : <span className="text-blue-300 text-xs italic">—</span>}
           </p>
         </div>
       </div>
-      <div className="mt-3 grid gap-2 md:grid-cols-2 xl:grid-cols-4">
-        {rows.map(([label, value]) => (
-          <div key={label} className="rounded-xl border border-white/80 bg-white/80 px-3 py-2.5 shadow-sm">
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
-            <p className="mt-1 text-sm font-bold text-slate-800">{value}</p>
+
+      <div className="bg-gradient-to-br from-slate-50 to-blue-50/60 divide-y divide-slate-100">
+
+        {/* ── Section 1: PV Computation (hero) ── */}
+        <div className="px-4 py-3">
+          <p className="text-[9px] md:text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-2">PV Computation</p>
+          <div className="rounded-xl bg-white border border-teal-100 px-3 py-3">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-[10px] md:text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Transfer Price × Multiplier</p>
+                <div className="flex items-center gap-2 font-mono text-sm md:text-base flex-wrap">
+                  <span className="font-semibold text-slate-700">{transfer}</span>
+                  <span className="text-slate-300 text-base md:text-lg">×</span>
+                  <span className="font-semibold text-slate-700">{mult}</span>
+                  <span className="text-slate-300 text-base md:text-lg">=</span>
+                  <span className="font-bold text-teal-600 text-base md:text-lg">{pvStr} PV</span>
+                </div>
+              </div>
+              <div className="shrink-0 text-right bg-teal-50 rounded-lg px-3 py-2 border border-teal-100">
+                <p className="text-[9px] md:text-[11px] font-semibold text-teal-500 uppercase tracking-wide">Auto PV</p>
+                <p className="text-lg md:text-2xl font-bold text-teal-700 leading-none mt-0.5">{pvStr}</p>
+                <p className="text-[9px] md:text-[11px] text-teal-400">PV units</p>
+              </div>
+            </div>
           </div>
-        ))}
+        </div>
+
+        {/* ── Section 2: Price breakdown ── */}
+        <div className="px-4 py-3">
+          <p className="text-[9px] md:text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-2">Price Breakdown</p>
+          <div className="rounded-xl bg-white border border-slate-100 overflow-hidden divide-y divide-slate-50">
+            <CalcRow
+              label="Retail Profit"
+              a={`SRP ₱${fmt(summary.retailProfit + summary.effectiveMemberPrice)}`}
+              op="−"
+              b={`MP ₱${mp}`}
+              result={`₱ ${fmt(summary.retailProfit)}`}
+              resultAccent={summary.retailProfit >= 0 ? 'emerald' : 'rose'}
+            />
+            <CalcRow
+              label="VAT (12% of Member Price)"
+              a={`₱${mp}`}
+              op="×"
+              b="12%"
+              result={`₱ ${fmt(summary.vatOnMemberPrice)}`}
+            />
+          </div>
+        </div>
+
+        {/* ── Section 3: Bonus distribution ── */}
+        <div className="px-4 py-3">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-[9px] md:text-[11px] font-bold uppercase tracking-widest text-slate-400">Bonus Distribution</p>
+            <span className="rounded-full bg-blue-600 px-2 py-0.5 text-[9px] md:text-[11px] font-bold text-white">22% of PV</span>
+          </div>
+          <div className="rounded-xl bg-white border border-slate-100 overflow-hidden divide-y divide-slate-50">
+            {bonusRows.map(({ label, rate, value }) => (
+              <div key={label} className="flex items-center justify-between px-3 py-2 gap-2">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <span className="shrink-0 rounded-full bg-blue-50 px-1.5 py-0.5 text-[9px] md:text-[11px] font-bold text-blue-500">{rate}</span>
+                    <span className="text-[11px] md:text-sm font-semibold text-slate-600 truncate">{label}</span>
+                  </div>
+                  <p className="font-mono text-[11px] md:text-xs text-slate-400 mt-0.5">
+                    {pvStr} PV <span className="text-slate-300">×</span> {rate} <span className="text-slate-300">=</span> <span className="font-semibold text-slate-600">₱ {fmt(value)}</span>
+                  </p>
+                </div>
+                <span className="shrink-0 text-sm md:text-base font-bold text-slate-800 tabular-nums">₱ {fmt(value)}</span>
+              </div>
+            ))}
+            <div className="flex items-center justify-between px-3 py-2.5 bg-blue-600">
+              <div className="flex items-center gap-2">
+                <span className="shrink-0 rounded-full bg-white/20 px-1.5 py-0.5 text-[9px] md:text-[11px] font-bold text-white">22%</span>
+                <div>
+                  <p className="text-[11px] md:text-sm font-semibold text-white">Total Allocation</p>
+                  <p className="font-mono text-[10px] md:text-xs text-blue-200">{pvStr} PV × 22%</p>
+                </div>
+              </div>
+              <span className="text-base md:text-lg font-bold text-white tabular-nums">₱ {fmt(summary.totalAllocation)}</span>
+            </div>
+          </div>
+        </div>
+
+        {memberFallbackToSrp && (
+          <div className="px-4 py-3">
+            <p className="text-[10px] md:text-xs text-amber-600 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
+              Enter a Member Price to unlock Retail Profit and VAT calculations.
+            </p>
+          </div>
+        )}
       </div>
     </div>
   )
@@ -1452,14 +1567,6 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
                         <input type="number" value={form.pd_reversed_pv_multiplier} onChange={e => set('pd_reversed_pv_multiplier', e.target.value)} placeholder="e.g. 0.2" className={inputCls(!!errors.pd_prodpv)}/>
                         <p className="text-[11px] text-slate-500">Formula: PV = Transfer Price × Multiplier.</p>
                       </div>
-                    </Field>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 mt-3">
-                    <Field label="PV (auto)">
-                      <input type="text" value={mainPricingSummary.computedPv > 0 ? formatDecimalInput(mainPricingSummary.computedPv, 2) : ''} readOnly placeholder="Auto-computed" className={`${inputCls()} bg-slate-50 text-slate-600`}/>
-                    </Field>
-                    <Field label="Retail Profit">
-                      <input type="text" value={mainPricingSummary.retailProfit !== 0 ? formatDecimalInput(mainPricingSummary.retailProfit, 2) : ''} readOnly placeholder="SRP - Member Price" className={`${inputCls()} bg-slate-50 text-slate-600`}/>
                     </Field>
                   </div>
                   <PricingSummaryPanel summary={mainPricingSummary} memberFallbackToSrp={!form.pd_price_member.trim()} />
