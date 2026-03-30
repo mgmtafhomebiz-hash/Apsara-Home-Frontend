@@ -42,21 +42,35 @@ export async function POST(request: Request) {
   const message = (await parseMessage(request)).trim();
   const body = `message=${encodeURIComponent(message)}`;
 
-  const res = await fetch(`${apiBase}/api/ai-support`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-      "X-AF-IS-MEMBER": isMember ? "1" : "0",
-    },
-    body,
-  });
+  try {
+    const res = await fetch(`${apiBase}/api/ai-support`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+        "X-AF-IS-MEMBER": isMember ? "1" : "0",
+      },
+      body,
+    });
 
-  const contentType = res.headers.get("content-type") ?? "application/json";
-  const payload = await res.text();
+    const contentType = res.headers.get("content-type") ?? "application/json";
+    const payload = await res.text();
 
-  return new NextResponse(payload, {
-    status: res.status,
-    headers: { "Content-Type": contentType },
-  });
+    if (!contentType.includes("application/json")) {
+      return NextResponse.json(
+        { status: "error", message: "AI support returned an unexpected response." },
+        { status: 502 }
+      );
+    }
+
+    return new NextResponse(payload, {
+      status: res.status,
+      headers: { "Content-Type": contentType },
+    });
+  } catch (error) {
+    return NextResponse.json(
+      { status: "error", message: "AI support service is unreachable right now." },
+      { status: 502 }
+    );
+  }
 }
 

@@ -3,7 +3,7 @@ import DashboardLayout from "@/components/superAdmin/DashboardLayout";
 export default function LoadingMembersPage() {
   return (
     <DashboardLayout>
-      <div className="space-y-5 animate-pulse">
+      <div id="af-loading-screen" className="space-y-5 animate-pulse">
         <div className="flex items-start justify-between gap-4">
           <div>
             <div className="h-6 w-32 rounded bg-slate-200" />

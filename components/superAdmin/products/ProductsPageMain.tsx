@@ -3,9 +3,11 @@
 import { useState, useEffect, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { useSession } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { useGetAdminMeQuery } from '@/store/api/authApi'
-import { Product, useGetProductsQuery, useDeleteProductMutation, ProductsResponse } from '@/store/api/productsApi'
+import { Product, useGetProductsQuery, useGetPublicProductsQuery, useDeleteProductMutation, ProductsResponse } from '@/store/api/productsApi'
+import { useGetPublicProductBrandsQuery } from '@/store/api/productBrandsApi'
+import { useGetSuppliersQuery } from '@/store/api/suppliersApi'
 import ProductsToolbar from './ProductsToolbar'
 import ProductsTable from './ProductsTable'
 import AddProductModal from './AddProductModal'
@@ -17,6 +19,7 @@ import { revalidateStorefront } from '@/libs/revalidateStorefront'
 
 interface ProductsPageMainProps {
   initialData?: ProductsResponse | null
+  initialBrandType?: number
 }
 
 const NEW_BADGE_DAYS = 7
@@ -55,23 +58,29 @@ function StatCard({
   )
 }
 
-export default function ProductsPageMain({ initialData = null }: ProductsPageMainProps) {
+export default function ProductsPageMain({ initialData = null, initialBrandType }: ProductsPageMainProps) {
   const router = useRouter()
+  const pathname = usePathname()
   const { data: session } = useSession()
+  const supplierName = String((session?.user as { supplierName?: string | null; name?: string | null } | undefined)?.supplierName
+    ?? (session?.user as { name?: string | null } | undefined)?.name
+    ?? '')
   const sessionAccessToken = String((session?.user as { accessToken?: string } | undefined)?.accessToken ?? '')
-  const sessionRole = String((session?.user as { role?: string } | undefined)?.role ?? '').toLowerCase()
+  const isAdminRoute = pathname.startsWith('/admin')
   const adminIdentityKey = sessionAccessToken
     ? `${String((session?.user as { id?: string } | undefined)?.id ?? 'unknown')}:${sessionAccessToken}`
     : undefined
-  const shouldFetchAdminMe = Boolean(sessionAccessToken) && sessionRole !== 'supplier'
-  const { data: adminMe } = useGetAdminMeQuery(adminIdentityKey, { skip: !shouldFetchAdminMe })
+  const { data: adminMe } = useGetAdminMeQuery(adminIdentityKey, { skip: !sessionAccessToken || !isAdminRoute })
   const role = String(adminMe?.role ?? session?.user?.role ?? '').toLowerCase()
-  const isSupplierPortal = role === 'supplier'
+  const isSupplierPortal = role === 'supplier' || pathname.startsWith('/supplier')
   const linkedSupplierId = Number(adminMe?.supplier_id ?? session?.user?.supplierId ?? 0)
   const [search,          setSearch]          = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [status,          setStatus]          = useState('')
   const [catId,           setCatId]           = useState<number | undefined>(undefined)
+  const [brandType,       setBrandType]       = useState<number | undefined>(
+    typeof initialBrandType === 'number' && initialBrandType > 0 ? initialBrandType : undefined,
+  )
   const [page,            setPage]            = useState(1)
   const [showAddModal,    setShowAddModal]    = useState(false)
   const [showActivityLogs, setShowActivityLogs] = useState(false)
@@ -86,34 +95,153 @@ export default function ProductsPageMain({ initialData = null }: ProductsPageMai
   const searchPerPage = 500
   const perPage = debouncedSearch ? searchPerPage : defaultPerPage
 
+  const { data: supplierBrandsData } = useGetPublicProductBrandsQuery(undefined, { skip: !isSupplierPortal })
+  const { data: supplierListData } = useGetSuppliersQuery(undefined, { skip: !isSupplierPortal })
+  const supplierRecord = useMemo(() => {
+    if (!isSupplierPortal) return undefined
+    const suppliers = supplierListData?.suppliers ?? []
+    if (linkedSupplierId > 0) {
+      return suppliers.find((supplier) => supplier.id === linkedSupplierId) ?? suppliers[0]
+    }
+    return suppliers[0]
+  }, [isSupplierPortal, linkedSupplierId, supplierListData?.suppliers])
+
+  useEffect(() => {
+    if (!isSupplierPortal || brandType !== undefined) return
+    const brands = supplierBrandsData?.brands ?? []
+    if (brands.length === 0) return
+    const candidates = [
+      supplierName,
+      supplierRecord?.company,
+      supplierRecord?.name,
+    ]
+      .filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
+      .map((value) => value.toLowerCase().replace(/[^a-z0-9]/g, ''))
+    if (candidates.length === 0) return
+    const pickBestBrandId = () => {
+      const exactMatch = brands.find((brand) => {
+        const brandKey = String(brand.name ?? '').toLowerCase().replace(/[^a-z0-9]/g, '')
+        return brandKey !== '' && candidates.some((candidate) => candidate === brandKey)
+      })
+      if (exactMatch?.id) {
+        return Number(exactMatch.id)
+      }
+
+      let bestId = 0
+      let bestScore = 0
+      let bestLen = 0
+      brands.forEach((brand) => {
+        const brandKey = String(brand.name ?? '').toLowerCase().replace(/[^a-z0-9]/g, '')
+        if (!brandKey) return
+        candidates.forEach((candidate) => {
+          if (!candidate) return
+          let score = 0
+          if (candidate === brandKey) score = 3
+          else if (candidate.includes(brandKey)) score = 2
+          else if (brandKey.includes(candidate)) score = 1
+          if (score > 0) {
+            const len = brandKey.length
+            if (score > bestScore || (score === bestScore && len > bestLen)) {
+              bestScore = score
+              bestLen = len
+              bestId = Number(brand.id ?? 0)
+            }
+          }
+        })
+      })
+      return bestId
+    }
+
+    const matchId = pickBestBrandId()
+    if (matchId > 0) {
+      setBrandType(matchId)
+    }
+  }, [brandType, isSupplierPortal, supplierBrandsData?.brands, supplierName, supplierRecord?.company, supplierRecord?.name])
+
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(search.trim()), 300)
     return () => clearTimeout(t)
   }, [search])
 
-  const { data, isLoading, isFetching, isError, error, refetch: refetchProducts } = useGetProductsQuery(
-    {
-      page: debouncedSearch ? 1 : page,
-      perPage,
-      search: debouncedSearch || undefined,
-      status: status === 'new' ? undefined : (status || undefined),
-      catId,
-      supplierId: isSupplierPortal && linkedSupplierId > 0 ? linkedSupplierId : undefined,
-    },
-    { refetchOnMountOrArgChange: true },
-  )
+  const adminQueryArgs = {
+    page: debouncedSearch ? 1 : page,
+    perPage,
+    search: debouncedSearch || undefined,
+    status: status === 'new' ? undefined : (status || undefined),
+    catId,
+    brandType,
+    supplierId: isSupplierPortal && linkedSupplierId > 0 ? linkedSupplierId : undefined,
+  }
+  const publicQueryArgs = {
+    page: debouncedSearch ? 1 : page,
+    perPage,
+    search: debouncedSearch || undefined,
+    status: status === 'new' ? undefined : (status || undefined),
+    catId,
+    brandType,
+    supplierId: isSupplierPortal && linkedSupplierId > 0 ? linkedSupplierId : undefined,
+  }
+
+  const {
+    data: adminData,
+    isLoading: isAdminLoading,
+    isFetching: isAdminFetching,
+    isError: isAdminError,
+    error: adminError,
+    refetch: refetchAdminProducts,
+  } = useGetProductsQuery(adminQueryArgs, { skip: isSupplierPortal, refetchOnMountOrArgChange: true })
+
+  const {
+    data: publicData,
+    isLoading: isPublicLoading,
+    isFetching: isPublicFetching,
+    isError: isPublicError,
+    error: publicError,
+    refetch: refetchPublicProducts,
+  } = useGetPublicProductsQuery(publicQueryArgs, { skip: !isSupplierPortal, refetchOnMountOrArgChange: true })
+
+  const data = isSupplierPortal ? publicData : adminData
+  const isLoading = isSupplierPortal ? isPublicLoading : isAdminLoading
+  const isFetching = isSupplierPortal ? isPublicFetching : isAdminFetching
+  const isError = isSupplierPortal ? isPublicError : isAdminError
+  const error = isSupplierPortal ? publicError : adminError
+  const refetchProducts = isSupplierPortal ? refetchPublicProducts : refetchAdminProducts
 
   /* Lightweight count queries for stats */
-  const { data: activeCountData, refetch: refetchActiveCount }   = useGetProductsQuery({
+  const activeCountArgs = {
     perPage: 1,
     status: '1',
     supplierId: isSupplierPortal && linkedSupplierId > 0 ? linkedSupplierId : undefined,
-  }, { refetchOnMountOrArgChange: true })
-  const { data: inactiveCountData, refetch: refetchInactiveCount } = useGetProductsQuery({
+    brandType: isSupplierPortal ? brandType : undefined,
+  }
+  const inactiveCountArgs = {
     perPage: 1,
     status: '0',
     supplierId: isSupplierPortal && linkedSupplierId > 0 ? linkedSupplierId : undefined,
-  }, { refetchOnMountOrArgChange: true })
+    brandType: isSupplierPortal ? brandType : undefined,
+  }
+
+  const { data: adminActiveCountData, refetch: refetchAdminActiveCount } = useGetProductsQuery(
+    activeCountArgs,
+    { skip: isSupplierPortal, refetchOnMountOrArgChange: true },
+  )
+  const { data: adminInactiveCountData, refetch: refetchAdminInactiveCount } = useGetProductsQuery(
+    inactiveCountArgs,
+    { skip: isSupplierPortal, refetchOnMountOrArgChange: true },
+  )
+  const { data: publicActiveCountData, refetch: refetchPublicActiveCount } = useGetPublicProductsQuery(
+    activeCountArgs,
+    { skip: !isSupplierPortal, refetchOnMountOrArgChange: true },
+  )
+  const { data: publicInactiveCountData, refetch: refetchPublicInactiveCount } = useGetPublicProductsQuery(
+    inactiveCountArgs,
+    { skip: !isSupplierPortal, refetchOnMountOrArgChange: true },
+  )
+
+  const activeCountData = isSupplierPortal ? publicActiveCountData : adminActiveCountData
+  const inactiveCountData = isSupplierPortal ? publicInactiveCountData : adminInactiveCountData
+  const refetchActiveCount = isSupplierPortal ? refetchPublicActiveCount : refetchAdminActiveCount
+  const refetchInactiveCount = isSupplierPortal ? refetchPublicInactiveCount : refetchAdminInactiveCount
 
   const [deleteProduct] = useDeleteProductMutation()
 
@@ -164,8 +292,14 @@ export default function ProductsPageMain({ initialData = null }: ProductsPageMai
       return mergedProductList
     }
 
-    return mergedProductList.filter((product) => Number(product.supplierId ?? 0) === linkedSupplierId)
-  }, [createdProducts, data?.products, initialData?.products, isSupplierPortal, linkedSupplierId, productOverrides, useInitialData])
+    return mergedProductList.filter((product) => {
+      const matchesSupplier = Number(product.supplierId ?? 0) === linkedSupplierId
+      const matchesBrand = typeof brandType === 'number' && brandType > 0
+        ? Number(product.brandType ?? 0) === brandType
+        : false
+      return matchesSupplier || matchesBrand
+    })
+  }, [brandType, createdProducts, data?.products, initialData?.products, isSupplierPortal, linkedSupplierId, productOverrides, useInitialData])
 
   const visibleProducts = useMemo(() => {
     const baseProducts = status === 'new' ? products.filter(isNewProduct) : products
@@ -198,19 +332,8 @@ export default function ProductsPageMain({ initialData = null }: ProductsPageMai
   }, [debouncedSearch, products, status])
 
   const meta = useMemo(() => {
-    const rawMeta = data?.meta ?? (useInitialData ? initialData?.meta : undefined)
-
-    if (!isSupplierPortal || linkedSupplierId <= 0 || !rawMeta) {
-      return rawMeta
-    }
-
-    return {
-      ...rawMeta,
-      total: products.length,
-      from: products.length > 0 ? 1 : 0,
-      to: products.length,
-    }
-  }, [data?.meta, initialData?.meta, isSupplierPortal, linkedSupplierId, products.length, useInitialData])
+    return data?.meta ?? (useInitialData ? initialData?.meta : undefined)
+  }, [data?.meta, initialData?.meta, useInitialData])
 
   const visibleMeta = useMemo(() => {
     if (!debouncedSearch && status !== 'new') {
@@ -233,6 +356,7 @@ export default function ProductsPageMain({ initialData = null }: ProductsPageMai
   const handleSearch = (v: string) => { setSearch(v); setPage(1) }
   const handleStatus = (v: string) => { setStatus(v); setPage(1) }
   const handleCatId  = (v: number | undefined) => { setCatId(v); setPage(1) }
+  const handleBrandType  = (v: number | undefined) => { setBrandType(v); setPage(1) }
 
   useEffect(() => {
     const rowIds = new Set(visibleProducts.map(p => p.id))
@@ -404,6 +528,8 @@ export default function ProductsPageMain({ initialData = null }: ProductsPageMai
           search={search} onSearch={handleSearch}
           status={status} onStatus={handleStatus}
           catId={catId}   onCatId={handleCatId}
+          brandType={brandType} onBrandType={handleBrandType}
+          showBrandFilter={!isSupplierPortal}
           resultCount={visibleMeta?.total ?? visibleProducts.length}
           supplierId={isSupplierPortal && linkedSupplierId > 0 ? linkedSupplierId : undefined}
         />

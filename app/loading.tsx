@@ -2,7 +2,7 @@ import Image from 'next/image';
 
 const Loading = () => {
   return (
-    <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[#faf8f5] overflow-hidden">
+    <div id="af-loading-screen" className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[#faf8f5] overflow-hidden">
 
       {/* Background decorative blobs */}
       <div className="absolute -top-24 -right-24 w-80 h-80 rounded-full bg-[#2c5f4f]/10 animate-blob blur-3xl" />

@@ -1,7 +1,7 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
-import { useSession } from 'next-auth/react';
+import { useEffect, useState } from 'react';
 import { useAiSupport } from './hooks/useAiSupport';
 import { AiSupportPanel } from './AiSupportPanel';
 import { AiSupportToggle } from './AiSupportToggle';
@@ -10,31 +10,39 @@ const API_BASE = (process.env.NEXT_PUBLIC_LARAVEL_API_URL ?? '').replace(/\/+$/,
 const LOGO_SRC = `${API_BASE}/Image/af.png`;
 const ROBOT_SRC = `${API_BASE}/Image/sir.png`;
 
-// Hide AI support on these pages only
-const BLOCKED_PATHS = [
-  '/',
-  '/landing-page',
-  '/admin',
-  '/admin-setup',
-  '/super_admin',
-  '/supplier',
-  '/supplier-setup',
-  '/login',
-];
+const DISABLED_PREFIXES = ['/admin', '/supplier', '/loading', '/interior-services', '/login'];
 
 function useIsAllowed() {
   const pathname = usePathname();
-  if (BLOCKED_PATHS.some(path => pathname === path || pathname.startsWith(path + '/'))) return false;
-  return true;
+  if (pathname === '/') return false;
+  return !DISABLED_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(prefix + '/'));
+}
+
+function useIsLoadingScreenVisible() {
+  const [isLoadingScreenVisible, setIsLoadingScreenVisible] = useState(false);
+
+  useEffect(() => {
+    const check = () => {
+      setIsLoadingScreenVisible(Boolean(document.getElementById('af-loading-screen')));
+    };
+
+    check();
+    const observer = new MutationObserver(check);
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    return () => observer.disconnect();
+  }, []);
+
+  return isLoadingScreenVisible;
 }
 
 export function AiSupport() {
   const allowed = useIsAllowed();
-  const { status } = useSession();
+  const isLoadingScreenVisible = useIsLoadingScreenVisible();
   const { isOpen, close, toggle, messages, quickReplies, inputValue, setInputValue, send, isLoading } =
     useAiSupport();
 
-  if (!allowed || status === 'loading') return null;
+  if (!allowed || isLoadingScreenVisible) return null;
 
   return (
     <>
