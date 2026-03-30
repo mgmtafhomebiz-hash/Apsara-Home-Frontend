@@ -154,7 +154,6 @@ type VerificationFieldKey =
   | 'barangay'
   | 'postalCode'
   | 'country'
-  | 'notes'
   | 'idFrontUrl'
   | 'idBackUrl'
   | 'selfieUrl';
@@ -230,7 +229,6 @@ const EncashmentTab = () => {
     province: '',
     postalCode: '',
     country: 'Philippines',
-    notes: '',
     idFrontUrl: '',
     idBackUrl: '',
     selfieUrl: '',
@@ -639,7 +637,6 @@ const EncashmentTab = () => {
     if (!selectedVerificationBarangay) nextErrors.barangay = 'Barangay is required.';
     if (!verificationForm.postalCode.trim()) nextErrors.postalCode = 'Postal code is required.';
     if (!verificationForm.country.trim()) nextErrors.country = 'Country is required.';
-    if (!verificationForm.notes.trim()) nextErrors.notes = 'Verification notes are required.';
     if (!verificationForm.idFrontUrl) nextErrors.idFrontUrl = 'ID front is required.';
     if (!verificationForm.idBackUrl) nextErrors.idBackUrl = 'ID back is required.';
     if (!verificationForm.selfieUrl) nextErrors.selfieUrl = 'Selfie is required.';
@@ -658,10 +655,6 @@ const EncashmentTab = () => {
         verificationForm.addressLine.trim(),
         selectedVerificationBarangay,
       ].filter(Boolean).join(', ');
-      const composedNotes = [
-        verificationForm.notes.trim(),
-        selectedVerificationRegion ? `Region: ${selectedVerificationRegion}` : '',
-      ].filter(Boolean).join('\n');
 
       const res = await submitVerificationRequest({
         full_name: verificationForm.fullName.trim(),
@@ -674,7 +667,6 @@ const EncashmentTab = () => {
         province: selectedVerificationProvince,
         postal_code: verificationForm.postalCode.trim(),
         country: verificationForm.country.trim(),
-        notes: composedNotes,
         id_front_url: verificationForm.idFrontUrl,
         id_back_url: verificationForm.idBackUrl,
         selfie_url: verificationForm.selfieUrl,
@@ -1345,22 +1337,6 @@ const EncashmentTab = () => {
               />
               <span className="mt-1 block text-[11px] text-amber-700">{verificationUploadState.selfie ? 'Uploading...' : verificationForm.selfieUrl ? 'Uploaded' : 'Not uploaded'}</span>
               </span>
-            </VerificationField>
-          </div>
-          <div className="mt-3">
-            <VerificationField label="Verification Notes" required error={verificationErrors.notes}>
-              <textarea
-                data-verification-field="notes"
-                rows={3}
-                required
-                value={verificationForm.notes}
-                onChange={(e) => {
-                  setVerificationForm((prev) => ({ ...prev, notes: e.target.value }));
-                  setVerificationErrors((prev) => ({ ...prev, notes: undefined }));
-                }}
-                className={verificationInputClass('notes')}
-                placeholder="Add verification notes"
-              />
             </VerificationField>
           </div>
           <div className="mt-4">
