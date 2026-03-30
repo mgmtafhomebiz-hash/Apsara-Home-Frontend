@@ -4,7 +4,7 @@ function PulseBlock({ className }: { className: string }) {
 
 export default function Loading() {
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div id="af-loading-screen" className="min-h-screen bg-slate-50">
       <div className="container mx-auto max-w-7xl px-4 py-8 md:py-10">
         <div className="mb-8 space-y-3">
           <PulseBlock className="h-6 w-24" />
