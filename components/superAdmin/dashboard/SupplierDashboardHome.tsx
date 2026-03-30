@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useMemo } from 'react'
 import { useSession } from 'next-auth/react'
 import { Product, useGetProductsQuery } from '@/store/api/productsApi'
+import { useGetPublicProductBrandsQuery } from '@/store/api/productBrandsApi'
 import { useGetSupplierCategoriesQuery, useGetSupplierUsersQuery, useGetSuppliersQuery } from '@/store/api/suppliersApi'
 
 export default function SupplierDashboardHome() {
@@ -11,36 +12,123 @@ export default function SupplierDashboardHome() {
   const supplierId = Number(session?.user?.supplierId ?? 0)
   const supplierName = session?.user?.supplierName || session?.user?.name || 'Supplier'
   const isMainSupplier = Boolean(session?.user?.isMainSupplier)
-  const skip = status !== 'authenticated' || supplierId <= 0
+
+  const { data: suppliersData } = useGetSuppliersQuery(undefined, { skip: status !== 'authenticated' })
+  const fallbackSupplier = useMemo(() => (suppliersData?.suppliers ?? [])[0], [suppliersData?.suppliers])
+  const effectiveSupplierId = supplierId > 0 ? supplierId : Number(fallbackSupplier?.id ?? 0)
+  const skip = status !== 'authenticated' || effectiveSupplierId <= 0
+
+  const supplier = useMemo(
+    () => (suppliersData?.suppliers ?? []).find((item) => item.id === effectiveSupplierId),
+    [effectiveSupplierId, suppliersData?.suppliers]
+  )
+
+  const { data: brandsData } = useGetPublicProductBrandsQuery()
+  const brandType = useMemo(() => {
+    const brands = brandsData?.brands ?? []
+    if (brands.length === 0) return 0
+    const candidates = [
+      supplierName,
+      supplier?.company,
+      supplier?.name,
+    ]
+      .filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
+      .map((value) => value.toLowerCase().replace(/[^a-z0-9]/g, ''))
+
+    if (candidates.length === 0) return 0
+    const exactMatch = brands.find((brand) => {
+      const brandKey = String(brand.name ?? '').toLowerCase().replace(/[^a-z0-9]/g, '')
+      return brandKey !== '' && candidates.some((candidate) => candidate === brandKey)
+    })
+    if (exactMatch?.id) {
+      return Number(exactMatch.id)
+    }
+
+    let bestId = 0
+    let bestScore = 0
+    let bestLen = 0
+    brands.forEach((brand) => {
+      const brandKey = String(brand.name ?? '').toLowerCase().replace(/[^a-z0-9]/g, '')
+      if (!brandKey) return
+      candidates.forEach((candidate) => {
+        if (!candidate) return
+        let score = 0
+        if (candidate === brandKey) score = 3
+        else if (candidate.includes(brandKey)) score = 2
+        else if (brandKey.includes(candidate)) score = 1
+        if (score > 0) {
+          const len = brandKey.length
+          if (score > bestScore || (score === bestScore && len > bestLen)) {
+            bestScore = score
+            bestLen = len
+            bestId = Number(brand.id ?? 0)
+          }
+        }
+      })
+    })
+
+    return bestId
+  }, [brandsData?.brands, supplier?.company, supplier?.name, supplierName])
+
+  const productQueryBase = useMemo(
+    () => ({
+      supplierId: effectiveSupplierId,
+      ...(brandType > 0 ? { brandType } : {}),
+    }),
+    [brandType, effectiveSupplierId],
+  )
 
   const { data: productsData } = useGetProductsQuery(
-    { supplierId, perPage: 5 },
+    { ...productQueryBase, perPage: 5 },
     { skip, refetchOnMountOrArgChange: true }
   )
   const { data: activeProductsData } = useGetProductsQuery(
-    { supplierId, perPage: 1, status: '1' },
+    { ...productQueryBase, perPage: 1, status: '1' },
     { skip, refetchOnMountOrArgChange: true }
   )
   const { data: inactiveProductsData } = useGetProductsQuery(
-    { supplierId, perPage: 1, status: '0' },
+    { ...productQueryBase, perPage: 1, status: '0' },
     { skip, refetchOnMountOrArgChange: true }
   )
   const { data: inventoryData } = useGetProductsQuery(
-    { supplierId, perPage: 100 },
+    { ...productQueryBase, perPage: 100 },
     { skip, refetchOnMountOrArgChange: true }
   )
-  const { data: supplierCategoriesData } = useGetSupplierCategoriesQuery(supplierId, { skip })
-  const { data: supplierUsersData } = useGetSupplierUsersQuery(supplierId, { skip })
-  const { data: suppliersData } = useGetSuppliersQuery(undefined, { skip: status !== 'authenticated' })
 
-  const supplier = useMemo(
-    () => (suppliersData?.suppliers ?? []).find((item) => item.id === supplierId),
-    [supplierId, suppliersData?.suppliers]
+  const brandOnlySkip = skip || brandType <= 0
+  const { data: brandProductsData } = useGetProductsQuery(
+    { brandType, perPage: 5 },
+    { skip: brandOnlySkip, refetchOnMountOrArgChange: true }
   )
-  const recentProducts = useMemo(() => productsData?.products ?? [], [productsData?.products])
+  const { data: brandActiveProductsData } = useGetProductsQuery(
+    { brandType, perPage: 1, status: '1' },
+    { skip: brandOnlySkip, refetchOnMountOrArgChange: true }
+  )
+  const { data: brandInactiveProductsData } = useGetProductsQuery(
+    { brandType, perPage: 1, status: '0' },
+    { skip: brandOnlySkip, refetchOnMountOrArgChange: true }
+  )
+  const { data: brandInventoryData } = useGetProductsQuery(
+    { brandType, perPage: 100 },
+    { skip: brandOnlySkip, refetchOnMountOrArgChange: true }
+  )
+  const { data: supplierCategoriesData } = useGetSupplierCategoriesQuery(effectiveSupplierId, { skip })
+  const { data: supplierUsersData } = useGetSupplierUsersQuery(effectiveSupplierId, { skip })
+  const useBrandFallback = useMemo(() => {
+    if (brandType <= 0) return false
+    const primaryTotal = productsData?.meta?.total ?? 0
+    return primaryTotal <= 0
+  }, [brandType, productsData?.meta?.total])
+
+  const effectiveProductsData = useBrandFallback ? brandProductsData : productsData
+  const effectiveActiveProductsData = useBrandFallback ? brandActiveProductsData : activeProductsData
+  const effectiveInactiveProductsData = useBrandFallback ? brandInactiveProductsData : inactiveProductsData
+  const effectiveInventoryData = useBrandFallback ? brandInventoryData : inventoryData
+
+  const recentProducts = useMemo(() => effectiveProductsData?.products ?? [], [effectiveProductsData?.products])
   const lowStockCount = useMemo(
-    () => (inventoryData?.products ?? []).filter((product) => Number(product.qty ?? 0) > 0 && Number(product.qty ?? 0) <= 5).length,
-    [inventoryData?.products]
+    () => (effectiveInventoryData?.products ?? []).filter((product) => Number(product.qty ?? 0) > 0 && Number(product.qty ?? 0) <= 5).length,
+    [effectiveInventoryData?.products]
   )
   const mainSupplierUser = useMemo(
     () => (supplierUsersData?.users ?? []).find((user) => user.is_main_supplier),
@@ -54,19 +142,19 @@ export default function SupplierDashboardHome() {
   const cards = [
     {
       title: 'Total Products',
-      value: String(productsData?.meta?.total ?? 0),
+      value: String(effectiveProductsData?.meta?.total ?? 0),
       description: 'Current catalog items under your supplier account.',
       href: '/supplier/products',
     },
     {
       title: 'Active Products',
-      value: String(activeProductsData?.meta?.total ?? 0),
+      value: String(effectiveActiveProductsData?.meta?.total ?? 0),
       description: 'Products currently active in your supplier catalog.',
       href: '/supplier/products',
     },
     {
       title: 'Inactive Products',
-      value: String(inactiveProductsData?.meta?.total ?? 0),
+      value: String(effectiveInactiveProductsData?.meta?.total ?? 0),
       description: 'Products that still need attention before going live.',
       href: '/supplier/products',
     },
@@ -281,10 +369,10 @@ export default function SupplierDashboardHome() {
             />
             <InventoryStatusCard
               label="Inactive Products"
-              value={String(inactiveProductsData?.meta?.total ?? 0)}
-              tone={(inactiveProductsData?.meta?.total ?? 0) > 0 ? 'slate' : 'emerald'}
+              value={String(effectiveInactiveProductsData?.meta?.total ?? 0)}
+              tone={(effectiveInactiveProductsData?.meta?.total ?? 0) > 0 ? 'slate' : 'emerald'}
               description={
-                (inactiveProductsData?.meta?.total ?? 0) > 0
+                (effectiveInactiveProductsData?.meta?.total ?? 0) > 0
                   ? 'Products not currently live'
                   : 'All tracked products are active'
               }

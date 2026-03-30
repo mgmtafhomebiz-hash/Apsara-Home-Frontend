@@ -1,6 +1,7 @@
 'use client'
 
 import { useGetCategoriesQuery } from '@/store/api/categoriesApi'
+import { useGetProductBrandsQuery } from '@/store/api/productBrandsApi'
 
 interface ProductsToolbarProps {
   search: string
@@ -9,6 +10,9 @@ interface ProductsToolbarProps {
   onStatus: (v: string) => void
   catId: number | undefined
   onCatId: (v: number | undefined) => void
+  brandType: number | undefined
+  onBrandType: (v: number | undefined) => void
+  showBrandFilter?: boolean
   resultCount: number
   supplierId?: number
 }
@@ -19,13 +23,27 @@ const STATUS_TABS = [
   { value: '0', label: 'Inactive' },
 ]
 
-export default function ProductsToolbar({ search, onSearch, status, onStatus, catId, onCatId, resultCount, supplierId }: ProductsToolbarProps) {
+export default function ProductsToolbar({
+  search,
+  onSearch,
+  status,
+  onStatus,
+  catId,
+  onCatId,
+  brandType,
+  onBrandType,
+  showBrandFilter = true,
+  resultCount,
+  supplierId,
+}: ProductsToolbarProps) {
   const { data: categoriesData } = useGetCategoriesQuery(
     supplierId && supplierId > 0
       ? { supplier_id: supplierId }
       : undefined
   )
+  const { data: brandsData } = useGetProductBrandsQuery(undefined, { skip: !showBrandFilter })
   const categories = categoriesData?.categories ?? []
+  const brands = brandsData?.brands ?? []
   const hasSupplierScopedCategories = !supplierId || supplierId <= 0 || categories.length > 0
 
   return (
@@ -71,6 +89,31 @@ export default function ProductsToolbar({ search, onSearch, status, onStatus, ca
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7"/>
         </svg>
       </div>
+
+      {showBrandFilter && (
+        <div className="relative shrink-0">
+          <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.121 17.804A4 4 0 019 16h6a4 4 0 013.879 1.804M15 11a3 3 0 10-6 0 3 3 0 006 0z"/>
+          </svg>
+          <select
+            value={brandType ?? ''}
+            onChange={e => onBrandType(e.target.value === '' ? undefined : Number(e.target.value))}
+            className={`pl-9 pr-8 py-2.5 bg-white border rounded-xl text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-400 appearance-none cursor-pointer ${
+              brandType !== undefined
+                ? 'border-teal-400 text-teal-700 bg-teal-50'
+                : 'border-slate-200 text-slate-600'
+            }`}
+          >
+            <option value="">All Brands</option>
+            {brands.map((brand) => (
+              <option key={brand.id} value={brand.id}>{brand.name}</option>
+            ))}
+          </select>
+          <svg className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7"/>
+          </svg>
+        </div>
+      )}
 
       {/* Search */}
       <div className="relative flex-1 min-w-48">

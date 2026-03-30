@@ -1064,7 +1064,6 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
       page: 1,
       per_page: 500,
       supplier_id: isSupplierScopedActor && linkedSupplierId > 0 ? linkedSupplierId : undefined,
-      used_only: isSupplierScopedActor && linkedSupplierId > 0 ? true : undefined,
     },
     undefined
   )
