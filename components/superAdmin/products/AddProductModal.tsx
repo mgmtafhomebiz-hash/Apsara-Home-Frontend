@@ -833,6 +833,13 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
     }),
     [form.pd_pricing_tier, form.pd_price_srp, form.pd_price_dp, form.pd_price_member, form.pd_reversed_pv_multiplier],
   )
+  const computedMainPvDisplay = useMemo(() => {
+    const computed = deriveComputedPv({
+      transfer: form.pd_price_dp,
+      multiplier: form.pd_reversed_pv_multiplier,
+    })
+    return computed > 0 ? formatDecimalInput(computed, 2) : ''
+  }, [form.pd_price_dp, form.pd_reversed_pv_multiplier])
 
   const set = (key: keyof FormState, value: string | boolean) => {
     setForm(p => ({ ...p, [key]: value }))
@@ -1714,22 +1721,28 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
                     <Field label="SRP Price (₱)" required error={errors.pd_price_srp}>
                       <input type="number" value={form.pd_price_srp} onChange={e => set('pd_price_srp', e.target.value)} placeholder="0.00" className={inputCls(!!errors.pd_price_srp)}/>
                     </Field>
-                    <Field label="Dealer Price (₱)" error={errors.pd_price_dp}>
-                      <div className="space-y-1">
-                        <input type="number" value={form.pd_price_dp} onChange={e => set('pd_price_dp', e.target.value)} placeholder="0.00" className={inputCls(!!errors.pd_price_dp)}/>
-                        <p className="text-[11px] text-slate-500">Separate dealer pricing. Optional.</p>
-                      </div>
-                    </Field>
                     <Field label="Member Price (₱)" error={errors.pd_price_member}>
                       <div className="space-y-1">
                         <input type="number" value={form.pd_price_member} onChange={e => set('pd_price_member', e.target.value)} placeholder="0.00" className={inputCls(!!errors.pd_price_member)}/>
                         <p className="text-[11px] text-slate-500">Shown to member accounts. If blank, SRP will be used.</p>
                       </div>
                     </Field>
+                    <Field label="Dealer Price (₱)" error={errors.pd_price_dp}>
+                      <div className="space-y-1">
+                        <input type="number" value={form.pd_price_dp} onChange={e => set('pd_price_dp', e.target.value)} placeholder="0.00" className={inputCls(!!errors.pd_price_dp)}/>
+                        <p className="text-[11px] text-slate-500">Separate dealer pricing. Optional.</p>
+                      </div>
+                    </Field>
                     <Field label="PV Product">
                       <div className="space-y-1">
-                        <input type="number" value={form.pd_prodpv} onChange={e => set('pd_prodpv', e.target.value)} placeholder="0.00" className={inputCls()}/>
-                        <p className="text-[11px] text-slate-500">Enter the product PV value for this item.</p>
+                        <input
+                          type="number"
+                          value={computedMainPvDisplay}
+                          placeholder="0.00"
+                          disabled
+                          className={`${inputCls()} bg-slate-50 text-slate-600 cursor-not-allowed`}
+                        />
+                        <p className="text-[11px] text-slate-500">Auto-computed from Dealer Price × Reversed PV Multiplier.</p>
                       </div>
                     </Field>
                     <Field label="Reversed PV Multiplier" error={errors.pd_prodpv}>

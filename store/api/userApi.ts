@@ -5,6 +5,9 @@ export interface MeResponse {
     name: string;
     email: string;
     username?: string;
+    referrer_id?: number;
+    referrer_username?: string | null;
+    referrer_name?: string | null;
     phone?: string;
     address?: string;
     barangay?: string;

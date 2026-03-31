@@ -69,8 +69,10 @@ const CustomerCheckoutMain = ({ initialCategories = [] }: { initialCategories?: 
 
     const checkoutData = useMemo(() => readCheckoutDraft(), []);
     const storedReferral = useMemo(() => readStoredReferral(), []);
-    const hasStoredReferral = !isLoggedIn && storedReferral.trim() !== '';
-    const shouldRequireReferral = !isLoggedIn && !hasStoredReferral;
+    const memberReferral = (meData?.referrer_username ?? '').trim();
+    const effectiveReferral = isLoggedIn ? memberReferral : storedReferral;
+    const hasLockedReferral = effectiveReferral.trim() !== '';
+    const shouldRequireReferral = !isLoggedIn && !hasLockedReferral;
 
     const [formOverrides, setFormOverrides] = useState<GuestForm>(defaultForm);
     const [errors, setErrors] = useState<FormErrors>({});
@@ -95,8 +97,8 @@ const CustomerCheckoutMain = ({ initialCategories = [] }: { initialCategories?: 
             zip: meData?.zip_code || '',
         } : {}),
         ...formOverrides,
-        referred_by: formOverrides.referred_by || storedReferral,
-    }), [formOverrides, isLoggedIn, meData, storedReferral]);
+        referred_by: formOverrides.referred_by || effectiveReferral,
+    }), [effectiveReferral, formOverrides, isLoggedIn, meData]);
 
     useEffect(() => {
         if (checkoutData) return;
@@ -303,8 +305,8 @@ const CustomerCheckoutMain = ({ initialCategories = [] }: { initialCategories?: 
                                 form={form}
                                 errors={errors}
                                 setField={setField}
-                                lockReferralField={hasStoredReferral}
-                                referralSourceCode={hasStoredReferral ? storedReferral : ''}
+                                lockReferralField={hasLockedReferral}
+                                referralSourceCode={hasLockedReferral ? effectiveReferral : ''}
                                 voucherStatus={{
                                     loading: voucherLoading,
                                     error: voucherError,
