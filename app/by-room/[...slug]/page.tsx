@@ -15,6 +15,7 @@ type LooseRecord = Record<string, unknown>
 interface DisplayProduct {
   id?: number
   name: string
+  createdAt?: string | null
   price: number
   priceMember?: number
   prodpv?: number
@@ -103,6 +104,9 @@ const mapProductToDisplay = (row: LooseRecord, apiUrl?: string): DisplayProduct 
   return {
     id: toNumber(row.id) || undefined,
     name: String(row.name ?? 'Untitled Product'),
+    createdAt: typeof row.createdAt === 'string'
+      ? row.createdAt
+      : (typeof row.pd_date === 'string' ? row.pd_date : null),
     price: toNumber(row.priceSrp),
     priceMember: toNumber(row.priceMember) || undefined,
     prodpv: toNumber(row.prodpv) || undefined,

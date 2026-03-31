@@ -355,12 +355,10 @@ const getUploadErrorMessage = (err: unknown, fallback: string) => {
 
 const IMAGE_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024
-const GROUP_PURCHASE_RATE = 0.06
 const PERSONAL_CASHBACK_RATE = 0.04
 const GLOBAL_PURCHASE_BONUS_RATE = 0.01
 const AFFILIATE_PERFORMANCE_RATE = 0.1
 const TOTAL_PAYOUT_RATE =
-  GROUP_PURCHASE_RATE +
   PERSONAL_CASHBACK_RATE +
   GLOBAL_PURCHASE_BONUS_RATE +
   AFFILIATE_PERFORMANCE_RATE
@@ -374,7 +372,6 @@ type PricingSummary = {
   computedPv: number
   retailProfit: number
   reversedMultiplier: number
-  groupPurchase: number
   personalCashback: number
   globalPurchaseBonus: number
   affiliatePerformanceBonus: number
@@ -489,7 +486,6 @@ const buildPricingSummary = ({
     computedPv: pvValue,
     retailProfit,
     reversedMultiplier: multiplierValue,
-    groupPurchase: pvValue * GROUP_PURCHASE_RATE,
     personalCashback: pvValue * PERSONAL_CASHBACK_RATE,
     globalPurchaseBonus: pvValue * GLOBAL_PURCHASE_BONUS_RATE,
     affiliatePerformanceBonus: pvValue * AFFILIATE_PERFORMANCE_RATE,
@@ -553,7 +549,6 @@ function PricingSummaryPanel({
   const pricingTierLabel = summary.pricingTier === 'high_end' ? 'High-End' : 'Low-End'
 
   const bonusRows: { label: string; rate: string; value: number; note: string }[] = [
-    { label: 'Group Purchase', rate: '6%', value: summary.groupPurchase, note: 'Reference only.' },
     { label: 'Personal Cashback', rate: '4%', value: summary.personalCashback, note: 'For personal purchase only.' },
     { label: 'Global Purchase Bonus', rate: '1%', value: summary.globalPurchaseBonus, note: 'Year-end only for top 10 qualifiers.' },
     { label: 'Affiliate Performance', rate: '10%', value: summary.affiliatePerformanceBonus, note: 'Depends on downline, up to 10 levels with compression rules.' },
@@ -631,7 +626,7 @@ function PricingSummaryPanel({
         <div className="px-4 py-3">
           <div className="flex items-center justify-between mb-2">
             <p className="text-[9px] md:text-[11px] font-bold uppercase tracking-widest text-slate-400">Reference Bonus Distribution</p>
-            <span className="rounded-full bg-blue-600 px-2 py-0.5 text-[9px] md:text-[11px] font-bold text-white">21% of PV</span>
+            <span className="rounded-full bg-blue-600 px-2 py-0.5 text-[9px] md:text-[11px] font-bold text-white">15% of PV</span>
           </div>
           <div className="rounded-xl bg-white border border-slate-100 overflow-hidden divide-y divide-slate-50">
             {bonusRows.map(({ label, rate, value, note }) => (
@@ -651,10 +646,10 @@ function PricingSummaryPanel({
             ))}
             <div className="flex items-center justify-between px-3 py-2.5 bg-blue-600">
               <div className="flex items-center gap-2">
-                <span className="shrink-0 rounded-full bg-white/20 px-1.5 py-0.5 text-[9px] md:text-[11px] font-bold text-white">21%</span>
+                <span className="shrink-0 rounded-full bg-white/20 px-1.5 py-0.5 text-[9px] md:text-[11px] font-bold text-white">15%</span>
                 <div>
                   <p className="text-[11px] md:text-sm font-semibold text-white">Total Reference Allocation</p>
-                  <p className="font-mono text-[10px] md:text-xs text-blue-200">{pvStr} PV × 21%</p>
+                  <p className="font-mono text-[10px] md:text-xs text-blue-200">{pvStr} PV × 15%</p>
                 </div>
               </div>
               <span className="text-base md:text-lg font-bold text-white tabular-nums">₱ {fmt(summary.totalAllocation)}</span>

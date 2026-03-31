@@ -15,6 +15,9 @@ interface ProductsToolbarProps {
   showBrandFilter?: boolean
   resultCount: number
   supplierId?: number
+  supplierFilterId?: number
+  onSupplierFilterId?: (v: number | undefined) => void
+  supplierOptions?: Array<{ id: number; label: string }>
 }
 
 const STATUS_TABS = [
@@ -36,6 +39,9 @@ export default function ProductsToolbar({
   showBrandFilter = true,
   resultCount,
   supplierId,
+  supplierFilterId,
+  onSupplierFilterId,
+  supplierOptions = [],
 }: ProductsToolbarProps) {
   const { data: categoriesData } = useGetCategoriesQuery(
     supplierId && supplierId > 0
@@ -108,6 +114,31 @@ export default function ProductsToolbar({
             <option value="">All Brands</option>
             {brands.map((brand) => (
               <option key={brand.id} value={brand.id}>{brand.name}</option>
+            ))}
+          </select>
+          <svg className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7"/>
+          </svg>
+        </div>
+      )}
+
+      {typeof onSupplierFilterId === 'function' && supplierOptions.length > 0 && (
+        <div className="relative shrink-0">
+          <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5V4H2v16h5m10 0v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4m10 0H7m10-12h.01M7 8h6m-6 4h10" />
+          </svg>
+          <select
+            value={supplierFilterId ?? ''}
+            onChange={e => onSupplierFilterId(e.target.value === '' ? undefined : Number(e.target.value))}
+            className={`pl-9 pr-8 py-2.5 bg-white border rounded-xl text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-400 appearance-none cursor-pointer ${
+              supplierFilterId !== undefined
+                ? 'border-teal-400 text-teal-700 bg-teal-50'
+                : 'border-slate-200 text-slate-600'
+            }`}
+          >
+            <option value="">All Suppliers</option>
+            {supplierOptions.map((supplier) => (
+              <option key={supplier.id} value={supplier.id}>{supplier.label}</option>
             ))}
           </select>
           <svg className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">

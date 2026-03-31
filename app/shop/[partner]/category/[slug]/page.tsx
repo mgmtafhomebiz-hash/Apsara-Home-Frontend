@@ -28,6 +28,7 @@ type ApiWebPagesResponse = {
 type DisplayProduct = {
   id?: number
   name: string
+  createdAt?: string | null
   price: number
   priceMember?: number
   prodpv?: number
@@ -70,6 +71,7 @@ const toStringArray = (value: unknown): string[] => {
 const mapProductToDisplay = (product: Product, apiUrl?: string): DisplayProduct => ({
   id: product.id,
   name: product.name,
+  createdAt: product.createdAt ?? null,
   price: Number(product.priceSrp ?? 0),
   priceMember: Number(product.priceMember ?? 0) || undefined,
   prodpv: Number(product.prodpv ?? 0) || undefined,
