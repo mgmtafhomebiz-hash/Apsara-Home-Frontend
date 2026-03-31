@@ -7,7 +7,7 @@ import TierBadge from "@/components/ui/TierBadge"
 import { useEffect, useRef, useState } from "react"
 import AdminPagination from '@/components/superAdmin/AdminPagination'
 import { MemberStatus, MemberTier } from "@/types/members/types"
-import { useUpdateMemberMutation } from "@/store/api/membersApi"
+import { useDeleteMemberMutation, useUpdateMemberMutation } from "@/store/api/membersApi"
 import { createPortal } from "react-dom"
 
 const avatarColors = [
@@ -420,8 +420,10 @@ const MembersTable = ({
   const [selectedMember, setSelectedMember] = useState<Member | null>(null)
   const [editingMember, setEditingMember] = useState<Member | null>(null)
   const [banTarget, setBanTarget] = useState<Member | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<Member | null>(null)
   const [quickMessage, setQuickMessage] = useState<string | null>(null)
   const [updateMember, { isLoading: isUpdating }] = useUpdateMemberMutation()
+  const [deleteMember, { isLoading: isDeleting }] = useDeleteMemberMutation()
 
   useEffect(() => {
     if (!quickMessage) return
@@ -509,6 +511,20 @@ const MembersTable = ({
       setBanTarget(null)
     } catch (error: unknown) {
       setQuickMessage(getApiErrorMessage(error, 'Failed to update member ban status.'))
+    }
+  }
+
+  const handleDeleteMember = async () => {
+    if (!deleteTarget) return
+
+    try {
+      const response = await deleteMember(deleteTarget.id).unwrap()
+      setQuickMessage(response.message || `${deleteTarget.name} deleted successfully.`)
+      setDeleteTarget(null)
+      if (selectedMember?.id === deleteTarget.id) setSelectedMember(null)
+      if (editingMember?.id === deleteTarget.id) setEditingMember(null)
+    } catch (error: unknown) {
+      setQuickMessage(getApiErrorMessage(error, 'Failed to delete member.'))
     }
   }
 
@@ -663,6 +679,15 @@ const MembersTable = ({
                         >
                           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                          </svg>
+                        </button>
+                        <button
+                          title="Delete"
+                          onClick={() => setDeleteTarget(member)}
+                          className="h-7 w-7 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors flex items-center justify-center"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3M4 7h16"/>
                           </svg>
                         </button>
                         <MemberMenuPortal
@@ -862,6 +887,63 @@ const MembersTable = ({
                   }`}
                 >
                   {isUpdating ? (banTarget.status === 'blocked' ? 'Unbanning...' : 'Banning...') : (banTarget.status === 'blocked' ? 'Unban Member' : 'Ban Member')}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {deleteTarget && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[140] bg-slate-900/55 backdrop-blur-sm p-4"
+            onClick={() => setDeleteTarget(null)}
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 12, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 10, scale: 0.98 }}
+              transition={{ duration: 0.2 }}
+              className="mx-auto mt-24 w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-start gap-4">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-red-100 text-red-600">
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3M4 7h16"/>
+                  </svg>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Delete Member</p>
+                  <h3 className="mt-1 text-xl font-bold text-slate-900">Remove this member?</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-slate-500">
+                    Delete <span className="font-semibold text-slate-700">{deleteTarget.name}</span> from the members list. This action cannot be undone.
+                  </p>
+                  <p className="mt-2 text-xs text-slate-400">
+                    If the member still has related records like orders, payouts, or other linked data, deletion may be blocked.
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-6 flex items-center justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setDeleteTarget(null)}
+                  className="rounded-2xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDeleteMember}
+                  disabled={isDeleting}
+                  className="rounded-2xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-red-500/30 transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isDeleting ? 'Deleting...' : 'Delete Member'}
                 </button>
               </div>
             </motion.div>

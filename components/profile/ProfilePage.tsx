@@ -85,6 +85,165 @@ const QrSkeleton = ({ sizeClass }: { sizeClass: string }) => (
   </div>
 );
 
+type ReferralShareCardProps = {
+  title: string;
+  description: string;
+  badge: string;
+  link: string;
+  qrUrl: string;
+  onCopy: () => void;
+  onShare: () => void;
+  message: AlertMsg | null;
+  emptyText: string;
+  linkLabel: string;
+  qrAlt: string;
+  compact?: boolean;
+};
+
+const ReferralShareCard = ({
+  title,
+  description,
+  badge,
+  link,
+  qrUrl,
+  onCopy,
+  onShare,
+  message,
+  emptyText,
+  linkLabel,
+  qrAlt,
+  compact = false,
+}: ReferralShareCardProps) => {
+  const [qrStatus, setQrStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
+
+  useEffect(() => {
+    if (!qrUrl) {
+      setQrStatus('idle');
+      return;
+    }
+
+    let isCancelled = false;
+    setQrStatus('loading');
+
+    const preloadImage = new window.Image();
+    preloadImage.decoding = 'async';
+    preloadImage.src = qrUrl;
+
+    if (preloadImage.complete) {
+      setQrStatus('ready');
+      return;
+    }
+
+    preloadImage.onload = () => {
+      if (!isCancelled) setQrStatus('ready');
+    };
+
+    preloadImage.onerror = () => {
+      if (!isCancelled) setQrStatus('error');
+    };
+
+    return () => {
+      isCancelled = true;
+      preloadImage.onload = null;
+      preloadImage.onerror = null;
+    };
+  }, [qrUrl]);
+
+  const qrWrapperClass = compact ? 'h-24 w-24' : 'h-36 w-36';
+  const qrImageClass = compact
+    ? 'h-24 w-24 rounded-xl border border-orange-200 bg-white p-1.5 shadow-sm'
+    : 'h-36 w-36 rounded-xl border border-slate-200 bg-white p-2 shadow-sm';
+
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <div>
+          <p className="text-xs font-bold text-slate-700">{title}</p>
+          <p className="mt-1 text-[11px] leading-5 text-slate-500">{description}</p>
+        </div>
+        <span className="rounded-full bg-sky-50 border border-sky-200 px-2.5 py-0.5 text-[10px] font-semibold text-sky-700">{badge}</span>
+      </div>
+
+      {link ? (
+        <>
+          <div className={`my-3 flex ${compact ? 'items-start gap-4' : 'justify-center'}`}>
+            <div className={`relative ${qrWrapperClass} shrink-0`}>
+              {qrStatus !== 'ready' && <QrSkeleton sizeClass={`${qrWrapperClass} ${compact ? 'p-1.5 shadow-sm' : 'p-2'}`} />}
+              {qrStatus === 'error' ? (
+                <div className={`flex ${qrWrapperClass} items-center justify-center rounded-xl border border-amber-200 bg-amber-50 p-3 text-center shadow-sm`}>
+                  <p className={`font-medium leading-snug text-amber-700 ${compact ? 'text-[9px]' : 'text-[11px]'}`}>QR is still loading.</p>
+                </div>
+              ) : (
+                <img
+                  src={qrUrl}
+                  alt={qrAlt}
+                  loading="eager"
+                  fetchPriority="high"
+                  decoding="async"
+                  className={`${qrImageClass} transition-opacity duration-300 ${qrStatus === 'ready' ? 'opacity-100' : 'opacity-0'}`}
+                />
+              )}
+            </div>
+
+            {compact && (
+              <div className="min-w-0 flex-1">
+                <div className="mb-3 rounded-xl bg-slate-50 border border-slate-200 px-3 py-2">
+                  <p className="text-[10px] font-medium text-slate-400 mb-0.5">{linkLabel}</p>
+                  <p className="text-[11px] text-slate-600 break-all leading-snug">{link}</p>
+                </div>
+                {message && (
+                  <p className={`mb-2 text-xs font-medium ${message.type === 'success' ? 'text-emerald-700' : 'text-red-600'}`}>
+                    {message.text}
+                  </p>
+                )}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <button type="button" onClick={onCopy} className="flex items-center gap-1.5 rounded-xl bg-white border border-slate-200 px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors">
+                    <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                      <rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+                    </svg>
+                    Copy Link
+                  </button>
+                  <button type="button" onClick={onShare} className="flex items-center gap-1.5 rounded-xl bg-orange-500 px-3.5 py-2 text-xs font-semibold text-white hover:bg-orange-600 transition-colors shadow-sm">
+                    <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                      <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13" />
+                    </svg>
+                    Share
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {!compact && (
+            <>
+              <div className="mb-3 rounded-xl bg-slate-50 border border-slate-200 px-3 py-2">
+                <p className="text-[10px] font-medium text-slate-400 mb-0.5">{linkLabel}</p>
+                <p className="text-[11px] text-slate-600 font-medium break-all leading-snug">{link}</p>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <button type="button" onClick={onShare} className="flex items-center justify-center gap-1.5 rounded-xl bg-orange-500 px-2 py-2 text-xs font-semibold text-white hover:bg-orange-600 transition-colors shadow-sm">
+                  <svg className="h-3.5 w-3.5 shrink-0" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                    <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13" />
+                  </svg>
+                  Share
+                </button>
+                <button type="button" onClick={onCopy} className="flex items-center justify-center gap-1.5 rounded-xl bg-white border border-slate-200 px-2 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors">
+                  <svg className="h-3.5 w-3.5 shrink-0" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                    <rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+                  </svg>
+                  Copy Link
+                </button>
+              </div>
+            </>
+          )}
+        </>
+      ) : (
+        <p className="py-2 text-xs text-[#2c5f4f]/70">{emptyText}</p>
+      )}
+    </div>
+  );
+};
+
 const ProfilePage = ({ initialProfile = null }: ProfilePageProps) => {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -134,7 +293,6 @@ const ProfilePage = ({ initialProfile = null }: ProfilePageProps) => {
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
   const [isMobileReferralTreeOpen, setIsMobileReferralTreeOpen] = useState(false);
   const [isMobileViewOpen, setIsMobileViewOpen] = useState(false);
-  const [referralQrStatus, setReferralQrStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
   const [addressForm, setAddressForm] = useState<AddressFormState>({ address: '', zipCode: '' });
   const msgTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const usernameMsgTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -263,19 +421,27 @@ const ProfilePage = ({ initialProfile = null }: ProfilePageProps) => {
 
   const verificationStatus = profileData?.verification_status ?? 'not_verified';
   const isVerified = verificationStatus === 'verified' || profileData?.account_status === 1;
-  const isPendingVerification = verificationStatus === 'pending_review' || profileData?.account_status === 2;
   const configuredAppUrl = (process.env.NEXT_PUBLIC_APP_URL ?? '').trim().replace(/\/+$/, '');
   const runtimeOrigin = (typeof window !== 'undefined' ? window.location.origin : '').trim().replace(/\/+$/, '');
   const siteOrigin = configuredAppUrl || runtimeOrigin || 'http://localhost:3000';
   const referralCode = ((profileData?.username ?? form.username) || '').trim();
-  const referralLink = referralCode
+  const memberReferralLink = referralCode
     ? `${siteOrigin}/ref/${encodeURIComponent(referralCode)}`
     : '';
-  const referralQrUrl = useMemo(
-    () => (referralLink
-      ? `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(referralLink)}`
+  const shoppingReferralLink = referralCode
+    ? `${siteOrigin}/shop?ref=${encodeURIComponent(referralCode)}`
+    : '';
+  const memberReferralQrUrl = useMemo(
+    () => (memberReferralLink
+      ? `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(memberReferralLink)}`
       : ''),
-    [referralLink],
+    [memberReferralLink],
+  );
+  const shoppingReferralQrUrl = useMemo(
+    () => (shoppingReferralLink
+      ? `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(shoppingReferralLink)}`
+      : ''),
+    [shoppingReferralLink],
   );
   const verificationBadgeClass = (status?: string) => {
     if (status === 'verified') return 'bg-emerald-100 text-emerald-700';
@@ -297,86 +463,30 @@ const ProfilePage = ({ initialProfile = null }: ProfilePageProps) => {
     return Math.round((checks.filter(Boolean).length / checks.length) * 100);
   }, [bio, form, isVerified]);
 
-  const verificationChecklist = useMemo(() => {
-    return [
-      {
-        label: 'Complete profile basics (name + mobile number)',
-        done: Boolean(form.name.trim()) && Boolean(form.phone.trim()),
-      },
-      {
-        label: 'Upload profile photo',
-        done: Boolean(profileData?.avatar_url),
-      },
-      {
-        label: 'Submit KYC documents (ID front/back + selfie)',
-        done: isPendingVerification || isVerified,
-      },
-      {
-        label: 'Wait for admin KYC approval',
-        done: isVerified,
-      },
-    ];
-  }, [profileData?.avatar_url, form.name, form.phone, isPendingVerification, isVerified]);
-
-  useEffect(() => {
-    if (!referralQrUrl) {
-      setReferralQrStatus('idle');
-      return;
-    }
-
-    let isCancelled = false;
-    setReferralQrStatus('loading');
-
-    const preloadImage = new window.Image();
-    preloadImage.decoding = 'async';
-    preloadImage.src = referralQrUrl;
-
-    if (preloadImage.complete) {
-      setReferralQrStatus('ready');
-      return;
-    }
-
-    preloadImage.onload = () => {
-      if (!isCancelled) {
-        setReferralQrStatus('ready');
-      }
-    };
-
-    preloadImage.onerror = () => {
-      if (!isCancelled) {
-        setReferralQrStatus('error');
-      }
-    };
-
-    return () => {
-      isCancelled = true;
-      preloadImage.onload = null;
-      preloadImage.onerror = null;
-    };
-  }, [referralQrUrl]);
-
   const onChange = (field: keyof ProfileFormState) => (e: ChangeEvent<HTMLInputElement>) =>
     setForm((prev) => ({ ...prev, [field]: e.target.value }));
 
   const togglePref = (field: keyof PreferencesState) =>
     setPrefs((prev) => (typeof prev[field] === 'boolean' ? { ...prev, [field]: !prev[field] } : prev));
 
-  const handleCopyReferralLink = async () => {
-    if (!referralLink) {
+  const handleCopyReferralLink = async (type: 'member' | 'shopping') => {
+    const link = type === 'member' ? memberReferralLink : shoppingReferralLink;
+    if (!link) {
       setReferralMsg({ type: 'error', text: 'Referral link is unavailable. Set your username first.' });
       return;
     }
 
     try {
-      await navigator.clipboard.writeText(referralLink);
-      setReferralMsg({ type: 'success', text: 'Referral link copied.' });
+      await navigator.clipboard.writeText(link);
+      setReferralMsg({ type: 'success', text: type === 'member' ? 'Signup referral link copied.' : 'Shopping referral link copied.' });
     } catch {
       setReferralMsg({ type: 'error', text: 'Failed to copy referral link.' });
     }
   };
 
-  const handleShareReferralLink = async () => {
-    if (!referralLink) {
+  const handleShareReferralLink = async (type: 'member' | 'shopping') => {
+    const link = type === 'member' ? memberReferralLink : shoppingReferralLink;
+    if (!link) {
       setReferralMsg({ type: 'error', text: 'Referral link is unavailable. Set your username first.' });
       return;
     }
@@ -384,9 +494,11 @@ const ProfilePage = ({ initialProfile = null }: ProfilePageProps) => {
     if (typeof navigator !== 'undefined' && navigator.share) {
       try {
         await navigator.share({
-          title: 'Join AF Home',
-          text: 'Register using my affiliate referral link.',
-          url: referralLink,
+          title: type === 'member' ? 'Join AF Home' : 'Shop with my AF Home referral link',
+          text: type === 'member'
+            ? 'Register using my affiliate referral link.'
+            : 'Use my shopping referral link so your checkout already carries my affiliate code.',
+          url: link,
         });
         return;
       } catch {
@@ -394,7 +506,7 @@ const ProfilePage = ({ initialProfile = null }: ProfilePageProps) => {
       }
     }
 
-    await handleCopyReferralLink();
+    await handleCopyReferralLink(type);
   };
 
   const toggleTreeNode = (id: number) => {
@@ -1081,13 +1193,7 @@ const ProfilePage = ({ initialProfile = null }: ProfilePageProps) => {
                 <h2 className="text-lg font-bold text-slate-900 text-center leading-tight">
                   {form.name || 'AF Home User'}
                 </h2>
-                <p className="text-xs text-slate-500 mt-1 text-center flex items-center justify-center gap-1.5 flex-wrap">
-                  {form.email}
-                  {profileData?.email_verified
-                    ? <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-emerald-600 bg-emerald-50 border border-emerald-200 rounded-full px-1.5 py-0.5 leading-none">&#10003; Verified</span>
-                    : <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-amber-600 bg-amber-50 border border-amber-200 rounded-full px-1.5 py-0.5 leading-none">&#9888; Unverified</span>
-                  }
-                </p>
+                <p className="text-xs text-slate-500 mt-1 text-center">{form.email}</p>
                 {form.username && (
                   <span className="inline-block text-xs px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 font-mono font-medium mt-1.5 border border-slate-200">
                     @{form.username}
@@ -1132,7 +1238,7 @@ const ProfilePage = ({ initialProfile = null }: ProfilePageProps) => {
               </div>
 
               {/* Referral section */}
-              {isVerified && (
+              {(
                 <div className="px-5 pb-5">
                   <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                     {/* Header */}
@@ -1146,71 +1252,37 @@ const ProfilePage = ({ initialProfile = null }: ProfilePageProps) => {
                         </div>
                         <p className="text-xs font-bold text-slate-700">Affiliate Referral QR</p>
                       </div>
-                      <span className="rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-[10px] font-semibold text-emerald-700">&#10003; Verified</span>
+                      <span className="rounded-full bg-sky-50 border border-sky-200 px-2.5 py-0.5 text-[10px] font-semibold text-sky-700">Ready to Share</span>
                     </div>
 
-                    {referralLink ? (
-                      <>
-                        {/* QR Code */}
-                        <div className="my-3 flex justify-center">
-                          <div className="relative h-36 w-36">
-                            {referralQrStatus !== 'ready' && <QrSkeleton sizeClass="h-36 w-36 p-2" />}
-                            {referralQrStatus === 'error' ? (
-                              <div className="flex h-36 w-36 items-center justify-center rounded-xl border border-amber-200 bg-amber-50 p-3 text-center shadow-sm">
-                                <p className="text-[11px] font-medium leading-snug text-amber-700">
-                                  QR is still loading.
-                                  <br />
-                                  Try refreshing this tab.
-                                </p>
-                              </div>
-                            ) : (
-                              <img
-                                src={referralQrUrl}
-                                alt="Referral QR code"
-                                loading="eager"
-                                fetchPriority="high"
-                                decoding="async"
-                                className={`h-36 w-36 rounded-xl border border-slate-200 bg-white p-2 shadow-sm transition-opacity duration-300 ${
-                                  referralQrStatus === 'ready' ? 'opacity-100' : 'opacity-0'
-                                }`}
-                              />
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Referral link */}
-                        <div className="mb-3 rounded-xl bg-slate-50 border border-slate-200 px-3 py-2">
-                          <p className="text-[10px] font-medium text-slate-400 mb-0.5">Your referral link</p>
-                          <p className="text-[11px] text-slate-600 font-medium break-all leading-snug">{referralLink}</p>
-                        </div>
-
-                        {/* Action buttons */}
-                        <div className="grid grid-cols-2 gap-2">
-                          <button
-                            type="button"
-                            onClick={handleShareReferralLink}
-                            className="flex items-center justify-center gap-1.5 rounded-xl bg-orange-500 px-2 py-2 text-xs font-semibold text-white hover:bg-orange-600 transition-colors shadow-sm"
-                          >
-                            <svg className="h-3.5 w-3.5 shrink-0" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-                              <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13" />
-                            </svg>
-                            Share
-                          </button>
-                          <button
-                            type="button"
-                            onClick={handleCopyReferralLink}
-                            className="flex items-center justify-center gap-1.5 rounded-xl bg-white border border-slate-200 px-2 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
-                          >
-                            <svg className="h-3.5 w-3.5 shrink-0" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-                              <rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
-                            </svg>
-                            Copy Link
-                          </button>
-                        </div>
-                      </>
-                    ) : (
-                      <p className="text-xs text-[#2c5f4f]/70 py-2">Set your username first to generate your referral link.</p>
-                    )}
+                    <div className="space-y-3">
+                      <ReferralShareCard
+                        title="Invite Members"
+                        description="Use this link when someone wants to register as your referral."
+                        badge="Signup"
+                        link={memberReferralLink}
+                        qrUrl={memberReferralQrUrl}
+                        onCopy={() => handleCopyReferralLink('member')}
+                        onShare={() => handleShareReferralLink('member')}
+                        message={referralMsg}
+                        emptyText="Set your username first to generate your signup referral link."
+                        linkLabel="Member signup link"
+                        qrAlt="Signup referral QR code"
+                      />
+                      <ReferralShareCard
+                        title="Share Shopping Link"
+                        description="Use this link for non-members who only want to shop. Their checkout will carry your referral automatically."
+                        badge="Shopping"
+                        link={shoppingReferralLink}
+                        qrUrl={shoppingReferralQrUrl}
+                        onCopy={() => handleCopyReferralLink('shopping')}
+                        onShare={() => handleShareReferralLink('shopping')}
+                        message={referralMsg}
+                        emptyText="Set your username first to generate your shopping referral link."
+                        linkLabel="Shopping referral link"
+                        qrAlt="Shopping referral QR code"
+                      />
+                    </div>
 
                     {referralMsg && (
                       <p className={`mt-2 text-xs font-medium ${referralMsg.type === 'success' ? 'text-emerald-700' : 'text-red-600'}`}>
@@ -1260,43 +1332,6 @@ const ProfilePage = ({ initialProfile = null }: ProfilePageProps) => {
                         View Full Referral Tree
                       </button>
                     </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Verification reminder */}
-              {!isVerified && (
-                <div className="px-5 pb-5">
-                  <div className="rounded-xl border border-amber-200 bg-amber-50 p-3.5">
-                    <p className="text-xs font-bold text-amber-800 mb-1">
-                      {isPendingVerification ? 'Verification In Review' : 'Verification Required'}
-                    </p>
-                    <p className="text-xs text-amber-700 mb-2.5">
-                      {isPendingVerification
-                        ? 'Your KYC is under review. Complete any pending items while waiting.'
-                        : 'Submit your KYC documents in the Encashment tab.'}
-                    </p>
-                    <div className="space-y-2 mb-3">
-                      {verificationChecklist.map((item) => (
-                        <div key={item.label} className="flex items-start gap-2 text-xs">
-                          <span
-                            className={`mt-0.5 shrink-0 h-4 w-4 rounded-full flex items-center justify-center text-[9px] font-bold ${
-                              item.done ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'
-                            }`}
-                          >
-                            {item.done ? '✓' : '○'}
-                          </span>
-                          <span className={item.done ? 'text-emerald-700 font-medium' : 'text-amber-800'}>{item.label}</span>
-                        </div>
-                      ))}
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => handleTabChange('encashment', { focus: 'verification' })}
-                      className="text-xs font-semibold text-amber-700 border border-amber-300 bg-white rounded-lg px-3 py-1.5 hover:bg-amber-100 transition-colors"
-                    >
-                      Open KYC Form
-                    </button>
                   </div>
                 </div>
               )}
@@ -1867,72 +1902,36 @@ const ProfilePage = ({ initialProfile = null }: ProfilePageProps) => {
                       ))}
                     </div>
 
-                    {/* Referral Link + QR */}
-                    {isVerified && referralLink && (
-                      <div className="flex flex-col sm:flex-row items-start gap-4 p-4 rounded-xl bg-orange-50/60 border border-orange-100 mb-5">
-                        <div className="shrink-0">
-                          <div className="relative h-24 w-24">
-                            {referralQrStatus !== 'ready' && <QrSkeleton sizeClass="h-24 w-24 p-1.5 shadow-sm" />}
-                            {referralQrStatus === 'error' ? (
-                              <div className="flex h-24 w-24 items-center justify-center rounded-xl border border-amber-200 bg-amber-50 p-2 text-center shadow-sm">
-                                <p className="text-[9px] font-medium leading-tight text-amber-700">QR unavailable</p>
-                              </div>
-                            ) : (
-                              <img
-                                src={referralQrUrl}
-                                alt="Referral QR"
-                                loading="eager"
-                                fetchPriority="high"
-                                decoding="async"
-                                className={`h-24 w-24 rounded-xl border border-orange-200 bg-white p-1.5 shadow-sm transition-opacity duration-300 ${
-                                  referralQrStatus === 'ready' ? 'opacity-100' : 'opacity-0'
-                                }`}
-                              />
-                            )}
-                          </div>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-bold text-slate-700 mb-1">Your Referral Link</p>
-                          <div className="flex items-center gap-2 p-2 rounded-lg bg-white border border-orange-100 mb-3">
-                            <p className="text-[11px] text-slate-600 truncate flex-1">{referralLink}</p>
-                          </div>
-                          {referralMsg && (
-                            <p className={`mb-2 text-xs font-medium ${referralMsg.type === 'success' ? 'text-emerald-700' : 'text-red-600'}`}>
-                              {referralMsg.text}
-                            </p>
-                          )}
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <button
-                              type="button"
-                              onClick={handleCopyReferralLink}
-                              className="flex items-center gap-1.5 rounded-xl bg-white border border-slate-200 px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
-                            >
-                              <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" /></svg>
-                              Copy Link
-                            </button>
-                            <button
-                              type="button"
-                              onClick={handleShareReferralLink}
-                              className="flex items-center gap-1.5 rounded-xl bg-orange-500 px-3.5 py-2 text-xs font-semibold text-white hover:bg-orange-600 transition-colors shadow-sm"
-                            >
-                              <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13" /></svg>
-                              Share
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Not verified notice */}
-                    {!isVerified && (
-                      <div className="flex items-start gap-3 p-4 rounded-xl bg-amber-50 border border-amber-100 mb-5">
-                        <Icon.Warning className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
-                        <div>
-                          <p className="text-sm font-semibold text-amber-800">Verification Required</p>
-                          <p className="text-xs text-amber-700 mt-0.5">Complete KYC verification to unlock your referral link and start earning commissions.</p>
-                        </div>
-                      </div>
-                    )}
+                    <div className="grid gap-4 mb-5 lg:grid-cols-2">
+                      <ReferralShareCard
+                        title="Invite Members"
+                        description="Best for people who want to sign up under your network."
+                        badge="Signup"
+                        link={memberReferralLink}
+                        qrUrl={memberReferralQrUrl}
+                        onCopy={() => handleCopyReferralLink('member')}
+                        onShare={() => handleShareReferralLink('member')}
+                        message={referralMsg}
+                        emptyText="Set your username first to generate your signup referral link."
+                        linkLabel="Member signup link"
+                        qrAlt="Signup referral QR"
+                        compact
+                      />
+                      <ReferralShareCard
+                        title="Share Shopping Link"
+                        description="Best for buyers who want a smoother checkout with your referral already attached."
+                        badge="Shopping"
+                        link={shoppingReferralLink}
+                        qrUrl={shoppingReferralQrUrl}
+                        onCopy={() => handleCopyReferralLink('shopping')}
+                        onShare={() => handleShareReferralLink('shopping')}
+                        message={referralMsg}
+                        emptyText="Set your username first to generate your shopping referral link."
+                        linkLabel="Shopping referral link"
+                        qrAlt="Shopping referral QR"
+                        compact
+                      />
+                    </div>
 
                     {/* Search + filter + controls */}
                     {isReferralTreeLoading ? (
@@ -2468,48 +2467,34 @@ const ProfilePage = ({ initialProfile = null }: ProfilePageProps) => {
                 ))}
               </div>
 
-              {/* Referral link */}
-              {isVerified && referralLink && (
-                <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                  <p className="text-xs font-bold text-slate-700 mb-2">Your Referral Link</p>
-                  <div className="flex items-center gap-2 p-2 rounded-lg bg-slate-50 border border-slate-100 mb-3">
-                    <p className="text-[11px] text-slate-600 truncate flex-1">{referralLink}</p>
-                  </div>
-                  {referralMsg && (
-                    <p className={`mb-2 text-xs font-medium ${referralMsg.type === 'success' ? 'text-emerald-700' : 'text-red-600'}`}>
-                      {referralMsg.text}
-                    </p>
-                  )}
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={handleCopyReferralLink}
-                      className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-white border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
-                    >
-                      <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" /></svg>
-                      Copy Link
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleShareReferralLink}
-                      className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-orange-500 px-3 py-2 text-xs font-semibold text-white hover:bg-orange-600 transition-colors shadow-sm"
-                    >
-                      <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13" /></svg>
-                      Share
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {!isVerified && (
-                <div className="flex items-start gap-3 p-4 rounded-xl bg-amber-50 border border-amber-100">
-                  <Icon.Warning className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-sm font-semibold text-amber-800">Verification Required</p>
-                    <p className="text-xs text-amber-700 mt-0.5">Complete KYC verification to unlock your referral link.</p>
-                  </div>
-                </div>
-              )}
+              <div className="space-y-3">
+                <ReferralShareCard
+                  title="Invite Members"
+                  description="For people who want to register as your referral."
+                  badge="Signup"
+                  link={memberReferralLink}
+                  qrUrl={memberReferralQrUrl}
+                  onCopy={() => handleCopyReferralLink('member')}
+                  onShare={() => handleShareReferralLink('member')}
+                  message={referralMsg}
+                  emptyText="Set your username first to generate your signup referral link."
+                  linkLabel="Member signup link"
+                  qrAlt="Signup referral QR code"
+                />
+                <ReferralShareCard
+                  title="Share Shopping Link"
+                  description="For non-members who only want to buy. Checkout will carry your referral automatically."
+                  badge="Shopping"
+                  link={shoppingReferralLink}
+                  qrUrl={shoppingReferralQrUrl}
+                  onCopy={() => handleCopyReferralLink('shopping')}
+                  onShare={() => handleShareReferralLink('shopping')}
+                  message={referralMsg}
+                  emptyText="Set your username first to generate your shopping referral link."
+                  linkLabel="Shopping referral link"
+                  qrAlt="Shopping referral QR code"
+                />
+              </div>
 
               {/* Tree search + filter + list */}
               <div className="rounded-2xl border border-slate-200 bg-white p-4">

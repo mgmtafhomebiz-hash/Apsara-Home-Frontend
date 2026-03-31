@@ -36,7 +36,6 @@ const REQUIRED_FIELD_ORDER: Array<keyof GuestForm> = [
     'name',
     'email',
     'phone',
-    'referred_by',
     'address',
     'region',
     'province',
@@ -70,6 +69,8 @@ const CustomerCheckoutMain = ({ initialCategories = [] }: { initialCategories?: 
 
     const checkoutData = useMemo(() => readCheckoutDraft(), []);
     const storedReferral = useMemo(() => readStoredReferral(), []);
+    const hasStoredReferral = !isLoggedIn && storedReferral.trim() !== '';
+    const shouldRequireReferral = !isLoggedIn && !hasStoredReferral;
 
     const [formOverrides, setFormOverrides] = useState<GuestForm>(defaultForm);
     const [errors, setErrors] = useState<FormErrors>({});
@@ -143,7 +144,7 @@ const CustomerCheckoutMain = ({ initialCategories = [] }: { initialCategories?: 
         if (!form.email.trim()) e.email = 'Required';
         else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = 'Invalid email';
         if (!form.phone.trim()) e.phone = 'Required';
-        if (!form.referred_by.trim()) e.referred_by = 'Required';
+        if (shouldRequireReferral && !form.referred_by.trim()) e.referred_by = 'Required';
         if (!form.address.trim()) e.address = 'Required';
         if (!form.region.trim()) e.region = 'Required';
         if (!form.barangay.trim()) e.barangay = 'Required';
@@ -302,6 +303,8 @@ const CustomerCheckoutMain = ({ initialCategories = [] }: { initialCategories?: 
                                 form={form}
                                 errors={errors}
                                 setField={setField}
+                                lockReferralField={hasStoredReferral}
+                                referralSourceCode={hasStoredReferral ? storedReferral : ''}
                                 voucherStatus={{
                                     loading: voucherLoading,
                                     error: voucherError,

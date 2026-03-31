@@ -695,9 +695,16 @@ const EncashmentTab = () => {
     }
 
     if (!isEligibleByPolicy) {
+      if (needsVerification && !isVerificationPending) {
+        setIsVerificationSpotlightActive(true);
+        verificationFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        window.setTimeout(() => setIsVerificationSpotlightActive(false), 1800);
+      }
       setMessage({
         type: 'error',
-        text: eligibility?.message || 'You are currently not eligible to submit an encashment request.',
+        text: needsVerification && !isVerificationPending
+          ? 'Complete your verification first before submitting an encashment request.'
+          : (eligibility?.message || 'You are currently not eligible to submit an encashment request.'),
       });
       return;
     }
