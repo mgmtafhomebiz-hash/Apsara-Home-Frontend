@@ -249,7 +249,12 @@ const ProfilePage = ({ initialProfile = null }: ProfilePageProps) => {
   const searchParams = useSearchParams();
   const { data: session, update: updateSession } = useSession();
   const { data } = useMeQuery();
-  const { data: referralTree, isLoading: isReferralTreeLoading } = useReferralTreeQuery();
+  const { data: referralTree, isLoading: isReferralTreeLoading } = useReferralTreeQuery(undefined, {
+    refetchOnMountOrArgChange: true,
+    refetchOnFocus: true,
+    refetchOnReconnect: true,
+    pollingInterval: 15000,
+  });
   const { data: usernameChangeLatest, refetch: refetchUsernameChangeLatest } = useUsernameChangeLatestQuery();
   const [updateProfile, { isLoading: isSaving }] = useUpdateProfileMutation();
   const [changePassword, { isLoading: isChangingPassword }] = useChangePasswordMutation();

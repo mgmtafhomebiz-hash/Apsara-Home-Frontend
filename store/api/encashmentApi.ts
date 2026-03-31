@@ -62,6 +62,7 @@ export interface EncashmentListResponse {
     current_points: number;
     remaining_cooldown_minutes: number;
     has_active_account: boolean;
+    is_verified?: boolean;
   };
   policy?: {
     min_amount: number;
@@ -73,6 +74,19 @@ export interface EncashmentListResponse {
     status: 'verified' | 'pending_review' | 'blocked' | 'not_submitted';
     reference_no?: string | null;
     submitted_at?: string | null;
+  };
+  monthly_activation?: {
+    status: 'active' | 'inactive';
+    threshold_pv: number;
+    current_month_pv: number;
+    qualifying_pv: number;
+    remaining_pv: number;
+    deadline_day: number;
+    deadline_at?: string | null;
+    window_open: boolean;
+    evaluated_at?: string | null;
+    month_key: string;
+    month_label: string;
   };
 }
 
@@ -261,12 +275,18 @@ export interface WalletOverviewResponse {
     af_voucher_reserved_balance: number;
     cashback_source_balance: number;
     cashback_reserved_balance: number;
+    personal_cashback_balance?: number;
+    personal_cashback_source_balance?: number;
+    personal_cashback_reserved_balance?: number;
+    personal_cashback_rate?: number;
+    personal_cashback_voucher_expiry_days?: number;
     can_create_affiliate_voucher: boolean;
     referrals: {
       total: number;
       verified: number;
       active: number;
     };
+    monthly_activation?: EncashmentListResponse['monthly_activation'];
   };
   ledger: WalletLedgerItem[];
   affiliate_vouchers: AffiliateVoucherItem[];
