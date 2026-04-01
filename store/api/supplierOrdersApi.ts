@@ -75,8 +75,6 @@ export const supplierOrdersApi = baseApi.injectEndpoints({
         },
       }),
       keepUnusedDataFor: 300,
-      refetchOnFocus: false,
-      refetchOnReconnect: false,
       providesTags: ['Orders'],
     }),
   }),
