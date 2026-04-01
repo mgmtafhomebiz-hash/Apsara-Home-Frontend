@@ -317,13 +317,17 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
 
   const visibleProducts = useMemo(() => {
     const baseProducts = status === 'new' ? products.filter(isNewProduct) : products
+    const categoryFiltered =
+      typeof catId === 'number' && catId > 0
+        ? baseProducts.filter((product) => Number(product.catid ?? 0) === catId)
+        : baseProducts
     const keyword = debouncedSearch.trim().toLowerCase()
-    if (!keyword) return baseProducts
+    if (!keyword) return categoryFiltered
 
     const terms = keyword.split(/\s+/).filter(Boolean)
-    if (terms.length === 0) return baseProducts
+    if (terms.length === 0) return categoryFiltered
 
-    return baseProducts.filter((product) => {
+    return categoryFiltered.filter((product) => {
       const haystacks = [
         product.name,
         product.sku,
@@ -343,7 +347,7 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
 
       return terms.every((term) => haystacks.some((value) => value.includes(term)))
     })
-  }, [debouncedSearch, products, status])
+  }, [catId, debouncedSearch, products, status])
 
   const meta = useMemo(() => {
     return data?.meta ?? (useInitialData ? initialData?.meta : undefined)

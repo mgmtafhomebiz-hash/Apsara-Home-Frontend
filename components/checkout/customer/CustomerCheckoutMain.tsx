@@ -76,6 +76,10 @@ const CustomerCheckoutMain = ({ initialCategories = [] }: { initialCategories?: 
 
     const [formOverrides, setFormOverrides] = useState<GuestForm>(defaultForm);
     const [errors, setErrors] = useState<FormErrors>({});
+    const requiredFieldOrder = useMemo(
+        () => (isLoggedIn ? REQUIRED_FIELD_ORDER.filter((key) => key !== 'referred_by') : REQUIRED_FIELD_ORDER),
+        [isLoggedIn]
+    );
     const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>('gcash');
     const [notice, setNotice] = useState('');
     const [createCheckoutSession, { isLoading: loading }] = useCreateCheckoutSessionMutation();
@@ -156,7 +160,7 @@ const CustomerCheckoutMain = ({ initialCategories = [] }: { initialCategories?: 
     }
 
     const focusFirstErrorField = useCallback((validationErrors: FormErrors) => {
-        const firstErrorKey = REQUIRED_FIELD_ORDER.find((key) => Boolean(validationErrors[key]));
+        const firstErrorKey = requiredFieldOrder.find((key) => Boolean(validationErrors[key]));
         if (!firstErrorKey) return;
 
         const target = document.querySelector<HTMLElement>(`[data-error-field="${firstErrorKey}"]`);
@@ -212,6 +216,7 @@ const CustomerCheckoutMain = ({ initialCategories = [] }: { initialCategories?: 
                     phone: form.phone,
                     address: `${form.address}, ${form.barangay}, ${form.city}, ${form.province}, ${form.region}${form.zip ? ` ${form.zip}` : ''}`,
                     referred_by: form.referred_by.trim(),
+                    is_member: isLoggedIn,
                 },
                 order: {
                     product_name: checkoutData.product.name,
@@ -289,7 +294,7 @@ const CustomerCheckoutMain = ({ initialCategories = [] }: { initialCategories?: 
                                 </h1>
                             </div>
                         </div>
-                        <Link href="/" className="flex items-center gap-1.5 text-white/80 hover:text-white text-xs font-semibold transition-colors bg-white/10 hover:bg-white/20 px-3 py-2 rounded-xl border border-white/20">
+                        <Link href="/shop" className="flex items-center gap-1.5 text-white/80 hover:text-white text-xs font-semibold transition-colors bg-white/10 hover:bg-white/20 px-3 py-2 rounded-xl border border-white/20">
                             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                             </svg>
@@ -305,6 +310,7 @@ const CustomerCheckoutMain = ({ initialCategories = [] }: { initialCategories?: 
                                 form={form}
                                 errors={errors}
                                 setField={setField}
+                                showReferral={!isLoggedIn}
                                 lockReferralField={hasLockedReferral}
                                 referralSourceCode={hasLockedReferral ? effectiveReferral : ''}
                                 voucherStatus={{
