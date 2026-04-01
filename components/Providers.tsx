@@ -1,15 +1,16 @@
 'use client'
 
 import { AnimatePresence, motion } from 'framer-motion'
+import { Suspense } from 'react'
 import { CartProvider } from '@/context/CartContext'
 import CartDrawer from '@/components/ui/CartDrawer'
 import { Provider as ReduxProvider } from 'react-redux'
 import { SessionProvider, useSession } from 'next-auth/react'
 import { store } from '@/store/store'
 import { Toaster } from 'react-hot-toast'
-import GlobalVerificationPrompt from '@/components/verification/GlobalVerificationPrompt'
 import { useMeQuery } from '@/store/api/userApi'
 import { useEffect, useState } from 'react'
+import ReferralCapture from '@/components/referrals/ReferralCapture'
 
 function CustomerSessionGuard() {
   const { data: session, status } = useSession()
@@ -80,10 +81,12 @@ export default function Providers({ children }: { children: React.ReactNode }) {
     <SessionProvider> 
         <ReduxProvider store={store}>
           <CartProvider>
+          <Suspense fallback={null}>
+            <ReferralCapture />
+          </Suspense>
           <CustomerSessionGuard />
           <CustomerBannedOverlay />
           {children}
-          <GlobalVerificationPrompt />
           <CartDrawer />
           <Toaster
             position="top-center"

@@ -5,6 +5,9 @@ export interface MeResponse {
     name: string;
     email: string;
     username?: string;
+    referrer_id?: number;
+    referrer_username?: string | null;
+    referrer_name?: string | null;
     phone?: string;
     address?: string;
     barangay?: string;
@@ -17,6 +20,19 @@ export interface MeResponse {
     account_status?: number;
     lock_status?: number;
     verification_status?: 'verified' | 'pending_review' | 'on_hold' | 'not_verified' | 'blocked';
+    monthly_activation?: {
+        status: 'active' | 'inactive';
+        threshold_pv: number;
+        current_month_pv: number;
+        qualifying_pv: number;
+        remaining_pv: number;
+        deadline_day: number;
+        deadline_at?: string | null;
+        window_open: boolean;
+        evaluated_at?: string | null;
+        month_key: string;
+        month_label: string;
+    };
     email_verified?: boolean;
     password_change_required?: boolean;
 }
@@ -92,6 +108,7 @@ export interface ReferralTreeResponse {
         direct_count: number;
         second_level_count: number;
         total_network: number;
+        total_pv?: number;
     };
     children: ReferralTreeNode[];
 }
@@ -154,7 +171,7 @@ export const userApi = baseApi.injectEndpoints({
             invalidatesTags: ['User'],
         }),
 
-        referralTree: builder.query<ReferralTreeResponse, void>({
+        referralTree: builder.query<ReferralTreeResponse, number | string | void>({
             query: () => ({
                 url: '/api/auth/referral-tree',
                 method: 'GET',

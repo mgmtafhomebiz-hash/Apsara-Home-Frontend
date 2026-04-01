@@ -36,7 +36,6 @@ const REQUIRED_FIELD_ORDER: Array<keyof GuestForm> = [
     'name',
     'email',
     'phone',
-    'referred_by',
     'address',
     'region',
     'province',
@@ -70,6 +69,10 @@ const CustomerCheckoutMain = ({ initialCategories = [] }: { initialCategories?: 
 
     const checkoutData = useMemo(() => readCheckoutDraft(), []);
     const storedReferral = useMemo(() => readStoredReferral(), []);
+    const memberReferral = (meData?.referrer_username ?? '').trim();
+    const effectiveReferral = isLoggedIn ? memberReferral : storedReferral;
+    const hasLockedReferral = effectiveReferral.trim() !== '';
+    const shouldRequireReferral = !isLoggedIn && !hasLockedReferral;
 
     const [formOverrides, setFormOverrides] = useState<GuestForm>(defaultForm);
     const [errors, setErrors] = useState<FormErrors>({});
@@ -98,8 +101,8 @@ const CustomerCheckoutMain = ({ initialCategories = [] }: { initialCategories?: 
             zip: meData?.zip_code || '',
         } : {}),
         ...formOverrides,
-        referred_by: formOverrides.referred_by || storedReferral,
-    }), [formOverrides, isLoggedIn, meData, storedReferral]);
+        referred_by: formOverrides.referred_by || effectiveReferral,
+    }), [effectiveReferral, formOverrides, isLoggedIn, meData]);
 
     useEffect(() => {
         if (checkoutData) return;
@@ -147,7 +150,7 @@ const CustomerCheckoutMain = ({ initialCategories = [] }: { initialCategories?: 
         if (!form.email.trim()) e.email = 'Required';
         else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = 'Invalid email';
         if (!form.phone.trim()) e.phone = 'Required';
-        if (!isLoggedIn && !form.referred_by.trim()) e.referred_by = 'Required';
+        if (shouldRequireReferral && !form.referred_by.trim()) e.referred_by = 'Required';
         if (!form.address.trim()) e.address = 'Required';
         if (!form.region.trim()) e.region = 'Required';
         if (!form.barangay.trim()) e.barangay = 'Required';
@@ -308,6 +311,8 @@ const CustomerCheckoutMain = ({ initialCategories = [] }: { initialCategories?: 
                                 errors={errors}
                                 setField={setField}
                                 showReferral={!isLoggedIn}
+                                lockReferralField={hasLockedReferral}
+                                referralSourceCode={hasLockedReferral ? effectiveReferral : ''}
                                 voucherStatus={{
                                     loading: voucherLoading,
                                     error: voucherError,

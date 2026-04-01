@@ -17,6 +17,7 @@ const toLooseRecord = (value: unknown): LooseRecord => value as LooseRecord;
 interface DisplayProduct {
   id?: number;
   name: string;
+  createdAt?: string | null;
   price: number;
   priceMember?: number;
   prodpv?: number;
@@ -183,6 +184,9 @@ const mapProductToDisplay = (product: Product | LooseRecord, apiUrl?: string): D
   return {
     id: toNumber(row.id ?? row.pd_id ?? 0) || undefined,
     name,
+    createdAt: typeof row.createdAt === 'string'
+      ? row.createdAt
+      : (typeof row.pd_date === 'string' ? row.pd_date : null),
     price,
     priceMember: member > 0 ? member : undefined,
     prodpv,

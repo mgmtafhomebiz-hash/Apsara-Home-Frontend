@@ -70,7 +70,6 @@ const LoginForm = ({ onSwitchToSignUp, onRequirePasswordChange }: LoginFormProps
                 } else {
                     window.localStorage.removeItem(REMEMBER_USER_EMAIL_KEY)
                 }
-                window.sessionStorage.setItem('afhome-force-verification-prompt', '1')
             }
 
             const session = await getSession()

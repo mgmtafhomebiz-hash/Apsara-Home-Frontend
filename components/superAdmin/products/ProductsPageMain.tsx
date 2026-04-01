@@ -22,6 +22,28 @@ interface ProductsPageMainProps {
   initialBrandType?: number
 }
 
+const NEW_BADGE_DAYS = 7
+
+const isNewProduct = (product: Product) => {
+  if (!product.createdAt) return false
+
+  const createdAt = new Date(product.createdAt)
+  if (Number.isNaN(createdAt.getTime())) return false
+
+  const diffDays = (Date.now() - createdAt.getTime()) / (1000 * 60 * 60 * 24)
+  return diffDays >= 0 && diffDays < NEW_BADGE_DAYS
+}
+
+const getEffectiveStockQty = (product: Product) => {
+  const activeVariants = (product.variants ?? []).filter((variant) => Number(variant.status ?? 1) === 1)
+
+  if (activeVariants.length === 0) {
+    return Number(product.qty ?? 0)
+  }
+
+  return activeVariants.reduce((total, variant) => total + Number(variant.qty ?? 0), 0)
+}
+
 /* ── Stat card ── */
 function StatCard({
   label, value, sub, icon, colorClass,
@@ -69,6 +91,7 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
   const [brandType,       setBrandType]       = useState<number | undefined>(
     typeof initialBrandType === 'number' && initialBrandType > 0 ? initialBrandType : undefined,
   )
+  const [supplierFilterId, setSupplierFilterId] = useState<number | undefined>(undefined)
   const [page,            setPage]            = useState(1)
   const [showAddModal,    setShowAddModal]    = useState(false)
   const [showActivityLogs, setShowActivityLogs] = useState(false)
@@ -84,7 +107,7 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
   const perPage = debouncedSearch ? searchPerPage : defaultPerPage
 
   const { data: supplierBrandsData } = useGetPublicProductBrandsQuery(undefined, { skip: !isSupplierPortal })
-  const { data: supplierListData } = useGetSuppliersQuery(undefined, { skip: !isSupplierPortal })
+  const { data: supplierListData } = useGetSuppliersQuery(undefined, { skip: isSupplierPortal })
   const supplierRecord = useMemo(() => {
     if (!isSupplierPortal) return undefined
     const suppliers = supplierListData?.suppliers ?? []
@@ -155,16 +178,16 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
     page: debouncedSearch ? 1 : page,
     perPage,
     search: debouncedSearch || undefined,
-    status: status || undefined,
+    status: status === 'new' ? undefined : (status || undefined),
     catId,
     brandType,
-    supplierId: isSupplierPortal && linkedSupplierId > 0 ? linkedSupplierId : undefined,
+    supplierId: isSupplierPortal && linkedSupplierId > 0 ? linkedSupplierId : supplierFilterId,
   }
   const publicQueryArgs = {
     page: debouncedSearch ? 1 : page,
     perPage,
     search: debouncedSearch || undefined,
-    status: status || undefined,
+    status: status === 'new' ? undefined : (status || undefined),
     catId,
     brandType,
     supplierId: isSupplierPortal && linkedSupplierId > 0 ? linkedSupplierId : undefined,
@@ -199,13 +222,13 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
   const activeCountArgs = {
     perPage: 1,
     status: '1',
-    supplierId: isSupplierPortal && linkedSupplierId > 0 ? linkedSupplierId : undefined,
+    supplierId: isSupplierPortal && linkedSupplierId > 0 ? linkedSupplierId : supplierFilterId,
     brandType: isSupplierPortal ? brandType : undefined,
   }
   const inactiveCountArgs = {
     perPage: 1,
     status: '0',
-    supplierId: isSupplierPortal && linkedSupplierId > 0 ? linkedSupplierId : undefined,
+    supplierId: isSupplierPortal && linkedSupplierId > 0 ? linkedSupplierId : supplierFilterId,
     brandType: isSupplierPortal ? brandType : undefined,
   }
 
@@ -276,9 +299,12 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
 
     const mergedProductList = Array.from(mergedById.values())
 
-    if (!isSupplierPortal || linkedSupplierId <= 0) {
-      return mergedProductList
-    }
+      if (!isSupplierPortal || linkedSupplierId <= 0) {
+      return mergedProductList.filter((product) => {
+        if (!supplierFilterId || supplierFilterId <= 0) return true
+        return Number(product.supplierId ?? 0) === supplierFilterId
+      })
+      }
 
     return mergedProductList.filter((product) => {
       const matchesSupplier = Number(product.supplierId ?? 0) === linkedSupplierId
@@ -287,13 +313,14 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
         : false
       return matchesSupplier || matchesBrand
     })
-  }, [brandType, createdProducts, data?.products, initialData?.products, isSupplierPortal, linkedSupplierId, productOverrides, useInitialData])
+  }, [brandType, createdProducts, data?.products, initialData?.products, isSupplierPortal, linkedSupplierId, productOverrides, supplierFilterId, useInitialData])
 
   const visibleProducts = useMemo(() => {
+    const baseProducts = status === 'new' ? products.filter(isNewProduct) : products
     const categoryFiltered =
       typeof catId === 'number' && catId > 0
-        ? products.filter((product) => Number(product.catid ?? 0) === catId)
-        : products
+        ? baseProducts.filter((product) => Number(product.catid ?? 0) === catId)
+        : baseProducts
     const keyword = debouncedSearch.trim().toLowerCase()
     if (!keyword) return categoryFiltered
 
@@ -320,14 +347,14 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
 
       return terms.every((term) => haystacks.some((value) => value.includes(term)))
     })
-  }, [catId, debouncedSearch, products])
+  }, [catId, debouncedSearch, products, status])
 
   const meta = useMemo(() => {
     return data?.meta ?? (useInitialData ? initialData?.meta : undefined)
   }, [data?.meta, initialData?.meta, useInitialData])
 
   const visibleMeta = useMemo(() => {
-    if (!debouncedSearch) {
+    if (!debouncedSearch && status !== 'new') {
       return meta
     }
 
@@ -339,15 +366,30 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
       from: visibleProducts.length > 0 ? 1 : 0,
       to: visibleProducts.length,
     }
-  }, [debouncedSearch, meta, perPage, visibleProducts.length])
+  }, [debouncedSearch, meta, perPage, status, visibleProducts.length])
 
   /* Low-stock count from current page */
-  const lowStockCount = useMemo(() => visibleProducts.filter(p => p.qty > 0 && p.qty <= 5).length, [visibleProducts])
+  const lowStockCount = useMemo(
+    () => visibleProducts.filter((product) => {
+      const qty = getEffectiveStockQty(product)
+      return qty > 0 && qty <= 5
+    }).length,
+    [visibleProducts],
+  )
 
   const handleSearch = (v: string) => { setSearch(v); setPage(1) }
   const handleStatus = (v: string) => { setStatus(v); setPage(1) }
   const handleCatId  = (v: number | undefined) => { setCatId(v); setPage(1) }
   const handleBrandType  = (v: number | undefined) => { setBrandType(v); setPage(1) }
+  const handleSupplierFilterId = (v: number | undefined) => { setSupplierFilterId(v); setPage(1) }
+
+  const supplierOptions = useMemo(
+    () => (supplierListData?.suppliers ?? []).map((supplier) => ({
+      id: supplier.id,
+      label: supplier.company?.trim() || supplier.name?.trim() || `Supplier #${supplier.id}`,
+    })),
+    [supplierListData?.suppliers],
+  )
 
   useEffect(() => {
     const rowIds = new Set(visibleProducts.map(p => p.id))
@@ -523,6 +565,9 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
           showBrandFilter={!isSupplierPortal}
           resultCount={visibleMeta?.total ?? visibleProducts.length}
           supplierId={isSupplierPortal && linkedSupplierId > 0 ? linkedSupplierId : undefined}
+          supplierFilterId={!isSupplierPortal ? supplierFilterId : undefined}
+          onSupplierFilterId={!isSupplierPortal ? handleSupplierFilterId : undefined}
+          supplierOptions={!isSupplierPortal ? supplierOptions : undefined}
         />
       </motion.div>
 

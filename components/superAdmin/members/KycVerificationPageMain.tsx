@@ -199,14 +199,8 @@ function DetailModal({ item, onClose, onAction }: {
           </div>
 
           {/* Notes */}
-          {(item.notes || item.review_notes) && (
+          {item.review_notes && (
             <div className="rounded-xl border border-slate-100 bg-slate-50 px-3.5 py-3 space-y-1.5">
-              {item.notes && (
-                <p className="text-sm text-slate-700">
-                  <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 mr-2">Submitted Note:</span>
-                  {item.notes}
-                </p>
-              )}
               {item.review_notes && (
                 <p className="text-sm text-slate-700">
                   <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 mr-2">Review Note:</span>

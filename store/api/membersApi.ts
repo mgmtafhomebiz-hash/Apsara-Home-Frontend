@@ -184,6 +184,13 @@ export const membersApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['Members'],
     }),
+    deleteMember: builder.mutation<{ message: string }, number>({
+      query: (id) => ({
+        url: `/api/admin/members/${id}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['Members'],
+    }),
     approveMemberKyc: builder.mutation<{ message: string }, { id: number; notes?: string }>({
       query: ({ id, notes }) => ({
         url: `/api/admin/members/kyc/${id}/approve`,
@@ -210,6 +217,7 @@ export const {
   useGetMembersReferralTreeQuery,
   useGetMembersKycQuery,
   useUpdateMemberMutation,
+  useDeleteMemberMutation,
   useApproveMemberKycMutation,
   useRejectMemberKycMutation,
 } = membersApi

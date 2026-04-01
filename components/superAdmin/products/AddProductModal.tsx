@@ -12,6 +12,7 @@ import { showErrorToast, showSuccessToast } from '@/libs/toast'
 import RichTextEditor from '@/components/ui/RichTextEditor'
 import ProductDescriptionGenerator from '@/components/superAdmin/products/ProductDescriptionGenerator'
 import ImagePositionEditorModal from '@/components/superAdmin/products/ImagePositionEditorModal'
+import BulkProductImportPanel from '@/components/superAdmin/products/BulkProductImportPanel'
 import { colorNameToHex, hexToColorName } from '@/libs/colorUtils'
 import { mergeVariantOptionLabelsMeta } from '@/libs/productVariantOptions'
 import { ROOM_OPTIONS, inferRoomTypeFromCategory } from '@/libs/roomConfig'
@@ -354,12 +355,10 @@ const getUploadErrorMessage = (err: unknown, fallback: string) => {
 
 const IMAGE_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024
-const GROUP_PURCHASE_RATE = 0.06
 const PERSONAL_CASHBACK_RATE = 0.04
 const GLOBAL_PURCHASE_BONUS_RATE = 0.01
 const AFFILIATE_PERFORMANCE_RATE = 0.1
 const TOTAL_PAYOUT_RATE =
-  GROUP_PURCHASE_RATE +
   PERSONAL_CASHBACK_RATE +
   GLOBAL_PURCHASE_BONUS_RATE +
   AFFILIATE_PERFORMANCE_RATE
@@ -373,7 +372,6 @@ type PricingSummary = {
   computedPv: number
   retailProfit: number
   reversedMultiplier: number
-  groupPurchase: number
   personalCashback: number
   globalPurchaseBonus: number
   affiliatePerformanceBonus: number
@@ -488,7 +486,6 @@ const buildPricingSummary = ({
     computedPv: pvValue,
     retailProfit,
     reversedMultiplier: multiplierValue,
-    groupPurchase: pvValue * GROUP_PURCHASE_RATE,
     personalCashback: pvValue * PERSONAL_CASHBACK_RATE,
     globalPurchaseBonus: pvValue * GLOBAL_PURCHASE_BONUS_RATE,
     affiliatePerformanceBonus: pvValue * AFFILIATE_PERFORMANCE_RATE,
@@ -552,7 +549,6 @@ function PricingSummaryPanel({
   const pricingTierLabel = summary.pricingTier === 'high_end' ? 'High-End' : 'Low-End'
 
   const bonusRows: { label: string; rate: string; value: number; note: string }[] = [
-    { label: 'Group Purchase', rate: '6%', value: summary.groupPurchase, note: 'Reference only.' },
     { label: 'Personal Cashback', rate: '4%', value: summary.personalCashback, note: 'For personal purchase only.' },
     { label: 'Global Purchase Bonus', rate: '1%', value: summary.globalPurchaseBonus, note: 'Year-end only for top 10 qualifiers.' },
     { label: 'Affiliate Performance', rate: '10%', value: summary.affiliatePerformanceBonus, note: 'Depends on downline, up to 10 levels with compression rules.' },
@@ -630,7 +626,7 @@ function PricingSummaryPanel({
         <div className="px-4 py-3">
           <div className="flex items-center justify-between mb-2">
             <p className="text-[9px] md:text-[11px] font-bold uppercase tracking-widest text-slate-400">Reference Bonus Distribution</p>
-            <span className="rounded-full bg-blue-600 px-2 py-0.5 text-[9px] md:text-[11px] font-bold text-white">21% of PV</span>
+            <span className="rounded-full bg-blue-600 px-2 py-0.5 text-[9px] md:text-[11px] font-bold text-white">15% of PV</span>
           </div>
           <div className="rounded-xl bg-white border border-slate-100 overflow-hidden divide-y divide-slate-50">
             {bonusRows.map(({ label, rate, value, note }) => (
@@ -650,10 +646,10 @@ function PricingSummaryPanel({
             ))}
             <div className="flex items-center justify-between px-3 py-2.5 bg-blue-600">
               <div className="flex items-center gap-2">
-                <span className="shrink-0 rounded-full bg-white/20 px-1.5 py-0.5 text-[9px] md:text-[11px] font-bold text-white">21%</span>
+                <span className="shrink-0 rounded-full bg-white/20 px-1.5 py-0.5 text-[9px] md:text-[11px] font-bold text-white">15%</span>
                 <div>
                   <p className="text-[11px] md:text-sm font-semibold text-white">Total Reference Allocation</p>
-                  <p className="font-mono text-[10px] md:text-xs text-blue-200">{pvStr} PV × 21%</p>
+                  <p className="font-mono text-[10px] md:text-xs text-blue-200">{pvStr} PV × 15%</p>
                 </div>
               </div>
               <span className="text-base md:text-lg font-bold text-white tabular-nums">₱ {fmt(summary.totalAllocation)}</span>
@@ -755,6 +751,7 @@ const scrollToFirstErrorField = (container: HTMLElement | null) => {
 /* ─── main component ─────────────────────────────────────── */
 
 export default function AddProductModal({ isOpen, onClose, onSaved }: AddProductModalProps) {
+  const [entryMode, setEntryMode] = useState<'manual' | 'csv'>('manual')
   const [form,         setForm]         = useState<FormState>(defaultForm)
   const [errors,       setErrors]       = useState<Errors>({})
   const [serverError,  setServerError]  = useState('')
@@ -831,6 +828,13 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
     }),
     [form.pd_pricing_tier, form.pd_price_srp, form.pd_price_dp, form.pd_price_member, form.pd_reversed_pv_multiplier],
   )
+  const computedMainPvDisplay = useMemo(() => {
+    const computed = deriveComputedPv({
+      transfer: form.pd_price_dp,
+      multiplier: form.pd_reversed_pv_multiplier,
+    })
+    return computed > 0 ? formatDecimalInput(computed, 2) : ''
+  }, [form.pd_price_dp, form.pd_reversed_pv_multiplier])
 
   const set = (key: keyof FormState, value: string | boolean) => {
     setForm(p => ({ ...p, [key]: value }))
@@ -838,6 +842,7 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
   }
 
   const resetModalState = () => {
+    setEntryMode('manual')
     setForm(defaultForm)
     setErrors({})
     setServerError('')
@@ -1375,23 +1380,50 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
                   </div>
                   <div>
                     <h2 className="text-slate-800 font-bold text-base leading-none">Add New Product</h2>
-                    <p className="text-slate-400 text-xs mt-0.5">Fill in all product details below</p>
+                    <p className="text-slate-400 text-xs mt-0.5">Choose manual entry or bulk CSV import</p>
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={handleClose}
-                  disabled={isBusy}
-                  className="h-8 w-8 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors flex items-center justify-center disabled:opacity-40"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12"/>
-                  </svg>
-                </button>
+                <div className="flex items-center gap-3">
+                  <div className="flex rounded-xl bg-slate-100 p-1">
+                    {[
+                      { value: 'manual', label: 'Manual' },
+                      { value: 'csv', label: 'CSV Import' },
+                    ].map((option) => (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => setEntryMode(option.value as 'manual' | 'csv')}
+                        className={`rounded-lg px-3 py-2 text-xs font-semibold transition ${
+                          entryMode === option.value ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500'
+                        }`}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleClose}
+                    disabled={isBusy}
+                    className="h-8 w-8 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors flex items-center justify-center disabled:opacity-40"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                  </button>
+                </div>
               </div>
 
               {/* ── Scrollable form body ── */}
-              <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+              <form onSubmit={entryMode === 'manual' ? handleSubmit : (event) => event.preventDefault()} className="flex flex-col flex-1 min-h-0">
+                {entryMode === 'csv' ? (
+                  <BulkProductImportPanel
+                    onClose={handleClose}
+                    onImported={() => {
+                      onSaved?.()
+                    }}
+                  />
+                ) : (
                 <div ref={formContentRef} className="overflow-y-auto flex-1 px-4 py-4 sm:px-6 sm:py-5 space-y-5">
 
                   {/* Server error */}
@@ -1446,7 +1478,7 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
                       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:grid-cols-4">
                         {visibleImagePreviews.map((preview, index) => (
                           <motion.div
-                            key={preview}
+                            key={`preview-${index}-${preview || 'empty'}`}
                             onPointerDown={() => handleImagePointerDown(index)}
                             onPointerEnter={() => handleImagePointerEnter(index)}
                             onPointerUp={stopImagePointerDrag}
@@ -1684,22 +1716,28 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
                     <Field label="SRP Price (₱)" required error={errors.pd_price_srp}>
                       <input type="number" value={form.pd_price_srp} onChange={e => set('pd_price_srp', e.target.value)} placeholder="0.00" className={inputCls(!!errors.pd_price_srp)}/>
                     </Field>
-                    <Field label="Dealer Price (₱)" error={errors.pd_price_dp}>
-                      <div className="space-y-1">
-                        <input type="number" value={form.pd_price_dp} onChange={e => set('pd_price_dp', e.target.value)} placeholder="0.00" className={inputCls(!!errors.pd_price_dp)}/>
-                        <p className="text-[11px] text-slate-500">Separate dealer pricing. Optional.</p>
-                      </div>
-                    </Field>
                     <Field label="Member Price (₱)" error={errors.pd_price_member}>
                       <div className="space-y-1">
                         <input type="number" value={form.pd_price_member} onChange={e => set('pd_price_member', e.target.value)} placeholder="0.00" className={inputCls(!!errors.pd_price_member)}/>
                         <p className="text-[11px] text-slate-500">Shown to member accounts. If blank, SRP will be used.</p>
                       </div>
                     </Field>
+                    <Field label="Dealer Price (₱)" error={errors.pd_price_dp}>
+                      <div className="space-y-1">
+                        <input type="number" value={form.pd_price_dp} onChange={e => set('pd_price_dp', e.target.value)} placeholder="0.00" className={inputCls(!!errors.pd_price_dp)}/>
+                        <p className="text-[11px] text-slate-500">Separate dealer pricing. Optional.</p>
+                      </div>
+                    </Field>
                     <Field label="PV Product">
                       <div className="space-y-1">
-                        <input type="number" value={form.pd_prodpv} onChange={e => set('pd_prodpv', e.target.value)} placeholder="0.00" className={inputCls()}/>
-                        <p className="text-[11px] text-slate-500">Enter the product PV value for this item.</p>
+                        <input
+                          type="number"
+                          value={computedMainPvDisplay}
+                          placeholder="0.00"
+                          disabled
+                          className={`${inputCls()} bg-slate-50 text-slate-600 cursor-not-allowed`}
+                        />
+                        <p className="text-[11px] text-slate-500">Auto-computed from Dealer Price × Reversed PV Multiplier.</p>
                       </div>
                     </Field>
                     <Field label="Reversed PV Multiplier" error={errors.pd_prodpv}>
@@ -2331,9 +2369,10 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
                     </>
                   )}
                 </div>
+                )}
 
                 {/* ── Sticky footer ── */}
-                <div className="px-4 py-3 sm:px-6 sm:py-4 border-t border-slate-100 shrink-0 flex items-center gap-3 bg-slate-50/60">
+                {entryMode === 'manual' && <div className="px-4 py-3 sm:px-6 sm:py-4 border-t border-slate-100 shrink-0 flex items-center gap-3 bg-slate-50/60">
                   <p className="text-xs text-slate-400 flex-1">
                     Fields marked <span className="text-red-400 font-semibold">*</span> are required
                   </p>
@@ -2367,7 +2406,7 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
                       </>
                     )}
                   </button>
-                </div>
+                </div>}
               </form>
             </motion.div>
           </div>

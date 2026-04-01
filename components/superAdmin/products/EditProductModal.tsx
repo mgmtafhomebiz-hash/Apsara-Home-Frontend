@@ -5,7 +5,7 @@ import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useSession } from 'next-auth/react'
 import { useGetAdminMeQuery } from '@/store/api/authApi'
-import { Product, ProductVariant, useUpdateProductMutation, CreateProductPayload } from '@/store/api/productsApi'
+import { Product, ProductVariant, useUpdateProductMutation, CreateProductPayload, normalizeProduct } from '@/store/api/productsApi'
 import { useGetCategoriesQuery } from '@/store/api/categoriesApi'
 import { useGetProductBrandsQuery } from '@/store/api/productBrandsApi'
 import { showErrorToast, showSuccessToast } from '@/libs/toast'
@@ -148,12 +148,10 @@ const PRICING_TIER_OPTIONS = [
 ] as const
 
 const getEditProductDraftKey = (productId: number) => `afhome:edit-product-draft:${productId}`
-const GROUP_PURCHASE_RATE = 0.06
 const PERSONAL_CASHBACK_RATE = 0.04
 const GLOBAL_PURCHASE_BONUS_RATE = 0.01
 const AFFILIATE_PERFORMANCE_RATE = 0.1
 const TOTAL_PAYOUT_RATE =
-  GROUP_PURCHASE_RATE +
   PERSONAL_CASHBACK_RATE +
   GLOBAL_PURCHASE_BONUS_RATE +
   AFFILIATE_PERFORMANCE_RATE
@@ -167,7 +165,6 @@ type PricingSummary = {
   computedPv: number
   retailProfit: number
   reversedMultiplier: number
-  groupPurchase: number
   personalCashback: number
   globalPurchaseBonus: number
   affiliatePerformanceBonus: number
@@ -252,7 +249,6 @@ const buildPricingSummary = ({
     computedPv: pvValue,
     retailProfit,
     reversedMultiplier: multiplierValue,
-    groupPurchase: pvValue * GROUP_PURCHASE_RATE,
     personalCashback: pvValue * PERSONAL_CASHBACK_RATE,
     globalPurchaseBonus: pvValue * GLOBAL_PURCHASE_BONUS_RATE,
     affiliatePerformanceBonus: pvValue * AFFILIATE_PERFORMANCE_RATE,
@@ -316,7 +312,6 @@ function PricingSummaryPanel({
 
   const pricingTierLabel = summary.pricingTier === 'high_end' ? 'High-End' : 'Low-End'
   const bonusRows: { label: string; rate: string; value: number; note: string }[] = [
-    { label: 'Group Purchase', rate: '6%', value: summary.groupPurchase, note: 'Reference only.' },
     { label: 'Personal Cashback', rate: '4%', value: summary.personalCashback, note: 'For personal purchase only.' },
     { label: 'Global Purchase Bonus', rate: '1%', value: summary.globalPurchaseBonus, note: 'Year-end only for top 10 qualifiers.' },
     { label: 'Affiliate Performance', rate: '10%', value: summary.affiliatePerformanceBonus, note: 'Depends on downline, up to 10 levels with compression rules.' },
@@ -393,7 +388,7 @@ function PricingSummaryPanel({
         <div className="px-4 py-3">
           <div className="flex items-center justify-between mb-2">
             <p className="text-[9px] md:text-[11px] font-bold uppercase tracking-widest text-slate-400">Reference Bonus Distribution</p>
-            <span className="rounded-full bg-blue-600 px-2 py-0.5 text-[9px] md:text-[11px] font-bold text-white">21% of PV</span>
+            <span className="rounded-full bg-blue-600 px-2 py-0.5 text-[9px] md:text-[11px] font-bold text-white">15% of PV</span>
           </div>
           <div className="rounded-xl bg-white border border-slate-100 overflow-hidden divide-y divide-slate-50">
             {bonusRows.map(({ label, rate, value, note }) => (
@@ -413,10 +408,10 @@ function PricingSummaryPanel({
             ))}
             <div className="flex items-center justify-between px-3 py-2.5 bg-blue-600">
               <div className="flex items-center gap-2">
-                <span className="shrink-0 rounded-full bg-white/20 px-1.5 py-0.5 text-[9px] md:text-[11px] font-bold text-white">21%</span>
+                <span className="shrink-0 rounded-full bg-white/20 px-1.5 py-0.5 text-[9px] md:text-[11px] font-bold text-white">15%</span>
                 <div>
                   <p className="text-[11px] md:text-sm font-semibold text-white">Total Reference Allocation</p>
-                  <p className="font-mono text-[10px] md:text-xs text-blue-200">{pvStr} PV × 21%</p>
+                  <p className="font-mono text-[10px] md:text-xs text-blue-200">{pvStr} PV × 15%</p>
                 </div>
               </div>
               <span className="text-base md:text-lg font-bold text-white tabular-nums">₱ {fmt(summary.totalAllocation)}</span>
@@ -1100,6 +1095,13 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
     }),
     [form.pd_pricing_tier, form.pd_price_srp, form.pd_price_dp, form.pd_price_member, form.pd_reversed_pv_multiplier],
   )
+  const computedMainPvDisplay = useMemo(() => {
+    const computed = deriveComputedPv({
+      transfer: form.pd_price_dp,
+      multiplier: form.pd_reversed_pv_multiplier,
+    })
+    return computed > 0 ? formatDecimalInput(computed, 2) : ''
+  }, [form.pd_price_dp, form.pd_reversed_pv_multiplier])
   const openedProductRef = useRef<Product | null>(null)
   if (product && openedProductRef.current?.id !== product.id) {
     openedProductRef.current = product
@@ -1648,39 +1650,41 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
     }
 
     try {
-      await updateProduct({ id: product.id, data: payload }).unwrap()
-      const updatedProduct: Product = {
-        ...product,
-        name: form.pd_name.trim(),
-        catid: Number(form.pd_catid),
-        roomType: form.pd_room_type ? Number(form.pd_room_type) : undefined,
-        brandType: form.pd_brand_type ? Number(form.pd_brand_type) : undefined,
-        brand: brands.find((brand) => brand.id === Number(form.pd_brand_type))?.name ?? product.brand ?? null,
-        description: form.pd_description.trim() || null,
-        specifications: nextSpecifications ?? null,
-        priceSrp: Number(form.pd_price_srp),
-        priceDp: form.pd_price_dp ? Number(form.pd_price_dp) : 0,
-        priceMember: form.pd_price_member ? Number(form.pd_price_member) : undefined,
-        prodpv: resolvedMainPv,
-        qty: form.pd_qty ? Number(form.pd_qty) : 0,
-        weight: form.pd_weight ? Number(form.pd_weight) : 0,
-        psweight: form.pd_psweight ? Number(form.pd_psweight) : undefined,
-        pswidth: form.pd_pswidth ? Number(form.pd_pswidth) : undefined,
-        pslenght: form.pd_pslenght ? Number(form.pd_pslenght) : undefined,
-        psheight: form.pd_psheight ? Number(form.pd_psheight) : undefined,
-        material: form.pd_material.trim() || null,
-        warranty: form.pd_warranty.trim() || null,
-        assemblyRequired: form.pd_assembly_required,
-        type: Number(form.pd_type),
-        musthave: form.pd_musthave,
-        bestseller: form.pd_bestseller,
-        salespromo: form.pd_salespromo,
-        verified: form.pd_verified,
-        status: Number(form.pd_status),
-        image: finalImageUrls[0] ?? null,
-        images: finalImageUrls,
-        variants: hasVariants ? expandedVariants.map(mapExpandedVariantToProductVariant) : [],
-      }
+      const response = await updateProduct({ id: product.id, data: payload }).unwrap()
+      const updatedProduct: Product = response.product
+        ? normalizeProduct(response.product as Product & Record<string, unknown>)
+        : normalizeProduct({
+            ...product,
+            name: form.pd_name.trim(),
+            catid: Number(form.pd_catid),
+            roomType: form.pd_room_type ? Number(form.pd_room_type) : undefined,
+            brandType: form.pd_brand_type ? Number(form.pd_brand_type) : undefined,
+            brand: brands.find((brand) => brand.id === Number(form.pd_brand_type))?.name ?? product.brand ?? null,
+            description: form.pd_description.trim() || null,
+            specifications: nextSpecifications ?? null,
+            priceSrp: Number(form.pd_price_srp),
+            priceDp: form.pd_price_dp ? Number(form.pd_price_dp) : 0,
+            priceMember: form.pd_price_member ? Number(form.pd_price_member) : undefined,
+            prodpv: resolvedMainPv,
+            qty: form.pd_qty ? Number(form.pd_qty) : 0,
+            weight: form.pd_weight ? Number(form.pd_weight) : 0,
+            psweight: form.pd_psweight ? Number(form.pd_psweight) : undefined,
+            pswidth: form.pd_pswidth ? Number(form.pd_pswidth) : undefined,
+            pslenght: form.pd_pslenght ? Number(form.pd_pslenght) : undefined,
+            psheight: form.pd_psheight ? Number(form.pd_psheight) : undefined,
+            material: form.pd_material.trim() || null,
+            warranty: form.pd_warranty.trim() || null,
+            assemblyRequired: form.pd_assembly_required,
+            type: Number(form.pd_type),
+            musthave: form.pd_musthave,
+            bestseller: form.pd_bestseller,
+            salespromo: form.pd_salespromo,
+            verified: form.pd_verified,
+            status: Number(form.pd_status),
+            image: finalImageUrls[0] ?? null,
+            images: finalImageUrls,
+            variants: hasVariants ? expandedVariants.map(mapExpandedVariantToProductVariant) : [],
+          } as Product & Record<string, unknown>)
       showSuccessToast('Product updated successfully.')
       if (typeof window !== 'undefined') {
         window.localStorage.removeItem(getEditProductDraftKey(product.id))
@@ -1964,6 +1968,25 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
                   {/* ── Section: Product Information ── */}
                   <SectionLabel>Product Information</SectionLabel>
 
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">Supplier</p>
+                      <p className="mt-1 text-sm font-semibold text-slate-700">{product.supplierName?.trim() || 'No supplier assigned'}</p>
+                      {product.supplierId ? (
+                        <p className="mt-1 text-[11px] text-slate-400">Supplier #{product.supplierId}</p>
+                      ) : null}
+                    </div>
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">Uploaded By</p>
+                      <p className="mt-1 text-sm font-semibold text-slate-700">{product.uploaderName?.trim() || 'Unknown user'}</p>
+                      {product.uploaderRole ? (
+                        <p className="mt-1 text-[11px] uppercase tracking-[0.12em] text-slate-400">{product.uploaderRole.replace(/_/g, ' ')}</p>
+                      ) : product.uploaderEmail ? (
+                        <p className="mt-1 text-[11px] text-slate-400">{product.uploaderEmail}</p>
+                      ) : null}
+                    </div>
+                  </div>
+
                   <Field label="Product Name" required error={errors.pd_name}>
                     <input
                       type="text"
@@ -2126,22 +2149,28 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
                     <Field label="SRP Price (₱)" required error={errors.pd_price_srp}>
                       <input type="number" value={form.pd_price_srp} onChange={e => set('pd_price_srp', e.target.value)} placeholder="0.00" className={inputCls(!!errors.pd_price_srp)}/>
                     </Field>
-                    <Field label="Dealer Price (₱)" error={errors.pd_price_dp}>
-                      <div className="space-y-1">
-                        <input type="number" value={form.pd_price_dp} onChange={e => set('pd_price_dp', e.target.value)} placeholder="0.00" className={inputCls(!!errors.pd_price_dp)}/>
-                        <p className="text-[11px] text-slate-500">Separate dealer pricing. Optional.</p>
-                      </div>
-                    </Field>
                     <Field label="Member Price (₱)" error={errors.pd_price_member}>
                       <div className="space-y-1">
                         <input type="number" value={form.pd_price_member} onChange={e => set('pd_price_member', e.target.value)} placeholder="0.00" className={inputCls(!!errors.pd_price_member)}/>
                         <p className="text-[11px] text-slate-500">Shown to member accounts. If blank, SRP will be used.</p>
                       </div>
                     </Field>
+                    <Field label="Dealer Price (₱)" error={errors.pd_price_dp}>
+                      <div className="space-y-1">
+                        <input type="number" value={form.pd_price_dp} onChange={e => set('pd_price_dp', e.target.value)} placeholder="0.00" className={inputCls(!!errors.pd_price_dp)}/>
+                        <p className="text-[11px] text-slate-500">Separate dealer pricing. Optional.</p>
+                      </div>
+                    </Field>
                     <Field label="PV Product">
                       <div className="space-y-1">
-                        <input type="number" value={form.pd_prodpv} onChange={e => set('pd_prodpv', e.target.value)} placeholder="0.00" className={inputCls()}/>
-                        <p className="text-[11px] text-slate-500">Enter the product PV value for this item.</p>
+                        <input
+                          type="number"
+                          value={computedMainPvDisplay}
+                          placeholder="0.00"
+                          disabled
+                          className={`${inputCls()} bg-slate-50 text-slate-600 cursor-not-allowed`}
+                        />
+                        <p className="text-[11px] text-slate-500">Auto-computed from Dealer Price × Reversed PV Multiplier.</p>
                       </div>
                     </Field>
                     <Field label="Reversed PV Multiplier" error={errors.pd_prodpv}>
@@ -2789,7 +2818,7 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
                   </button>
                   <button
                     type="submit"
-                    disabled={isBusy || !hasChanged}
+                    disabled={isBusy}
                     className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-bold transition-colors shadow-sm shadow-blue-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isBusy ? (
