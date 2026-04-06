@@ -12,6 +12,7 @@ import { useLogoutMutation } from '@/store/api/authApi'
 import { baseApi, clearAccessTokenCache } from '@/store/api/baseApi'
 import type { Category } from '@/store/api/categoriesApi'
 import { useGetPublicProductsQuery } from '@/store/api/productsApi'
+import formatPrice from '@/helpers/FormatPrice'
 import { useMeQuery } from '@/store/api/userApi'
 import { useGetCustomerNotificationsQuery } from '@/store/api/customerNotificationsApi'
 import { useRouter } from 'next/navigation'
@@ -149,9 +150,8 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
   const { data: searchedProductsData, isFetching: isSearchingProducts } = useGetPublicProductsQuery(
     {
       page: 1,
-      perPage: 8,
+      perPage: 50,
       search: debouncedSearchQuery,
-      status: '1',
     },
     {
       skip: debouncedSearchQuery.length < 2,
@@ -160,25 +160,48 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
 
   const searchedProducts = useMemo(() => {
     const rows = searchedProductsData?.products ?? []
+    const normalizedQuery = debouncedSearchQuery.trim().toLowerCase()
     return rows
       .map((product) => {
         const name = String(product.name ?? '').trim()
         if (!name) return null
+        const nameLower = name.toLowerCase()
+        if (normalizedQuery) {
+          if (!nameLower.includes(normalizedQuery)) return null
+        }
         const imageFromArray = Array.isArray(product.images)
           ? product.images.find((item) => typeof item === 'string' && item.trim().length > 0)
           : null
         const image = product.image || imageFromArray || null
         const slug = toSlug(name)
         const id = typeof product.id === 'number' ? product.id : null
+        const priceDp = typeof product.priceDp === 'number' ? product.priceDp : null
+        const priceSrp = typeof product.priceSrp === 'number' ? product.priceSrp : null
+        const prodpv = typeof product.prodpv === 'number' ? product.prodpv : null
         return {
           id: id ?? slug,
           name,
           image,
           path: id ? `/product/${slug}-i${id}` : `/product/${slug}`,
+          priceDp,
+          priceSrp,
+          prodpv,
         }
       })
-      .filter((product): product is { id: number | string; name: string; image: string | null; path: string } => Boolean(product))
-  }, [searchedProductsData?.products])
+      .filter(
+        (
+          product,
+        ): product is {
+          id: number | string
+          name: string
+          image: string | null
+          path: string
+          priceDp: number | null
+          priceSrp: number | null
+          prodpv: number | null
+        } => Boolean(product),
+      )
+  }, [searchedProductsData?.products, debouncedSearchQuery])
 
   const showSearchNotFound =
     searchModalOpen &&
@@ -1528,22 +1551,45 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
                                 setSearchModalOpen(false)
                                 setMobileOpen(false)
                               }}
-                              className="block rounded-2xl border border-transparent px-2 py-2 transition hover:border-orange-100 hover:bg-orange-50/70"
+                              className="block rounded-2xl border border-slate-200/70 bg-white px-3 py-3 transition hover:border-orange-200 hover:bg-orange-50/40"
                             >
                               <Card variant="default" className="border-slate-200/80 shadow-none">
-                                <Card.Content className="flex items-center gap-3 px-3 py-3">
-                                  <span className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-slate-100">
+                                <Card.Content className="flex items-start gap-5 px-3 py-3 text-left">
+                                  <span className="relative h-24 w-28 shrink-0 overflow-hidden rounded-2xl bg-slate-100">
                                     {product.image ? (
                                       <Image src={product.image} alt={product.name} fill className="object-cover" />
                                     ) : (
-                                      <span className="flex h-full w-full items-center justify-center text-[10px] font-semibold text-slate-400">
+                                      <span className="flex h-full w-full items-center justify-center text-[11px] font-semibold text-slate-400">
                                         AF
                                       </span>
                                     )}
                                   </span>
-                                  <div className="min-w-0">
-                                    <p className="truncate text-sm font-semibold text-slate-800">{product.name}</p>
+                                  <div className="min-w-0 flex-1">
+                                    <p className="truncate text-sm font-semibold uppercase tracking-wide text-slate-800">
+                                      {product.name}
+                                    </p>
                                     <p className="mt-1 text-xs text-slate-500">Search match for &quot;{searchModalQuery.trim()}&quot;</p>
+                                    {(product.priceDp ?? product.priceSrp ?? product.prodpv) && (
+                                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                                        {product.priceDp !== null && (
+                                          <span className="text-sm font-semibold text-orange-600">
+                                            {formatPrice(product.priceDp)}
+                                          </span>
+                                        )}
+                                        {product.priceSrp !== null &&
+                                          product.priceDp !== null &&
+                                          product.priceSrp > product.priceDp && (
+                                            <span className="text-xs text-slate-400 line-through">
+                                              {formatPrice(product.priceSrp)}
+                                            </span>
+                                          )}
+                                        {product.prodpv !== null && product.prodpv > 0 && (
+                                          <span className="rounded-full border border-blue-100 bg-blue-50 px-2 py-0.5 text-[11px] font-semibold text-blue-600">
+                                            PV {product.prodpv.toLocaleString('en-PH', { maximumFractionDigits: 2 })}
+                                          </span>
+                                        )}
+                                      </div>
+                                    )}
                                   </div>
                                 </Card.Content>
                               </Card>
