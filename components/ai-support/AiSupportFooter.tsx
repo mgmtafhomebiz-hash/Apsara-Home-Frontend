@@ -1,4 +1,4 @@
-import { Camera, SendHorizonal, X } from 'lucide-react';
+import { SendHorizonal, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 interface Props {
@@ -22,13 +22,7 @@ export function AiSupportFooter({
   maxImages = 4,
   disabled,
 }: Props) {
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [previews, setPreviews] = useState<Array<{ url: string; name: string; dataUrl: string }>>([]);
-  const imagesRef = useRef<string[]>(images);
-
-  useEffect(() => {
-    imagesRef.current = images;
-  }, [images]);
 
   useEffect(() => {
     return () => {
@@ -37,39 +31,6 @@ export function AiSupportFooter({
       });
     };
   }, [previews]);
-
-  const handlePickImage = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.target.files ?? []);
-    if (files.length === 0) return;
-
-    const remainingSlots = Math.max(0, maxImages - previews.length);
-    const selected = files.slice(0, remainingSlots);
-    if (selected.length === 0) return;
-
-    selected.forEach((file) => {
-      const url = URL.createObjectURL(file);
-      setPreviews((prev) => [...prev, { url, name: file.name, dataUrl: '' }]);
-
-      const reader = new FileReader();
-      reader.onload = () => {
-        const dataUrl = typeof reader.result === 'string' ? reader.result : '';
-        if (!dataUrl) return;
-
-        setPreviews((prev) =>
-          prev.map((item) => (item.url === url ? { ...item, dataUrl } : item)),
-        );
-
-        const next = [...imagesRef.current, dataUrl].slice(0, maxImages);
-        imagesRef.current = next;
-        onImageChange(next);
-      };
-      reader.readAsDataURL(file);
-    });
-  };
 
   const clearPreview = (index?: number) => {
     if (typeof index === 'number') {
@@ -87,9 +48,6 @@ export function AiSupportFooter({
     previews.forEach((preview) => URL.revokeObjectURL(preview.url));
     setPreviews([]);
     onImageChange([]);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
   };
 
   const handleSend = () => {
@@ -101,14 +59,6 @@ export function AiSupportFooter({
 
   return (
     <div className="relative flex-shrink-0 border-t border-slate-100 bg-white px-3 py-2.5 flex items-center gap-2">
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        multiple
-        className="hidden"
-        onChange={handleFileChange}
-      />
       <input
         type="text"
         value={value}
@@ -123,14 +73,6 @@ export function AiSupportFooter({
         autoComplete="off"
         className="flex-1 bg-slate-50 border border-slate-200 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100 rounded-xl px-3.5 py-2.5 text-[13.5px] text-slate-800 placeholder:text-slate-400 outline-none transition-all duration-150"
       />
-      <button
-        type="button"
-        onClick={handlePickImage}
-        aria-label="Attach image"
-        className="w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-indigo-600 transition-all duration-150"
-      >
-        <Camera size={16} strokeWidth={2} />
-      </button>
       <button
         type="button"
         onClick={handleSend}

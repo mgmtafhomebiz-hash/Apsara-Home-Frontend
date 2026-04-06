@@ -588,7 +588,7 @@ export default function CategoryListProductMain({
                                             animate={{ opacity: 1, y: 0 }}
                                             transition={{ duration: 0.22, delay: i * 0.02, ease: 'easeOut' }}
                                         >
-                                            <ProductCard {...product} />
+                                            <ProductCard {...product} viewMode={viewMode} />
                                         </motion.div>
                                     ))}
                                 </motion.div>
