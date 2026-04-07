@@ -15,6 +15,7 @@ import ImagePositionEditorModal from '@/components/superAdmin/products/ImagePosi
 import { colorNameToHex, hexToColorName } from '@/libs/colorUtils'
 import { extractVariantOptionLabels, mergeVariantOptionLabelsMeta } from '@/libs/productVariantOptions'
 import { ROOM_OPTIONS, inferRoomTypeFromCategory } from '@/libs/roomConfig'
+import { Button, Card } from '@heroui/react'
 
 /* ─── types ──────────────────────────────────────────────── */
 
@@ -69,6 +70,7 @@ interface VariantFormState {
   pv_colors: VariantColor[]
   pv_size: string
   pv_style: string
+  pv_extra_styles: string[]
   pv_width: string
   pv_dimension: string
   pv_height: string
@@ -452,7 +454,7 @@ function PricingSummaryPanel({
 /* ─── helpers ────────────────────────────────────────────── */
 
 const emptyVariant = (): VariantFormState => ({
-  pv_name: '', pv_sku: '', pv_colors: [], pv_size: '', pv_style: '', pv_width: '', pv_dimension: '', pv_height: '',
+  pv_name: '', pv_sku: '', pv_colors: [], pv_size: '', pv_style: '', pv_extra_styles: [], pv_width: '', pv_dimension: '', pv_height: '',
   pv_price_srp: '', pv_price_dp: '', pv_price_member: '', pv_reversed_pv_multiplier: '', pv_prodpv: '', pv_qty: '',
   pv_status: '1', pv_images: [],
 })
@@ -476,6 +478,7 @@ const mapVariantToForm = (variant: ProductVariant): VariantFormState => ({
       : [],
   pv_size: variant.size ?? '',
   pv_style: variant.style ?? '',
+  pv_extra_styles: [],
   pv_width: toOptionalPositiveNumber(variant.width)?.toString() ?? '',
   pv_dimension: toOptionalPositiveNumber(variant.dimension)?.toString() ?? '',
   pv_height: toOptionalPositiveNumber(variant.height)?.toString() ?? '',
@@ -591,6 +594,9 @@ const dedupeVariantValues = (values: string[]) => {
     })
 }
 
+const getAllVariantStyles = (variant: Pick<VariantFormState, 'pv_style' | 'pv_extra_styles'>) =>
+  dedupeVariantValues([variant.pv_style, ...(Array.isArray(variant.pv_extra_styles) ? variant.pv_extra_styles : [])])
+
 const getVariantCombinationKey = (variant: Pick<VariantFormState, 'pv_name' | 'pv_style' | 'pv_size'>) =>
   [
     normalizeVariantLabel(variant.pv_name).toLowerCase(),
@@ -666,6 +672,7 @@ const isGeneratedGlobalVariant = (
   )
   const hasCustomVariantData = Boolean(
     variant.pv_style.trim() ||
+    variant.pv_extra_styles.length > 0 ||
     variant.pv_width.trim() ||
     variant.pv_dimension.trim() ||
     variant.pv_height.trim() ||
@@ -727,6 +734,7 @@ const getVariantFormKey = (variant: VariantFormState) => {
     variant.pv_sku.trim().toLowerCase(),
     normalizeVariantLabel(variant.pv_name).toLowerCase(),
     normalizeVariantLabel(variant.pv_style).toLowerCase(),
+    dedupeVariantValues(variant.pv_extra_styles).join('|').toLowerCase(),
     normalizeVariantLabel(variant.pv_size).toLowerCase(),
     variant.pv_width.trim(),
     variant.pv_dimension.trim(),
@@ -747,7 +755,6 @@ const getVariantCoreGroupKey = (variant: ProductVariant) => {
 
   return [
     normalizeVariantLabel(variant.name ?? '').toLowerCase(),
-    normalizeVariantLabel(variant.style ?? '').toLowerCase(),
     normalizeVariantLabel(variant.size ?? '').toLowerCase(),
     variant.width ?? '',
     variant.dimension ?? '',
@@ -798,6 +805,8 @@ const mapProductVariantsToFormStates = (productVariants: ProductVariant[]) => {
 
     const mergedImages = Array.from(new Set([...current.pv_images, ...(Array.isArray(variant.images) ? variant.images.filter(Boolean) : [])]))
     const mergedColors = [...current.pv_colors]
+    const mergedStyles = dedupeVariantValues([current.pv_style, ...current.pv_extra_styles, variant.style ?? ''])
+    const [primaryStyle = '', ...extraStyles] = mergedStyles
 
     nextColor.forEach((color) => {
       const signature = getNormalizedColorSignature(color.name, color.hex)
@@ -809,6 +818,8 @@ const mapProductVariantsToFormStates = (productVariants: ProductVariant[]) => {
 
     map.set(groupKey, {
       ...current,
+      pv_style: primaryStyle,
+      pv_extra_styles: extraStyles,
       pv_images: mergedImages,
       pv_colors: mergedColors,
     })
@@ -929,6 +940,7 @@ const normalizeVariantsForComparison = (variants: VariantFormState[]) =>
       hex: color.hex.trim().toLowerCase(),
     })),
     pv_style: variant.pv_style.trim(),
+    pv_extra_styles: dedupeVariantValues(variant.pv_extra_styles),
     pv_size: variant.pv_size.trim(),
     pv_width: normalizeNumberField(variant.pv_width),
     pv_dimension: normalizeNumberField(variant.pv_dimension),
@@ -968,9 +980,11 @@ const mapExpandedVariantToProductVariant = (
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex items-center gap-2 pt-1">
-      <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 whitespace-nowrap">{children}</span>
-      <div className="flex-1 h-px bg-slate-100" />
+    <div className="flex items-center gap-3 pt-1">
+      <span className="whitespace-nowrap rounded-full bg-slate-100 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.22em] text-slate-500">
+        {children}
+      </span>
+      <div className="h-px flex-1 bg-gradient-to-r from-slate-200 via-slate-100 to-transparent" />
     </div>
   )
 }
@@ -981,8 +995,8 @@ function Field({
   label: string; required?: boolean; error?: string; children: React.ReactNode
 }) {
   return (
-    <div className="space-y-1.5" data-error-field={error ? 'true' : undefined}>
-      <label className="text-xs font-semibold text-slate-600 block">
+    <div className="space-y-2" data-error-field={error ? 'true' : undefined}>
+      <label className="block text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
         {label}{required && <span className="text-red-400 ml-0.5">*</span>}
       </label>
       {children}
@@ -998,15 +1012,18 @@ function Field({
   )
 }
 
+const sectionCardCls = 'overflow-hidden rounded-[28px] border border-slate-200/80 bg-white/95 shadow-[0_22px_60px_-36px_rgba(15,23,42,0.35)]'
+const sectionCardBodyCls = 'px-4 py-4 sm:px-5 sm:py-5'
+
 const inputCls = (hasError = false) => [
-  'w-full px-3.5 py-2.5 bg-white border rounded-xl text-sm text-slate-700 placeholder-slate-400',
-  'focus:outline-none focus:ring-2 transition-all',
+  'w-full rounded-2xl border bg-slate-50/85 px-4 py-3 text-sm text-slate-700 placeholder-slate-400 shadow-sm',
+  'focus:outline-none focus:ring-2 transition-all duration-200',
   hasError
-    ? 'border-red-300 focus:ring-red-500/20 focus:border-red-400'
-    : 'border-slate-200 focus:ring-teal-500/30 focus:border-teal-400 hover:border-slate-300',
+    ? 'border-red-300 bg-red-50/60 focus:border-red-400 focus:ring-red-500/20'
+    : 'border-slate-200 focus:border-blue-400 focus:bg-white focus:ring-blue-500/20 hover:border-slate-300',
 ].join(' ')
 
-const variantInputCls = 'w-full px-2.5 py-2 bg-white border border-slate-200 rounded-lg text-xs text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-teal-400 focus:border-teal-400 transition-all hover:border-slate-300'
+const variantInputCls = 'w-full rounded-xl border border-slate-200 bg-slate-50/80 px-3 py-2.5 text-xs text-slate-700 placeholder-slate-400 shadow-sm transition-all duration-200 hover:border-slate-300 focus:border-blue-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-400/20'
 
 const scrollToFirstErrorField = (container: HTMLElement | null) => {
   if (!container) return
@@ -1057,6 +1074,7 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
   const [newGlobalPrimaryValue, setNewGlobalPrimaryValue] = useState('')
   const [newGlobalSizeValue, setNewGlobalSizeValue] = useState('')
   const [newColorInputs,     setNewColorInputs]     = useState<Record<number, { name: string; hex: string }>>({})
+  const [newStyleInputs,     setNewStyleInputs]     = useState<Record<number, string>>({})
   const [roomTouched,        setRoomTouched]        = useState(false)
   const [draftRestored,      setDraftRestored]      = useState(false)
   const [activeNewImageAdjustIndex, setActiveNewImageAdjustIndex] = useState<number | null>(null)
@@ -1193,6 +1211,7 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
     setNewGlobalPrimaryValue('')
     setNewGlobalSizeValue('')
     setNewColorInputs({})
+    setNewStyleInputs({})
     setErrors({}); setServerError(''); setImageError('')
     setDraftRestored(false)
     setActiveNewImageAdjustIndex(null)
@@ -1204,7 +1223,14 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
           const parsedDraft = JSON.parse(savedDraft) as Partial<EditProductDraft>
           if (parsedDraft.version === 1 && parsedDraft.productId === openedProduct.id) {
             const restoredRawVariants = Array.isArray(parsedDraft.variants)
-              ? dedupeVariantFormStates(parsedDraft.variants)
+              ? dedupeVariantFormStates(parsedDraft.variants.map((variant) => ({
+                  ...emptyVariant(),
+                  ...variant,
+                  pv_style: typeof variant?.pv_style === 'string' ? variant.pv_style : '',
+                  pv_extra_styles: Array.isArray((variant as Partial<VariantFormState>).pv_extra_styles)
+                    ? dedupeVariantValues((variant as Partial<VariantFormState>).pv_extra_styles ?? [])
+                    : [],
+                })))
               : collapsedInitialState.visibleVariants
             const restoredCollapsedState = collapseGeneratedGlobalVariants(restoredRawVariants, {
               srp: nextForm.pd_price_srp,
@@ -1378,6 +1404,15 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
       })
       return next
     })
+    setNewStyleInputs(prev => {
+      const next: Record<number, string> = {}
+      Object.entries(prev).forEach(([k, v]) => {
+        const key = Number(k)
+        if (key < index) next[key] = v
+        if (key > index) next[key - 1] = v
+      })
+      return next
+    })
   }
 
   const setVariant = (index: number, key: keyof VariantFormState, value: string | string[]) =>
@@ -1462,6 +1497,35 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
       ),
     )
 
+  const addVariantExtraStyle = (index: number) => {
+    const value = normalizeVariantLabel(newStyleInputs[index] ?? '')
+    if (!value) return
+
+    setVariants((prev) =>
+      prev.map((item, i) =>
+        i === index
+          ? {
+              ...item,
+              pv_extra_styles: dedupeVariantValues([
+                ...item.pv_extra_styles,
+                ...(normalizeVariantLabel(item.pv_style).toLowerCase() === value.toLowerCase() ? [] : [value]),
+              ]),
+            }
+          : item,
+      ),
+    )
+    setNewStyleInputs((prev) => ({ ...prev, [index]: '' }))
+  }
+
+  const removeVariantExtraStyle = (variantIndex: number, styleIndex: number) =>
+    setVariants((prev) =>
+      prev.map((item, i) =>
+        i === variantIndex
+          ? { ...item, pv_extra_styles: item.pv_extra_styles.filter((_, si) => si !== styleIndex) }
+          : item,
+      ),
+    )
+
   const uploadVariantImages = async (index: number, files: FileList | File[] | null) => {
     const picked = Array.from(files ?? [])
     if (!picked.length) return
@@ -1522,6 +1586,7 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
             ...emptyVariant(),
             pv_name: value,
             pv_style: '',
+            pv_extra_styles: [],
             pv_size: sizeValue,
             pv_colors: globalColors.map((color) => ({ ...color })),
           })),
@@ -1529,7 +1594,15 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
       : []
 
   const expandedVariants = variantRowsForExpansion
-    .filter(v => v.pv_name || v.pv_colors.length > 0 || v.pv_style || v.pv_size || v.pv_width || v.pv_dimension || v.pv_height || v.pv_sku || v.pv_images.length > 0)
+    .filter(v => v.pv_name || v.pv_colors.length > 0 || v.pv_style || v.pv_extra_styles.length > 0 || v.pv_size || v.pv_width || v.pv_dimension || v.pv_height || v.pv_sku || v.pv_images.length > 0)
+    .flatMap((v) => {
+      const styleValues = getAllVariantStyles(v)
+      return (styleValues.length > 0 ? styleValues : ['']).map((styleValue) => ({
+        ...v,
+        pv_style: styleValue,
+        pv_extra_styles: [],
+      }))
+    })
     .flatMap((v, index) => {
       const autoSku    = buildVariantSku(form.pd_parent_sku || generateSkuFromName(form.pd_name, product?.id), index)
       const variantSku = v.pv_sku.trim() || autoSku
@@ -1786,29 +1859,31 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
           <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             onClick={handleClose}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
+            className="fixed inset-0 z-50 bg-slate-950/55 backdrop-blur-md"
           />
 
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5">
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 12 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 12 }}
               transition={{ duration: 0.2, ease: 'easeOut' }}
               onClick={e => e.stopPropagation()}
-              className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl flex flex-col max-h-[90vh]"
+              className="flex max-h-[94vh] w-full max-w-6xl flex-col overflow-hidden rounded-[32px] border border-white/70 bg-white shadow-[0_32px_100px_-36px_rgba(15,23,42,0.55)]"
             >
               {/* ── Header ── */}
-              <div className="flex items-center justify-between px-4 py-3 sm:px-6 sm:py-4 border-b border-slate-100 shrink-0">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-xl bg-blue-500 flex items-center justify-center shadow-sm shadow-blue-500/40">
+              <div className="shrink-0 border-b border-slate-200/80 bg-gradient-to-r from-blue-50 via-white to-cyan-50 px-4 py-4 sm:px-6 sm:py-5">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-500 shadow-lg shadow-blue-500/30">
                     <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                     </svg>
                   </div>
                   <div>
-                    <h2 className="text-slate-800 font-bold text-base leading-none">Edit Product</h2>
-                    <p className="text-slate-400 text-xs mt-0.5 truncate max-w-xs">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-blue-600">Catalog Workspace</p>
+                    <h2 className="mt-1 text-lg font-bold leading-none text-slate-900">Edit Product</h2>
+                    <p className="mt-1 max-w-xl truncate text-xs text-slate-500">
                       ID #{product?.id} · {product?.name}
                     </p>
                   </div>
@@ -1817,17 +1892,18 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
                   type="button"
                   onClick={handleClose}
                   disabled={isBusy}
-                  className="h-8 w-8 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors flex items-center justify-center disabled:opacity-40"
+                  className="flex h-10 w-10 items-center justify-center rounded-2xl text-slate-400 transition-colors hover:bg-white hover:text-slate-700 disabled:opacity-40"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12"/>
                   </svg>
                 </button>
+                </div>
               </div>
 
               {/* ── Scrollable form body ── */}
               <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
-                <div ref={formContentRef} className="overflow-y-auto flex-1 px-4 py-4 sm:px-6 sm:py-5 space-y-5">
+                <div ref={formContentRef} className="flex-1 space-y-6 overflow-y-auto bg-gradient-to-b from-slate-50/80 via-white to-slate-50/60 px-4 py-4 sm:px-6 sm:py-6">
 
                   {/* Server error */}
                   {serverError && (
@@ -1859,7 +1935,8 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
                     className="hidden"
                     id="edit-product-image-input"
                   />
-
+                  <Card variant="default" className={sectionCardCls}>
+                    <Card.Content className={sectionCardBodyCls}>
                   {showImageGrid ? (
                     <div className="space-y-2">
                       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:grid-cols-4">
@@ -1941,7 +2018,7 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
                         ))}
                         {/* Add more slot */}
                         {existingImageUrls.length + imagePreviews.length < 10 && (
-                          <label htmlFor="edit-product-image-input" onDragOver={preventFileDropNavigation} onDrop={handleMainImageDrop} className="flex flex-col items-center justify-center gap-1 h-24 rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 cursor-pointer hover:border-blue-400 hover:bg-blue-50/30 transition-all">
+                          <label htmlFor="edit-product-image-input" onDragOver={preventFileDropNavigation} onDrop={handleMainImageDrop} className="flex h-24 cursor-pointer flex-col items-center justify-center gap-1 rounded-[20px] border-2 border-dashed border-slate-200 bg-slate-50/90 transition-all hover:border-blue-400 hover:bg-blue-50/30">
                             <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4"/>
                             </svg>
@@ -1967,9 +2044,9 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
                       htmlFor="edit-product-image-input"
                       onDragOver={preventFileDropNavigation}
                       onDrop={handleMainImageDrop}
-                      className="flex flex-col items-center justify-center gap-2 w-full h-36 border-2 border-dashed border-slate-200 rounded-xl bg-slate-50 cursor-pointer hover:border-blue-400 hover:bg-blue-50/40 transition-all group"
+                      className="group flex h-40 w-full cursor-pointer flex-col items-center justify-center gap-3 rounded-[24px] border-2 border-dashed border-slate-200 bg-slate-50/90 transition-all hover:border-blue-400 hover:bg-blue-50/40"
                     >
-                      <div className="h-10 w-10 rounded-xl bg-slate-100 group-hover:bg-blue-100 flex items-center justify-center transition-colors">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white shadow-sm transition-colors group-hover:bg-blue-100">
                         <svg className="w-5 h-5 text-slate-400 group-hover:text-blue-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                         </svg>
@@ -1980,6 +2057,8 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
                       </div>
                     </label>
                   )}
+                    </Card.Content>
+                  </Card>
                   {imageError && (
                     <p className="text-red-500 text-xs flex items-center gap-1">
                       <svg className="w-3 h-3 shrink-0" fill="currentColor" viewBox="0 0 20 20">
@@ -1991,16 +2070,17 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
 
                   {/* ── Section: Product Information ── */}
                   <SectionLabel>Product Information</SectionLabel>
-
+                  <Card variant="default" className={sectionCardCls}>
+                    <Card.Content className={`${sectionCardBodyCls} space-y-5`}>
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                    <div className="rounded-[22px] border border-slate-200 bg-gradient-to-br from-slate-50 to-white px-4 py-4 shadow-sm">
                       <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">Supplier</p>
                       <p className="mt-1 text-sm font-semibold text-slate-700">{product.supplierName?.trim() || 'No supplier assigned'}</p>
                       {product.supplierId ? (
                         <p className="mt-1 text-[11px] text-slate-400">Supplier #{product.supplierId}</p>
                       ) : null}
                     </div>
-                    <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                    <div className="rounded-[22px] border border-slate-200 bg-gradient-to-br from-slate-50 to-white px-4 py-4 shadow-sm">
                       <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">Uploaded By</p>
                       <p className="mt-1 text-sm font-semibold text-slate-700">{product.uploaderName?.trim() || 'Unknown user'}</p>
                       {product.uploaderRole ? (
@@ -2097,7 +2177,8 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
                       </div>
                     </Field>
                   </div>
-
+                    </Card.Content>
+                  </Card>
                   <Field label="Description">
                     <div className="space-y-3">
                       <ProductDescriptionGenerator
@@ -2272,6 +2353,7 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
                             setNewGlobalPrimaryValue('')
                             setNewGlobalSizeValue('')
                             setNewColorInputs({})
+                            setNewStyleInputs({})
                           }
                         }}
                         className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl border-2 transition-all ${
@@ -2520,6 +2602,7 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
                         ) : (
                           variants.map((variant, index) => {
                             const autoSku = buildVariantSku(form.pd_parent_sku || generateSkuFromName(form.pd_name, product?.id), index)
+                            const variantStyles = getAllVariantStyles(variant)
                             return (
                               <div key={`variant-${variant.id ?? index}`} className="rounded-xl border border-slate-200 bg-white overflow-hidden">
                                 {/* Variant header */}
@@ -2530,6 +2613,7 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
                                     </div>
                                     <p className="text-xs font-bold text-slate-700">
                                       {variant.pv_name.trim() || `Variant #${index + 1}`}
+                                      {variantStyles.length > 1 && <span className="text-slate-400 font-normal ml-1">(+{variantStyles.length - 1} more styles)</span>}
                                       {variant.pv_style && <span className="text-slate-400 font-normal ml-1">· {variant.pv_style}</span>}
                                       {variant.pv_size && <span className="text-slate-400 font-normal ml-1">· {variant.pv_size}</span>}
                                       {(variant.pv_width || variant.pv_dimension || variant.pv_height) && (
@@ -2577,6 +2661,37 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
                                         <label className="text-[11px] font-semibold text-slate-500 block">Style</label>
                                         <input value={variant.pv_style} onChange={e => setVariant(index, 'pv_style', e.target.value)} placeholder="e.g. Left Facing, Armless, Recliner" className={variantInputCls}/>
                                         <p className="text-[10px] text-slate-400">Use this for layout/style choices that should not appear under Size.</p>
+                                        {variant.pv_extra_styles.length > 0 && (
+                                          <div className="flex flex-wrap gap-1.5 pt-1">
+                                            {variant.pv_extra_styles.map((style, styleIndex) => (
+                                              <span key={`${style}-${styleIndex}`} className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-2 py-0.5 shadow-sm">
+                                                <span className="text-slate-600 font-medium text-[11px]">{style}</span>
+                                                <button type="button" onClick={() => removeVariantExtraStyle(index, styleIndex)} className="text-slate-300 hover:text-red-500 transition-colors leading-none">
+                                                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12"/>
+                                                  </svg>
+                                                </button>
+                                              </span>
+                                            ))}
+                                          </div>
+                                        )}
+                                        <div className="flex gap-2 items-center pt-1">
+                                          <input
+                                            type="text"
+                                            value={newStyleInputs[index] ?? ''}
+                                            onChange={e => setNewStyleInputs(prev => ({ ...prev, [index]: e.target.value }))}
+                                            onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addVariantExtraStyle(index))}
+                                            placeholder="Add another style value"
+                                            className={variantInputCls}
+                                          />
+                                          <button
+                                            type="button"
+                                            onClick={() => addVariantExtraStyle(index)}
+                                            className="shrink-0 px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg text-xs font-semibold transition-colors border border-blue-200"
+                                          >
+                                            + Add
+                                          </button>
+                                        </div>
                                       </div>
                                       <div className="space-y-1">
                                         <label className="text-[11px] font-semibold text-slate-500 block">Size</label>
@@ -2820,38 +2935,40 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
                           })
                         )}
 
-                        <button
+                        <Button
                           type="button"
-                          onClick={addVariant}
-                          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 border-dashed border-slate-200 text-slate-500 hover:border-teal-400 hover:text-teal-600 hover:bg-teal-50/30 text-xs font-semibold transition-all"
+                          onPress={addVariant}
+                          variant="bordered"
+                          className="h-12 w-full rounded-2xl border-2 border-dashed border-slate-200 bg-white text-xs font-semibold text-slate-600 transition-all hover:border-blue-400 hover:bg-blue-50/40 hover:text-blue-700"
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4"/>
                           </svg>
                           Add Variant
-                        </button>
+                        </Button>
                       </div>
                     </>
                   )}
                 </div>
 
                 {/* ── Sticky footer ── */}
-                <div className="px-4 py-3 sm:px-6 sm:py-4 border-t border-slate-100 shrink-0 flex items-center gap-3 bg-slate-50/60">
+                <div className="flex shrink-0 items-center gap-3 border-t border-slate-200/80 bg-white/95 px-4 py-3 sm:px-6 sm:py-4">
                   <p className="text-xs text-slate-400 flex-1">
                     Fields marked <span className="text-red-400 font-semibold">*</span> are required
                   </p>
-                  <button
+                  <Button
                     type="button"
-                    onClick={handleClose}
-                    disabled={isBusy}
-                    className="px-5 py-2.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl text-sm font-semibold transition-colors disabled:opacity-60"
+                    onPress={handleClose}
+                    isDisabled={isBusy}
+                    variant="bordered"
+                    className="h-11 rounded-2xl border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700"
                   >
                     Cancel
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="submit"
-                    disabled={isBusy}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-bold transition-colors shadow-sm shadow-blue-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                    isDisabled={isBusy}
+                    className="h-11 rounded-2xl bg-gradient-to-r from-blue-600 to-cyan-600 px-6 text-sm font-bold text-white shadow-lg shadow-blue-500/25"
                   >
                     {isBusy ? (
                       <>
@@ -2869,7 +2986,7 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
                         Save Changes
                       </>
                     )}
-                  </button>
+                  </Button>
                 </div>
               </form>
             </motion.div>
