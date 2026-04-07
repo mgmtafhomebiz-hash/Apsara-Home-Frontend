@@ -227,6 +227,11 @@ interface ProductActivityLogsQueryParams {
   scope?: 'my' | 'all'
 }
 
+const cleanParams = (params: Record<string, unknown>) =>
+  Object.fromEntries(
+    Object.entries(params).filter(([, value]) => value !== undefined && value !== null && value !== ''),
+  )
+
 const toStringArray = (value: unknown): string[] => {
   if (Array.isArray(value)) {
     return value.filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
@@ -456,16 +461,17 @@ export const productsApi = baseApi.injectEndpoints({
         url: '/api/products',
         method: 'GET',
         cache: 'no-store',
-        params: {
+        params: cleanParams({
           page: params?.page ?? 1,
           per_page: params?.perPage ?? 25,
           q: params?.search,
+          search: params?.search,
           status: params?.status,
           cat_id: params?.catId,
           room_type: params?.roomType,
           brand_type: params?.brandType,
           supplier_id: params?.supplierId,
-        },
+        }),
       }),
       transformResponse: (response: ProductsResponse) => normalizeProductsResponse(response),
       providesTags: ['Products'],
@@ -487,16 +493,17 @@ export const productsApi = baseApi.injectEndpoints({
         url: '/api/admin/products',
         method: 'GET',
         cache: 'no-store',
-        params: {
+        params: cleanParams({
           page: params?.page ?? 1,
           per_page: params?.perPage ?? 25,
           q: params?.search,
+          search: params?.search,
           status: params?.status,
           cat_id: params?.catId,
           room_type: params?.roomType,
           brand_type: params?.brandType,
           supplier_id: params?.supplierId,
-        },
+        }),
       }),
       transformResponse: (response: ProductsResponse) => normalizeProductsResponse(response),
       providesTags: ['Products'],
