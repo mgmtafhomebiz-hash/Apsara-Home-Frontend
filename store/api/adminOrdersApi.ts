@@ -38,6 +38,12 @@ export interface AdminOrder {
   shipment_status?: string | null
   shipment_payload?: Record<string, unknown> | null
   shipped_at?: string | null
+  zq_platform_order_id?: string | null
+  zq_order_id?: string | null
+  zq_status?: string | null
+  zq_payload?: Record<string, unknown> | null
+  zq_response?: Record<string, unknown> | null
+  zq_synced_at?: string | null
   product_name: string
   product_image?: string | null
   quantity: number
@@ -188,6 +194,36 @@ export const adminOrdersApi = baseApi.injectEndpoints({
         responseHandler: async (response) => response.blob(),
       }),
     }),
+    pushAdminOrderToZq: builder.mutation<
+      { message: string; zq?: Record<string, unknown> | null },
+      { id: number }
+    >({
+      query: ({ id }) => ({
+        url: `/api/admin/orders/${id}/zq/push`,
+        method: 'POST',
+      }),
+      invalidatesTags: ['Orders', 'AdminNotifications'],
+    }),
+    fetchAdminOrderZqDetail: builder.mutation<
+      { message: string; zq?: Record<string, unknown> | null },
+      { id: number }
+    >({
+      query: ({ id }) => ({
+        url: `/api/admin/orders/${id}/zq/detail`,
+        method: 'GET',
+      }),
+      invalidatesTags: ['Orders', 'AdminNotifications'],
+    }),
+    syncAdminOrderZqTracking: builder.mutation<
+      { message: string; zq?: Record<string, unknown> | null },
+      { id: number }
+    >({
+      query: ({ id }) => ({
+        url: `/api/admin/orders/${id}/zq/tracking`,
+        method: 'GET',
+      }),
+      invalidatesTags: ['Orders', 'AdminNotifications'],
+    }),
   }),
 })
 
@@ -202,4 +238,7 @@ export const {
   useGetAdminOrderCourierWaybillMutation,
   useCancelAdminOrderCourierMutation,
   useGetAdminOrderCourierEpodMutation,
+  usePushAdminOrderToZqMutation,
+  useFetchAdminOrderZqDetailMutation,
+  useSyncAdminOrderZqTrackingMutation,
 } = adminOrdersApi

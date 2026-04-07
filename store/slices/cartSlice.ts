@@ -8,6 +8,7 @@ export interface CartItem {
   quantity: number;
   prodpv?: number | null;
   selectedColor?: string | null;
+  selectedStyle?: string | null;
   selectedSize?: string | null;
   selectedType?: string | null;
   selectedSku?: string | null;

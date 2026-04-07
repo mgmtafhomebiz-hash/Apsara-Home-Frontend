@@ -24,7 +24,7 @@ export default function CustomerCheckoutOrderSummary({ checkoutData, loading, on
     );
   }
 
-  const { product, quantity, selectedColor, selectedSize, selectedType, selectedSku, items = [], subtotal, handlingFee, total } = checkoutData;
+  const { product, quantity, selectedColor, selectedStyle, selectedSize, selectedType, selectedSku, items = [], subtotal, handlingFee, total } = checkoutData;
   const hasSelectedItems = items.length > 0;
   const unitPv = hasSelectedItems
     ? items.reduce((sum, item) => sum + (Number(item.prodpv ?? 0) * item.quantity), 0)
@@ -34,6 +34,7 @@ export default function CustomerCheckoutOrderSummary({ checkoutData, loading, on
   const displayTotal = typeof computedTotal === 'number' ? computedTotal : total;
   const selectedOptions = [
     selectedColor ? { label: 'Color', value: selectedColor } : null,
+    selectedStyle ? { label: 'Style', value: selectedStyle } : null,
     selectedSize ? { label: 'Size', value: selectedSize } : null,
     selectedType ? { label: 'Type', value: selectedType } : null,
     selectedSku ? { label: 'SKU', value: selectedSku } : null,
@@ -73,6 +74,7 @@ export default function CustomerCheckoutOrderSummary({ checkoutData, loading, on
             <div className="flex flex-wrap gap-1 mt-1.5">
               <span className="px-2 py-0.5 bg-orange-100 text-orange-600 text-[10px] font-bold rounded-full">Qty: {quantity}</span>
               {selectedColor && <span className="px-2 py-0.5 bg-slate-100 text-slate-600 text-[10px] font-semibold rounded-full">{selectedColor}</span>}
+              {selectedStyle && <span className="px-2 py-0.5 bg-slate-100 text-slate-600 text-[10px] font-semibold rounded-full">{selectedStyle}</span>}
               {selectedSize && <span className="px-2 py-0.5 bg-slate-100 text-slate-600 text-[10px] font-semibold rounded-full">{selectedSize}</span>}
               {selectedType && <span className="px-2 py-0.5 bg-slate-100 text-slate-600 text-[10px] font-semibold rounded-full">{selectedType}</span>}
               {selectedSku && <span className="px-2 py-0.5 bg-slate-100 text-slate-600 text-[10px] font-semibold rounded-full">{selectedSku}</span>}
@@ -107,6 +109,7 @@ export default function CustomerCheckoutOrderSummary({ checkoutData, loading, on
                     <div className="mt-1 flex flex-wrap gap-1">
                       <span className="rounded-full bg-orange-100 px-2 py-0.5 text-[10px] font-bold text-orange-600">Qty: {item.quantity}</span>
                       {item.selectedColor ? <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">{item.selectedColor}</span> : null}
+                      {item.selectedStyle ? <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">{item.selectedStyle}</span> : null}
                       {item.selectedSize ? <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">{item.selectedSize}</span> : null}
                       {item.selectedType ? <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">{item.selectedType}</span> : null}
                       {item.selectedSku ? <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">{item.selectedSku}</span> : null}

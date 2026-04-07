@@ -42,12 +42,18 @@ const StickyAddToCart = ({ product, selectedVariant }: StickyAddToCartProps) => 
     : Number(product.prodpv ?? 0);
   const srp = toPositiveNumber(selectedVariant?.priceSrp) ?? toPositiveNumber(product.originalPrice) ?? Number(product.price ?? 0);
   const member = toPositiveNumber(selectedVariant?.priceMember) ?? toPositiveNumber(product.priceMember) ?? 0;
+  const seenTitleParts = new Set<string>();
   const selectedVariantTitleParts = [
     selectedVariant?.name?.trim(),
-    selectedVariant?.size?.trim() && selectedVariant?.size?.trim() !== selectedVariant?.name?.trim()
-      ? selectedVariant.size.trim()
-      : '',
-  ].filter(Boolean);
+    selectedVariant?.style?.trim(),
+    selectedVariant?.size?.trim(),
+  ].filter((part): part is string => {
+    if (!part) return false;
+    const normalized = part.toLowerCase();
+    if (seenTitleParts.has(normalized)) return false;
+    seenTitleParts.add(normalized);
+    return true;
+  });
   const displayName = selectedVariantTitleParts.length > 0
     ? `${product.name} - ${selectedVariantTitleParts.join(' - ')}`
     : product.name;
@@ -71,6 +77,7 @@ const StickyAddToCart = ({ product, selectedVariant }: StickyAddToCartProps) => 
 
     const variantLabel = [
       selectedVariant?.name?.trim(),
+      selectedVariant?.style?.trim(),
       selectedVariant?.size?.trim(),
       selectedVariant?.color ? displayColorName(selectedVariant.color) : '',
     ].filter(Boolean).join(' • ');
@@ -84,6 +91,7 @@ const StickyAddToCart = ({ product, selectedVariant }: StickyAddToCartProps) => 
       image: displayImage,
       prodpv: displayPv,
       selectedColor: selectedVariant?.color ?? null,
+      selectedStyle: selectedVariant?.style ?? null,
       selectedSize: selectedVariant?.size ?? null,
       selectedType: selectedVariant?.name ?? null,
       selectedSku: selectedVariant?.sku ?? null,

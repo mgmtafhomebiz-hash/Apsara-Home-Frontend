@@ -49,6 +49,7 @@ export interface ProductVariant {
   color?: string
   colorHex?: string
   size?: string
+  style?: string
   width?: number
   dimension?: number
   height?: number
@@ -197,6 +198,7 @@ export interface CreateProductVariantPayload {
   pv_color?: string
   pv_color_hex?: string
   pv_size?: string
+  pv_style?: string
   pv_width?: number
   pv_dimension?: number
   pv_height?: number
@@ -259,6 +261,7 @@ const getProductVariantKey = (variant: ProductVariant) => {
     variant.color?.trim().toLowerCase() ?? '',
     variant.colorHex?.trim().toLowerCase() ?? '',
     variant.size?.trim().toLowerCase() ?? '',
+    variant.style?.trim().toLowerCase() ?? '',
     String(variant.width ?? ''),
     String(variant.dimension ?? ''),
     String(variant.height ?? ''),
@@ -318,6 +321,7 @@ export const normalizeProduct = (input: Product & Record<string, unknown>): Prod
           color: typeof row.color === 'string' ? row.color : (typeof row.pv_color === 'string' ? row.pv_color : undefined),
           colorHex: typeof row.colorHex === 'string' ? row.colorHex : (typeof row.pv_color_hex === 'string' ? row.pv_color_hex : undefined),
           size: typeof row.size === 'string' ? row.size : (typeof row.pv_size === 'string' ? row.pv_size : undefined),
+          style: typeof row.style === 'string' ? row.style : (typeof row.pv_style === 'string' ? row.pv_style : undefined),
           width: typeof row.width === 'number' ? row.width : (typeof row.width === 'string' ? Number(row.width) : (typeof row.pv_width === 'number' ? row.pv_width : (typeof row.pv_width === 'string' ? Number(row.pv_width) : undefined))),
           dimension: typeof row.dimension === 'number' ? row.dimension : (typeof row.dimension === 'string' ? Number(row.dimension) : (typeof row.pv_dimension === 'number' ? row.pv_dimension : (typeof row.pv_dimension === 'string' ? Number(row.pv_dimension) : undefined))),
           height: typeof row.height === 'number' ? row.height : (typeof row.height === 'string' ? Number(row.height) : (typeof row.pv_height === 'number' ? row.pv_height : (typeof row.pv_height === 'string' ? Number(row.pv_height) : undefined))),

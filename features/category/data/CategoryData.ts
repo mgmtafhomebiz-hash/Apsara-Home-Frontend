@@ -23,6 +23,7 @@ export interface CategoryProduct {
         color?: string;
         colorHex?: string;
         size?: string;
+        style?: string;
         width?: number;
         dimension?: number;
         height?: number;

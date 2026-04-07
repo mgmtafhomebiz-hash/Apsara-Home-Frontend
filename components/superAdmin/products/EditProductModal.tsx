@@ -68,6 +68,7 @@ interface VariantFormState {
   pv_sku: string
   pv_colors: VariantColor[]
   pv_size: string
+  pv_style: string
   pv_width: string
   pv_dimension: string
   pv_height: string
@@ -451,7 +452,7 @@ function PricingSummaryPanel({
 /* ─── helpers ────────────────────────────────────────────── */
 
 const emptyVariant = (): VariantFormState => ({
-  pv_name: '', pv_sku: '', pv_colors: [], pv_size: '', pv_width: '', pv_dimension: '', pv_height: '',
+  pv_name: '', pv_sku: '', pv_colors: [], pv_size: '', pv_style: '', pv_width: '', pv_dimension: '', pv_height: '',
   pv_price_srp: '', pv_price_dp: '', pv_price_member: '', pv_reversed_pv_multiplier: '', pv_prodpv: '', pv_qty: '',
   pv_status: '1', pv_images: [],
 })
@@ -474,6 +475,7 @@ const mapVariantToForm = (variant: ProductVariant): VariantFormState => ({
       ? [{ name: variant.color, hex: '#94a3b8' }]
       : [],
   pv_size: variant.size ?? '',
+  pv_style: variant.style ?? '',
   pv_width: toOptionalPositiveNumber(variant.width)?.toString() ?? '',
   pv_dimension: toOptionalPositiveNumber(variant.dimension)?.toString() ?? '',
   pv_height: toOptionalPositiveNumber(variant.height)?.toString() ?? '',
@@ -589,8 +591,12 @@ const dedupeVariantValues = (values: string[]) => {
     })
 }
 
-const getVariantCombinationKey = (variant: Pick<VariantFormState, 'pv_name' | 'pv_size'>) =>
-  `${normalizeVariantLabel(variant.pv_name).toLowerCase()}::${normalizeVariantLabel(variant.pv_size).toLowerCase()}`
+const getVariantCombinationKey = (variant: Pick<VariantFormState, 'pv_name' | 'pv_style' | 'pv_size'>) =>
+  [
+    normalizeVariantLabel(variant.pv_name).toLowerCase(),
+    normalizeVariantLabel(variant.pv_style).toLowerCase(),
+    normalizeVariantLabel(variant.pv_size).toLowerCase(),
+  ].join('::')
 
 const buildGeneratedVariantRows = (
   existingVariants: VariantFormState[],
@@ -603,7 +609,7 @@ const buildGeneratedVariantRows = (
   const comboKeys = new Set<string>()
   const generatedRows = primaryValues.flatMap((value) =>
     sizeValues.map((sizeValue) => {
-      const combo = { pv_name: value, pv_size: sizeValue }
+      const combo = { pv_name: value, pv_style: '', pv_size: sizeValue }
       const comboKey = getVariantCombinationKey(combo)
       comboKeys.add(comboKey)
       const existing = existingVariants.find((variant) => getVariantCombinationKey(variant) === comboKey)
@@ -611,6 +617,7 @@ const buildGeneratedVariantRows = (
       return {
         ...(existing ?? emptyVariant()),
         pv_name: value,
+        pv_style: existing?.pv_style ?? '',
         pv_size: sizeValue,
         pv_colors: dedupeVariantColors([...(existing?.pv_colors ?? []), ...globalColors.map((color) => ({ ...color }))]),
       }
@@ -658,6 +665,7 @@ const isGeneratedGlobalVariant = (
     (variant.pv_reversed_pv_multiplier.trim() && normalizeComparableNumber(variant.pv_reversed_pv_multiplier) !== normalizeComparableNumber(baseDefaults?.multiplier))
   )
   const hasCustomVariantData = Boolean(
+    variant.pv_style.trim() ||
     variant.pv_width.trim() ||
     variant.pv_dimension.trim() ||
     variant.pv_height.trim() ||
@@ -669,7 +677,7 @@ const isGeneratedGlobalVariant = (
     variant.pv_images.length > 0,
   )
 
-  return !hasCustomVariantData && Boolean(variant.pv_name.trim() || variant.pv_size.trim() || variant.pv_colors.length > 0)
+  return !hasCustomVariantData && Boolean(variant.pv_name.trim() || variant.pv_style.trim() || variant.pv_size.trim() || variant.pv_colors.length > 0)
 }
 
 const collapseGeneratedGlobalVariants = (
@@ -718,6 +726,7 @@ const getVariantFormKey = (variant: VariantFormState) => {
     variant.id ?? '',
     variant.pv_sku.trim().toLowerCase(),
     normalizeVariantLabel(variant.pv_name).toLowerCase(),
+    normalizeVariantLabel(variant.pv_style).toLowerCase(),
     normalizeVariantLabel(variant.pv_size).toLowerCase(),
     variant.pv_width.trim(),
     variant.pv_dimension.trim(),
@@ -738,6 +747,7 @@ const getVariantCoreGroupKey = (variant: ProductVariant) => {
 
   return [
     normalizeVariantLabel(variant.name ?? '').toLowerCase(),
+    normalizeVariantLabel(variant.style ?? '').toLowerCase(),
     normalizeVariantLabel(variant.size ?? '').toLowerCase(),
     variant.width ?? '',
     variant.dimension ?? '',
@@ -918,6 +928,7 @@ const normalizeVariantsForComparison = (variants: VariantFormState[]) =>
       name: color.name.trim(),
       hex: color.hex.trim().toLowerCase(),
     })),
+    pv_style: variant.pv_style.trim(),
     pv_size: variant.pv_size.trim(),
     pv_width: normalizeNumberField(variant.pv_width),
     pv_dimension: normalizeNumberField(variant.pv_dimension),
@@ -939,6 +950,7 @@ const mapExpandedVariantToProductVariant = (
   name: variant.pv_name,
   color: variant.pv_color,
   colorHex: variant.pv_color_hex,
+  style: variant.pv_style,
   size: variant.pv_size,
   width: variant.pv_width,
   dimension: variant.pv_dimension,
@@ -1509,6 +1521,7 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
           (globalSizeValues.length > 0 ? globalSizeValues : ['']).map((sizeValue) => ({
             ...emptyVariant(),
             pv_name: value,
+            pv_style: '',
             pv_size: sizeValue,
             pv_colors: globalColors.map((color) => ({ ...color })),
           })),
@@ -1516,7 +1529,7 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
       : []
 
   const expandedVariants = variantRowsForExpansion
-    .filter(v => v.pv_name || v.pv_colors.length > 0 || v.pv_size || v.pv_width || v.pv_dimension || v.pv_height || v.pv_sku || v.pv_images.length > 0)
+    .filter(v => v.pv_name || v.pv_colors.length > 0 || v.pv_style || v.pv_size || v.pv_width || v.pv_dimension || v.pv_height || v.pv_sku || v.pv_images.length > 0)
     .flatMap((v, index) => {
       const autoSku    = buildVariantSku(form.pd_parent_sku || generateSkuFromName(form.pd_name, product?.id), index)
       const variantSku = v.pv_sku.trim() || autoSku
@@ -1528,6 +1541,7 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
       const variantMultiplier = toOptionalPositiveNumber(v.pv_reversed_pv_multiplier) ?? baseMultiplier
       const base = {
         pv_name:      v.pv_name.trim() || undefined,
+        pv_style:     v.pv_style || undefined,
         pv_size:      v.pv_size || undefined,
         pv_width:     toOptionalPositiveNumber(v.pv_width),
         pv_dimension: toOptionalPositiveNumber(v.pv_dimension),
@@ -2516,6 +2530,7 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
                                     </div>
                                     <p className="text-xs font-bold text-slate-700">
                                       {variant.pv_name.trim() || `Variant #${index + 1}`}
+                                      {variant.pv_style && <span className="text-slate-400 font-normal ml-1">· {variant.pv_style}</span>}
                                       {variant.pv_size && <span className="text-slate-400 font-normal ml-1">· {variant.pv_size}</span>}
                                       {(variant.pv_width || variant.pv_dimension || variant.pv_height) && (
                                         <span className="text-slate-400 font-normal ml-1">
@@ -2551,12 +2566,17 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
                                   {/* ── Identity ── */}
                                   <div className="px-4 py-3.5 space-y-2.5">
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Identity</p>
-                                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                                       <div className="space-y-1">
                                         <label className="text-[11px] font-semibold text-slate-500 block">
                                           Name <span className="font-normal text-slate-400">(recommended)</span>
                                         </label>
                                         <input value={variant.pv_name} onChange={e => setVariant(index, 'pv_name', e.target.value)} placeholder="e.g. 4 inches, Black, Standard" className={variantInputCls}/>
+                                      </div>
+                                      <div className="space-y-1">
+                                        <label className="text-[11px] font-semibold text-slate-500 block">Style</label>
+                                        <input value={variant.pv_style} onChange={e => setVariant(index, 'pv_style', e.target.value)} placeholder="e.g. Left Facing, Armless, Recliner" className={variantInputCls}/>
+                                        <p className="text-[10px] text-slate-400">Use this for layout/style choices that should not appear under Size.</p>
                                       </div>
                                       <div className="space-y-1">
                                         <label className="text-[11px] font-semibold text-slate-500 block">Size</label>

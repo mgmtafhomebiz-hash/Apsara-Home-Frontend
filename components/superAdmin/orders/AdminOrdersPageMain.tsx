@@ -12,8 +12,11 @@ import {
   useGetAdminOrderCourierWaybillMutation,
   useGetAdminOrderCourierEpodMutation,
   useApproveAdminOrderMutation,
+  useFetchAdminOrderZqDetailMutation,
   useGetAdminOrdersQuery,
+  usePushAdminOrderToZqMutation,
   useRejectAdminOrderMutation,
+  useSyncAdminOrderZqTrackingMutation,
   useTrackAdminOrderCourierMutation,
   useUpdateAdminOrderShipmentStatusMutation,
 } from '@/store/api/adminOrdersApi'
@@ -68,6 +71,15 @@ const SLA_CONFIG = {
   overdue:   { badge: 'bg-red-50 text-red-700 border-red-200',       dot: 'bg-red-400',   label: 'Overdue'  },
   due_soon:  { badge: 'bg-amber-50 text-amber-700 border-amber-200', dot: 'bg-amber-400', label: 'Due Soon' },
   on_track:  { badge: 'bg-emerald-50 text-emerald-700 border-emerald-200', dot: 'bg-emerald-400', label: 'On Track' },
+}
+
+const ZQ_STATUS_STYLES: Record<string, string> = {
+  submitted: 'bg-sky-50 text-sky-700 border-sky-200',
+  processing: 'bg-amber-50 text-amber-700 border-amber-200',
+  unfulfilled: 'bg-slate-50 text-slate-700 border-slate-200',
+  paid: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+  success: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  close: 'bg-rose-50 text-rose-700 border-rose-200',
 }
 
 /* ─── helpers ──────────────────────────────────────────────── */
@@ -203,6 +215,9 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
   const [cancelCourier] = useCancelAdminOrderCourierMutation()
   const [getCourierEpod] = useGetAdminOrderCourierEpodMutation()
   const [updateShipmentStatus] = useUpdateAdminOrderShipmentStatusMutation()
+  const [pushToZq] = usePushAdminOrderToZqMutation()
+  const [fetchZqDetail] = useFetchAdminOrderZqDetailMutation()
+  const [syncZqTracking] = useSyncAdminOrderZqTrackingMutation()
 
   const visibleOrders = useMemo(() => {
     const list = [...(data?.orders ?? [])]
@@ -391,6 +406,36 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
     } finally { setBusyId(null) }
   }
 
+  const handlePushToZq = async (id: number) => {
+    setBusyId(id)
+    try {
+      const result = await pushToZq({ id }).unwrap()
+      showSuccessToast(result.message || 'Order pushed to ZQ.')
+    } catch (err: unknown) {
+      showErrorToast(extractApiError(err, 'Failed to push order to ZQ.'))
+    } finally { setBusyId(null) }
+  }
+
+  const handleFetchZqDetail = async (id: number) => {
+    setBusyId(id)
+    try {
+      const result = await fetchZqDetail({ id }).unwrap()
+      showSuccessToast(result.message || 'ZQ detail fetched.')
+    } catch (err: unknown) {
+      showErrorToast(extractApiError(err, 'Failed to fetch ZQ detail.'))
+    } finally { setBusyId(null) }
+  }
+
+  const handleSyncZqTracking = async (id: number) => {
+    setBusyId(id)
+    try {
+      const result = await syncZqTracking({ id }).unwrap()
+      showSuccessToast(result.message || 'ZQ tracking synced.')
+    } catch (err: unknown) {
+      showErrorToast(extractApiError(err, 'Failed to sync ZQ tracking.'))
+    } finally { setBusyId(null) }
+  }
+
   const counts = data?.counts
 
   return (
@@ -565,6 +610,8 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                       const sla      = order.sla?.state ? SLA_CONFIG[order.sla.state as keyof typeof SLA_CONFIG] : null
                       const isCourierBooked = Boolean(order.courier && order.tracking_no)
                       const rawCourierStatus = extractCourierStatus(order.shipment_payload)
+                      const zqStatusKey = String(order.zq_status ?? '').trim().toLowerCase()
+                      const zqBadgeClass = ZQ_STATUS_STYLES[zqStatusKey] ?? 'bg-slate-50 text-slate-600 border-slate-200'
                       const isCourierCancelled =
                         order.shipment_status === 'cancelled'
                         || rawCourierStatus === 'package_cancelled'
@@ -712,6 +759,26 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                               </div>
                               {order.courier || order.tracking_no || order.shipment_status ? (
                                 <div className="space-y-2 text-[11px] text-slate-500 leading-relaxed">
+                                  {order.zq_platform_order_id || order.zq_status ? (
+                                    <div className="rounded-xl border border-violet-200 bg-violet-50 p-2.5">
+                                      <div className="flex items-center justify-between gap-2">
+                                        <p className="text-[10px] font-bold uppercase tracking-wide text-violet-700">ZQ</p>
+                                        <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold ${zqBadgeClass}`}>
+                                          {order.zq_status ?? 'Not sent'}
+                                        </span>
+                                      </div>
+                                      {order.zq_platform_order_id ? (
+                                        <p className="mt-1 break-all text-[11px] font-semibold text-slate-800">
+                                          Platform ID: {order.zq_platform_order_id}
+                                        </p>
+                                      ) : null}
+                                      {order.zq_order_id ? (
+                                        <p className="mt-1 break-all text-[11px] text-slate-600">
+                                          ZQ Order: {order.zq_order_id}
+                                        </p>
+                                      ) : null}
+                                    </div>
+                                  ) : null}
                                   {order.courier ? <p className="uppercase">Courier: {order.courier}</p> : null}
                                   {rawCourierStatus ? <p className="capitalize">Courier Status: {rawCourierStatus.replace(/_/g, ' ')}</p> : null}
                                   {order.tracking_no ? (
@@ -757,21 +824,72 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                           {/* Actions */}
                           <td className="px-4 py-3.5">
                             {canApproveThisOrder ? (
-                              <div className="flex items-center gap-1.5">
+                              <div className="flex flex-col items-start gap-2">
+                                <div className="flex items-center gap-1.5">
+                                  <button
+                                    disabled={isBusy}
+                                    onClick={() => handlePushToZq(order.id)}
+                                    className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-violet-50 text-violet-700 border border-violet-200 hover:bg-violet-100 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                                  >
+                                    Push ZQ
+                                  </button>
+                                  <button
+                                    disabled={isBusy}
+                                    onClick={() => handleApprove(order.id)}
+                                    className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                                  >
+                                    Approve
+                                  </button>
+                                  <button
+                                    disabled={isBusy}
+                                    onClick={() => handleReject(order.id)}
+                                    className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                                  >
+                                    Reject
+                                  </button>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                  <button
+                                    disabled={isBusy}
+                                    onClick={() => handleFetchZqDetail(order.id)}
+                                    className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-50 text-slate-700 border border-slate-200 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                                  >
+                                    ZQ Detail
+                                  </button>
+                                  <button
+                                    disabled={isBusy}
+                                    onClick={() => handleSyncZqTracking(order.id)}
+                                    className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-sky-50 text-sky-700 border border-sky-200 hover:bg-sky-100 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                                  >
+                                    ZQ Tracking
+                                  </button>
+                                </div>
+                              </div>
+                            ) : order.approval_status === 'approved' ? (
+                              <div className="flex flex-col items-start gap-2">
                                 <button
                                   disabled={isBusy}
-                                  onClick={() => handleApprove(order.id)}
-                                  className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                                  onClick={() => handlePushToZq(order.id)}
+                                  className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-violet-50 text-violet-700 border border-violet-200 hover:bg-violet-100 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
                                 >
-                                  Approve
+                                  Push ZQ
                                 </button>
-                                <button
-                                  disabled={isBusy}
-                                  onClick={() => handleReject(order.id)}
-                                  className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-                                >
-                                  Reject
-                                </button>
+                                <div className="flex items-center gap-1.5">
+                                  <button
+                                    disabled={isBusy}
+                                    onClick={() => handleFetchZqDetail(order.id)}
+                                    className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-50 text-slate-700 border border-slate-200 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                                  >
+                                    ZQ Detail
+                                  </button>
+                                  <button
+                                    disabled={isBusy}
+                                    onClick={() => handleSyncZqTracking(order.id)}
+                                    className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-sky-50 text-sky-700 border border-sky-200 hover:bg-sky-100 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                                  >
+                                    ZQ Tracking
+                                  </button>
+                                </div>
                               </div>
                             ) : (
                               <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-500">

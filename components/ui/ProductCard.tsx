@@ -227,6 +227,7 @@ export default function ProductCard({
   const addResolvedVariantToCart = (variant?: VariantOption) => {
     const variantLabel = [
       variant?.name?.trim(),
+      variant?.style?.trim(),
       variant?.size?.trim(),
       variant?.color ? displayColorName(variant.color) : '',
     ].filter(Boolean).join(' • ');
@@ -240,6 +241,7 @@ export default function ProductCard({
       image: variant?.images?.[0] || imageSrc,
       prodpv: Number(variant?.prodpv ?? prodpv ?? 0) || 0,
       selectedColor: variant?.color ?? null,
+      selectedStyle: variant?.style ?? null,
       selectedSize: variant?.size ?? null,
       selectedType: variant?.name ?? null,
       selectedSku: variant?.sku ?? null,

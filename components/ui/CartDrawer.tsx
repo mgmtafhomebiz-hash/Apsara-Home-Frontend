@@ -17,6 +17,7 @@ export default function CartDrawer() {
     quantity: item.quantity,
     prodpv: item.prodpv ?? 0,
     selectedColor: item.selectedColor ?? null,
+    selectedStyle: item.selectedStyle ?? null,
     selectedSize: item.selectedSize ?? null,
     selectedType: item.selectedType ?? null,
     selectedSku: item.selectedSku ?? null,
@@ -39,6 +40,7 @@ export default function CartDrawer() {
       },
       quantity: cartCount,
       selectedColor: checkoutItems.length === 1 ? (firstItem.selectedColor ?? null) : null,
+      selectedStyle: checkoutItems.length === 1 ? (firstItem.selectedStyle ?? null) : null,
       selectedSize: checkoutItems.length === 1 ? (firstItem.selectedSize ?? null) : null,
       selectedType: checkoutItems.length === 1 ? (firstItem.selectedType ?? null) : null,
       selectedSku: checkoutItems.length === 1 ? (firstItem.selectedSku ?? null) : null,
@@ -131,9 +133,10 @@ export default function CartDrawer() {
 
                         <div className="min-w-0 flex-1">
                           <p className="truncate text-sm font-semibold text-gray-800">{item.name}</p>
-                          {(item.selectedColor || item.selectedSize || item.selectedType || item.selectedSku) ? (
+                          {(item.selectedColor || item.selectedStyle || item.selectedSize || item.selectedType || item.selectedSku) ? (
                             <div className="mt-1 flex flex-wrap gap-1">
                               {item.selectedColor ? <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600">{item.selectedColor}</span> : null}
+                              {item.selectedStyle ? <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600">{item.selectedStyle}</span> : null}
                               {item.selectedSize ? <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600">{item.selectedSize}</span> : null}
                               {item.selectedType ? <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600">{item.selectedType}</span> : null}
                               {item.selectedSku ? <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600">{item.selectedSku}</span> : null}

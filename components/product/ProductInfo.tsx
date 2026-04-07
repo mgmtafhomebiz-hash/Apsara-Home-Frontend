@@ -97,6 +97,7 @@ const stripVariantColorSuffix = (sku?: string | null, colorName?: string | null)
 
 const getVariantCoreGroupKey = (variant: VariantOption) => [
     normalizeVariantLabel(variant.name),
+    normalizeVariantLabel(variant.style),
     normalizeVariantLabel(variant.size),
     String(variant.width ?? ''),
     String(variant.dimension ?? ''),
@@ -141,6 +142,22 @@ const getEffectiveVariantStock = (variants?: CategoryProduct['variants']) => {
     return activeVariants.reduce((total, variant) => total + Number(variant?.qty ?? 0), 0);
 };
 
+const buildVariantTitleParts = (variant?: NonNullable<CategoryProduct['variants']>[number]) => {
+    const seen = new Set<string>();
+
+    return [
+        variant?.name?.trim(),
+        variant?.style?.trim(),
+        variant?.size?.trim(),
+    ].filter((part): part is string => {
+        if (!part) return false;
+        const normalized = part.toLowerCase();
+        if (seen.has(normalized)) return false;
+        seen.add(normalized);
+        return true;
+    });
+};
+
 const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange }: ProductInfoProps) => {
     const { addToCart } = useCart();
     const { data: session } = useSession();
@@ -151,6 +168,7 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange }
     const [quantity, setQuantity] = useState(1);
     const [selectedColor, setSelectedColor] = useState('');
     const [added, setAdded] = useState(false);
+    const [selectedStyle, setSelectedStyle] = useState('');
     const [selectedSize, setSelectedSize] = useState('');
     const [wishlisted, setWishlisted] = useState(false);
     const [buyOptionsOpen, setBuyOptionsOpen] = useState(false);
@@ -164,6 +182,7 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange }
             (product.variants ?? []).filter((variant) =>
                 Boolean(
                     variant.color ||
+                    variant.style ||
                     variant.size ||
                     variant.sku ||
                     (variant.images && variant.images.length > 0) ||
@@ -190,6 +209,16 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange }
             const variantName = variant.name?.trim();
             if (!variantName) return;
             map.set(variantName, variant.images?.[0]);
+        });
+        return Array.from(map.entries()).map(([name, image]) => ({ name, image }));
+    }, [variantOptions]);
+
+    const styleOptions = useMemo(() => {
+        const map = new Map<string, string | undefined>();
+        variantOptions.forEach((variant) => {
+            const styleName = variant.style?.trim();
+            if (!styleName) return;
+            map.set(styleName, variant.images?.[0]);
         });
         return Array.from(map.entries()).map(([name, image]) => ({ name, image }));
     }, [variantOptions]);
@@ -225,6 +254,7 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange }
 
             const metaParts = [
                 (variant.name ?? '').trim(),
+                (variant.style ?? '').trim(),
                 dimensionParts.length > 0 ? `${dimensionParts.join(' x ')} cm` : '',
             ].filter((part) => part && part !== sizeLabel);
 
@@ -254,6 +284,7 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange }
 
             const metaParts = [
                 (variant.name ?? '').trim(),
+                (variant.style ?? '').trim(),
                 variant.color ? displayColorName(variant.color) : '',
                 dimensionParts.length > 0 ? `${dimensionParts.join(' x ')} cm` : '',
             ].filter((part) => part && part !== sizeLabel);
@@ -278,8 +309,10 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange }
     const effectiveSelectedColor = selectedColor || colorOptions[0]?.name || '';
     const hasColorSelector = colorOptions.length > 0;
     const hasPrimaryOptionSelector = variantNameOptions.length > 1;
+    const hasStyleSelector = styleOptions.length > 1;
     const showNewBadge = isNewProduct(product.createdAt);
     const effectiveSelectedPrimaryName = selectedVariantName || (hasPrimaryOptionSelector ? variantNameOptions[0]?.name || '' : '');
+    const effectiveSelectedStyle = selectedStyle || (hasStyleSelector ? styleOptions[0]?.name || '' : '');
     const primaryOptionLabel = optionLabels.primaryLabel?.trim() || 'Options';
     const hasSecondarySizeValues = logicalSizeChoices.length > 0;
     const secondaryOptionLabel = optionLabels.secondaryLabel?.trim() || (hasSecondarySizeValues ? 'Size' : '');
@@ -295,8 +328,13 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange }
                 (choice.groupVariants ?? []).some((variant) => (variant.name ?? '').trim() === effectiveSelectedPrimaryName),
             );
         }
+        if (hasStyleSelector && effectiveSelectedStyle) {
+            filteredChoices = filteredChoices.filter((choice) =>
+                (choice.groupVariants ?? []).some((variant) => (variant.style ?? '').trim() === effectiveSelectedStyle),
+            );
+        }
         return filteredChoices;
-    }, [effectiveSelectedColor, effectiveSelectedPrimaryName, hasColorSelector, hasPrimaryOptionSelector, logicalSizeChoices]);
+    }, [effectiveSelectedColor, effectiveSelectedPrimaryName, effectiveSelectedStyle, hasColorSelector, hasPrimaryOptionSelector, hasStyleSelector, logicalSizeChoices]);
     const shouldShowSecondaryOption = secondaryOptionLabel.length > 0 && displayedSizeChoices.length > 0;
     const effectiveSelectedSizeKey = selectedSizeKey || displayedSizeChoices[0]?.key || '';
     const effectiveSelectedSize = selectedSize || displayedSizeChoices[0]?.label || '';
@@ -309,32 +347,61 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange }
             return (
                 groupedVariants.find((variant) =>
                     (!hasColorSelector || !effectiveSelectedColor || variant.color === effectiveSelectedColor) &&
-                    (!hasPrimaryOptionSelector || !effectiveSelectedPrimaryName || (variant.name ?? '').trim() === effectiveSelectedPrimaryName),
+                    (!hasPrimaryOptionSelector || !effectiveSelectedPrimaryName || (variant.name ?? '').trim() === effectiveSelectedPrimaryName) &&
+                    (!hasStyleSelector || !effectiveSelectedStyle || (variant.style ?? '').trim() === effectiveSelectedStyle),
                 )
                 ?? groupedVariants.find((variant) =>
-                    !hasColorSelector || !effectiveSelectedColor || variant.color === effectiveSelectedColor,
+                    (!hasColorSelector || !effectiveSelectedColor || variant.color === effectiveSelectedColor) &&
+                    (!hasStyleSelector || !effectiveSelectedStyle || (variant.style ?? '').trim() === effectiveSelectedStyle),
                 )
                 ?? groupedVariants.find((variant) =>
-                    !hasPrimaryOptionSelector || !effectiveSelectedPrimaryName || (variant.name ?? '').trim() === effectiveSelectedPrimaryName,
+                    (!hasPrimaryOptionSelector || !effectiveSelectedPrimaryName || (variant.name ?? '').trim() === effectiveSelectedPrimaryName) &&
+                    (!hasStyleSelector || !effectiveSelectedStyle || (variant.style ?? '').trim() === effectiveSelectedStyle),
                 )
                 ?? groupedVariants[0]
             );
         }
-        if (hasColorSelector && effectiveSelectedColor && hasPrimaryOptionSelector && effectiveSelectedPrimaryName) {
+        if (hasColorSelector && effectiveSelectedColor && hasPrimaryOptionSelector && effectiveSelectedPrimaryName && hasStyleSelector && effectiveSelectedStyle) {
             return (
                 variantOptions.find((variant) =>
-                    variant.color === effectiveSelectedColor && (variant.name ?? '').trim() === effectiveSelectedPrimaryName,
+                    variant.color === effectiveSelectedColor &&
+                    (variant.name ?? '').trim() === effectiveSelectedPrimaryName &&
+                    (variant.style ?? '').trim() === effectiveSelectedStyle,
+                )
+                ?? variantOptions.find((variant) =>
+                    variant.color === effectiveSelectedColor && (variant.style ?? '').trim() === effectiveSelectedStyle,
                 )
                 ?? variantOptions.find((variant) => variant.color === effectiveSelectedColor)
+                ?? variantOptions.find((variant) => (variant.style ?? '').trim() === effectiveSelectedStyle)
+                ?? variantOptions.find((variant) => (variant.name ?? '').trim() === effectiveSelectedPrimaryName)
+                ?? variantOptions[0]
+            );
+        }
+        if (hasStyleSelector && effectiveSelectedStyle && hasPrimaryOptionSelector && effectiveSelectedPrimaryName) {
+            return (
+                variantOptions.find((variant) =>
+                    (variant.style ?? '').trim() === effectiveSelectedStyle &&
+                    (variant.name ?? '').trim() === effectiveSelectedPrimaryName,
+                )
+                ?? variantOptions.find((variant) => (variant.style ?? '').trim() === effectiveSelectedStyle)
                 ?? variantOptions.find((variant) => (variant.name ?? '').trim() === effectiveSelectedPrimaryName)
                 ?? variantOptions[0]
             );
         }
         if (hasPrimaryOptionSelector && effectiveSelectedPrimaryName) {
             return (
-                variantOptions.find((variant) => (variant.name ?? '').trim() === effectiveSelectedPrimaryName)
+                variantOptions.find((variant) =>
+                    (variant.name ?? '').trim() === effectiveSelectedPrimaryName &&
+                    (!hasStyleSelector || !effectiveSelectedStyle || (variant.style ?? '').trim() === effectiveSelectedStyle),
+                )
+                ?? (hasStyleSelector && effectiveSelectedStyle
+                    ? variantOptions.find((variant) => (variant.style ?? '').trim() === effectiveSelectedStyle)
+                    : undefined)
                 ?? variantOptions[0]
             );
+        }
+        if (hasStyleSelector && effectiveSelectedStyle) {
+            return variantOptions.find((variant) => (variant.style ?? '').trim() === effectiveSelectedStyle) ?? variantOptions[0];
         }
         if (hasColorSelector && effectiveSelectedColor) {
             return variantOptions.find((variant) => variant.color === effectiveSelectedColor) ?? variantOptions[0];
@@ -350,7 +417,7 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange }
             )
             ?? variantOptions[0]
         );
-    }, [displayedSizeChoices, variantOptions, effectiveSelectedColor, effectiveSelectedPrimaryName, effectiveSelectedSize, effectiveSelectedSizeKey, hasColorSelector, hasPrimaryOptionSelector, selectedSize]);
+    }, [displayedSizeChoices, variantOptions, effectiveSelectedColor, effectiveSelectedPrimaryName, effectiveSelectedSize, effectiveSelectedSizeKey, effectiveSelectedStyle, hasColorSelector, hasPrimaryOptionSelector, hasStyleSelector, selectedSize]);
 
     useEffect(() => {
         onVariantChange?.(selectedVariant);
@@ -384,13 +451,8 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange }
     const displayHeight = toPositiveNumber(selectedVariant?.height) ?? toPositiveNumber(product.psheight);
     const hasDisplayDimensions = Boolean(displayWidth || displayDimension || displayHeight);
     const selectedVariantImage = selectedVariant?.images?.find((image) => typeof image === 'string' && image.trim().length > 0);
-    const selectedVariantLabel = selectedVariant?.name?.trim() || selectedVariant?.size?.trim() || '';
-    const selectedVariantTitleParts = [
-        selectedVariant?.name?.trim(),
-        selectedVariant?.size?.trim() && selectedVariant?.size?.trim() !== selectedVariant?.name?.trim()
-            ? selectedVariant.size.trim()
-            : '',
-    ].filter(Boolean);
+    const selectedVariantLabel = selectedVariant?.name?.trim() || selectedVariant?.style?.trim() || selectedVariant?.size?.trim() || '';
+    const selectedVariantTitleParts = buildVariantTitleParts(selectedVariant);
     const displayTitle = selectedVariantTitleParts.length > 0
         ? `${product.name} - ${selectedVariantTitleParts.join(' - ')}`
         : product.name;
@@ -406,6 +468,7 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange }
 
         const variantLabel = [
             selectedVariant?.name?.trim(),
+            selectedVariant?.style?.trim(),
             selectedVariant?.size?.trim(),
             selectedVariant?.color ? displayColorName(selectedVariant.color) : '',
         ].filter(Boolean).join(' • ');
@@ -420,6 +483,7 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange }
                 image: selectedVariantImage || product.image,
                 prodpv: variantPv,
                 selectedColor: selectedVariant?.color ?? null,
+                selectedStyle: selectedVariant?.style ?? null,
                 selectedSize: selectedVariant?.size ?? null,
                 selectedType: selectedVariant?.name ?? null,
                 selectedSku: selectedVariant?.sku ?? null,
@@ -676,6 +740,11 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange }
                                 Selected Variant: <span className="text-orange-500">{selectedVariantLabel}</span>
                             </span>
                         ) : null}
+                        {selectedVariant?.style?.trim() ? (
+                            <span className="text-sm font-semibold text-slate-700">
+                                Style: <span className="text-orange-500">{selectedVariant.style.trim()}</span>
+                            </span>
+                        ) : null}
                         {shouldShowSecondaryOption && selectedVariant?.size?.trim() && selectedVariant?.name?.trim() && (
                             <span className="text-sm font-semibold text-slate-700">
                                 {secondaryOptionLabel}: <span className="text-orange-500">{selectedVariant.size.trim()}</span>
@@ -740,6 +809,38 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange }
                                     </span>
                                 ) : null}
                                 <span>{variantOption.name}</span>
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {hasRealVariants && hasStyleSelector && styleOptions.length > 0 && (
+                <div className="flex flex-col gap-2">
+                    <span className="text-sm font-semibold text-slate-700">Style</span>
+                    <div className="flex gap-2 flex-wrap">
+                        {styleOptions.map((styleOption) => (
+                            <button
+                                key={styleOption.name}
+                                onClick={() => setSelectedStyle(styleOption.name)}
+                                className={`inline-flex items-center gap-3 px-3 py-2 text-sm rounded-xl border-2 font-medium transition-all duration-200 ${
+                                    effectiveSelectedStyle === styleOption.name
+                                        ? 'border-orange-400 bg-orange-50 text-orange-600'
+                                        : 'border-gray-200 text-slate-600 hover:border-orange-200'
+                                }`}
+                            >
+                                {styleOption.image ? (
+                                    <span className="relative h-10 w-10 overflow-hidden rounded-lg bg-slate-100 shrink-0">
+                                        <Image
+                                            src={styleOption.image}
+                                            alt={styleOption.name}
+                                            fill
+                                            className="object-cover"
+                                            sizes="40px"
+                                        />
+                                    </span>
+                                ) : null}
+                                <span>{styleOption.name}</span>
                             </button>
                         ))}
                     </div>
@@ -887,8 +988,9 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange }
                 quantity={quantity}
                 selectedVariant={selectedVariant}
                 selectedColor={effectiveSelectedColor}
+                selectedStyle={selectedVariant?.style?.trim() || selectedStyle}
                 selectedSize={selectedVariant?.size?.trim() || selectedSize}
-                selectedType={productTypeLabel}
+                selectedType={selectedVariant?.name?.trim() || undefined}
 
             />
 
