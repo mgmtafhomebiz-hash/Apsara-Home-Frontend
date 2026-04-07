@@ -893,7 +893,7 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                               </div>
                             ) : (
                               <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-500">
-                                {order.approval_status === 'approved' ? 'Use Tracking' : 'No actions'}
+                                {order.approval_status === 'pending_approval' ? 'Awaiting approval' : 'No actions'}
                               </span>
                             )}
                           </td>
