@@ -29,6 +29,18 @@ const builderCards: ContentCard[] = [
     badge: 'B2B',
   },
   {
+    title: 'Bulk Edit',
+    description: 'Update multiple web content entries in one place with faster batch adjustments.',
+    href: '/admin/webpages/bulk-edit',
+    badge: 'Quick Actions',
+  },
+  {
+    title: 'Adds Content',
+    description: 'Manage advertising placements, promos, and sponsored content blocks.',
+    href: '/admin/webpages/adds-content',
+    badge: 'Ads',
+  },
+  {
     title: 'Banners & Promos',
     description: 'Control promo strips, hero banners, campaign links, and schedule windows for active creatives.',
     href: '/admin/webpages/banners',

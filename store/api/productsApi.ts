@@ -155,6 +155,58 @@ export interface BulkImportProductsResponse {
   }>
 }
 
+export interface BulkPriceRow {
+  id?: number
+  sku?: string
+  price_srp?: number | string | null
+  price_dp?: number | string | null
+  price_member?: number | string | null
+}
+
+export interface BulkPricePreviewResponse {
+  message: string
+  summary: {
+    total: number
+    ready: number
+    failed: number
+  }
+  results: Array<{
+    row: number
+    status: 'ready' | 'failed'
+    product_id?: number | null
+    sku?: string | null
+    name?: string | null
+    current?: {
+      price_srp?: number | null
+      price_dp?: number | null
+      price_member?: number | null
+    }
+    next?: {
+      price_srp?: number | null
+      price_dp?: number | null
+      price_member?: number | null
+    }
+    message: string
+  }>
+}
+
+export interface BulkPriceApplyResponse {
+  message: string
+  summary: {
+    total: number
+    updated: number
+    failed: number
+  }
+  results: Array<{
+    row: number
+    status: 'updated' | 'failed'
+    product_id?: number | null
+    sku?: string | null
+    name?: string | null
+    message: string
+  }>
+}
+
 export interface PublicProductResponse {
   product: Product
 }
@@ -542,6 +594,21 @@ export const productsApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['Products'],
     }),
+    bulkPricePreview: builder.mutation<BulkPricePreviewResponse, { rows: BulkPriceRow[] }>({
+      query: (body) => ({
+        url: '/api/admin/products/bulk-price/preview',
+        method: 'POST',
+        body,
+      }),
+    }),
+    bulkPriceApply: builder.mutation<BulkPriceApplyResponse, { rows: BulkPriceRow[] }>({
+      query: (body) => ({
+        url: '/api/admin/products/bulk-price/apply',
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: ['Products'],
+    }),
     updateProduct: builder.mutation<{ message: string; product?: Product }, { id: number; data: Partial<CreateProductPayload> }>({
       query: ({ id, data }) => ({
         url: `/api/admin/products/${id}`,
@@ -571,6 +638,8 @@ export const {
   useGetProductActivityLogsQuery,
   useCreateProductMutation,
   useBulkImportProductsMutation,
+  useBulkPricePreviewMutation,
+  useBulkPriceApplyMutation,
   useUpdateProductMutation,
   useDeleteProductMutation,
 } = productsApi

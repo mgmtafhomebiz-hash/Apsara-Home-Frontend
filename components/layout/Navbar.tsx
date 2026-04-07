@@ -314,7 +314,20 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
   const formatCustomerNotificationTime = (value: string | null | undefined) => {
     if (!value) return null
 
-    const date = new Date(value)
+    const normalizeTimestamp = (raw: string) => {
+      const trimmed = raw.trim()
+      if (!trimmed) return trimmed
+      const hasTimezone = /([zZ]|[+-]\d{2}:?\d{2})$/.test(trimmed)
+      if (hasTimezone) return trimmed
+      const isoLike = trimmed.includes('T') ? trimmed : trimmed.replace(' ', 'T')
+      return `${isoLike}Z`
+    }
+
+    const normalized = normalizeTimestamp(value)
+    let date = new Date(normalized)
+    if (Number.isNaN(date.getTime())) {
+      date = new Date(value)
+    }
     if (Number.isNaN(date.getTime())) return null
 
     return new Intl.DateTimeFormat('en-PH', {
