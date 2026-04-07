@@ -166,6 +166,8 @@ const navItems: NavItem[] = [
       { label: 'Shop Builder', path: '/admin/webpages/shop-builder' },
       { label: 'Partner Storefronts', path: '/admin/webpages/partner-storefronts' },
       { label: 'Assembly Guides', path: '/admin/webpages/assembly-guides' },
+      { label: 'Bulk Edit', path: '/admin/webpages/bulk-edit' },
+      { label: 'Adds Content', path: '/admin/webpages/adds-content' },
     ],
   },
   {
