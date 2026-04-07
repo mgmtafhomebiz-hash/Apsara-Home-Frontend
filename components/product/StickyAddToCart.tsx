@@ -42,7 +42,15 @@ const StickyAddToCart = ({ product, selectedVariant }: StickyAddToCartProps) => 
     : Number(product.prodpv ?? 0);
   const srp = toPositiveNumber(selectedVariant?.priceSrp) ?? toPositiveNumber(product.originalPrice) ?? Number(product.price ?? 0);
   const member = toPositiveNumber(selectedVariant?.priceMember) ?? toPositiveNumber(product.priceMember) ?? 0;
-  const displayName = selectedVariant?.name?.trim() || product.name;
+  const selectedVariantTitleParts = [
+    selectedVariant?.name?.trim(),
+    selectedVariant?.size?.trim() && selectedVariant?.size?.trim() !== selectedVariant?.name?.trim()
+      ? selectedVariant.size.trim()
+      : '',
+  ].filter(Boolean);
+  const displayName = selectedVariantTitleParts.length > 0
+    ? `${product.name} - ${selectedVariantTitleParts.join(' - ')}`
+    : product.name;
   const displayImage = selectedVariant?.images?.find((image) => typeof image === 'string' && image.trim().length > 0) || product.image;
   const hasMemberPrice = member > 0 && member < srp;
   const displayPrice = canUseMemberPrice && hasMemberPrice ? member : srp;
@@ -66,12 +74,12 @@ const StickyAddToCart = ({ product, selectedVariant }: StickyAddToCartProps) => 
       selectedVariant?.size?.trim(),
       selectedVariant?.color ? displayColorName(selectedVariant.color) : '',
     ].filter(Boolean).join(' • ');
-    const cartItemIdBase = product.id ? String(product.id) : displayName.toLowerCase().replace(/\s+/g, '-');
+    const cartItemIdBase = product.id ? String(product.id) : product.name.toLowerCase().replace(/\s+/g, '-');
     const cartItemId = selectedVariant?.sku ? `${cartItemIdBase}::${selectedVariant.sku}` : cartItemIdBase;
 
     addToCart({
       id: cartItemId,
-      name: variantLabel ? `${product.name} (${variantLabel})` : displayName,
+      name: variantLabel ? `${product.name} (${variantLabel})` : product.name,
       price: displayPrice,
       image: displayImage,
       prodpv: displayPv,

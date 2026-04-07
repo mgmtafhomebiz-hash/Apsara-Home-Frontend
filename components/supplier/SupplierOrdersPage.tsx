@@ -1,7 +1,14 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { useGetSupplierOrdersQuery } from '@/store/api/supplierOrdersApi'
+import { showErrorToast, showSuccessToast } from '@/libs/toast'
+import {
+  SupplierFulfillmentStatus,
+  SupplierShipmentStatus,
+  useGetSupplierOrdersQuery,
+  useUpdateSupplierOrderFulfillmentMutation,
+  useUpdateSupplierOrderTrackingMutation,
+} from '@/store/api/supplierOrdersApi'
 
 const statConfig = [
   { key: 'total', label: 'Total Orders', icon: 'clipboard', accent: 'text-slate-500', ring: 'bg-slate-100 border-slate-200' },
@@ -11,6 +18,27 @@ const statConfig = [
   { key: 'completed', label: 'Completed', icon: 'check', accent: 'text-emerald-600', ring: 'bg-emerald-50 border-emerald-200' },
   { key: 'cancelled', label: 'Cancelled', icon: 'x', accent: 'text-rose-600', ring: 'bg-rose-50 border-rose-200' },
   { key: 'return', label: 'Return', icon: 'undo', accent: 'text-teal-600', ring: 'bg-teal-50 border-teal-200' },
+]
+
+const fulfillmentOptions: Array<{ value: SupplierFulfillmentStatus; label: string }> = [
+  { value: 'processing', label: 'Processing' },
+  { value: 'packed', label: 'Packed' },
+  { value: 'shipped', label: 'Shipped' },
+  { value: 'out_for_delivery', label: 'Out for Delivery' },
+  { value: 'delivered', label: 'Delivered' },
+  { value: 'cancelled', label: 'Cancelled' },
+  { value: 'returned', label: 'Returned' },
+]
+
+const shipmentOptions: Array<{ value: SupplierShipmentStatus; label: string }> = [
+  { value: 'for_pickup', label: 'For Pickup' },
+  { value: 'picked_up', label: 'Picked Up' },
+  { value: 'in_transit', label: 'In Transit' },
+  { value: 'out_for_delivery', label: 'Out for Delivery' },
+  { value: 'delivered', label: 'Delivered' },
+  { value: 'failed_delivery', label: 'Failed Delivery' },
+  { value: 'cancelled', label: 'Cancelled' },
+  { value: 'returned_to_sender', label: 'Returned to Sender' },
 ]
 
 const StatIcon = ({ name, className }: { name: string; className?: string }) => {
@@ -73,7 +101,22 @@ const StatIcon = ({ name, className }: { name: string; className?: string }) => 
   )
 }
 
-const getSupplierStatusLabel = (order: { payment_status?: string | null; fulfillment_status?: string | null }) => {
+function formatMoney(value: number) {
+  return new Intl.NumberFormat('en-PH', {
+    style: 'currency',
+    currency: 'PHP',
+    maximumFractionDigits: 2,
+  }).format(value || 0)
+}
+
+function formatDateTime(value?: string | null) {
+  if (!value) return '—'
+  const parsed = new Date(value)
+  if (Number.isNaN(parsed.getTime())) return '—'
+  return parsed.toLocaleString()
+}
+
+function getSupplierStatusLabel(order: { payment_status?: string | null; fulfillment_status?: string | null }) {
   const payment = String(order.payment_status ?? '').toLowerCase()
   const fulfillment = String(order.fulfillment_status ?? '').toLowerCase()
 
@@ -82,25 +125,64 @@ const getSupplierStatusLabel = (order: { payment_status?: string | null; fulfill
   if (['shipped', 'out_for_delivery'].includes(fulfillment)) return 'To Receive'
   if (['delivered'].includes(fulfillment)) return 'Completed'
   if (['cancelled', 'refunded'].includes(fulfillment)) return 'Cancelled'
-  if (['returned_refunded', 'return'].includes(fulfillment)) return 'Return'
+  if (['returned_refunded', 'return', 'returned'].includes(fulfillment)) return 'Return'
 
   return 'Pending'
+}
+
+function getApiErrorMessage(error: unknown, fallback: string) {
+  const payload = error as { data?: { message?: string } }
+  return payload?.data?.message || fallback
+}
+
+type TrackingDraft = {
+  courier: string
+  tracking_no: string
+  shipment_status: SupplierShipmentStatus
 }
 
 export default function SupplierOrdersPage() {
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState('to_pay')
   const [userSelectedFilter, setUserSelectedFilter] = useState(false)
-  const [sortBy, setSortBy] = useState('default')
-  const [overdueFirst, setOverdueFirst] = useState(true)
+  const [busyId, setBusyId] = useState<number | null>(null)
+  const [fulfillmentDrafts, setFulfillmentDrafts] = useState<Record<number, SupplierFulfillmentStatus>>({})
+  const [trackingDrafts, setTrackingDrafts] = useState<Record<number, TrackingDraft>>({})
+
   const { data, isLoading, isError } = useGetSupplierOrdersQuery({
     filter,
     search: search.trim() || undefined,
     page: 1,
     perPage: 20,
   })
+  const [updateFulfillment] = useUpdateSupplierOrderFulfillmentMutation()
+  const [updateTracking] = useUpdateSupplierOrderTrackingMutation()
 
   const orders = useMemo(() => data?.orders ?? [], [data?.orders])
+
+  useEffect(() => {
+    if (!orders.length) return
+
+    setFulfillmentDrafts((current) => {
+      const next = { ...current }
+      for (const order of orders) {
+        next[order.id] = (order.fulfillment_status as SupplierFulfillmentStatus) || 'processing'
+      }
+      return next
+    })
+
+    setTrackingDrafts((current) => {
+      const next = { ...current }
+      for (const order of orders) {
+        next[order.id] = {
+          courier: order.courier ?? '',
+          tracking_no: order.tracking_no ?? '',
+          shipment_status: (order.shipment_status as SupplierShipmentStatus) || 'in_transit',
+        }
+      }
+      return next
+    })
+  }, [orders])
 
   const counts = useMemo(() => ({
     total: data?.counts?.total ?? orders.length,
@@ -129,9 +211,61 @@ export default function SupplierOrdersPage() {
     }
   }, [counts, filter, userSelectedFilter])
 
+  async function handleSaveFulfillment(id: number) {
+    const fulfillment_status = fulfillmentDrafts[id]
+    if (!fulfillment_status) return
+
+    setBusyId(id)
+    try {
+      const result = await updateFulfillment({ id, fulfillment_status }).unwrap()
+      showSuccessToast(result.message || 'Fulfillment status updated.')
+    } catch (error) {
+      showErrorToast(getApiErrorMessage(error, 'Failed to update fulfillment status.'))
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  async function handleSaveTracking(id: number) {
+    const draft = trackingDrafts[id]
+    if (!draft?.courier.trim() || !draft?.tracking_no.trim()) {
+      showErrorToast('Courier at tracking number are required.')
+      return
+    }
+
+    setBusyId(id)
+    try {
+      const result = await updateTracking({
+        id,
+        courier: draft.courier.trim(),
+        tracking_no: draft.tracking_no.trim(),
+        shipment_status: draft.shipment_status,
+      }).unwrap()
+      showSuccessToast(result.message || 'Tracking details updated.')
+    } catch (error) {
+      showErrorToast(getApiErrorMessage(error, 'Failed to update tracking details.'))
+    } finally {
+      setBusyId(null)
+    }
+  }
+
   return (
     <div className="space-y-6">
       <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="mb-5 flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.22em] text-cyan-700">ZQ Supplier Workspace</p>
+            <h1 className="mt-1 text-2xl font-bold text-slate-900">Supplier order fulfillment</h1>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-500">
+              Dito i-aacknowledge ng supplier ang paid orders, ilalagay ang courier at tracking number, at ia-update ang fulfillment progress hanggang delivery.
+            </p>
+          </div>
+          <div className="rounded-2xl border border-cyan-200 bg-cyan-50 px-4 py-3 text-sm text-cyan-900">
+            <strong className="block">Workflow</strong>
+            <span>Approve sa admin, then supplier na ang bahala sa pack, ship, at tracking.</span>
+          </div>
+        </div>
+
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
           {statConfig.map((stat) => (
             <div key={stat.key} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -179,26 +313,7 @@ export default function SupplierOrdersPage() {
               <option value="return">Return</option>
               <option value="all">All Orders</option>
             </select>
-            <select
-              value={sortBy}
-              onChange={(event) => setSortBy(event.target.value)}
-              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-600 shadow-sm"
-            >
-              <option value="default">Sort: Default</option>
-              <option value="latest">Latest</option>
-              <option value="amount_low_high">Amount: Low to High</option>
-              <option value="amount_high_low">Amount: High to Low</option>
-            </select>
-            <label className="inline-flex items-center gap-2 text-xs font-semibold text-slate-500">
-              <span>Overdue first</span>
-              <button
-                type="button"
-                onClick={() => setOverdueFirst((prev) => !prev)}
-                className={`relative inline-flex h-5 w-9 items-center rounded-full transition ${overdueFirst ? 'bg-teal-500' : 'bg-slate-300'}`}
-              >
-                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${overdueFirst ? 'translate-x-4' : 'translate-x-1'}`} />
-              </button>
-            </label>
+
             <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-500">
               {orders.length} orders
             </span>
@@ -215,7 +330,7 @@ export default function SupplierOrdersPage() {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="min-w-[1100px] w-full text-left text-sm">
+          <table className="min-w-[1380px] w-full text-left text-sm">
             <thead className="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-400">
               <tr>
                 <th className="px-6 py-3">Checkout</th>
@@ -224,9 +339,8 @@ export default function SupplierOrdersPage() {
                 <th className="px-6 py-3">Product</th>
                 <th className="px-6 py-3">Amount</th>
                 <th className="px-6 py-3">Approval</th>
-                <th className="px-6 py-3">Status</th>
-                <th className="px-6 py-3">SLA</th>
-                <th className="px-6 py-3">Tracking</th>
+                <th className="px-6 py-3">Supplier Status</th>
+                <th className="px-6 py-3">Tracking Setup</th>
                 <th className="px-6 py-3 text-right">Actions</th>
               </tr>
             </thead>
@@ -250,49 +364,185 @@ export default function SupplierOrdersPage() {
                   </td>
                 </tr>
               ) : (
-                orders.map((order) => (
-                  <tr key={order.id} className="border-t border-slate-100">
-                    <td className="px-6 py-4">
-                      <p className="font-semibold text-slate-900">{order.checkout_id || `#${order.id}`}</p>
-                      <p className="text-xs text-slate-400">{order.payment_method ?? '—'}</p>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-slate-600">
-                      {order.created_at ? new Date(order.created_at).toLocaleString() : '—'}
-                    </td>
-                    <td className="px-6 py-4">
-                      <p className="font-semibold text-slate-900">{order.customer_name ?? 'Customer'}</p>
-                      <p className="text-xs text-slate-400">{order.customer_email ?? ''}</p>
-                    </td>
-                    <td className="px-6 py-4">
-                      <p className="font-semibold text-slate-900">{order.product_name}</p>
-                      <p className="text-xs text-slate-400">Qty: {order.quantity}</p>
-                    </td>
-                    <td className="px-6 py-4 font-semibold text-slate-900">
-                      ₱{Number(order.amount || 0).toFixed(2)}
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
-                        {order.approval_status ?? 'Pending'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600">
-                        {getSupplierStatusLabel(order)}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-xs text-slate-500">
-                      {order.fulfillment_status ?? '—'}
-                    </td>
-                    <td className="px-6 py-4 text-xs text-slate-500">
-                      {order.courier ?? '—'}
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <button className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600">
-                        Use Tracking
-                      </button>
-                    </td>
-                  </tr>
-                ))
+                orders.map((order) => {
+                  const isBusy = busyId === order.id
+                  const canManage = order.approval_status === 'approved'
+                  const trackingDraft = trackingDrafts[order.id] ?? {
+                    courier: '',
+                    tracking_no: '',
+                    shipment_status: 'in_transit' as SupplierShipmentStatus,
+                  }
+
+                  return (
+                    <tr key={order.id} className="border-t border-slate-100 align-top">
+                      <td className="px-6 py-4">
+                        <p className="font-semibold text-slate-900">{order.checkout_id || `#${order.id}`}</p>
+                        <p className="text-xs text-slate-400">{order.payment_method ?? '—'}</p>
+                      </td>
+
+                      <td className="px-6 py-4 text-sm text-slate-600">
+                        <p>{formatDateTime(order.created_at)}</p>
+                        <p className="mt-1 text-xs text-slate-400">Paid: {formatDateTime(order.paid_at)}</p>
+                      </td>
+
+                      <td className="px-6 py-4">
+                        <p className="font-semibold text-slate-900">{order.customer_name ?? 'Customer'}</p>
+                        <p className="text-xs text-slate-400">{order.customer_email ?? ''}</p>
+                        <p className="mt-1 text-xs text-slate-400">{order.customer_phone ?? ''}</p>
+                      </td>
+
+                      <td className="px-6 py-4">
+                        <p className="font-semibold text-slate-900">{order.product_name}</p>
+                        <p className="text-xs text-slate-400">Qty: {order.quantity}</p>
+                        <p className="mt-1 text-xs text-slate-400">{order.product_description ?? 'No product description'}</p>
+                      </td>
+
+                      <td className="px-6 py-4">
+                        <p className="font-semibold text-slate-900">{formatMoney(order.amount)}</p>
+                        <p className="mt-1 text-xs text-slate-400">{getSupplierStatusLabel(order)}</p>
+                      </td>
+
+                      <td className="px-6 py-4">
+                        <span
+                          className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                            canManage
+                              ? 'border border-emerald-200 bg-emerald-50 text-emerald-700'
+                              : 'border border-amber-200 bg-amber-50 text-amber-700'
+                          }`}
+                        >
+                          {order.approval_status ?? 'Pending'}
+                        </span>
+                        {order.approval_notes ? (
+                          <p className="mt-2 max-w-[220px] text-xs leading-5 text-slate-500">{order.approval_notes}</p>
+                        ) : null}
+                      </td>
+
+                      <td className="px-6 py-4">
+                        <div className="space-y-3">
+                          <div>
+                            <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                              Current
+                            </p>
+                            <p className="text-sm font-semibold capitalize text-slate-900">
+                              {(order.fulfillment_status ?? 'pending').replace(/_/g, ' ')}
+                            </p>
+                          </div>
+
+                          <select
+                            disabled={!canManage || isBusy}
+                            value={fulfillmentDrafts[order.id] ?? 'processing'}
+                            onChange={(event) =>
+                              setFulfillmentDrafts((current) => ({
+                                ...current,
+                                [order.id]: event.target.value as SupplierFulfillmentStatus,
+                              }))
+                            }
+                            className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 disabled:cursor-not-allowed disabled:bg-slate-100"
+                          >
+                            {fulfillmentOptions.map((option) => (
+                              <option key={option.value} value={option.value}>
+                                {option.label}
+                              </option>
+                            ))}
+                          </select>
+
+                          <button
+                            type="button"
+                            disabled={!canManage || isBusy}
+                            onClick={() => handleSaveFulfillment(order.id)}
+                            className="w-full rounded-xl bg-slate-900 px-3 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+                          >
+                            Save status
+                          </button>
+                        </div>
+                      </td>
+
+                      <td className="px-6 py-4">
+                        <div className="space-y-3">
+                          <div className="grid gap-2">
+                            <input
+                              disabled={!canManage || isBusy}
+                              value={trackingDraft.courier}
+                              onChange={(event) =>
+                                setTrackingDrafts((current) => ({
+                                  ...current,
+                                  [order.id]: {
+                                    ...trackingDraft,
+                                    courier: event.target.value,
+                                  },
+                                }))
+                              }
+                              placeholder="Courier e.g. ZQ / J&T / LBC"
+                              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 disabled:cursor-not-allowed disabled:bg-slate-100"
+                            />
+
+                            <input
+                              disabled={!canManage || isBusy}
+                              value={trackingDraft.tracking_no}
+                              onChange={(event) =>
+                                setTrackingDrafts((current) => ({
+                                  ...current,
+                                  [order.id]: {
+                                    ...trackingDraft,
+                                    tracking_no: event.target.value,
+                                  },
+                                }))
+                              }
+                              placeholder="Tracking number"
+                              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 disabled:cursor-not-allowed disabled:bg-slate-100"
+                            />
+
+                            <select
+                              disabled={!canManage || isBusy}
+                              value={trackingDraft.shipment_status}
+                              onChange={(event) =>
+                                setTrackingDrafts((current) => ({
+                                  ...current,
+                                  [order.id]: {
+                                    ...trackingDraft,
+                                    shipment_status: event.target.value as SupplierShipmentStatus,
+                                  },
+                                }))
+                              }
+                              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 disabled:cursor-not-allowed disabled:bg-slate-100"
+                            >
+                              {shipmentOptions.map((option) => (
+                                <option key={option.value} value={option.value}>
+                                  {option.label}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
+                          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-500">
+                            <p><strong>Current courier:</strong> {order.courier ?? '—'}</p>
+                            <p className="mt-1"><strong>Current tracking:</strong> {order.tracking_no ?? '—'}</p>
+                            <p className="mt-1"><strong>Shipment status:</strong> {(order.shipment_status ?? '—').replace(/_/g, ' ')}</p>
+                          </div>
+                        </div>
+                      </td>
+
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex flex-col items-end gap-2">
+                          <button
+                            type="button"
+                            disabled={!canManage || isBusy}
+                            onClick={() => handleSaveTracking(order.id)}
+                            className="rounded-xl bg-cyan-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-cyan-500 disabled:cursor-not-allowed disabled:bg-slate-300"
+                          >
+                            Save tracking
+                          </button>
+
+                          <div className="max-w-[220px] text-right text-xs text-slate-400">
+                            {canManage
+                              ? 'Use this after ZQ or your courier provides the tracking details.'
+                              : 'Waiting for admin approval before supplier fulfillment can begin.'}
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })
               )}
             </tbody>
           </table>

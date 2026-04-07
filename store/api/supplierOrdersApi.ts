@@ -33,6 +33,25 @@ export interface SupplierOrder {
   updated_at?: string | null
 }
 
+export type SupplierFulfillmentStatus =
+  | 'processing'
+  | 'packed'
+  | 'shipped'
+  | 'out_for_delivery'
+  | 'delivered'
+  | 'cancelled'
+  | 'returned'
+
+export type SupplierShipmentStatus =
+  | 'for_pickup'
+  | 'picked_up'
+  | 'in_transit'
+  | 'out_for_delivery'
+  | 'delivered'
+  | 'failed_delivery'
+  | 'cancelled'
+  | 'returned_to_sender'
+
 export interface SupplierOrdersResponse {
   orders: SupplierOrder[]
   meta: {
@@ -77,7 +96,33 @@ export const supplierOrdersApi = baseApi.injectEndpoints({
       keepUnusedDataFor: 300,
       providesTags: ['Orders'],
     }),
+    updateSupplierOrderFulfillment: builder.mutation<
+      { message: string; order: SupplierOrder },
+      { id: number; fulfillment_status: SupplierFulfillmentStatus }
+    >({
+      query: ({ id, fulfillment_status }) => ({
+        url: `/api/supplier/orders/${id}/fulfillment`,
+        method: 'PATCH',
+        body: { fulfillment_status },
+      }),
+      invalidatesTags: ['Orders'],
+    }),
+    updateSupplierOrderTracking: builder.mutation<
+      { message: string; order: SupplierOrder },
+      { id: number; courier: string; tracking_no: string; shipment_status?: SupplierShipmentStatus }
+    >({
+      query: ({ id, ...body }) => ({
+        url: `/api/supplier/orders/${id}/tracking`,
+        method: 'PATCH',
+        body,
+      }),
+      invalidatesTags: ['Orders'],
+    }),
   }),
 })
 
-export const { useGetSupplierOrdersQuery } = supplierOrdersApi
+export const {
+  useGetSupplierOrdersQuery,
+  useUpdateSupplierOrderFulfillmentMutation,
+  useUpdateSupplierOrderTrackingMutation,
+} = supplierOrdersApi

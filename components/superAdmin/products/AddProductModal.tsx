@@ -448,6 +448,17 @@ const deriveMultiplierFromPv = ({
   return formatDecimalInput(pvValue / transferValue)
 }
 
+const getComputedPvDisplay = ({
+  transfer,
+  multiplier,
+}: {
+  transfer: string | number | null | undefined
+  multiplier: string | number | null | undefined
+}) => {
+  const computed = deriveComputedPv({ transfer, multiplier })
+  return computed > 0 ? formatDecimalInput(computed, 2) : ''
+}
+
 const buildPricingSummary = ({
   pricingTier,
   srp,
@@ -828,13 +839,12 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
     }),
     [form.pd_pricing_tier, form.pd_price_srp, form.pd_price_dp, form.pd_price_member, form.pd_reversed_pv_multiplier],
   )
-  const computedMainPvDisplay = useMemo(() => {
-    const computed = deriveComputedPv({
+  const computedMainPvDisplay = useMemo(() => (
+    getComputedPvDisplay({
       transfer: form.pd_price_dp,
       multiplier: form.pd_reversed_pv_multiplier,
     })
-    return computed > 0 ? formatDecimalInput(computed, 2) : ''
-  }, [form.pd_price_dp, form.pd_reversed_pv_multiplier])
+  ), [form.pd_price_dp, form.pd_reversed_pv_multiplier])
 
   const set = (key: keyof FormState, value: string | boolean) => {
     setForm(p => ({ ...p, [key]: value }))
@@ -2237,11 +2247,13 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
                                         <label className="text-[11px] font-semibold text-slate-500 block">PV Product</label>
                                         <input
                                           type="number"
-                                          value={variant.pv_prodpv}
-                                          onChange={e => setVariant(index, 'pv_prodpv', e.target.value)}
-                                          onBlur={e => setVariant(index, 'pv_prodpv', toOptionalPositiveNumber(e.target.value)?.toString() ?? '')}
+                                          value={getComputedPvDisplay({
+                                            transfer: variant.pv_price_dp || form.pd_price_dp,
+                                            multiplier: variant.pv_reversed_pv_multiplier || form.pd_reversed_pv_multiplier,
+                                          })}
                                           placeholder="0.00"
-                                          className={variantInputCls}
+                                          disabled
+                                          className={`${variantInputCls} bg-slate-50 text-slate-600 cursor-not-allowed`}
                                         />
                                       </div>
                                       <div className="space-y-1">
@@ -2262,7 +2274,7 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
                                         />
                                       </div>
                                     </div>
-                                    <p className="text-[11px] text-slate-400">Leave Transfer, Member, or Multiplier blank to inherit the main product setup.</p>
+                                    <p className="text-[11px] text-slate-400">Leave Transfer, Member, or Multiplier blank to inherit the main product setup. PV Product is auto-computed.</p>
                                     <PricingSummaryPanel
                                       title="Variant PV Summary"
                                       summary={buildPricingSummary({

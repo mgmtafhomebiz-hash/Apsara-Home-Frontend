@@ -385,7 +385,15 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange }
     const hasDisplayDimensions = Boolean(displayWidth || displayDimension || displayHeight);
     const selectedVariantImage = selectedVariant?.images?.find((image) => typeof image === 'string' && image.trim().length > 0);
     const selectedVariantLabel = selectedVariant?.name?.trim() || selectedVariant?.size?.trim() || '';
-    const displayTitle = selectedVariant?.name?.trim() || product.name;
+    const selectedVariantTitleParts = [
+        selectedVariant?.name?.trim(),
+        selectedVariant?.size?.trim() && selectedVariant?.size?.trim() !== selectedVariant?.name?.trim()
+            ? selectedVariant.size.trim()
+            : '',
+    ].filter(Boolean);
+    const displayTitle = selectedVariantTitleParts.length > 0
+        ? `${product.name} - ${selectedVariantTitleParts.join(' - ')}`
+        : product.name;
     const isInStock = typeof displayStock !== 'number' || displayStock > 0;
     const productDescription = (product.description ?? '').trim();
     const plainDescription = productDescription ? stripHtml(productDescription) : '';
