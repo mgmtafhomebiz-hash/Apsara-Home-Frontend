@@ -2938,7 +2938,7 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
                         <Button
                           type="button"
                           onPress={addVariant}
-                          variant="bordered"
+                          variant="outline"
                           className="h-12 w-full rounded-2xl border-2 border-dashed border-slate-200 bg-white text-xs font-semibold text-slate-600 transition-all hover:border-blue-400 hover:bg-blue-50/40 hover:text-blue-700"
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2960,7 +2960,7 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
                     type="button"
                     onPress={handleClose}
                     isDisabled={isBusy}
-                    variant="bordered"
+                    variant="outline"
                     className="h-11 rounded-2xl border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700"
                   >
                     Cancel
