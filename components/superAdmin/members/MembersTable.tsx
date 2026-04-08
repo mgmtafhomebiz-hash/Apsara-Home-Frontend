@@ -1,5 +1,6 @@
 'use client'
 
+import { Button, Card, Chip } from '@heroui/react'
 import { Member } from "@/types/members/types"
 import { motion, AnimatePresence } from "framer-motion"
 import MembersStatusBadge from "./MembersStatusBadge"
@@ -147,12 +148,9 @@ function EditMemberModal({
               <h3 className="mt-1 text-xl font-bold text-slate-900">{member.name}</h3>
               <p className="mt-1 text-sm text-slate-500">Update profile, tier, status, and address details.</p>
             </div>
-            <button
-              onClick={onClose}
-              className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50"
-            >
+            <Button onPress={onClose} variant="secondary" className="rounded-xl">
               Close
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -232,10 +230,10 @@ function EditMemberModal({
           </div>
 
           <div className="flex items-center justify-end gap-3 border-t border-slate-100 pt-4">
-            <button type="button" onClick={onClose} className="rounded-2xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50">Cancel</button>
-            <button type="submit" disabled={isLoading} className="rounded-2xl bg-teal-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-teal-500/30 transition hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-60">
+            <Button type="button" onPress={onClose} variant="secondary" className="rounded-xl">Cancel</Button>
+            <Button type="submit" isDisabled={isLoading} className="rounded-xl bg-teal-600 text-white transition hover:bg-teal-700 disabled:bg-teal-300">
               {isLoading ? 'Saving...' : 'Save Changes'}
-            </button>
+            </Button>
           </div>
         </form>
       </motion.div>
@@ -434,15 +432,15 @@ const MembersTable = ({
   const verificationBadge = (member: Member) => {
     const status = member.verificationStatus ?? 'not_verified'
     if (status === 'verified') {
-      return <span className="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700">Verified</span>
+      return <Chip size="sm" variant="soft" className="bg-emerald-50 text-emerald-700">Verified</Chip>
     }
     if (status === 'pending_review') {
-      return <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-700">Pending Review</span>
+      return <Chip size="sm" variant="soft" className="bg-amber-50 text-amber-700">Pending Review</Chip>
     }
     if (status === 'blocked') {
-      return <span className="inline-flex items-center rounded-full bg-red-100 px-2.5 py-1 text-xs font-semibold text-red-700">Blocked</span>
+      return <Chip size="sm" variant="soft" className="bg-red-50 text-red-700">Blocked</Chip>
     }
-    return <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">Not Verified</span>
+    return <Chip size="sm" variant="soft">Not Verified</Chip>
   }
 
   const handleCopy = async (value: string, successText: string) => {
@@ -530,20 +528,22 @@ const MembersTable = ({
 
   if (rows.length === 0) {
     return (
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm flex flex-col items-center justify-center py-16 gap-3">
-        <div className="h-14 w-14 rounded-2xl bg-slate-100 flex items-center justify-center">
+      <Card className="border border-slate-200 bg-white shadow-none">
+        <Card.Content className="flex flex-col items-center justify-center gap-3 py-16">
+          <div className="h-14 w-14 rounded-2xl bg-slate-100 flex items-center justify-center">
           <svg className="w-7 h-7 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
           </svg>
-        </div>
-        <p className="text-slate-600 font-semibold text-sm">No members found</p>
-        <p className="text-slate-400 text-xs">Try adjusting your search or filters</p>
-      </div>
+          </div>
+          <p className="text-slate-600 font-semibold text-sm">No members found</p>
+          <p className="text-slate-400 text-xs">Try adjusting your search or filters</p>
+        </Card.Content>
+      </Card>
     )
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-visible">
+    <div className="bg-white rounded-2xl border border-slate-100 shadow-none overflow-visible">
       {quickMessage && (
         <div className="border-b border-slate-100 bg-teal-50 px-4 py-2 text-sm text-teal-700">
           {quickMessage}
@@ -552,18 +552,18 @@ const MembersTable = ({
       <div className="overflow-x-auto overflow-y-visible">
         <table className="min-w-full text-sm">
           <thead>
-            <tr className="bg-slate-50 border-b border-slate-100">
-              <th className="px-5 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">Member</th>
-              <th className="px-5 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">Status</th>
-              <th className="px-5 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide hidden sm:table-cell">Tier</th>
-              <th className="px-5 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide hidden md:table-cell">Orders</th>
-              <th className="px-5 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide hidden 2xl:table-cell">Address</th>
-              <th className="px-5 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide hidden md:table-cell">Total Spent</th>
-              <th className="px-5 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide hidden lg:table-cell">Earnings</th>
-              <th className="px-5 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide hidden xl:table-cell">Wallet Credits</th>
-              <th className="px-5 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide hidden lg:table-cell">Referrals</th>
-              <th className="px-5 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide hidden xl:table-cell">Joined</th>
-              <th className="px-5 py-3.5 text-right text-xs font-semibold text-slate-500 uppercase tracking-wide">Actions</th>
+            <tr className="border-b border-slate-100 bg-slate-50/80">
+              <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">Member</th>
+              <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">Status</th>
+              <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 hidden sm:table-cell">Tier</th>
+              <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 hidden md:table-cell">Orders</th>
+              <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 hidden 2xl:table-cell">Address</th>
+              <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 hidden md:table-cell">Total Spent</th>
+              <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 hidden lg:table-cell">Earnings</th>
+              <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 hidden xl:table-cell">Wallet Credits</th>
+              <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 hidden lg:table-cell">Referrals</th>
+              <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 hidden xl:table-cell">Joined</th>
+              <th className="px-5 py-3.5 text-right text-xs font-semibold uppercase tracking-wide text-slate-400">Actions</th>
             </tr>
           </thead>
           <AnimatePresence mode="wait" initial={false}>
@@ -580,14 +580,14 @@ const MembersTable = ({
                   <motion.tr
                     key={member.id}
                     variants={rowVariants}
-                    className="hover:bg-slate-50/70 transition-colors group cursor-pointer"
+                    className="group cursor-pointer border-b border-slate-50 transition-colors hover:bg-slate-50/60"
                   >
                     {/* Member */}
                   <td className="px-5 py-3.5">
                     <div className="flex items-center gap-3">
                         <MemberAvatar
                           member={member}
-                          className="h-9 w-9 rounded-full shrink-0 shadow-sm"
+                          className="h-10 w-10 rounded-full shrink-0 shadow-sm ring-2 ring-white"
                           initialsClassName="text-white font-bold text-xs"
                         />
                         <div className="min-w-0">
@@ -634,12 +634,14 @@ const MembersTable = ({
 
                     {/* Wallet Credits */}
                     <td className="px-5 py-3.5 hidden xl:table-cell">
-                      <div className="flex flex-col leading-tight">
-                        <span className="text-[11px] font-semibold text-emerald-700">
-                          Cash +{Number(member.walletCashCredits ?? 0).toLocaleString()}
+                      <div className="flex flex-col gap-0.5 leading-tight">
+                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700">
+                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                          Cash {Number(member.walletCashCredits ?? 0).toLocaleString()}
                         </span>
-                        <span className="text-[11px] font-semibold text-indigo-700">
-                          PV +{Number(member.walletPvCredits ?? 0).toLocaleString()}
+                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-indigo-700">
+                          <span className="h-1.5 w-1.5 rounded-full bg-indigo-400" />
+                          PV {Number(member.walletPvCredits ?? 0).toLocaleString()}
                         </span>
                       </div>
                     </td>
@@ -662,34 +664,40 @@ const MembersTable = ({
                     {/* Actions */}
                     <td className="px-5 py-3.5">
                       <div className="flex items-center justify-end gap-1">
-                        <button
-                          title="View"
-                          onClick={() => setSelectedMember(member)}
-                          className="h-7 w-7 rounded-lg text-slate-400 hover:text-teal-600 hover:bg-teal-50 transition-colors flex items-center justify-center"
+                        <Button
+                          isIconOnly
+                          size="sm"
+                          variant="tertiary"
+                          aria-label={`View ${member.name}`}
+                          onPress={() => setSelectedMember(member)}
                         >
                           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                           </svg>
-                        </button>
-                        <button
-                          title="Edit"
-                          onClick={() => setEditingMember(member)}
-                          className="h-7 w-7 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors flex items-center justify-center"
+                        </Button>
+                        <Button
+                          isIconOnly
+                          size="sm"
+                          variant="tertiary"
+                          aria-label={`Edit ${member.name}`}
+                          onPress={() => setEditingMember(member)}
                         >
                           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                           </svg>
-                        </button>
-                        <button
-                          title="Delete"
-                          onClick={() => setDeleteTarget(member)}
-                          className="h-7 w-7 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors flex items-center justify-center"
+                        </Button>
+                        <Button
+                          isIconOnly
+                          size="sm"
+                          variant="danger-soft"
+                          aria-label={`Delete ${member.name}`}
+                          onPress={() => setDeleteTarget(member)}
                         >
                           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3M4 7h16"/>
                           </svg>
-                        </button>
+                        </Button>
                         <MemberMenuPortal
                           member={member}
                           isUpdating={isUpdating}
@@ -740,12 +748,9 @@ const MembersTable = ({
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-teal-600">Member Details</p>
                   <h3 className="mt-1 text-xl font-bold text-slate-900">{selectedMember.name}</h3>
                 </div>
-                <button
-                  onClick={() => setSelectedMember(null)}
-                  className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50"
-                >
+                <Button onPress={() => setSelectedMember(null)} variant="secondary" className="rounded-xl">
                   Close
-                </button>
+                </Button>
               </div>
 
               <div className="mb-5 flex items-center gap-4 rounded-xl border border-slate-100 bg-slate-50 p-4">
@@ -869,25 +874,17 @@ const MembersTable = ({
               </div>
 
               <div className="mt-6 flex items-center justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={() => setBanTarget(null)}
-                  className="rounded-2xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50"
-                >
+                <Button type="button" onPress={() => setBanTarget(null)} variant="secondary" className="rounded-xl">
                   Cancel
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
-                  onClick={handleBanToggle}
-                  disabled={isUpdating}
-                  className={`rounded-2xl px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition disabled:cursor-not-allowed disabled:opacity-60 ${
-                    banTarget.status === 'blocked'
-                      ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-500/30'
-                      : 'bg-amber-500 hover:bg-amber-600 shadow-amber-500/30'
-                  }`}
+                  onPress={handleBanToggle}
+                  isDisabled={isUpdating}
+                  className={`rounded-xl text-white transition disabled:opacity-60 ${banTarget.status === 'blocked' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-amber-500 hover:bg-amber-600'}`}
                 >
                   {isUpdating ? (banTarget.status === 'blocked' ? 'Unbanning...' : 'Banning...') : (banTarget.status === 'blocked' ? 'Unban Member' : 'Ban Member')}
-                </button>
+                </Button>
               </div>
             </motion.div>
           </motion.div>
@@ -930,21 +927,17 @@ const MembersTable = ({
               </div>
 
               <div className="mt-6 flex items-center justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={() => setDeleteTarget(null)}
-                  className="rounded-2xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50"
-                >
+                <Button type="button" onPress={() => setDeleteTarget(null)} variant="secondary" className="rounded-xl">
                   Cancel
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
-                  onClick={handleDeleteMember}
-                  disabled={isDeleting}
-                  className="rounded-2xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-red-500/30 transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+                  onPress={handleDeleteMember}
+                  isDisabled={isDeleting}
+                  className="rounded-xl bg-red-600 text-white transition hover:bg-red-700 disabled:bg-red-300"
                 >
                   {isDeleting ? 'Deleting...' : 'Delete Member'}
-                </button>
+                </Button>
               </div>
             </motion.div>
           </motion.div>

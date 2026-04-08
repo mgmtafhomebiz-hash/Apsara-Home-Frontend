@@ -104,6 +104,13 @@ const formatDuration = (minutes: number | null | undefined) => {
   return hrs <= 0 ? `${mins}m` : `${hrs}h ${mins}m`
 }
 
+const isNewOrder = (value?: string | null) => {
+  if (!value) return false
+  const createdAt = new Date(value)
+  if (Number.isNaN(createdAt.getTime())) return false
+  return Date.now() - createdAt.getTime() <= 24 * 60 * 60 * 1000
+}
+
 const getPaginationPages = (currentPage: number, totalPages: number) => {
   if (totalPages <= 7) {
     return Array.from({ length: totalPages }, (_, index) => index + 1)
@@ -726,7 +733,7 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
               <table className="w-full text-left min-w-240">
                 <thead>
                   <tr className="border-b border-slate-100 bg-slate-50">
-                    {['Checkout', 'Date', 'Customer', 'Product', 'Amount', 'Approval', 'SLA', 'Tracking', 'Actions'].map(h => (
+                    {['Product', 'Checkout', 'Date', 'Customer', 'Amount', 'Approval', 'SLA', 'Tracking', 'Actions'].map(h => (
                       <th key={h} className="px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wide">{h}</th>
                     ))}
                   </tr>
@@ -743,6 +750,7 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                       const rawCourierStatus = extractCourierStatus(order.shipment_payload)
                       const zqStatusKey = String(order.zq_status ?? '').trim().toLowerCase()
                       const zqBadgeClass = ZQ_STATUS_STYLES[zqStatusKey] ?? 'bg-slate-50 text-slate-600 border-slate-200'
+                      const showNewBadge = isNewOrder(order.created_at)
                       const isCourierCancelled =
                         order.shipment_status === 'cancelled'
                         || rawCourierStatus === 'package_cancelled'
@@ -758,6 +766,37 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                               : 'hover:bg-slate-50/70'
                           }`}
                         >
+                          {/* Product */}
+                          <td className="px-4 py-3.5">
+                            <div className="flex items-start gap-3">
+                              <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
+                                {order.product_image ? (
+                                  // eslint-disable-next-line @next/next/no-img-element
+                                  <img
+                                    src={order.product_image}
+                                    alt={order.product_name}
+                                    className="h-full w-full object-cover"
+                                  />
+                                ) : (
+                                  <svg className="h-5 w-5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.6} d="M20 13V7a2 2 0 00-1-1.73l-6-3.43a2 2 0 00-2 0L5 5.27A2 2 0 004 7v6a2 2 0 001 1.73l6 3.43a2 2 0 002 0l6-3.43A2 2 0 0020 13z" />
+                                  </svg>
+                                )}
+                              </div>
+                              <div className="min-w-0">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <p className="text-sm font-semibold text-slate-800">{order.product_name}</p>
+                                  {showNewBadge ? (
+                                    <Chip size="sm" variant="soft" className="border border-sky-200 bg-sky-50 text-[10px] font-bold uppercase tracking-wide text-sky-700">
+                                      New
+                                    </Chip>
+                                  ) : null}
+                                </div>
+                                <p className="mt-0.5 text-xs text-slate-400">Qty: {order.quantity}</p>
+                              </div>
+                            </div>
+                          </td>
+
                           {/* Checkout */}
                           <td className="px-4 py-3.5">
                             <p className="font-mono text-xs font-semibold text-slate-800">{order.checkout_id}</p>
@@ -783,12 +822,6 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                                 <p className="text-xs text-slate-400">{order.customer_email || ''}</p>
                               </div>
                             </div>
-                          </td>
-
-                          {/* Product */}
-                          <td className="px-4 py-3.5">
-                            <p className="text-sm font-medium text-slate-700">{order.product_name}</p>
-                            <p className="text-xs text-slate-400 mt-0.5">Qty: {order.quantity}</p>
                           </td>
 
                           {/* Amount */}

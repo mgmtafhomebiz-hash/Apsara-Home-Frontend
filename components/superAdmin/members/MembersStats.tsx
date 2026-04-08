@@ -1,5 +1,6 @@
 'use client'
 
+import { Card } from '@heroui/react'
 import { MembersStatsResponse } from '@/store/api/membersApi'
 import { motion } from 'framer-motion'
 
@@ -12,7 +13,7 @@ export default function MembersStats({ stats, onTotalEarningsClick }: MembersSta
   const cards = [
     {
       label: 'Total Members',
-      value: stats ? stats.total.toLocaleString() : '—',
+      value: stats ? stats.total.toLocaleString() : '-',
       bg: 'bg-slate-100', text: 'text-slate-600', border: 'border-slate-200', val: 'text-slate-800',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -22,7 +23,7 @@ export default function MembersStats({ stats, onTotalEarningsClick }: MembersSta
     },
     {
       label: 'Active',
-      value: stats ? stats.active.toLocaleString() : '—',
+      value: stats ? stats.active.toLocaleString() : '-',
       bg: 'bg-emerald-50', text: 'text-emerald-600', border: 'border-emerald-100', val: 'text-emerald-700',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -32,7 +33,7 @@ export default function MembersStats({ stats, onTotalEarningsClick }: MembersSta
     },
     {
       label: 'Pending / KYC',
-      value: stats ? stats.pending.toLocaleString() : '—',
+      value: stats ? stats.pending.toLocaleString() : '-',
       bg: 'bg-amber-50', text: 'text-amber-600', border: 'border-amber-100', val: 'text-amber-700',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -42,7 +43,7 @@ export default function MembersStats({ stats, onTotalEarningsClick }: MembersSta
     },
     {
       label: 'Blocked',
-      value: stats ? stats.blocked.toLocaleString() : '—',
+      value: stats ? stats.blocked.toLocaleString() : '-',
       bg: 'bg-red-50', text: 'text-red-500', border: 'border-red-100', val: 'text-red-700',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -52,7 +53,7 @@ export default function MembersStats({ stats, onTotalEarningsClick }: MembersSta
     },
     {
       label: 'Total Spent',
-      value: stats ? `₱${stats.totalSpent.toLocaleString()}` : '—',
+      value: stats ? `PHP ${stats.totalSpent.toLocaleString()}` : '-',
       bg: 'bg-teal-50', text: 'text-teal-600', border: 'border-teal-100', val: 'text-teal-700',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -62,8 +63,8 @@ export default function MembersStats({ stats, onTotalEarningsClick }: MembersSta
     },
     {
       label: 'Total Earnings',
-      value: stats ? `₱${stats.totalEarnings.toLocaleString()}` : '—',
-      bg: 'bg-purple-50', text: 'text-purple-600', border: 'border-purple-100', val: 'text-purple-700',
+      value: stats ? `PHP ${stats.totalEarnings.toLocaleString()}` : '-',
+      bg: 'bg-cyan-50', text: 'text-cyan-600', border: 'border-cyan-100', val: 'text-cyan-700',
       key: 'total_earnings',
       sub: 'Click to trace earners',
       icon: (
@@ -74,7 +75,7 @@ export default function MembersStats({ stats, onTotalEarningsClick }: MembersSta
     },
     {
       label: 'Total Referrals',
-      value: stats ? stats.totalReferrals.toLocaleString() : '—',
+      value: stats ? stats.totalReferrals.toLocaleString() : '-',
       bg: 'bg-indigo-50', text: 'text-indigo-600', border: 'border-indigo-100', val: 'text-indigo-700',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -85,20 +86,20 @@ export default function MembersStats({ stats, onTotalEarningsClick }: MembersSta
   ]
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3">
-      {cards.map((card, i) => {
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7">
+      {cards.map((card, index) => {
         const isEarnings = card.key === 'total_earnings'
         const inner = (
-          <>
-            <div className="flex items-center gap-3 mb-3">
-              <div className={`h-9 w-9 rounded-xl ${card.bg} ${card.text} flex items-center justify-center shrink-0`}>
-                {card.icon}
-              </div>
-              <p className="text-[11px] text-slate-400 font-medium leading-tight">{card.label}</p>
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{card.label}</p>
+              <p className={`mt-2 text-2xl font-bold ${card.val}`}>{card.value}</p>
+              {card.sub ? <p className="mt-0.5 text-[11px] text-slate-400">{card.sub}</p> : null}
             </div>
-            <p className={`text-lg font-bold ${card.val}`}>{card.value}</p>
-            {card.sub && <p className="text-[11px] text-slate-400 mt-0.5">{card.sub}</p>}
-          </>
+            <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${card.bg} ${card.text}`}>
+              {card.icon}
+            </div>
+          </div>
         )
 
         return (
@@ -106,19 +107,22 @@ export default function MembersStats({ stats, onTotalEarningsClick }: MembersSta
             key={card.label}
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.04 }}
-            className={`bg-white border ${card.border} rounded-2xl p-4 shadow-sm hover:shadow-md transition-all duration-300`}
+            transition={{ delay: index * 0.04 }}
           >
-            {isEarnings ? (
-              <button
-                type="button"
-                onClick={onTotalEarningsClick}
-                disabled={!onTotalEarningsClick}
-                className="w-full text-left disabled:cursor-default"
-              >
-                {inner}
-              </button>
-            ) : inner}
+            <Card className={`h-full border ${card.border} bg-white shadow-none transition-all duration-300 hover:-translate-y-0.5 hover:shadow-sm`}>
+              <Card.Content className="p-4">
+                {isEarnings ? (
+                  <button
+                    type="button"
+                    onClick={onTotalEarningsClick}
+                    disabled={!onTotalEarningsClick}
+                    className="w-full text-left disabled:cursor-default"
+                  >
+                    {inner}
+                  </button>
+                ) : inner}
+              </Card.Content>
+            </Card>
           </motion.div>
         )
       })}
