@@ -588,9 +588,7 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
         <div className="space-y-2">
           {/* Fetching indicator */}
           {isFetching && (
-            <div className="relative h-0.5 w-full overflow-hidden bg-teal-100/60">
-              <div className="animate-loading-sweep absolute inset-y-0 left-0 w-2/5 bg-linear-to-r from-transparent via-teal-500 to-transparent" />
-            </div>
+            <div className="google-loading-bar" />
           )}
 
           {/* Bulk action bar */}
