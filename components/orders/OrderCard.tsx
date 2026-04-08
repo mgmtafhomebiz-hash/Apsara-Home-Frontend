@@ -4,14 +4,17 @@ import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import Icon from "./Icons";
 import Image from "next/image";
+import Link from "next/link";
 import { TRACK_STEPS } from "@/types/Data";
 import formatDate from "@/helpers/FormatDate";
 import formatPrice from "@/helpers/FormatPrice";
+import { useConfirmOrderMutation } from "@/store/api/paymentApi";
 
 type OrderStatus = 'pending' | 'processing' | 'packed' | 'shipped' | 'out_for_delivery' | 'delivered' | 'cancelled' | 'refunded';
 
 type OrderItem = {
     id: number;
+    product_id?: number | null;
     name: string;
     image: string;
     quantity: number;
@@ -46,6 +49,20 @@ const copyText = async (value: string) => {
     await navigator.clipboard.writeText(value);
 };
 
+const slugify = (value: string) =>
+    value
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+
+const buildProductHref = (item: OrderItem) => {
+    const productId = Number(item.product_id ?? 0);
+    if (!productId) return null;
+    const slug = slugify(item.name || 'product');
+    return `/product/${slug}-i${productId}`;
+};
+
 const STATUS_CONFIG: Record<OrderStatus, { label: string; badge: string; dot: string; step: number }> = {
     pending: { label: 'Pending', badge: 'bg-amber-50 text-amber-700 border-amber-200', dot: 'bg-amber-400', step: 1 },
     processing: { label: 'Processing', badge: 'bg-blue-50 text-blue-700 border-blue-200', dot: 'bg-blue-500', step: 2 },
@@ -63,12 +80,17 @@ interface OrderCardProps {
 
 const OrderCard = ({ order }: OrderCardProps) => {
   const [expanded, setExpanded] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [rating, setRating] = useState(0);
+  const [review, setReview] = useState('');
+  const [confirmOrder, { isLoading: isConfirming }] = useConfirmOrderMutation();
   const cfg = STATUS_CONFIG[order.status] ?? STATUS_CONFIG.pending;
   const previewItems = order.items.slice(0, 3);
   const extraCount = order.items.length - 3;
   const isActive = !['cancelled', 'refunded', 'delivered'].includes(order.status);
   const hasShipmentInfo = Boolean(order.courier || order.tracking_no || order.shipment_status);
   const isShipmentCancelled = order.shipment_status === 'cancelled';
+  const canConfirm = order.status === 'out_for_delivery';
 
   const getSelectedOptions = (item: OrderItem) => {
     return [
@@ -119,11 +141,21 @@ const OrderCard = ({ order }: OrderCardProps) => {
       <div className="px-5 py-4">
         <div className="flex items-center gap-3">
           <div className="flex -space-x-2">
-            {previewItems.map((item) => (
-              <div key={item.id} className="h-10 w-10 rounded-lg border-2 border-white overflow-hidden bg-gray-100 shrink-0">
-                <Image src={item.image} alt={item.name} width={40} height={40} className="h-full w-full object-cover" />
-              </div>
-            ))}
+            {previewItems.map((item) => {
+              const href = buildProductHref(item);
+              const Wrapper = href ? Link : 'div';
+              return (
+                <Wrapper
+                  key={item.id}
+                  {...(href ? { href } : {})}
+                  className={`h-10 w-10 rounded-lg border-2 border-white overflow-hidden bg-gray-100 shrink-0 ${
+                    href ? 'transition-transform hover:scale-105' : ''
+                  }`}
+                >
+                  <Image src={item.image} alt={item.name} width={40} height={40} className="h-full w-full object-cover" />
+                </Wrapper>
+              );
+            })}
             {extraCount > 0 && (
               <div className="h-10 w-10 rounded-lg border-2 border-white bg-gray-100 flex items-center justify-center shrink-0">
                 <span className="text-[11px] font-bold text-gray-500">+{extraCount}</span>
@@ -131,12 +163,24 @@ const OrderCard = ({ order }: OrderCardProps) => {
             )}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm text-gray-700 truncate">
-              {order.items[0].name}
-              {order.items.length > 1 && (
-                <span className="text-gray-400"> +{order.items.length - 1} more item{order.items.length > 2 ? 's' : ''}</span>
-              )}
-            </p>
+            {(() => {
+              const firstItem = order.items[0];
+              const href = firstItem ? buildProductHref(firstItem) : null;
+              const TitleWrapper = href ? Link : 'span';
+              return (
+                <p className="text-sm text-gray-700 truncate">
+                  <TitleWrapper
+                    {...(href ? { href } : {})}
+                    className={href ? 'font-semibold text-slate-800 hover:text-orange-500 transition-colors' : ''}
+                  >
+                    {firstItem?.name}
+                  </TitleWrapper>
+                  {order.items.length > 1 && (
+                    <span className="text-gray-400"> +{order.items.length - 1} more item{order.items.length > 2 ? 's' : ''}</span>
+                  )}
+                </p>
+              );
+            })()}
             <p className="text-xs text-gray-400 mt-0.5">{order.items.reduce((s, i) => s + i.quantity, 0)} item(s)</p>
           </div>
           <div className="text-right shrink-0">
@@ -155,9 +199,13 @@ const OrderCard = ({ order }: OrderCardProps) => {
               <Icon.RefreshCw className="h-3.5 w-3.5" /> Reorder
             </button>
           )}
-          {isActive && !isShipmentCancelled && (
-            <button type="button" className="inline-flex items-center gap-1.5 rounded-xl bg-orange-500 hover:bg-orange-600 px-3.5 py-2 text-xs font-semibold text-white transition-colors">
-              <Icon.Truck className="h-3.5 w-3.5" /> Track Order
+          {canConfirm && (
+            <button
+              type="button"
+              onClick={() => setConfirmOpen(true)}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 px-3.5 py-2 text-xs font-semibold text-white transition-colors"
+            >
+              <Icon.Check className="h-3.5 w-3.5" /> Confirm Order
             </button>
           )}
           <button
@@ -232,6 +280,14 @@ const OrderCard = ({ order }: OrderCardProps) => {
                       Estimated delivery: <span className="font-semibold text-gray-700">{formatDate(order.estimated_delivery)}</span>
                     </p>
                   )}
+                  {order.status === 'out_for_delivery' && (
+                    <button
+                      type="button"
+                      className="mt-3 inline-flex items-center gap-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 px-3.5 py-2 text-xs font-semibold text-white transition-colors"
+                    >
+                      Confirm Order
+                    </button>
+                  )}
                 </div>
               )}
 
@@ -239,14 +295,29 @@ const OrderCard = ({ order }: OrderCardProps) => {
               <div>
                 <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-2">Items Ordered</p>
                 <div className="space-y-2">
-                  {order.items.map((item) => (
-                    <div key={item.id} className="flex items-center gap-3 rounded-xl border border-gray-100 bg-white px-3 py-2.5">
-                      <div className="h-12 w-12 rounded-lg overflow-hidden bg-gray-100 shrink-0">
-                        <Image src={item.image} alt={item.name} width={48} height={48} className="h-full w-full object-cover" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-800 truncate">{item.name}</p>
-                        <p className="text-xs text-gray-400">Qty: {item.quantity}</p>
+                  {order.items.map((item) => {
+                    const href = buildProductHref(item);
+                    const Wrapper = href ? Link : 'div';
+                    return (
+                      <div key={item.id} className="flex items-center gap-3 rounded-xl border border-gray-100 bg-white px-3 py-2.5">
+                        <Wrapper
+                          {...(href ? { href } : {})}
+                          className={`h-12 w-12 rounded-lg overflow-hidden bg-gray-100 shrink-0 ${
+                            href ? 'transition-transform hover:scale-105' : ''
+                          }`}
+                        >
+                          <Image src={item.image} alt={item.name} width={48} height={48} className="h-full w-full object-cover" />
+                        </Wrapper>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-800 truncate">
+                            <Wrapper
+                              {...(href ? { href } : {})}
+                              className={href ? 'hover:text-orange-500 transition-colors' : ''}
+                            >
+                              {item.name}
+                            </Wrapper>
+                          </p>
+                          <p className="text-xs text-gray-400">Qty: {item.quantity}</p>
                         {getSelectedOptions(item).length > 0 && (
                           <div className="mt-2 flex flex-wrap gap-1.5">
                             {getSelectedOptions(item).map((option) => (
@@ -259,10 +330,11 @@ const OrderCard = ({ order }: OrderCardProps) => {
                             ))}
                           </div>
                         )}
+                        </div>
+                        <p className="text-sm font-semibold text-gray-800 shrink-0">{formatPrice(item.price * item.quantity)}</p>
                       </div>
-                      <p className="text-sm font-semibold text-gray-800 shrink-0">{formatPrice(item.price * item.quantity)}</p>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
 
@@ -344,6 +416,120 @@ const OrderCard = ({ order }: OrderCardProps) => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {confirmOpen && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 p-4">
+          <div className="absolute inset-0" onClick={() => setConfirmOpen(false)} />
+          <div className="relative z-[71] w-full max-w-lg rounded-3xl border border-slate-200 bg-white p-6 shadow-xl">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.22em] text-emerald-600">Confirm Delivery</p>
+                <h3 className="mt-2 text-xl font-bold text-slate-900">Rate your order</h3>
+                <p className="mt-1 text-sm text-slate-500">Please rate and review this product before confirming.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setConfirmOpen(false)}
+                className="rounded-full border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:border-emerald-200 hover:text-emerald-700"
+              >
+                Close
+              </button>
+            </div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.25, ease: 'easeOut' }}
+              className="mt-5 rounded-3xl border border-slate-200 bg-gradient-to-br from-amber-50 via-white to-white p-4"
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-semibold text-slate-600">Rating</p>
+                  <p className="text-[11px] text-slate-400">Tap a star to rate</p>
+                </div>
+                <div className="text-[11px] font-semibold text-amber-600">
+                  {rating > 0 ? `${rating}/5` : 'No rating'}
+                </div>
+              </div>
+              <div className="mt-4 flex items-center gap-2.5">
+                {Array.from({ length: 5 }).map((_, i) => {
+                  const value = i + 1;
+                  const active = rating >= value;
+                  return (
+                    <motion.button
+                      key={value}
+                      type="button"
+                      onClick={() => setRating(value)}
+                      whileHover={{ scale: 1.08 }}
+                      whileTap={{ scale: 0.96 }}
+                      className={`group relative flex h-11 w-11 items-center justify-center rounded-2xl border transition ${
+                        active
+                          ? 'border-amber-300 bg-amber-100 text-amber-600 shadow-[0_10px_25px_-18px_rgba(251,191,36,0.85)]'
+                          : 'border-slate-200 bg-white text-slate-300'
+                      }`}
+                      aria-label={`Rate ${value} star`}
+                    >
+                      <span
+                        className={`absolute inset-0 rounded-2xl opacity-0 transition ${
+                          active ? 'bg-amber-200/60 blur-md opacity-70' : ''
+                        }`}
+                      />
+                      <svg
+                        viewBox="0 0 24 24"
+                        className={`relative h-5 w-5 transition-transform duration-200 group-hover:scale-110 ${
+                          active ? 'text-amber-500 drop-shadow-[0_0_8px_rgba(251,191,36,0.7)]' : 'text-slate-300'
+                        }`}
+                        fill="currentColor"
+                        aria-hidden
+                      >
+                        <path d="M12 2.6l2.7 5.47 6.03.87-4.36 4.25 1.03 6.02L12 16.94 6.6 19.21l1.03-6.02L3.27 8.94l6.03-.87L12 2.6z" />
+                      </svg>
+                    </motion.button>
+                  );
+                })}
+              </div>
+            </motion.div>
+
+            <div className="mt-4">
+              <p className="text-xs font-semibold text-slate-600">Review</p>
+              <textarea
+                value={review}
+                onChange={(e) => setReview(e.target.value)}
+                rows={4}
+                placeholder="Share your experience..."
+                className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+              />
+            </div>
+
+            <div className="mt-6 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setConfirmOpen(false)}
+                className="rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:border-emerald-200 hover:text-emerald-700"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={rating < 1 || review.trim().length === 0 || isConfirming}
+                onClick={async () => {
+                  try {
+                    await confirmOrder({ id: order.id, rating, review: review.trim() }).unwrap();
+                    setConfirmOpen(false);
+                    setRating(0);
+                    setReview('');
+                  } catch {
+                    return;
+                  }
+                }}
+                className="rounded-full bg-emerald-500 px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-600 disabled:opacity-60"
+              >
+                {isConfirming ? 'Submitting...' : 'Order Completed'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </motion.div>
   );
 };

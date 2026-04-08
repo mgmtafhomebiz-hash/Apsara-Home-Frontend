@@ -560,7 +560,10 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                     visibleOrders.map(order => {
                       const isBusy             = busyId === order.id
                       const canApproveThisOrder = canApprove && order.approval_status === 'pending_approval'
-                      const canTrackThisOrder   = canTrack && order.approval_status === 'approved'
+                      const isDelivered = order.fulfillment_status === 'delivered'
+                      const isCancelled = order.fulfillment_status === 'cancelled'
+                      const isRefunded = order.fulfillment_status === 'refunded'
+                      const canTrackThisOrder   = canTrack && order.approval_status === 'approved' && !isDelivered && !isCancelled && !isRefunded
                       const approval = APPROVAL_CONFIG[order.approval_status] ?? APPROVAL_CONFIG.pending
                       const sla      = order.sla?.state ? SLA_CONFIG[order.sla.state as keyof typeof SLA_CONFIG] : null
                       const isCourierBooked = Boolean(order.courier && order.tracking_no)
@@ -710,6 +713,11 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                                   Cancel
                                 </button>
                               </div>
+                              {(isDelivered || isCancelled || isRefunded) && (
+                                <p className="text-[11px] text-slate-400">
+                                  {isDelivered ? 'Delivered orders are locked.' : 'Tracking is disabled for this status.'}
+                                </p>
+                              )}
                               {order.courier || order.tracking_no || order.shipment_status ? (
                                 <div className="space-y-2 text-[11px] text-slate-500 leading-relaxed">
                                   {order.courier ? <p className="uppercase">Courier: {order.courier}</p> : null}

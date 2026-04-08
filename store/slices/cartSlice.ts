@@ -4,9 +4,11 @@ export interface CartItem {
   id: string;
   name: string;
   price: number;
+  originalPrice?: number | null;
   image: string;
   quantity: number;
   prodpv?: number | null;
+  brand?: string | null;
   selectedColor?: string | null;
   selectedSize?: string | null;
   selectedType?: string | null;
@@ -16,11 +18,13 @@ export interface CartItem {
 interface CartState {
   items: CartItem[];
   isOpen: boolean;
+  selectedIds: string[];
 }
 
 const initialState: CartState = {
   items: [],
   isOpen: false,
+  selectedIds: [],
 };
 
 const cartSlice = createSlice({
@@ -39,6 +43,7 @@ const cartSlice = createSlice({
     },
     removeFromCart: (state, action: PayloadAction<string>) => {
       state.items = state.items.filter((i) => i.id !== action.payload);
+      state.selectedIds = state.selectedIds.filter((id) => id !== action.payload);
     },
     updateQuantity: (
       state,
@@ -47,6 +52,7 @@ const cartSlice = createSlice({
       const { id, quantity } = action.payload;
       if (quantity <= 0) {
         state.items = state.items.filter((i) => i.id !== id);
+        state.selectedIds = state.selectedIds.filter((value) => value !== id);
         return;
       }
       const item = state.items.find((i) => i.id === id);
@@ -55,9 +61,26 @@ const cartSlice = createSlice({
     setCartOpen: (state, action: PayloadAction<boolean>) => {
       state.isOpen = action.payload;
     },
+    toggleCartItemSelected: (state, action: PayloadAction<string>) => {
+      const id = action.payload;
+      if (state.selectedIds.includes(id)) {
+        state.selectedIds = state.selectedIds.filter((value) => value !== id);
+      } else {
+        state.selectedIds.push(id);
+      }
+    },
+    setCartSelection: (state, action: PayloadAction<{ ids: string[] }>) => {
+      state.selectedIds = action.payload.ids;
+    },
   },
 });
 
-export const { addToCart, removeFromCart, updateQuantity, setCartOpen } =
-  cartSlice.actions;
+export const {
+  addToCart,
+  removeFromCart,
+  updateQuantity,
+  setCartOpen,
+  toggleCartItemSelected,
+  setCartSelection,
+} = cartSlice.actions;
 export default cartSlice.reducer;

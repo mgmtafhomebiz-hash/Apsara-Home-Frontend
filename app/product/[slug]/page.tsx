@@ -35,6 +35,19 @@ interface ProductPageData {
   categorySlug: string;
   categoryLabel: string;
   relatedProducts: CategoryProduct[];
+  reviewSummary?: {
+    average: number;
+    count: number;
+    breakdown: Record<number, number>;
+  };
+  reviews?: Array<{
+    id: number;
+    rating: number;
+    review: string;
+    customer_name: string;
+    customer_avatar?: string | null;
+    created_at?: string | null;
+  }>;
 }
 
 const ChevronRight = () => (
@@ -238,6 +251,17 @@ const toCategoryProduct = (row: LooseRecord, apiUrl?: string): CategoryProduct =
   const baseStock = Number(row.qty ?? row.pd_qty ?? 0);
   const stock = resolveDisplayStock(baseStock, variants);
 
+  const resolveBrand = () => {
+    if (typeof row.brand === 'string') return row.brand;
+    if (typeof row.brand_name === 'string') return row.brand_name;
+    if (row.brand && typeof row.brand === 'object') {
+      const brandObj = row.brand as LooseRecord;
+      if (typeof brandObj.pb_name === 'string') return brandObj.pb_name;
+      if (typeof brandObj.name === 'string') return brandObj.name;
+    }
+    return undefined;
+  };
+
   return {
     id: id > 0 ? id : undefined,
     name,
@@ -262,7 +286,7 @@ const toCategoryProduct = (row: LooseRecord, apiUrl?: string): CategoryProduct =
     stock,
     variants,
     badge,
-    brand: (row.brand ?? row.brand_name) as string | undefined,
+    brand: resolveBrand(),
     verified: Boolean(row.verified ?? row.pd_verified),
   };
 };
@@ -338,11 +362,34 @@ async function getProductPageData(slug: string): Promise<ProductPageData | null>
       .slice(0, 4)
       .map((row) => toCategoryProduct(row, apiUrl));
 
+    const resolvedProduct = toCategoryProduct(target, apiUrl);
+    const reviewId = resolvedProduct.id ?? id ?? 0;
+    let reviewSummary: ProductPageData['reviewSummary'];
+    let reviews: ProductPageData['reviews'];
+    if (reviewId > 0) {
+      try {
+        const reviewsRes = await fetch(`${apiUrl}/api/products/${reviewId}/reviews`, {
+          method: 'GET',
+          headers: { Accept: 'application/json' },
+          cache: 'no-store',
+        });
+        if (reviewsRes.ok) {
+          const reviewsJson = (await reviewsRes.json()) as { summary?: ProductPageData['reviewSummary']; reviews?: ProductPageData['reviews'] };
+          reviewSummary = reviewsJson.summary;
+          reviews = reviewsJson.reviews;
+        }
+      } catch {
+        // Keep fallback empty if review endpoint fails.
+      }
+    }
+
     return {
-      product: toCategoryProduct(target, apiUrl),
+      product: resolvedProduct,
       categorySlug,
       categoryLabel,
       relatedProducts,
+      reviewSummary,
+      reviews,
     };
   } catch {
     return null;
@@ -380,8 +427,16 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
           </div>
         </div>
         <div className="container mx-auto px-4 py-10">
-          <ProductPageClient product={dynamicData.product} categoryLabel={dynamicData.categoryLabel} />
-          <ProductTabs product={dynamicData.product} />
+          <ProductPageClient
+            product={dynamicData.product}
+            categoryLabel={dynamicData.categoryLabel}
+            reviewSummary={dynamicData.reviewSummary}
+          />
+          <ProductTabs
+            product={dynamicData.product}
+            reviewSummary={dynamicData.reviewSummary}
+            reviews={dynamicData.reviews ?? []}
+          />
           <RelatedProducts products={dynamicData.relatedProducts} category={dynamicData.categorySlug} />
           <ProductQA />
           <CompleteTheLook currentCategory={dynamicData.categorySlug} />

@@ -75,6 +75,26 @@ export interface ProductsResponse {
   meta: ProductsMeta
 }
 
+export interface ProductReviewSummary {
+  average: number
+  count: number
+  breakdown: Record<number, number>
+}
+
+export interface ProductReview {
+  id: number
+  rating: number
+  review: string
+  customer_name: string
+  customer_avatar?: string | null
+  created_at?: string | null
+}
+
+export interface ProductReviewsResponse {
+  summary: ProductReviewSummary
+  reviews: ProductReview[]
+}
+
 export interface ProductActivityLog {
   id: number
   productId: number | null
@@ -446,7 +466,13 @@ export const normalizeProduct = (input: Product & Record<string, unknown>): Prod
     brand:
       typeof input.brand === 'string'
         ? input.brand
-        : (typeof input.brand_name === 'string' ? input.brand_name : null),
+        : (typeof input.brand_name === 'string'
+          ? input.brand_name
+          : (typeof (input as { brand?: { pb_name?: string; name?: string } }).brand === 'object'
+            ? ((input as { brand?: { pb_name?: string; name?: string } }).brand?.pb_name
+              ?? (input as { brand?: { pb_name?: string; name?: string } }).brand?.name
+              ?? null)
+            : null)),
     qty:
       effectiveQty,
     weight:
@@ -540,6 +566,13 @@ export const productsApi = baseApi.injectEndpoints({
       },
       providesTags: ['Products'],
     }),
+    getProductReviews: builder.query<ProductReviewsResponse, number>({
+      query: (id) => ({
+        url: `/api/products/${id}/reviews`,
+        method: 'GET',
+      }),
+      providesTags: ['Products'],
+    }),
     getProducts: builder.query<ProductsResponse, ProductsQueryParams | void>({
       query: (params) => ({
         url: '/api/admin/products',
@@ -630,6 +663,7 @@ export const productsApi = baseApi.injectEndpoints({
 export const {
   useGetPublicProductsQuery,
   useLazyGetPublicProductQuery,
+  useGetProductReviewsQuery,
   useGetProductsQuery,
   useGetProductActivityLogsQuery,
   useCreateProductMutation,

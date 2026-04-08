@@ -2,15 +2,21 @@
 
 import { useMemo, useState } from 'react'
 import { showErrorToast, showSuccessToast } from '@/libs/toast'
-import { useCreateAddsContentMutation } from '@/store/api/addsContentApi'
+import { useCreateAddsContentMutation, useGetAddsContentQuery, useUpdateAddsContentStatusMutation, useUpdateAddsContentMutation } from '@/store/api/addsContentApi'
 
 export default function AddsContentClient() {
   const [isOpen, setIsOpen] = useState(false)
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [videoFile, setVideoFile] = useState<File | null>(null)
-  const [dateCreated, setDateCreated] = useState('')
+  const [dateCreated, setDateCreated] = useState(() => new Date().toISOString().slice(0, 10))
   const [isDateOpen, setIsDateOpen] = useState(false)
+  const [editingItemId, setEditingItemId] = useState<number | null>(null)
+  const [statusConfirm, setStatusConfirm] = useState<{ id: number; status: 0 | 1; label: string } | null>(null)
   const [createAddsContent, { isLoading }] = useCreateAddsContentMutation()
+  const [updateAddsContent, { isLoading: isUpdating }] = useUpdateAddsContentMutation()
+  const [updateStatus, { isLoading: isStatusLoading }] = useUpdateAddsContentStatusMutation()
+  const { data: addsContentData, isLoading: isAddsLoading } = useGetAddsContentQuery()
+
 
   const monthLabels = [
     'January', 'February', 'March', 'April', 'May', 'June',
@@ -61,9 +67,16 @@ export default function AddsContentClient() {
     return new Intl.DateTimeFormat('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }).format(selectedDate)
   }, [selectedDate])
 
+  const formatCardDate = (value?: string | null) => {
+    if (!value) return '—'
+    const parsed = new Date(`${value}T00:00:00`)
+    if (Number.isNaN(parsed.getTime())) return value
+    return new Intl.DateTimeFormat('en-US', { month: 'long', day: 'numeric', year: 'numeric' }).format(parsed)
+  }
+
   return (
     <div className="space-y-6">
-      <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div>
         <p className="text-xs font-bold uppercase tracking-[0.22em] text-cyan-700">Web Content</p>
         <h1 className="mt-2 text-2xl font-bold text-slate-900">Adds Content</h1>
         <p className="mt-2 max-w-3xl text-sm leading-relaxed text-slate-500">
@@ -90,7 +103,13 @@ export default function AddsContentClient() {
         <div className="mt-6 flex flex-wrap items-center gap-3">
           <button
             type="button"
-            onClick={() => setIsOpen(true)}
+            onClick={() => {
+              setEditingItemId(null)
+              setImageFile(null)
+              setVideoFile(null)
+              setDateCreated(new Date().toISOString().slice(0, 10))
+              setIsOpen(true)
+            }}
             className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:shadow-md"
           >
             <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/20">
@@ -118,7 +137,9 @@ export default function AddsContentClient() {
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.22em] text-amber-600">New Campaign</p>
-                <h3 className="mt-2 text-xl font-bold text-slate-900">Add Content Details</h3>
+                <h3 className="mt-2 text-xl font-bold text-slate-900">
+                  {editingItemId ? 'Edit Content Details' : 'Add Content Details'}
+                </h3>
                 <p className="mt-1 text-sm text-slate-500">Fill in image, video, and schedule details.</p>
               </div>
               <button
@@ -311,25 +332,294 @@ export default function AddsContentClient() {
                   }
 
                   try {
-                    const response = await createAddsContent(formData).unwrap()
+                    const response = editingItemId
+                      ? await updateAddsContent({ id: editingItemId, data: formData }).unwrap()
+                      : await createAddsContent(formData).unwrap()
                     showSuccessToast(response.message || 'Content saved.')
                     setIsOpen(false)
                     setImageFile(null)
                     setVideoFile(null)
                     setDateCreated('')
+                    setEditingItemId(null)
                   } catch (error: any) {
                     showErrorToast(error?.data?.message || 'Failed to save content.')
                   }
                 }}
-                disabled={isLoading}
+                disabled={isLoading || isUpdating}
                 className="rounded-full bg-gradient-to-r from-orange-500 to-amber-500 px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:shadow-md disabled:opacity-60"
               >
-                {isLoading ? 'Saving...' : 'Save Content'}
+                {isLoading || isUpdating ? 'Saving...' : 'Save Content'}
               </button>
             </div>
           </div>
         </div>
       )}
+
+      {statusConfirm && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 p-4">
+          <div className="absolute inset-0" onClick={() => setStatusConfirm(null)} />
+          <div className="relative z-[71] w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 shadow-xl">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.22em] text-amber-600">Confirm Action</p>
+                <h3 className="mt-2 text-lg font-bold text-slate-900">{statusConfirm.label} Content</h3>
+                <p className="mt-2 text-sm text-slate-500">
+                  Are you sure you want to set this content to <span className="font-semibold">{statusConfirm.label}</span>?
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setStatusConfirm(null)}
+                className="rounded-full border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:border-amber-200 hover:text-amber-700"
+              >
+                Close
+              </button>
+            </div>
+
+            <div className="mt-6 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setStatusConfirm(null)}
+                className="rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:border-amber-200 hover:text-amber-700"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isStatusLoading}
+                onClick={async () => {
+                  if (!statusConfirm) return
+                  await updateStatus({ id: statusConfirm.id, status: statusConfirm.status })
+                  setStatusConfirm(null)
+                }}
+                className="rounded-full bg-gradient-to-r from-orange-500 to-amber-500 px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:shadow-md disabled:opacity-60"
+              >
+                {isStatusLoading ? 'Updating...' : `Yes, ${statusConfirm.label}`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Library</p>
+            <h3 className="mt-2 text-lg font-bold text-slate-900">Uploaded Content</h3>
+          </div>
+          <span className="text-xs text-slate-500">
+            {isAddsLoading ? 'Loading...' : `${addsContentData?.items?.length ?? 0} items`}
+          </span>
+        </div>
+
+        <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {(addsContentData?.items ?? []).map((item) => {
+            const hasImage = Boolean(item.image_url)
+            const hasVideo = Boolean(item.video_url)
+            const statusLabel = (item.status ?? 0) === 0 ? 'Active' : 'Draft'
+            const header = (
+              <div className="flex items-center justify-between text-xs text-slate-500">
+                <span>#{item.id}</span>
+                <span>{formatCardDate(item.date_created)}</span>
+              </div>
+            )
+
+            if (hasImage && hasVideo) {
+              return (
+                <div key={item.id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm relative">
+                  <div className="flex items-center justify-between text-xs text-slate-500">
+                    <span>#{item.id}</span>
+                    <span>{formatCardDate(item.date_created)}</span>
+                  </div>
+                  <div className="mt-5 space-y-3">
+                    <div className="group relative overflow-hidden rounded-xl border border-slate-100 bg-slate-50">
+                      <img
+                        src={item.image_url ?? ''}
+                        alt="Uploaded"
+                        className="h-40 w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+                      />
+                      <span className="absolute left-3 top-3 rounded-full bg-emerald-100 px-3 py-1 text-[11px] font-semibold text-emerald-700 shadow-sm">
+                        {statusLabel === 'Active' ? 'Active' : 'Draft'}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingItemId(item.id)
+                          setDateCreated(item.date_created ?? '')
+                          setImageFile(null)
+                          setVideoFile(null)
+                          setIsOpen(true)
+                        }}
+                        className="absolute right-3 top-3 rounded-full bg-white/80 px-4 py-1.5 text-[12px] font-semibold text-sky-600 shadow-sm transition hover:bg-white"
+                      >
+                        Edit
+                      </button>
+                    </div>
+                    <div className="group relative">
+                      <video
+                        src={item.video_url ?? ''}
+                        controls
+                        className="h-32 w-full rounded-xl border border-slate-100 bg-black"
+                      />
+                      <span className="absolute left-3 top-3 rounded-full bg-emerald-100 px-3 py-1 text-[11px] font-semibold text-emerald-700 shadow-sm">
+                        {statusLabel === 'Active' ? 'Active' : 'Draft'}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingItemId(item.id)
+                          setDateCreated(item.date_created ?? '')
+                          setImageFile(null)
+                          setVideoFile(null)
+                          setIsOpen(true)
+                        }}
+                        className="absolute right-3 top-3 rounded-full bg-white/80 px-4 py-1.5 text-[12px] font-semibold text-sky-600 shadow-sm transition hover:bg-white"
+                      >
+                        Edit
+                      </button>
+                    </div>
+                  </div>
+                  <div className="mt-4 flex items-center justify-between gap-3 text-xs">
+                    <button
+                      type="button"
+                      disabled={isStatusLoading}
+                      onClick={() => setStatusConfirm({ id: item.id, status: 0, label: 'Activate' })}
+                      className={`flex-1 rounded-full px-3 py-1 text-[11px] font-semibold ${
+                        statusLabel === 'Active' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'
+                      }`}
+                    >
+                      Activate
+                    </button>
+                    <button
+                      type="button"
+                      disabled={isStatusLoading}
+                      onClick={() => setStatusConfirm({ id: item.id, status: 1, label: 'Draft' })}
+                      className="flex-1 rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold text-slate-600 hover:border-amber-200 hover:text-amber-700"
+                    >
+                      Draft
+                    </button>
+                  </div>
+                </div>
+              )
+            }
+
+            if (hasImage) {
+              return (
+                <div key={`${item.id}-image`} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm relative">
+                  <div className="flex items-center justify-between text-xs text-slate-500">
+                    <span>#{item.id}</span>
+                    <span>{formatCardDate(item.date_created)}</span>
+                  </div>
+                  <div className="mt-5 group relative overflow-hidden rounded-xl border border-slate-100 bg-slate-50">
+                    <img
+                      src={item.image_url ?? ''}
+                      alt="Uploaded"
+                      className="h-48 w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+                    />
+                    <span className="absolute left-3 top-3 rounded-full bg-emerald-100 px-3 py-1 text-[11px] font-semibold text-emerald-700 shadow-sm">
+                      {statusLabel === 'Active' ? 'Active' : 'Draft'}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingItemId(item.id)
+                        setDateCreated(item.date_created ?? '')
+                        setImageFile(null)
+                        setVideoFile(null)
+                        setIsOpen(true)
+                      }}
+                      className="absolute right-3 top-3 rounded-full bg-white/80 px-4 py-1.5 text-[12px] font-semibold text-sky-600 shadow-sm transition hover:bg-white"
+                    >
+                      Edit
+                    </button>
+                  </div>
+                  <div className="mt-4 flex items-center justify-between gap-3 text-xs">
+                    <button
+                      type="button"
+                      disabled={isStatusLoading}
+                      onClick={() => setStatusConfirm({ id: item.id, status: 0, label: 'Activate' })}
+                      className={`flex-1 rounded-full px-3 py-1 text-[11px] font-semibold ${
+                        statusLabel === 'Active' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'
+                      }`}
+                    >
+                      Activate
+                    </button>
+                    <button
+                      type="button"
+                      disabled={isStatusLoading}
+                      onClick={() => setStatusConfirm({ id: item.id, status: 1, label: 'Draft' })}
+                      className="flex-1 rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold text-slate-600 hover:border-amber-200 hover:text-amber-700"
+                    >
+                      Draft
+                    </button>
+                  </div>
+                </div>
+              )
+            }
+
+            if (hasVideo) {
+              return (
+                <div key={`${item.id}-video`} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm relative">
+                  <div className="flex items-center justify-between text-xs text-slate-500">
+                    <span>#{item.id}</span>
+                    <span>{formatCardDate(item.date_created)}</span>
+                  </div>
+                  <div className="mt-5 group relative">
+                    <video
+                      src={item.video_url ?? ''}
+                      controls
+                      className="h-40 w-full rounded-xl border border-slate-100 bg-black"
+                    />
+                    <span className="absolute left-3 top-3 rounded-full bg-emerald-100 px-3 py-1 text-[11px] font-semibold text-emerald-700 shadow-sm">
+                      {statusLabel === 'Active' ? 'Active' : 'Draft'}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingItemId(item.id)
+                        setDateCreated(item.date_created ?? '')
+                        setImageFile(null)
+                        setVideoFile(null)
+                        setIsOpen(true)
+                      }}
+                      className="absolute right-3 top-3 rounded-full bg-white/80 px-4 py-1.5 text-[12px] font-semibold text-sky-600 shadow-sm transition hover:bg-white"
+                    >
+                      Edit
+                    </button>
+                  </div>
+                  <div className="mt-4 flex items-center justify-between gap-3 text-xs">
+                    <button
+                      type="button"
+                      disabled={isStatusLoading}
+                      onClick={() => setStatusConfirm({ id: item.id, status: 0, label: 'Activate' })}
+                      className={`flex-1 rounded-full px-3 py-1 text-[11px] font-semibold ${
+                        statusLabel === 'Active' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'
+                      }`}
+                    >
+                      Activate
+                    </button>
+                    <button
+                      type="button"
+                      disabled={isStatusLoading}
+                      onClick={() => setStatusConfirm({ id: item.id, status: 1, label: 'Draft' })}
+                      className="flex-1 rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold text-slate-600 hover:border-amber-200 hover:text-amber-700"
+                    >
+                      Draft
+                    </button>
+                  </div>
+                </div>
+              )
+            }
+
+            return null
+          })}
+          {!isAddsLoading && (addsContentData?.items?.length ?? 0) === 0 && (
+            <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-500">
+              No content uploaded yet.
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   )
 }

@@ -62,6 +62,7 @@ const OrdersPageMain = () => {
             <button
               type="button"
               onClick={() => router.push('/shop')}
+              suppressHydrationWarning
               className="inline-flex items-center gap-2 rounded-xl bg-orange-500 hover:bg-orange-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors shadow-sm shadow-orange-200 whitespace-nowrap"
             >
               <Icon.ShoppingBag className="h-4 w-4" />

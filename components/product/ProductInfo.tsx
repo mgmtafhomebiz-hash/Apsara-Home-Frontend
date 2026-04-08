@@ -3,7 +3,6 @@
 import Image from 'next/image';
 import { useCart } from "@/context/CartContext";
 import { CategoryProduct } from "@/libs/CategoryData";
-import { mockReviews } from "@/libs/MockProductData";
 import { displayColorName } from "@/libs/colorUtils";
 import { extractVariantOptionLabels } from "@/libs/productVariantOptions";
 import { motion } from "framer-motion"
@@ -13,6 +12,7 @@ import StarRating from "../ui/StarRating";
 import BuyNowOptionsModal from "./BuyNowOptionsModal";
 import { useSession } from "next-auth/react";
 import { useMeQuery } from "@/store/api/userApi";
+import type { ProductReviewSummary } from "@/store/api/productsApi";
 
 const CartIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -56,6 +56,7 @@ interface ProductInfoProps {
     categoryLabel?: string
     onReviewsClick?: () => void;
     onVariantChange?: (variant?: VariantOption) => void;
+    reviewSummary?: ProductReviewSummary;
 }
 
 type VariantOption = NonNullable<CategoryProduct['variants']>[number];
@@ -141,7 +142,7 @@ const getEffectiveVariantStock = (variants?: CategoryProduct['variants']) => {
     return activeVariants.reduce((total, variant) => total + Number(variant?.qty ?? 0), 0);
 };
 
-const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange }: ProductInfoProps) => {
+const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, reviewSummary }: ProductInfoProps) => {
     const { addToCart } = useCart();
     const { data: session } = useSession();
     const isLoggedIn = Boolean(session?.user);
@@ -391,7 +392,9 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange }
     const plainDescription = productDescription ? stripHtml(productDescription) : '';
 
 
-    const avgRating = (mockReviews.reduce((s, r) => s + r.rating, 0) / mockReviews.length).toFixed(1);
+    const reviewCount = reviewSummary?.count ?? 0;
+    const avgRatingValue = typeof reviewSummary?.average === 'number' ? reviewSummary.average : 0;
+    const avgRating = avgRatingValue.toFixed(1);
 
     const handleAddToCart = () => {
         if (!isInStock) return;
@@ -409,12 +412,14 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange }
                 id: cartItemId,
                 name: variantLabel ? `${product.name} (${variantLabel})` : product.name,
                 price: displayPrice,
+                originalPrice: displayOriginalPrice ?? null,
                 image: selectedVariantImage || product.image,
                 prodpv: variantPv,
+                brand: product.brand ?? null,
                 selectedColor: selectedVariant?.color ?? null,
                 selectedSize: selectedVariant?.size ?? null,
                 selectedType: selectedVariant?.name ?? null,
-                selectedSku: selectedVariant?.sku ?? null,
+                selectedSku: selectedVariant?.sku ?? product.sku ?? null,
             });
         }
         setAdded(true);
@@ -543,13 +548,13 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange }
 
             {/* RATING ROW */}
             <div className="flex items-center gap-3 flex-wrap">
-                <StarRating rating={Math.round(Number(avgRating))} size={16} />
+                <StarRating rating={Math.round(avgRatingValue)} size={16} />
                 <span className="text-sm font-bold text-slate-700">{avgRating}</span>
                 <button
                     onClick={() => onReviewsClick?.()}
                     className="text-sm text-gray-400 hover:text-orange-500 transition-colors"
                 >
-                    ({mockReviews.length} reviews)
+                    ({reviewCount} review{reviewCount === 1 ? '' : 's'})
                 </button>
                 {product.verified !== false && (
                     <>

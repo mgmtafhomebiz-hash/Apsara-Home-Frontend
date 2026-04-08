@@ -73,12 +73,14 @@ const StickyAddToCart = ({ product, selectedVariant }: StickyAddToCartProps) => 
       id: cartItemId,
       name: variantLabel ? `${product.name} (${variantLabel})` : displayName,
       price: displayPrice,
+      originalPrice: hasMemberPrice ? srp : null,
       image: displayImage,
       prodpv: displayPv,
+      brand: product.brand ?? null,
       selectedColor: selectedVariant?.color ?? null,
       selectedSize: selectedVariant?.size ?? null,
       selectedType: selectedVariant?.name ?? null,
-      selectedSku: selectedVariant?.sku ?? null,
+      selectedSku: selectedVariant?.sku ?? product.sku ?? null,
     });
   };
 
