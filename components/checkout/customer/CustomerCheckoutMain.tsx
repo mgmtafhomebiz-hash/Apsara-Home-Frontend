@@ -48,7 +48,31 @@ function readCheckoutDraft(): CustomerCheckoutData | null {
 
     try {
         const raw = localStorage.getItem('guest_checkout');
-        return raw ? JSON.parse(raw) as CustomerCheckoutData : null;
+        if (!raw) return null;
+
+        const parsed = JSON.parse(raw) as CustomerCheckoutData & {
+            product?: CustomerCheckoutData['product'] & { id?: number | string };
+            items?: Array<CustomerCheckoutData['items'][number] & { id?: number | string }>;
+        };
+
+        const normalizedProductId = Number(parsed?.product?.id);
+        const normalizedItems = Array.isArray(parsed.items)
+            ? parsed.items.map((item) => ({
+                ...item,
+                id: String(item.id),
+            }))
+            : parsed.items;
+
+        return {
+            ...parsed,
+            product: parsed.product
+                ? {
+                    ...parsed.product,
+                    id: Number.isFinite(normalizedProductId) ? normalizedProductId : undefined,
+                }
+                : parsed.product,
+            items: normalizedItems,
+        } as CustomerCheckoutData;
     } catch {
         return null;
     }
@@ -205,6 +229,7 @@ const CustomerCheckoutMain = ({ initialCategories = [] }: { initialCategories?: 
         try {
             const voucherDiscount = voucherInfo?.discount ?? 0;
             const computedTotal = Math.max(0, checkoutData.subtotal - voucherDiscount) + checkoutData.handlingFee;
+            const normalizedProductId = Number(checkoutData.product.id);
             const data = await createCheckoutSession({
                 amount: computedTotal,
                 description: checkoutData.product.name,
@@ -220,7 +245,7 @@ const CustomerCheckoutMain = ({ initialCategories = [] }: { initialCategories?: 
                 },
                 order: {
                     product_name: checkoutData.product.name,
-                    product_id: checkoutData.product.id,
+                    product_id: Number.isFinite(normalizedProductId) ? normalizedProductId : undefined,
                     product_sku: checkoutData.selectedSku ?? checkoutData.product.sku ?? null,
                     product_pv: checkoutData.product.prodpv ?? 0,
                     product_image: checkoutData.product.image,
