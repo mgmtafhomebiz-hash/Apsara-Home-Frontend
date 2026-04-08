@@ -234,6 +234,7 @@ const toCategoryProduct = (row: LooseRecord, apiUrl?: string): CategoryProduct =
         color: typeof (variant.color ?? variant.pv_color) === 'string' ? String(variant.color ?? variant.pv_color) : undefined,
         colorHex: typeof (variant.colorHex ?? variant.pv_color_hex) === 'string' ? String(variant.colorHex ?? variant.pv_color_hex) : undefined,
         size: typeof (variant.size ?? variant.pv_size) === 'string' ? String(variant.size ?? variant.pv_size) : undefined,
+        style: typeof (variant.style ?? variant.pv_style) === 'string' ? String(variant.style ?? variant.pv_style) : undefined,
         width: toOptionalNumber(variant.width ?? variant.pv_width),
         dimension: toOptionalNumber(variant.dimension ?? variant.pv_dimension),
         height: toOptionalNumber(variant.height ?? variant.pv_height),

@@ -24,6 +24,7 @@ const ProductPageClient = ({ product, categoryLabel, reviewSummary }: ProductPag
     const router = useRouter();
     const searchParams = useSearchParams();
     const { data: session, status } = useSession();
+    const role = String(session?.user?.role ?? '').toLowerCase();
 
     const handleVariantChange = useCallback((variant?: VariantOption) => {
         setSelectedVariant(variant);
@@ -34,7 +35,6 @@ const ProductPageClient = ({ product, categoryLabel, reviewSummary }: ProductPag
         const preferredBy = (searchParams.get('preffered_by') ?? '').trim();
         if (!username || !preferredBy) return;
 
-        const role = String(session?.user?.role ?? '').toLowerCase();
         if (status === 'authenticated' && role && role !== 'customer') return;
 
         try {
@@ -55,6 +55,7 @@ const ProductPageClient = ({ product, categoryLabel, reviewSummary }: ProductPag
                 },
                 quantity,
                 selectedColor: selectedVariant?.color ?? null,
+                selectedStyle: selectedVariant?.style ?? null,
                 selectedSize: selectedVariant?.size ?? null,
                 selectedType: selectedVariant?.name ?? null,
                 selectedSku: selectedVariant?.sku ?? null,
@@ -66,7 +67,7 @@ const ProductPageClient = ({ product, categoryLabel, reviewSummary }: ProductPag
         } catch {
             // If anything fails, keep user on product page.
         }
-    }, [product, router, searchParams, selectedVariant]);
+    }, [product, role, router, searchParams, selectedVariant, status]);
 
     return (
         <>

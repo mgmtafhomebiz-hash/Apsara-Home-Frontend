@@ -238,6 +238,7 @@ export default function ProductCard({
       : (strikePrice > variantPrice ? strikePrice : undefined);
     const variantLabel = [
       variant?.name?.trim(),
+      variant?.style?.trim(),
       variant?.size?.trim(),
       variant?.color ? displayColorName(variant.color) : '',
     ].filter(Boolean).join(' • ');
@@ -253,6 +254,7 @@ export default function ProductCard({
       prodpv: Number(variant?.prodpv ?? prodpv ?? 0) || 0,
       brand: brand ?? null,
       selectedColor: variant?.color ?? null,
+      selectedStyle: variant?.style ?? null,
       selectedSize: variant?.size ?? null,
       selectedType: variant?.name ?? null,
       selectedSku: variant?.sku ?? sku ?? null,

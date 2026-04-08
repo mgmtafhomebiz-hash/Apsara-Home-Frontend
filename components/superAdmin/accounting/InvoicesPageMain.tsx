@@ -146,11 +146,7 @@ export default function InvoicesPageMain() {
         </div>
       ) : (
         <div className="space-y-3">
-          {isFetching ? (
-            <div className="h-1 w-full overflow-hidden rounded-full bg-slate-200">
-              <div className="h-full w-1/3 animate-pulse rounded-full bg-teal-500" />
-            </div>
-          ) : null}
+          {isFetching ? <div className="google-loading-bar" /> : null}
 
           <div className="rounded-2xl border border-slate-100 bg-white shadow-sm overflow-hidden">
             <div className="overflow-auto">

@@ -1,3 +1,6 @@
+import { Fragment } from 'react'
+import { Pagination } from '@heroui/react'
+
 interface AdminPaginationProps {
   currentPage: number
   totalPages: number
@@ -5,6 +8,18 @@ interface AdminPaginationProps {
   to?: number | null
   totalRecords: number
   onPageChange: (page: number) => void
+}
+
+const getPaginationPages = (currentPage: number, totalPages: number) => {
+  if (totalPages <= 7) {
+    return Array.from({ length: totalPages }, (_, index) => index + 1)
+  }
+
+  const pages = new Set<number>([1, totalPages, currentPage, currentPage - 1, currentPage + 1])
+
+  return Array.from(pages)
+    .filter((page) => page >= 1 && page <= totalPages)
+    .sort((first, second) => first - second)
 }
 
 export default function AdminPagination({
@@ -17,52 +32,56 @@ export default function AdminPagination({
 }: AdminPaginationProps) {
   if (totalPages <= 1) return null
 
-  const canGoPrev = currentPage > 1
-  const canGoNext = currentPage < totalPages
+  const paginationPages = getPaginationPages(currentPage, totalPages)
 
   return (
-    <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100 bg-slate-50/40">
-      {/* Record range */}
-      <p className="text-xs text-slate-500">
-        Showing{' '}
-        <span className="font-semibold text-slate-700">{(from ?? 0).toLocaleString()}</span>
-        {' '}–{' '}
-        <span className="font-semibold text-slate-700">{(to ?? 0).toLocaleString()}</span>
-        {' '}of{' '}
-        <span className="font-semibold text-slate-700">{totalRecords.toLocaleString()}</span>
-      </p>
+    <div className="border-t border-slate-100 bg-slate-50/40">
+      <Pagination size="sm" className="w-full justify-between gap-3 px-4 py-3">
+        <Pagination.Summary>
+          {(from ?? 0).toLocaleString()} to {(to ?? 0).toLocaleString()} of {totalRecords.toLocaleString()} results
+        </Pagination.Summary>
+        <Pagination.Content>
+          <Pagination.Item>
+            <Pagination.Previous
+              isDisabled={currentPage === 1}
+              onPress={() => onPageChange(Math.max(1, currentPage - 1))}
+            >
+              <Pagination.PreviousIcon />
+              Prev
+            </Pagination.Previous>
+          </Pagination.Item>
 
-      {/* Controls */}
-      <div className="flex items-center gap-1.5">
-        {/* Prev */}
-        <button
-          onClick={() => onPageChange(currentPage - 1)}
-          disabled={!canGoPrev}
-          className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-600 hover:bg-slate-50 hover:border-slate-300 disabled:opacity-35 disabled:cursor-not-allowed transition-colors"
-        >
-          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7"/>
-          </svg>
-          Prev
-        </button>
+          {paginationPages.map((page, index) => {
+            const previousPage = paginationPages[index - 1]
+            const shouldShowEllipsis = typeof previousPage === 'number' && page - previousPage > 1
 
-        {/* Page indicator */}
-        <span className="inline-flex items-center h-8 px-3 rounded-lg bg-white border border-slate-200 text-xs font-semibold text-slate-700 select-none">
-          {currentPage} <span className="mx-1.5 text-slate-300">/</span> {totalPages}
-        </span>
+            return (
+              <Fragment key={`admin-pagination-${page}`}>
+                {shouldShowEllipsis ? (
+                  <Pagination.Item>
+                    <Pagination.Ellipsis />
+                  </Pagination.Item>
+                ) : null}
+                <Pagination.Item>
+                  <Pagination.Link isActive={page === currentPage} onPress={() => onPageChange(page)}>
+                    {page}
+                  </Pagination.Link>
+                </Pagination.Item>
+              </Fragment>
+            )
+          })}
 
-        {/* Next */}
-        <button
-          onClick={() => onPageChange(currentPage + 1)}
-          disabled={!canGoNext}
-          className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border border-teal-200 bg-white text-xs font-semibold text-teal-700 hover:bg-teal-50 hover:border-teal-300 disabled:opacity-35 disabled:cursor-not-allowed transition-colors"
-        >
-          Next
-          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7"/>
-          </svg>
-        </button>
-      </div>
+          <Pagination.Item>
+            <Pagination.Next
+              isDisabled={currentPage === totalPages}
+              onPress={() => onPageChange(Math.min(totalPages, currentPage + 1))}
+            >
+              Next
+              <Pagination.NextIcon />
+            </Pagination.Next>
+          </Pagination.Item>
+        </Pagination.Content>
+      </Pagination>
     </div>
   )
 }

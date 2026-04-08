@@ -3,7 +3,7 @@
 import { CategoryProduct } from '@/libs/CategoryData';
 import { AnimatePresence, motion } from 'framer-motion';
 import Image from 'next/image';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import Loading from '../Loading';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
@@ -17,6 +17,7 @@ interface BuyNowOptionsModalProps {
   quantity?: number;
   selectedVariant?: VariantOption;
   selectedColor?: string;
+  selectedStyle?: string;
   selectedSize?: string;
   selectedType?: string;
 }
@@ -59,6 +60,7 @@ const BuyNowOptionsModal = ({
   quantity = 1,
   selectedVariant,
   selectedColor,
+  selectedStyle,
   selectedSize,
   selectedType,
 }: BuyNowOptionsModalProps) => {
@@ -76,6 +78,7 @@ const BuyNowOptionsModal = ({
       (product.variants ?? []).filter((variant) =>
         Boolean(
           variant.color ||
+          variant.style ||
           variant.size ||
           variant.name ||
           variant.sku ||
@@ -86,16 +89,20 @@ const BuyNowOptionsModal = ({
     [product.variants],
   );
   const hasVariantOptions = variantOptions.length > 0;
+  const effectiveVariantSku = variantPickerOpen
+    ? (modalSelectedVariantSku || selectedVariant?.sku || '')
+    : (selectedVariant?.sku || modalSelectedVariantSku || '');
 
   const activeVariant = useMemo(() => {
     if (!hasVariantOptions) return undefined;
-    if (modalSelectedVariantSku) {
-      return variantOptions.find((variant) => (variant.sku ?? '') === modalSelectedVariantSku) ?? selectedVariant ?? variantOptions[0];
+    if (effectiveVariantSku) {
+      return variantOptions.find((variant) => (variant.sku ?? '') === effectiveVariantSku) ?? selectedVariant ?? variantOptions[0];
     }
     return selectedVariant ?? variantOptions[0];
-  }, [hasVariantOptions, modalSelectedVariantSku, selectedVariant, variantOptions]);
+  }, [effectiveVariantSku, hasVariantOptions, selectedVariant, variantOptions]);
 
   const activeSelectedColor = activeVariant?.color ?? selectedColor ?? null;
+  const activeSelectedStyle = activeVariant?.style ?? selectedStyle ?? null;
   const activeSelectedSize = activeVariant?.size ?? selectedSize ?? null;
   const activeSelectedType = activeVariant?.name ?? selectedType ?? null;
   const unitPrice = toPositiveNumber(activeVariant?.priceSrp) ?? product.price;
@@ -107,13 +114,12 @@ const BuyNowOptionsModal = ({
   const handlingFee = subtotal >= 5000 ? 0 : 99;
   const total = subtotal + handlingFee;
   const router = useRouter();
-
-  useEffect(() => {
-    if (!isOpen) return;
+  const handleClose = () => {
     setNotice('');
     setVariantPickerOpen(false);
-    setModalSelectedVariantSku(selectedVariant?.sku ?? '');
-  }, [isOpen, selectedVariant?.sku]);
+    setModalSelectedVariantSku('');
+    onClose();
+  };
 
   const persistCheckoutDraft = () => {
     localStorage.setItem('guest_checkout', JSON.stringify({
@@ -126,6 +132,7 @@ const BuyNowOptionsModal = ({
       },
       quantity,
       selectedColor: activeSelectedColor,
+      selectedStyle: activeSelectedStyle,
       selectedSize: activeSelectedSize,
       selectedType: activeSelectedType,
       selectedSku: activeVariant?.sku ?? null,
@@ -143,13 +150,13 @@ const BuyNowOptionsModal = ({
     }
 
     if (status !== 'authenticated') {
-      onClose();
+      handleClose();
       router.push('/login');
       return;
     }
 
     persistCheckoutDraft();
-    onClose();
+    handleClose();
     router.push('/checkout/customer');
   };
 
@@ -161,7 +168,7 @@ const BuyNowOptionsModal = ({
     }
 
     persistCheckoutDraft();
-    onClose();
+    handleClose();
     router.push('/checkout/customer')
   }
 
@@ -172,7 +179,7 @@ const BuyNowOptionsModal = ({
           {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            onClick={onClose}
+            onClick={handleClose}
             className="fixed inset-0 z-[90] bg-black/70 backdrop-blur-sm"
           />
 
@@ -202,7 +209,7 @@ const BuyNowOptionsModal = ({
                   </div>
                 </div>
                 <button
-                  onClick={onClose}
+                  onClick={handleClose}
                   className="h-9 w-9 rounded-xl bg-white/10 hover:bg-white/25 text-white transition-colors flex items-center justify-center border border-white/20"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -228,23 +235,26 @@ const BuyNowOptionsModal = ({
                         <span className="px-2 py-0.5 bg-orange-50 border border-orange-100 text-orange-600 text-[10px] font-bold rounded-full">
                           Qty: {quantity}
                         </span>
-                        {selectedColor && (
-                          <span className="px-2 py-0.5 bg-slate-50 border border-slate-200 text-slate-600 text-[10px] font-semibold rounded-full">{selectedColor}</span>
+                        {activeSelectedColor && (
+                          <span className="px-2 py-0.5 bg-slate-50 border border-slate-200 text-slate-600 text-[10px] font-semibold rounded-full">{activeSelectedColor}</span>
                         )}
-                        {selectedSize && (
-                          <span className="px-2 py-0.5 bg-slate-50 border border-slate-200 text-slate-600 text-[10px] font-semibold rounded-full">{selectedSize}</span>
+                        {activeSelectedStyle && (
+                          <span className="px-2 py-0.5 bg-slate-50 border border-slate-200 text-slate-600 text-[10px] font-semibold rounded-full">{activeSelectedStyle}</span>
+                        )}
+                        {activeSelectedSize && (
+                          <span className="px-2 py-0.5 bg-slate-50 border border-slate-200 text-slate-600 text-[10px] font-semibold rounded-full">{activeSelectedSize}</span>
                         )}
                       </div>
                     </div>
                   </div>
 
-                  {selectedType && (
+                  {activeSelectedType && (
                     <div className="mt-2 flex items-center gap-2 px-3.5 py-2 bg-white rounded-xl border border-slate-100 text-xs">
                       <svg className="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
                       </svg>
                       <span className="text-slate-500">Type:</span>
-                      <span className="font-semibold text-slate-700">{selectedType}</span>
+                      <span className="font-semibold text-slate-700">{activeSelectedType}</span>
                     </div>
                   )}
 
@@ -653,7 +663,7 @@ const BuyNowOptionsModal = ({
                         </div>
 
                         <button
-                          onClick={onClose}
+                          onClick={handleClose}
                           className="rounded-xl border border-slate-200 bg-white py-2.5 text-xs font-semibold text-slate-400 hover:bg-slate-50 hover:border-slate-300 hover:text-slate-600 transition-all"
                         >
                           Cancel
@@ -662,7 +672,7 @@ const BuyNowOptionsModal = ({
                     ) : (
                       <div className="flex flex-col sm:flex-row gap-2.5">
                         <button
-                          onClick={onClose}
+                          onClick={handleClose}
                           className="sm:flex-1 rounded-xl border-2 border-slate-200 bg-white py-3 text-sm font-semibold text-slate-600 hover:bg-slate-50 hover:border-slate-300 transition-all"
                         >
                           Cancel

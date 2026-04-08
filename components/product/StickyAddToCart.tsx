@@ -42,7 +42,21 @@ const StickyAddToCart = ({ product, selectedVariant }: StickyAddToCartProps) => 
     : Number(product.prodpv ?? 0);
   const srp = toPositiveNumber(selectedVariant?.priceSrp) ?? toPositiveNumber(product.originalPrice) ?? Number(product.price ?? 0);
   const member = toPositiveNumber(selectedVariant?.priceMember) ?? toPositiveNumber(product.priceMember) ?? 0;
-  const displayName = selectedVariant?.name?.trim() || product.name;
+  const seenTitleParts = new Set<string>();
+  const selectedVariantTitleParts = [
+    selectedVariant?.name?.trim(),
+    selectedVariant?.style?.trim(),
+    selectedVariant?.size?.trim(),
+  ].filter((part): part is string => {
+    if (!part) return false;
+    const normalized = part.toLowerCase();
+    if (seenTitleParts.has(normalized)) return false;
+    seenTitleParts.add(normalized);
+    return true;
+  });
+  const displayName = selectedVariantTitleParts.length > 0
+    ? `${product.name} - ${selectedVariantTitleParts.join(' - ')}`
+    : product.name;
   const displayImage = selectedVariant?.images?.find((image) => typeof image === 'string' && image.trim().length > 0) || product.image;
   const hasMemberPrice = member > 0 && member < srp;
   const displayPrice = canUseMemberPrice && hasMemberPrice ? member : srp;
@@ -63,21 +77,23 @@ const StickyAddToCart = ({ product, selectedVariant }: StickyAddToCartProps) => 
 
     const variantLabel = [
       selectedVariant?.name?.trim(),
+      selectedVariant?.style?.trim(),
       selectedVariant?.size?.trim(),
       selectedVariant?.color ? displayColorName(selectedVariant.color) : '',
     ].filter(Boolean).join(' • ');
-    const cartItemIdBase = product.id ? String(product.id) : displayName.toLowerCase().replace(/\s+/g, '-');
+    const cartItemIdBase = product.id ? String(product.id) : product.name.toLowerCase().replace(/\s+/g, '-');
     const cartItemId = selectedVariant?.sku ? `${cartItemIdBase}::${selectedVariant.sku}` : cartItemIdBase;
 
     addToCart({
       id: cartItemId,
-      name: variantLabel ? `${product.name} (${variantLabel})` : displayName,
+      name: variantLabel ? `${product.name} (${variantLabel})` : product.name,
       price: displayPrice,
       originalPrice: hasMemberPrice ? srp : null,
       image: displayImage,
       prodpv: displayPv,
       brand: product.brand ?? null,
       selectedColor: selectedVariant?.color ?? null,
+      selectedStyle: selectedVariant?.style ?? null,
       selectedSize: selectedVariant?.size ?? null,
       selectedType: selectedVariant?.name ?? null,
       selectedSku: selectedVariant?.sku ?? product.sku ?? null,

@@ -10,6 +10,7 @@ export interface CartItem {
   prodpv?: number | null;
   brand?: string | null;
   selectedColor?: string | null;
+  selectedStyle?: string | null;
   selectedSize?: string | null;
   selectedType?: string | null;
   selectedSku?: string | null;
