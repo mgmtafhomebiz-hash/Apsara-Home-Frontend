@@ -43,6 +43,8 @@ const REQUIRED_FIELD_ORDER: Array<keyof GuestForm> = [
     'barangay',
 ];
 
+type DraftCheckoutItem = NonNullable<CustomerCheckoutData['items']>[number];
+
 function readCheckoutDraft(): CustomerCheckoutData | null {
     if (typeof window === 'undefined') return null;
 
@@ -52,7 +54,7 @@ function readCheckoutDraft(): CustomerCheckoutData | null {
 
         const parsed = JSON.parse(raw) as CustomerCheckoutData & {
             product?: CustomerCheckoutData['product'] & { id?: number | string };
-            items?: Array<CustomerCheckoutData['items'][number] & { id?: number | string }>;
+            items?: Array<DraftCheckoutItem & { id?: number | string }>;
         };
 
         const normalizedProductId = Number(parsed?.product?.id);
