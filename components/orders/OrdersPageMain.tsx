@@ -108,16 +108,9 @@ const OrdersPageMain = () => {
               <h1 className="text-2xl font-extrabold text-gray-900 md:text-3xl">My Orders</h1>
               <p className="text-sm text-slate-500">{orders.length} total order{orders.length !== 1 ? 's' : ''}</p>
             </div>
-<<<<<<< Updated upstream
-            <button
-              type="button"
-              onClick={() => router.push('/')}
-              className="inline-flex items-center gap-2 rounded-xl bg-orange-500 hover:bg-orange-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors shadow-sm shadow-orange-200 whitespace-nowrap"
-=======
             <Button
               onPress={() => router.push('/shop')}
               className="bg-orange-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-orange-200 transition hover:bg-orange-600"
->>>>>>> Stashed changes
             >
               <Icon.ShoppingBag className="h-4 w-4" />
               Shop More

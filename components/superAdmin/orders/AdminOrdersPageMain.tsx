@@ -447,6 +447,27 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
     } finally { setBusyId(null) }
   }
 
+  const handlePushToZq = async (id: number) => {
+    setBusyId(id)
+    try {
+      showErrorToast(`ZQ push is not available on this branch yet for order #${id}.`)
+    } finally { setBusyId(null) }
+  }
+
+  const handleFetchZqDetail = async (id: number) => {
+    setBusyId(id)
+    try {
+      showErrorToast(`ZQ detail is not available on this branch yet for order #${id}.`)
+    } finally { setBusyId(null) }
+  }
+
+  const handleSyncZqTracking = async (id: number) => {
+    setBusyId(id)
+    try {
+      showErrorToast(`ZQ tracking sync is not available on this branch yet for order #${id}.`)
+    } finally { setBusyId(null) }
+  }
+
   const counts = data?.counts
   const currentPage = data?.meta?.current_page ?? 1
   const totalPages = data?.meta?.last_page ?? 1
@@ -469,8 +490,8 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
             size="sm"
             variant="soft"
             className={canApprove ? 'border border-teal-200 bg-teal-50 text-teal-700' : 'border border-slate-200 bg-slate-100 text-slate-500'}
-            startContent={<span className={`h-1.5 w-1.5 rounded-full ${canApprove ? 'bg-teal-500' : 'bg-slate-400'}`} />}
           >
+            <span className={`h-1.5 w-1.5 rounded-full ${canApprove ? 'bg-teal-500' : 'bg-slate-400'}`} />
             {role || 'staff'}
           </Chip>
           <Button variant="tertiary" className="border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition-all hover:border-slate-300 hover:bg-slate-50">
@@ -686,8 +707,8 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                               size="sm"
                               variant="soft"
                               className={`border text-[11px] font-semibold ${approval.badge}`}
-                              startContent={<span className={`h-1.5 w-1.5 rounded-full ${approval.dot}`} />}
                             >
+                              <span className={`h-1.5 w-1.5 rounded-full ${approval.dot}`} />
                               {approval.label}
                             </Chip>
                           </td>
@@ -700,8 +721,8 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                                   size="sm"
                                   variant="soft"
                                   className={`border text-[11px] font-semibold ${sla.badge}`}
-                                  startContent={<span className={`h-1.5 w-1.5 rounded-full ${sla.dot}`} />}
                                 >
+                                  <span className={`h-1.5 w-1.5 rounded-full ${sla.dot}`} />
                                   {sla.label}
                                 </Chip>
                                 {order.sla?.state === 'overdue' && (
@@ -830,28 +851,6 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                           {/* Actions */}
                           <td className="px-4 py-3.5">
                             {canApproveThisOrder ? (
-<<<<<<< Updated upstream
-                              <div className="flex items-center gap-1.5">
-                                <button
-                                  disabled={isBusy}
-                                  onClick={() => handleApprove(order.id)}
-                                  className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-                                >
-                                  Approve
-                                </button>
-                                <button
-                                  disabled={isBusy}
-                                  onClick={() => handleReject(order.id)}
-                                  className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-                                >
-                                  Reject
-                                </button>
-                              </div>
-                            ) : (
-                              <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-500">
-                                {order.approval_status === 'approved' ? 'Use Tracking' : 'No actions'}
-                              </span>
-=======
                               <div className="flex flex-col items-start gap-2">
                                 <div className="flex items-center gap-1.5">
                                   <Button
@@ -939,7 +938,6 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                               <Chip size="sm" variant="soft" className="border border-slate-200 bg-slate-50 text-[11px] font-semibold text-slate-500">
                                 {order.approval_status === 'pending_approval' ? 'Awaiting approval' : 'No actions'}
                               </Chip>
->>>>>>> Stashed changes
                             )}
                           </td>
                         </tr>

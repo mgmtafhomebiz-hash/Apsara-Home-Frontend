@@ -24,13 +24,13 @@ const STATUS_CONFIG: Record<
     label: string;
     badge: string;
     dot: string;
-    chipColor?: 'warning' | 'primary' | 'secondary' | 'success' | 'danger' | 'default';
+    chipColor?: 'warning' | 'accent' | 'success' | 'danger' | 'default';
     step: number;
   }
 > = {
   pending: { label: 'Pending', badge: 'bg-amber-50 text-amber-700 border-amber-200', dot: 'bg-amber-400', chipColor: 'warning', step: 1 },
-  processing: { label: 'Processing', badge: 'bg-blue-50 text-blue-700 border-blue-200', dot: 'bg-blue-500', chipColor: 'primary', step: 2 },
-  shipped: { label: 'Shipped', badge: 'bg-violet-50 text-violet-700 border-violet-200', dot: 'bg-violet-500', chipColor: 'secondary', step: 3 },
+  processing: { label: 'Processing', badge: 'bg-blue-50 text-blue-700 border-blue-200', dot: 'bg-blue-500', chipColor: 'accent', step: 2 },
+  shipped: { label: 'Shipped', badge: 'bg-violet-50 text-violet-700 border-violet-200', dot: 'bg-violet-500', chipColor: 'accent', step: 3 },
   out_for_delivery: { label: 'Out for Delivery', badge: 'bg-orange-50 text-orange-700 border-orange-200', dot: 'bg-orange-500', chipColor: 'warning', step: 4 },
   delivered: { label: 'Delivered', badge: 'bg-emerald-50 text-emerald-700 border-emerald-200', dot: 'bg-emerald-500', chipColor: 'success', step: 5 },
   cancelled: { label: 'Cancelled', badge: 'bg-red-50 text-red-600 border-red-200', dot: 'bg-red-400', chipColor: 'danger', step: 0 },
@@ -59,12 +59,11 @@ const OrderCard = ({ order }: OrderCardProps) => {
     ].filter(Boolean) as string[];
 
   return (
-    <Card
-      variant="default"
-      as={motion.div}
-      layout
-      className="overflow-hidden rounded-[26px] border border-slate-100 bg-white shadow-none transition-all duration-200 hover:border-orange-200 hover:shadow-lg hover:shadow-orange-100/30"
-    >
+    <motion.div layout>
+      <Card
+        variant="default"
+        className="overflow-hidden rounded-[26px] border border-slate-100 bg-white shadow-none transition-all duration-200 hover:border-orange-200 hover:shadow-lg hover:shadow-orange-100/30"
+      >
       <div className="flex flex-col justify-between gap-3 border-b border-gray-100 px-5 py-4 sm:flex-row sm:items-center">
         <div className="flex items-center gap-3">
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-orange-500">
@@ -82,8 +81,8 @@ const OrderCard = ({ order }: OrderCardProps) => {
             variant="soft"
             color={cfg.chipColor ?? 'warning'}
             className={`border ${cfg.badge}`}
-            startContent={<span className={`h-1.5 w-1.5 rounded-full ${cfg.dot}`} />}
           >
+            <span className={`h-1.5 w-1.5 rounded-full ${cfg.dot}`} />
             {cfg.label}
           </Chip>
           {isShipmentCancelled && (
@@ -91,8 +90,8 @@ const OrderCard = ({ order }: OrderCardProps) => {
               size="sm"
               variant="soft"
               color="danger"
-              startContent={<span className="h-1.5 w-1.5 rounded-full bg-red-400" />}
             >
+              <span className="h-1.5 w-1.5 rounded-full bg-red-400" />
               Shipment Cancelled
             </Chip>
           )}
@@ -344,7 +343,8 @@ const OrderCard = ({ order }: OrderCardProps) => {
           </motion.div>
         )}
       </AnimatePresence>
-    </Card>
+      </Card>
+    </motion.div>
   );
 };
 
