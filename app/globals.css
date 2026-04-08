@@ -113,6 +113,60 @@ body {
   animation: loading-sweep 1.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
 
+<<<<<<< Updated upstream
+=======
+@keyframes google-line-primary {
+  0% { transform: translateX(-160%) scaleX(0.28); }
+  42% { transform: translateX(-8%) scaleX(1.08); }
+  100% { transform: translateX(125%) scaleX(0.42); }
+}
+
+@keyframes google-line-secondary {
+  0% { transform: translateX(-210%) scaleX(0.2); }
+  50% { transform: translateX(-32%) scaleX(0.72); }
+  100% { transform: translateX(138%) scaleX(0.4); }
+}
+
+.google-loading-bar {
+  position: relative;
+  height: 4px;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, rgba(226, 232, 240, 0.72), rgba(241, 245, 249, 0.95), rgba(226, 232, 240, 0.72));
+}
+
+.google-loading-bar::before,
+.google-loading-bar::after {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 64%;
+  border-radius: inherit;
+  transform-origin: left center;
+  will-change: transform;
+}
+
+.google-loading-bar::before {
+  background: linear-gradient(90deg, rgba(45, 212, 191, 0.18), rgba(20, 184, 166, 0.96), rgba(34, 211, 238, 0.82));
+  animation: google-line-primary 1.8s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+
+.google-loading-bar::after {
+  background: linear-gradient(90deg, rgba(96, 165, 250, 0.12), rgba(45, 212, 191, 0.82), rgba(16, 185, 129, 0.34));
+  animation: google-line-secondary 1.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  animation-delay: 0.12s;
+}
+
+.google-loading-bar--violet::before {
+  background: linear-gradient(90deg, rgba(167, 139, 250, 0.18), rgba(139, 92, 246, 0.96), rgba(217, 70, 239, 0.82));
+}
+
+.google-loading-bar--violet::after {
+  background: linear-gradient(90deg, rgba(196, 181, 253, 0.12), rgba(168, 85, 247, 0.82), rgba(129, 140, 248, 0.34));
+}
+
+>>>>>>> Stashed changes
 @keyframes blob {
   0% {
     transform: translate(0px, 0px) scale(1);
