@@ -173,14 +173,16 @@ function StatCard({ label, value, bg, text, border, icon }: {
 }) {
   return (
     <Card variant="default" className={`border ${border} bg-white shadow-none`}>
-      <Card.Content className="px-4 py-4">
-        <div className="mb-3 flex items-center gap-3">
-          <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${bg} ${text}`}>
+      <Card.Content className="px-5 py-5">
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{label}</p>
+            <p className="mt-2.5 text-3xl font-bold text-slate-800">{value}</p>
+          </div>
+          <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${bg} ${text}`}>
             {icon}
           </div>
-          <p className="text-[11px] font-medium leading-tight text-slate-400">{label}</p>
         </div>
-        <p className="text-xl font-bold text-slate-800">{value}</p>
       </Card.Content>
     </Card>
   )
@@ -729,7 +731,7 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                     ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-50">
+                <tbody className="divide-y divide-slate-100">
                   {visibleOrders.length ? (
                     visibleOrders.map(order => {
                       const isBusy             = busyId === order.id
@@ -758,8 +760,8 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                         >
                           {/* Checkout */}
                           <td className="px-4 py-3.5">
-                            <p className="text-sm font-semibold text-slate-800">{order.checkout_id}</p>
-                            <p className="text-xs text-slate-400 mt-0.5 capitalize">{order.payment_status}</p>
+                            <p className="font-mono text-xs font-semibold text-slate-800">{order.checkout_id}</p>
+                            <p className="text-xs text-slate-400 mt-1 capitalize">{order.payment_status}</p>
                           </td>
 
                           {/* Date */}
@@ -773,7 +775,7 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                           {/* Customer */}
                           <td className="px-4 py-3.5">
                             <div className="flex items-center gap-2.5">
-                              <div className="h-8 w-8 rounded-full bg-linear-to-br from-teal-400 to-teal-600 flex items-center justify-center text-white text-[10px] font-bold shrink-0">
+                              <div className="h-9 w-9 rounded-full bg-linear-to-br from-teal-400 to-teal-600 flex items-center justify-center text-white text-[11px] font-bold shrink-0">
                                 {getInitials(order.customer_name)}
                               </div>
                               <div>
@@ -843,13 +845,13 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                                 isDisabled={isBusy || !canTrackThisOrder || isCourierBooked}
                                 onChange={(value) => handleShipmentStatusChange(order.id, value as AdminShipmentStatus)}
                               />
-                              <div className="flex flex-wrap gap-1.5">
+                              <div className="grid grid-cols-2 gap-1">
                                 <Button
                                   size="sm"
                                   variant="tertiary"
                                   isDisabled={isBusy || !canTrackThisOrder || isCourierCancelled}
                                   onPress={() => handleBookCourier(order.id)}
-                                  className="border border-teal-200 bg-teal-50 px-2.5 py-1.5 text-[11px] font-semibold text-teal-700 transition hover:bg-teal-100"
+                                  className="border border-teal-200 bg-teal-50 px-2 py-1.5 text-[11px] font-semibold text-teal-700 transition hover:bg-teal-100"
                                 >
                                   Book
                                 </Button>
@@ -858,7 +860,7 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                                   variant="tertiary"
                                   isDisabled={isBusy || !canTrackThisOrder || !order.tracking_no || isCourierCancelled}
                                   onPress={() => handleTrackCourier(order.id)}
-                                  className="border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-[11px] font-semibold text-slate-700 transition hover:bg-slate-100"
+                                  className="border border-slate-200 bg-slate-50 px-2 py-1.5 text-[11px] font-semibold text-slate-700 transition hover:bg-slate-100"
                                 >
                                   Track
                                 </Button>
@@ -867,16 +869,16 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                                   variant="tertiary"
                                   isDisabled={isBusy || !canTrackThisOrder || courierByOrder[order.id] !== 'xde' || !order.tracking_no || isCourierCancelled}
                                   onPress={() => handleOpenWaybill(order.id)}
-                                  className="border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-[11px] font-semibold text-blue-700 transition hover:bg-blue-100"
+                                  className="border border-blue-200 bg-blue-50 px-2 py-1.5 text-[11px] font-semibold text-blue-700 transition hover:bg-blue-100"
                                 >
-                                  A6 Waybill
+                                  Waybill
                                 </Button>
                                 <Button
                                   size="sm"
                                   variant="tertiary"
                                   isDisabled={isBusy || !canTrackThisOrder || courierByOrder[order.id] !== 'xde' || !order.tracking_no || order.shipment_status !== 'delivered'}
                                   onPress={() => handleOpenEpod(order.id)}
-                                  className="border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-[11px] font-semibold text-amber-700 transition hover:bg-amber-100"
+                                  className="border border-amber-200 bg-amber-50 px-2 py-1.5 text-[11px] font-semibold text-amber-700 transition hover:bg-amber-100"
                                 >
                                   EPOD
                                 </Button>
@@ -885,7 +887,7 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                                   variant="tertiary"
                                   isDisabled={isBusy || !canTrackThisOrder || courierByOrder[order.id] !== 'xde' || !order.tracking_no || isCourierCancelled}
                                   onPress={() => handleCancelCourier(order.id)}
-                                  className="border border-red-200 bg-red-50 px-2.5 py-1.5 text-[11px] font-semibold text-red-700 transition hover:bg-red-100"
+                                  className="col-span-2 border border-red-200 bg-red-50 px-2 py-1.5 text-[11px] font-semibold text-red-700 transition hover:bg-red-100"
                                 >
                                   Cancel
                                 </Button>
@@ -959,38 +961,38 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                           {/* Actions */}
                           <td className="px-4 py-3.5">
                             {canApproveThisOrder ? (
-                              <div className="flex flex-col items-start gap-2">
-                                <div className="flex items-center gap-1.5">
-                                  <Button size="sm" variant="tertiary" isDisabled={isBusy} onPress={() => handlePushToZq(order.id)} className="border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-semibold text-violet-700 transition hover:bg-violet-100">
-                                    Push ZQ
-                                  </Button>
-                                  <Button size="sm" variant="tertiary" isDisabled={isBusy} onPress={() => handleApprove(order.id)} className="border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100">
+                              <div className="flex w-36 flex-col gap-1.5">
+                                <Button size="sm" variant="tertiary" isDisabled={isBusy} onPress={() => handlePushToZq(order.id)} className="w-full border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-semibold text-violet-700 transition hover:bg-violet-100">
+                                  Push ZQ
+                                </Button>
+                                <div className="grid grid-cols-2 gap-1">
+                                  <Button size="sm" variant="tertiary" isDisabled={isBusy} onPress={() => handleApprove(order.id)} className="border border-emerald-200 bg-emerald-50 px-2 py-1.5 text-[11px] font-semibold text-emerald-700 transition hover:bg-emerald-100">
                                     Approve
                                   </Button>
-                                  <Button size="sm" variant="tertiary" isDisabled={isBusy} onPress={() => handleReject(order.id)} className="border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-100">
+                                  <Button size="sm" variant="tertiary" isDisabled={isBusy} onPress={() => handleReject(order.id)} className="border border-red-200 bg-red-50 px-2 py-1.5 text-[11px] font-semibold text-red-600 transition hover:bg-red-100">
                                     Reject
                                   </Button>
                                 </div>
-                                <div className="flex items-center gap-1.5">
-                                  <Button size="sm" variant="tertiary" isDisabled={isBusy} onPress={() => handleFetchZqDetail(order.id)} className="border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-100">
+                                <div className="grid grid-cols-2 gap-1">
+                                  <Button size="sm" variant="tertiary" isDisabled={isBusy} onPress={() => handleFetchZqDetail(order.id)} className="border border-slate-200 bg-slate-50 px-2 py-1.5 text-[11px] font-semibold text-slate-700 transition hover:bg-slate-100">
                                     ZQ Detail
                                   </Button>
-                                  <Button size="sm" variant="tertiary" isDisabled={isBusy} onPress={() => handleSyncZqTracking(order.id)} className="border border-sky-200 bg-sky-50 px-3 py-1.5 text-xs font-semibold text-sky-700 transition hover:bg-sky-100">
-                                    ZQ Tracking
+                                  <Button size="sm" variant="tertiary" isDisabled={isBusy} onPress={() => handleSyncZqTracking(order.id)} className="border border-sky-200 bg-sky-50 px-2 py-1.5 text-[11px] font-semibold text-sky-700 transition hover:bg-sky-100">
+                                    ZQ Track
                                   </Button>
                                 </div>
                               </div>
                             ) : order.approval_status === 'approved' ? (
-                              <div className="flex flex-col items-start gap-2">
-                                <Button size="sm" variant="tertiary" isDisabled={isBusy} onPress={() => handlePushToZq(order.id)} className="border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-semibold text-violet-700 transition hover:bg-violet-100">
+                              <div className="flex w-36 flex-col gap-1.5">
+                                <Button size="sm" variant="tertiary" isDisabled={isBusy} onPress={() => handlePushToZq(order.id)} className="w-full border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-semibold text-violet-700 transition hover:bg-violet-100">
                                   Push ZQ
                                 </Button>
-                                <div className="flex items-center gap-1.5">
-                                  <Button size="sm" variant="tertiary" isDisabled={isBusy} onPress={() => handleFetchZqDetail(order.id)} className="border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-100">
+                                <div className="grid grid-cols-2 gap-1">
+                                  <Button size="sm" variant="tertiary" isDisabled={isBusy} onPress={() => handleFetchZqDetail(order.id)} className="border border-slate-200 bg-slate-50 px-2 py-1.5 text-[11px] font-semibold text-slate-700 transition hover:bg-slate-100">
                                     ZQ Detail
                                   </Button>
-                                  <Button size="sm" variant="tertiary" isDisabled={isBusy} onPress={() => handleSyncZqTracking(order.id)} className="border border-sky-200 bg-sky-50 px-3 py-1.5 text-xs font-semibold text-sky-700 transition hover:bg-sky-100">
-                                    ZQ Tracking
+                                  <Button size="sm" variant="tertiary" isDisabled={isBusy} onPress={() => handleSyncZqTracking(order.id)} className="border border-sky-200 bg-sky-50 px-2 py-1.5 text-[11px] font-semibold text-sky-700 transition hover:bg-sky-100">
+                                    ZQ Track
                                   </Button>
                                 </div>
                               </div>
