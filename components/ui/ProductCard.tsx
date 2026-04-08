@@ -15,12 +15,14 @@ import { showErrorToast, showSuccessToast } from '@/libs/toast';
 interface ProductCardProps {
   id?: number;
   name: string;
+  brand?: string | null;
   createdAt?: string | null;
   price: number;
   priceMember?: number;
   prodpv?: number;
   originalPrice?: number;
   image: string;
+  sku?: string;
   badge?: string;
   stock?: number;
   variants?: CategoryProduct['variants'];
@@ -94,12 +96,14 @@ const getVariantChoiceKey = (variant: VariantOption) => [
 export default function ProductCard({
   id,
   name,
+  brand,
   createdAt,
   price,
   priceMember,
   prodpv,
   originalPrice,
   image,
+  sku,
   badge,
   stock,
   variants,
@@ -225,6 +229,13 @@ export default function ProductCard({
   const isWishlistPending = isAdding || isRemoving;
 
   const addResolvedVariantToCart = (variant?: VariantOption) => {
+    const variantSrp = Number(variant?.priceSrp ?? displayPrice ?? 0) || displayPrice;
+    const variantMember = Number(variant?.priceMember ?? 0);
+    const hasVariantMember = isLoggedIn && variantMember > 0 && variantMember < variantSrp;
+    const variantPrice = hasVariantMember ? variantMember : variantSrp;
+    const variantOriginal = hasVariantMember
+      ? variantSrp
+      : (strikePrice > variantPrice ? strikePrice : undefined);
     const variantLabel = [
       variant?.name?.trim(),
       variant?.style?.trim(),
@@ -237,14 +248,16 @@ export default function ProductCard({
     addToCart({
       id: itemId,
       name: variantLabel ? `${safeName} (${variantLabel})` : safeName,
-      price: Number(variant?.priceMember ?? variant?.priceSrp ?? displayPrice ?? 0) || displayPrice,
+      price: variantPrice,
+      originalPrice: typeof variantOriginal === 'number' ? variantOriginal : null,
       image: variant?.images?.[0] || imageSrc,
       prodpv: Number(variant?.prodpv ?? prodpv ?? 0) || 0,
+      brand: brand ?? null,
       selectedColor: variant?.color ?? null,
       selectedStyle: variant?.style ?? null,
       selectedSize: variant?.size ?? null,
       selectedType: variant?.name ?? null,
-      selectedSku: variant?.sku ?? null,
+      selectedSku: variant?.sku ?? sku ?? null,
     });
   };
 
@@ -432,12 +445,13 @@ export default function ProductCard({
             />
 
             <motion.div
-              initial={{ opacity: 0, y: 40 }}
+              initial={{ opacity: 0, y: 24 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 24 }}
+              exit={{ opacity: 0, y: 16 }}
               transition={{ duration: 0.22, ease: 'easeOut' }}
-              className="fixed inset-x-0 bottom-0 z-[120] mx-auto w-full max-w-xl rounded-t-3xl bg-white shadow-2xl"
+              className="fixed inset-0 z-[120] flex items-center justify-center p-4"
             >
+              <div className="w-full max-w-xl rounded-3xl bg-white shadow-2xl">
               <div className="border-b border-slate-100 px-5 py-4">
                 <div className="flex items-start justify-between gap-3">
                   <div>
@@ -538,6 +552,7 @@ export default function ProductCard({
                 >
                   Add Selected Variant to Cart
                 </button>
+              </div>
               </div>
             </motion.div>
           </>

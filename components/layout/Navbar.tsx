@@ -1564,48 +1564,46 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
                                 setSearchModalOpen(false)
                                 setMobileOpen(false)
                               }}
-                              className="block rounded-2xl border border-slate-200/70 bg-white px-3 py-3 transition hover:border-orange-200 hover:bg-orange-50/40"
+                              className="block rounded-3xl border border-orange-200/60 bg-white p-4 shadow-sm transition hover:border-orange-300 hover:bg-orange-50/40"
                             >
-                              <Card variant="default" className="border-slate-200/80 shadow-none">
-                                <Card.Content className="flex items-start gap-5 px-3 py-3 text-left">
-                                  <span className="relative h-24 w-28 shrink-0 overflow-hidden rounded-2xl bg-slate-100">
-                                    {product.image ? (
-                                      <Image src={product.image} alt={product.name} fill className="object-cover" />
-                                    ) : (
-                                      <span className="flex h-full w-full items-center justify-center text-[11px] font-semibold text-slate-400">
-                                        AF
-                                      </span>
-                                    )}
-                                  </span>
-                                  <div className="min-w-0 flex-1">
-                                    <p className="truncate text-sm font-semibold uppercase tracking-wide text-slate-800">
-                                      {product.name}
-                                    </p>
-                                    <p className="mt-1 text-xs text-slate-500">Search match for &quot;{searchModalQuery.trim()}&quot;</p>
-                                    {(product.priceDp ?? product.priceSrp ?? product.prodpv) && (
-                                      <div className="mt-2 flex flex-wrap items-center gap-2">
-                                        {product.priceDp !== null && (
-                                          <span className="text-sm font-semibold text-orange-600">
-                                            {formatPrice(product.priceDp)}
+                              <div className="flex items-center gap-4">
+                                <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-2xl bg-slate-100">
+                                  {product.image ? (
+                                    <Image src={product.image} alt={product.name} fill className="object-cover" />
+                                  ) : (
+                                    <span className="flex h-full w-full items-center justify-center text-[11px] font-semibold text-slate-400">
+                                      AF
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <p className="truncate text-sm font-semibold uppercase tracking-wide text-slate-800">
+                                    {product.name}
+                                  </p>
+                                  <p className="mt-1 text-xs text-slate-500">Search match for &quot;{searchModalQuery.trim()}&quot;</p>
+                                  {(product.priceDp ?? product.priceSrp ?? product.prodpv) && (
+                                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                                      {product.priceDp !== null && (
+                                        <span className="text-sm font-semibold text-orange-600">
+                                          {formatPrice(product.priceDp)}
+                                        </span>
+                                      )}
+                                      {product.priceSrp !== null &&
+                                        product.priceDp !== null &&
+                                        product.priceSrp > product.priceDp && (
+                                          <span className="text-xs text-slate-400 line-through">
+                                            {formatPrice(product.priceSrp)}
                                           </span>
                                         )}
-                                        {product.priceSrp !== null &&
-                                          product.priceDp !== null &&
-                                          product.priceSrp > product.priceDp && (
-                                            <span className="text-xs text-slate-400 line-through">
-                                              {formatPrice(product.priceSrp)}
-                                            </span>
-                                          )}
-                                        {product.prodpv !== null && product.prodpv > 0 && (
-                                          <span className="rounded-full border border-blue-100 bg-blue-50 px-2 py-0.5 text-[11px] font-semibold text-blue-600">
-                                            PV {product.prodpv.toLocaleString('en-PH', { maximumFractionDigits: 2 })}
-                                          </span>
-                                        )}
-                                      </div>
-                                    )}
-                                  </div>
-                                </Card.Content>
-                              </Card>
+                                      {product.prodpv !== null && product.prodpv > 0 && (
+                                        <span className="rounded-full border border-blue-100 bg-blue-50 px-2 py-0.5 text-[11px] font-semibold text-blue-600">
+                                          PV {product.prodpv.toLocaleString('en-PH', { maximumFractionDigits: 2 })}
+                                        </span>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
                             </Link>
                           ))}
                         </div>

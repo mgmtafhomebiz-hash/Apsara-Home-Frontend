@@ -8,15 +8,17 @@ import StickyAddToCart from './StickyAddToCart';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { setStoredReferralCode } from '@/libs/referral';
 import { useSession } from 'next-auth/react';
+import type { ProductReviewSummary } from '@/store/api/productsApi';
 
 interface ProductPageClientProps {
     product: CategoryProduct;
     categoryLabel: string;
+    reviewSummary?: ProductReviewSummary | null;
 }
 
 type VariantOption = NonNullable<CategoryProduct['variants']>[number];
 
-const ProductPageClient = ({ product, categoryLabel }: ProductPageClientProps) => {
+const ProductPageClient = ({ product, categoryLabel, reviewSummary }: ProductPageClientProps) => {
     const [selectedVariant, setSelectedVariant] = useState<VariantOption | undefined>(undefined);
     const galleryKey = selectedVariant?.images?.join('|') || product.images?.join('|') || product.image;
     const router = useRouter();
@@ -76,7 +78,12 @@ const ProductPageClient = ({ product, categoryLabel }: ProductPageClientProps) =
                     selectedVariantImages={selectedVariant?.images}
                     preferredActiveImage={selectedVariant?.images?.[0]}
                 />
-                <ProductInfo product={product} categoryLabel={categoryLabel} onVariantChange={handleVariantChange} />
+                <ProductInfo
+                    product={product}
+                    categoryLabel={categoryLabel}
+                    onVariantChange={handleVariantChange}
+                    reviewSummary={reviewSummary ?? undefined}
+                />
             </div>
             <StickyAddToCart product={product} selectedVariant={selectedVariant} />
         </>

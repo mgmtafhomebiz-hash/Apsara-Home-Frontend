@@ -69,6 +69,7 @@ export type CustomerOrderStatus =
 
 export interface CustomerOrderItem {
   id: number
+  product_id?: number | null
   name: string
   image: string
   quantity: number
@@ -149,6 +150,14 @@ export const paymentApi = baseApi.injectEndpoints({
         },
       }),
     }),
+    confirmOrder: builder.mutation<{ message: string }, { id: number; rating: number; review: string }>({
+      query: ({ id, rating, review }) => ({
+        url: `/api/orders/${id}/confirm`,
+        method: 'POST',
+        body: { rating, review },
+      }),
+      invalidatesTags: ['Orders'],
+    }),
   }),
 })
 
@@ -158,4 +167,5 @@ export const {
   useValidateVoucherMutation,
   useGetCheckoutHistoryQuery,
   useLazyTrackGuestOrderQuery,
+  useConfirmOrderMutation,
 } = paymentApi

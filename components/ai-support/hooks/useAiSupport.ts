@@ -134,7 +134,7 @@ export function useAiSupport() {
           if (data.status === 'ok') {
             if (data.reply) next.push({ kind: 'text', role: 'bot', text: data.reply });
             if (data.product_cards?.length)
-              next.push({ kind: 'cards', cards: data.product_cards.slice(0, 10) });
+              next.push({ kind: 'cards', cards: data.product_cards });
             if (data.brand_cards?.length)
               next.push({
                 kind: 'brand_cards',
