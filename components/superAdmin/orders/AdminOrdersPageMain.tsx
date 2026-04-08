@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
+import { Button, Card, Chip, Label, ListBox, ListBoxItem, Pagination, SearchField, Select } from '@heroui/react'
 import { useSession } from 'next-auth/react'
 import { useSearchParams } from 'next/navigation'
 import {
@@ -21,7 +22,6 @@ import {
   useUpdateAdminOrderShipmentStatusMutation,
 } from '@/store/api/adminOrdersApi'
 import { showErrorToast, showSuccessToast } from '@/libs/toast'
-import AdminPagination from '@/components/superAdmin/AdminPagination'
 
 /* ─── constants ────────────────────────────────────────────── */
 
@@ -104,6 +104,18 @@ const formatDuration = (minutes: number | null | undefined) => {
   return hrs <= 0 ? `${mins}m` : `${hrs}h ${mins}m`
 }
 
+const getPaginationPages = (currentPage: number, totalPages: number) => {
+  if (totalPages <= 7) {
+    return Array.from({ length: totalPages }, (_, index) => index + 1)
+  }
+
+  const pages = new Set<number>([1, totalPages, currentPage, currentPage - 1, currentPage + 1])
+
+  return Array.from(pages)
+    .filter((page) => page >= 1 && page <= totalPages)
+    .sort((first, second) => first - second)
+}
+
 const getInitials = (name?: string | null) => {
   if (!name) return '?'
   return name.split(' ').map(p => p[0]).join('').slice(0, 2).toUpperCase()
@@ -160,19 +172,63 @@ function StatCard({ label, value, bg, text, border, icon }: {
   label: string; value: number; bg: string; text: string; border: string; icon: React.ReactNode
 }) {
   return (
-    <div className={`bg-white border ${border} rounded-2xl p-4 shadow-sm`}>
-      <div className="flex items-center gap-3 mb-3">
-        <div className={`h-9 w-9 rounded-xl ${bg} ${text} flex items-center justify-center shrink-0`}>
-          {icon}
+    <Card variant="default" className={`border ${border} bg-white shadow-none`}>
+      <Card.Content className="px-4 py-4">
+        <div className="mb-3 flex items-center gap-3">
+          <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${bg} ${text}`}>
+            {icon}
+          </div>
+          <p className="text-[11px] font-medium leading-tight text-slate-400">{label}</p>
         </div>
-        <p className="text-[11px] text-slate-400 font-medium leading-tight">{label}</p>
-      </div>
-      <p className="text-xl font-bold text-slate-800">{value}</p>
-    </div>
+        <p className="text-xl font-bold text-slate-800">{value}</p>
+      </Card.Content>
+    </Card>
   )
 }
 
 /* ─── main ─────────────────────────────────────────────────── */
+
+function AdminOrderSelect({
+  ariaLabel,
+  value,
+  options,
+  isDisabled,
+  onChange,
+}: {
+  ariaLabel: string
+  value: string
+  options: Array<{ value: string; label: string }>
+  isDisabled?: boolean
+  onChange: (value: string) => void
+}) {
+  const selectedLabel = options.find((option) => option.value === value)?.label ?? options[0]?.label ?? 'Select'
+
+  return (
+    <Select
+      aria-label={ariaLabel}
+      selectedKey={value}
+      onSelectionChange={(key) => {
+        if (key != null) onChange(String(key))
+      }}
+      isDisabled={isDisabled}
+      className="w-full"
+    >
+      <Select.Trigger className="flex min-h-10 w-full items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 text-left text-xs text-slate-700 transition-all duration-200 hover:bg-white focus:border-teal-300 focus:bg-white disabled:cursor-not-allowed disabled:opacity-50">
+        <span className="truncate">{selectedLabel}</span>
+        <Select.Indicator className="h-4 w-4 text-slate-400" />
+      </Select.Trigger>
+      <Select.Popover className="min-w-[var(--trigger-width)]">
+        <ListBox className="p-1">
+          {options.map((option) => (
+            <ListBoxItem id={option.value} key={option.value}>
+              {option.label}
+            </ListBoxItem>
+          ))}
+        </ListBox>
+      </Select.Popover>
+    </Select>
+  )
+}
 
 interface Props { initialFilter?: string }
 
@@ -410,7 +466,13 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
     setBusyId(id)
     try {
       const result = await pushToZq({ id }).unwrap()
-      showSuccessToast(result.message || 'Order pushed to ZQ.')
+      if (result.zq) {
+        setPayloadPreview({
+          checkoutId: visibleOrders.find((order) => order.id === id)?.checkout_id ?? `Order #${id}`,
+          payload: result.zq,
+        })
+      }
+      showSuccessToast(result.message || 'Order pushed to ZQ successfully.')
     } catch (err: unknown) {
       showErrorToast(extractApiError(err, 'Failed to push order to ZQ.'))
     } finally { setBusyId(null) }
@@ -420,7 +482,13 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
     setBusyId(id)
     try {
       const result = await fetchZqDetail({ id }).unwrap()
-      showSuccessToast(result.message || 'ZQ detail fetched.')
+      if (result.zq) {
+        setPayloadPreview({
+          checkoutId: visibleOrders.find((order) => order.id === id)?.checkout_id ?? `Order #${id}`,
+          payload: result.zq,
+        })
+      }
+      showSuccessToast(result.message || 'ZQ order detail fetched successfully.')
     } catch (err: unknown) {
       showErrorToast(extractApiError(err, 'Failed to fetch ZQ detail.'))
     } finally { setBusyId(null) }
@@ -430,13 +498,22 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
     setBusyId(id)
     try {
       const result = await syncZqTracking({ id }).unwrap()
-      showSuccessToast(result.message || 'ZQ tracking synced.')
+      if (result.zq) {
+        setPayloadPreview({
+          checkoutId: visibleOrders.find((order) => order.id === id)?.checkout_id ?? `Order #${id}`,
+          payload: result.zq,
+        })
+      }
+      showSuccessToast(result.message || 'ZQ tracking synced successfully.')
     } catch (err: unknown) {
       showErrorToast(extractApiError(err, 'Failed to sync ZQ tracking.'))
     } finally { setBusyId(null) }
   }
 
   const counts = data?.counts
+  const currentPage = data?.meta?.current_page ?? 1
+  const totalPages = data?.meta?.last_page ?? 1
+  const paginationPages = useMemo(() => getPaginationPages(currentPage, totalPages), [currentPage, totalPages])
 
   return (
     <div className="space-y-6">
@@ -497,10 +574,10 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="bg-white border border-slate-100 rounded-2xl shadow-sm p-4 flex flex-wrap items-center gap-3"
+        className="rounded-3xl border border-slate-100 bg-white/95 p-4 shadow-sm"
       >
         {/* Search */}
-        <div className="relative flex-1 min-w-50">
+        <div className="hidden relative flex-1 min-w-50">
           <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
@@ -514,6 +591,7 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
 
         {/* Sort */}
         <select
+          hidden
           value={sortBy}
           onChange={e => setSortBy(e.target.value as typeof sortBy)}
           className="text-sm border border-slate-200 rounded-xl px-3 py-2.5 bg-slate-50 text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-400 transition"
@@ -524,7 +602,7 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
         </select>
 
         {/* Overdue toggle */}
-        <label className="flex items-center gap-2 cursor-pointer select-none">
+        <label className="hidden items-center gap-2 cursor-pointer select-none">
           <div
             onClick={() => setOverdueFirst(v => !v)}
             className={`relative h-5 w-9 rounded-full transition-colors cursor-pointer ${overdueFirst ? 'bg-teal-500' : 'bg-slate-200'}`}
@@ -535,9 +613,62 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
         </label>
 
         {/* Active filter pill */}
-        <span className="text-xs text-slate-400 bg-slate-50 border border-slate-100 px-2.5 py-1 rounded-full font-medium ml-auto">
+        <span className="hidden text-xs text-slate-400 bg-slate-50 border border-slate-100 px-2.5 py-1 rounded-full font-medium ml-auto">
           {FILTER_LABELS[effectiveFilter] ?? 'All Orders'}
         </span>
+        <div className="flex w-full flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="w-full max-w-2xl">
+            <SearchField
+              aria-label="Search admin orders"
+              value={search}
+              onChange={(value) => {
+                setSearch(value)
+                setPage(1)
+              }}
+              className="w-full"
+            >
+              <Label className="sr-only">Search admin orders</Label>
+              <SearchField.Group className="flex min-h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 transition-all duration-200 focus-within:border-teal-300 focus-within:bg-white">
+                <SearchField.SearchIcon className="h-4 w-4 text-slate-400" />
+                <SearchField.Input
+                  placeholder="Search checkout ID, customer, or product..."
+                  className="flex-1 border-none bg-transparent p-0 text-sm text-slate-700 outline-none placeholder:text-slate-400"
+                />
+                {search ? <SearchField.ClearButton className="text-slate-400 transition hover:text-slate-600" /> : null}
+              </SearchField.Group>
+            </SearchField>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="min-w-[190px]">
+              <AdminOrderSelect
+                ariaLabel="Sort admin orders"
+                value={sortBy}
+                options={[
+                  { value: 'default', label: 'Sort: Default' },
+                  { value: 'customer_az', label: 'Customer A-Z' },
+                  { value: 'amount_low_high', label: 'Amount: Low to High' },
+                ]}
+                onChange={(value) => setSortBy(value as typeof sortBy)}
+              />
+            </div>
+
+            <Button
+              size="sm"
+              variant="tertiary"
+              onPress={() => setOverdueFirst((value) => !value)}
+              className={overdueFirst
+                ? 'border border-teal-200 bg-teal-50 px-3.5 py-2 text-xs font-semibold text-teal-700'
+                : 'border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-600'}
+            >
+              {overdueFirst ? 'Overdue First: On' : 'Overdue First: Off'}
+            </Button>
+
+            <Chip size="sm" variant="soft" className="border border-slate-200 bg-slate-50 text-slate-500">
+              {FILTER_LABELS[effectiveFilter] ?? 'All Orders'}
+            </Chip>
+          </div>
+        </div>
       </motion.div>
 
       {/* ── Error ── */}
@@ -584,9 +715,9 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
           <div className="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden">
             <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
               <h2 className="text-sm font-bold text-slate-800">Order Queue</h2>
-              <span className="text-xs text-slate-400 bg-slate-50 border border-slate-100 px-2.5 py-1 rounded-full font-medium">
+              <Chip size="sm" variant="soft" className="border border-slate-100 bg-slate-50 text-slate-500">
                 {visibleOrders.length} orders
-              </span>
+              </Chip>
             </div>
 
             <div className="overflow-x-auto">
@@ -666,20 +797,20 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
 
                           {/* Approval badge */}
                           <td className="px-4 py-3.5">
-                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[11px] font-semibold ${approval.badge}`}>
-                              <span className={`h-1.5 w-1.5 rounded-full ${approval.dot}`} />
+                            <Chip size="sm" variant="soft" className={`border text-[11px] font-semibold ${approval.badge}`}>
+                              <span className={`mr-1.5 inline-block h-1.5 w-1.5 rounded-full ${approval.dot}`} />
                               {approval.label}
-                            </span>
+                            </Chip>
                           </td>
 
                           {/* SLA */}
                           <td className="px-4 py-3.5">
                             {sla ? (
                               <div className="space-y-1">
-                                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[11px] font-semibold ${sla.badge}`}>
-                                  <span className={`h-1.5 w-1.5 rounded-full ${sla.dot}`} />
+                                <Chip size="sm" variant="soft" className={`border text-[11px] font-semibold ${sla.badge}`}>
+                                  <span className={`mr-1.5 inline-block h-1.5 w-1.5 rounded-full ${sla.dot}`} />
                                   {sla.label}
-                                </span>
+                                </Chip>
                                 {order.sla?.state === 'overdue' && (
                                   <p className="text-[11px] text-red-500">+{formatDuration(order.sla?.overdue_minutes)}</p>
                                 )}
@@ -698,62 +829,66 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                           {/* Tracking select */}
                           <td className="px-4 py-3.5">
                             <div className="space-y-1.5">
-                              <select
-                                disabled={isBusy || !canTrackThisOrder}
+                              <AdminOrderSelect
+                                ariaLabel={`Courier for order ${order.checkout_id}`}
                                 value={courierByOrder[order.id] ?? (((order.courier ?? '').toLowerCase() === 'xde' ? 'xde' : 'jnt') as AdminCourier)}
-                                onChange={e => setCourierByOrder(prev => ({ ...prev, [order.id]: e.target.value as AdminCourier }))}
-                                className="w-full text-xs border border-slate-200 rounded-xl px-2.5 py-2 bg-slate-50 text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500/30 disabled:opacity-50 transition"
-                              >
-                                {COURIER_OPTIONS.map(o => (
-                                  <option key={o.value} value={o.value}>{o.label}</option>
-                                ))}
-                              </select>
-                              <select
-                                disabled={isBusy || !canTrackThisOrder || isCourierBooked}
+                                options={COURIER_OPTIONS}
+                                isDisabled={isBusy || !canTrackThisOrder}
+                                onChange={(value) => setCourierByOrder(prev => ({ ...prev, [order.id]: value as AdminCourier }))}
+                              />
+                              <AdminOrderSelect
+                                ariaLabel={`Shipment status for order ${order.checkout_id}`}
                                 value={(order.shipment_status as AdminShipmentStatus | undefined) ?? 'for_pickup'}
-                                onChange={e => handleShipmentStatusChange(order.id, e.target.value as AdminShipmentStatus)}
-                                className="text-xs border border-slate-200 rounded-xl px-2.5 py-2 bg-slate-50 text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500/30 disabled:opacity-50 transition"
-                              >
-                                {SHIPMENT_STATUS_OPTIONS.map(o => (
-                                  <option key={o.value} value={o.value}>{o.label}</option>
-                                ))}
-                              </select>
+                                options={SHIPMENT_STATUS_OPTIONS}
+                                isDisabled={isBusy || !canTrackThisOrder || isCourierBooked}
+                                onChange={(value) => handleShipmentStatusChange(order.id, value as AdminShipmentStatus)}
+                              />
                               <div className="flex flex-wrap gap-1.5">
-                                <button
-                                  disabled={isBusy || !canTrackThisOrder || isCourierCancelled}
-                                  onClick={() => handleBookCourier(order.id)}
-                                  className="px-2.5 py-1.5 rounded-lg text-[11px] font-semibold bg-teal-50 text-teal-700 border border-teal-200 hover:bg-teal-100 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                                <Button
+                                  size="sm"
+                                  variant="tertiary"
+                                  isDisabled={isBusy || !canTrackThisOrder || isCourierCancelled}
+                                  onPress={() => handleBookCourier(order.id)}
+                                  className="border border-teal-200 bg-teal-50 px-2.5 py-1.5 text-[11px] font-semibold text-teal-700 transition hover:bg-teal-100"
                                 >
                                   Book
-                                </button>
-                                <button
-                                  disabled={isBusy || !canTrackThisOrder || !order.tracking_no || isCourierCancelled}
-                                  onClick={() => handleTrackCourier(order.id)}
-                                  className="px-2.5 py-1.5 rounded-lg text-[11px] font-semibold bg-slate-50 text-slate-700 border border-slate-200 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="tertiary"
+                                  isDisabled={isBusy || !canTrackThisOrder || !order.tracking_no || isCourierCancelled}
+                                  onPress={() => handleTrackCourier(order.id)}
+                                  className="border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-[11px] font-semibold text-slate-700 transition hover:bg-slate-100"
                                 >
                                   Track
-                                </button>
-                                <button
-                                  disabled={isBusy || !canTrackThisOrder || courierByOrder[order.id] !== 'xde' || !order.tracking_no || isCourierCancelled}
-                                  onClick={() => handleOpenWaybill(order.id)}
-                                  className="px-2.5 py-1.5 rounded-lg text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="tertiary"
+                                  isDisabled={isBusy || !canTrackThisOrder || courierByOrder[order.id] !== 'xde' || !order.tracking_no || isCourierCancelled}
+                                  onPress={() => handleOpenWaybill(order.id)}
+                                  className="border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-[11px] font-semibold text-blue-700 transition hover:bg-blue-100"
                                 >
                                   A6 Waybill
-                                </button>
-                                <button
-                                  disabled={isBusy || !canTrackThisOrder || courierByOrder[order.id] !== 'xde' || !order.tracking_no || order.shipment_status !== 'delivered'}
-                                  onClick={() => handleOpenEpod(order.id)}
-                                  className="px-2.5 py-1.5 rounded-lg text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="tertiary"
+                                  isDisabled={isBusy || !canTrackThisOrder || courierByOrder[order.id] !== 'xde' || !order.tracking_no || order.shipment_status !== 'delivered'}
+                                  onPress={() => handleOpenEpod(order.id)}
+                                  className="border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-[11px] font-semibold text-amber-700 transition hover:bg-amber-100"
                                 >
                                   EPOD
-                                </button>
-                                <button
-                                  disabled={isBusy || !canTrackThisOrder || courierByOrder[order.id] !== 'xde' || !order.tracking_no || isCourierCancelled}
-                                  onClick={() => handleCancelCourier(order.id)}
-                                  className="px-2.5 py-1.5 rounded-lg text-[11px] font-semibold bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="tertiary"
+                                  isDisabled={isBusy || !canTrackThisOrder || courierByOrder[order.id] !== 'xde' || !order.tracking_no || isCourierCancelled}
+                                  onPress={() => handleCancelCourier(order.id)}
+                                  className="border border-red-200 bg-red-50 px-2.5 py-1.5 text-[11px] font-semibold text-red-700 transition hover:bg-red-100"
                                 >
                                   Cancel
-                                </button>
+                                </Button>
                               </div>
                               {order.courier || order.tracking_no || order.shipment_status ? (
                                 <div className="space-y-2 text-[11px] text-slate-500 leading-relaxed">
@@ -784,9 +919,10 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                                       <p className="text-[10px] font-bold uppercase tracking-wide text-teal-700">Tracking Number</p>
                                       <div className="mt-1 flex items-center gap-2">
                                         <p className="min-w-0 flex-1 break-all text-sm font-bold text-slate-900">{order.tracking_no}</p>
-                                        <button
-                                          type="button"
-                                          onClick={async () => {
+                                        <Button
+                                          size="sm"
+                                          variant="tertiary"
+                                          onPress={async () => {
                                             try {
                                               await copyText(order.tracking_no as string)
                                               showSuccessToast('Tracking number copied.')
@@ -795,21 +931,22 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                                               showErrorToast(message)
                                             }
                                           }}
-                                          className="shrink-0 rounded-lg border border-teal-200 bg-white px-2 py-1 text-[10px] font-semibold text-teal-700 transition hover:bg-teal-100"
+                                          className="shrink-0 border border-teal-200 bg-white px-2 py-1 text-[10px] font-semibold text-teal-700 transition hover:bg-teal-100"
                                         >
                                           Copy
-                                        </button>
+                                        </Button>
                                       </div>
                                     </div>
                                   ) : null}
                                   {order.shipment_status ? <p className="capitalize">Shipment: {order.shipment_status.replace(/_/g, ' ')}</p> : null}
-                                  <button
-                                    type="button"
-                                    onClick={() => setPayloadPreview({ checkoutId: order.checkout_id, payload: order.shipment_payload ?? null })}
-                                    className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-[10px] font-semibold text-slate-700 transition hover:bg-slate-100"
+                                  <Button
+                                    size="sm"
+                                    variant="tertiary"
+                                    onPress={() => setPayloadPreview({ checkoutId: order.checkout_id, payload: order.shipment_payload ?? null })}
+                                    className="border border-slate-200 bg-slate-50 px-2 py-1 text-[10px] font-semibold text-slate-700 transition hover:bg-slate-100"
                                   >
                                     {order.shipment_payload ? 'View Payload' : 'No Payload Yet'}
-                                  </button>
+                                  </Button>
                                 </div>
                               ) : (
                                 <p className="text-[11px] text-slate-300">
@@ -824,75 +961,43 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                             {canApproveThisOrder ? (
                               <div className="flex flex-col items-start gap-2">
                                 <div className="flex items-center gap-1.5">
-                                  <button
-                                    disabled={isBusy}
-                                    onClick={() => handlePushToZq(order.id)}
-                                    className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-violet-50 text-violet-700 border border-violet-200 hover:bg-violet-100 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-                                  >
+                                  <Button size="sm" variant="tertiary" isDisabled={isBusy} onPress={() => handlePushToZq(order.id)} className="border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-semibold text-violet-700 transition hover:bg-violet-100">
                                     Push ZQ
-                                  </button>
-                                  <button
-                                    disabled={isBusy}
-                                    onClick={() => handleApprove(order.id)}
-                                    className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-                                  >
+                                  </Button>
+                                  <Button size="sm" variant="tertiary" isDisabled={isBusy} onPress={() => handleApprove(order.id)} className="border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100">
                                     Approve
-                                  </button>
-                                  <button
-                                    disabled={isBusy}
-                                    onClick={() => handleReject(order.id)}
-                                    className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-                                  >
+                                  </Button>
+                                  <Button size="sm" variant="tertiary" isDisabled={isBusy} onPress={() => handleReject(order.id)} className="border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-100">
                                     Reject
-                                  </button>
+                                  </Button>
                                 </div>
                                 <div className="flex items-center gap-1.5">
-                                  <button
-                                    disabled={isBusy}
-                                    onClick={() => handleFetchZqDetail(order.id)}
-                                    className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-50 text-slate-700 border border-slate-200 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-                                  >
+                                  <Button size="sm" variant="tertiary" isDisabled={isBusy} onPress={() => handleFetchZqDetail(order.id)} className="border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-100">
                                     ZQ Detail
-                                  </button>
-                                  <button
-                                    disabled={isBusy}
-                                    onClick={() => handleSyncZqTracking(order.id)}
-                                    className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-sky-50 text-sky-700 border border-sky-200 hover:bg-sky-100 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-                                  >
+                                  </Button>
+                                  <Button size="sm" variant="tertiary" isDisabled={isBusy} onPress={() => handleSyncZqTracking(order.id)} className="border border-sky-200 bg-sky-50 px-3 py-1.5 text-xs font-semibold text-sky-700 transition hover:bg-sky-100">
                                     ZQ Tracking
-                                  </button>
+                                  </Button>
                                 </div>
                               </div>
                             ) : order.approval_status === 'approved' ? (
                               <div className="flex flex-col items-start gap-2">
-                                <button
-                                  disabled={isBusy}
-                                  onClick={() => handlePushToZq(order.id)}
-                                  className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-violet-50 text-violet-700 border border-violet-200 hover:bg-violet-100 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-                                >
+                                <Button size="sm" variant="tertiary" isDisabled={isBusy} onPress={() => handlePushToZq(order.id)} className="border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-semibold text-violet-700 transition hover:bg-violet-100">
                                   Push ZQ
-                                </button>
+                                </Button>
                                 <div className="flex items-center gap-1.5">
-                                  <button
-                                    disabled={isBusy}
-                                    onClick={() => handleFetchZqDetail(order.id)}
-                                    className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-50 text-slate-700 border border-slate-200 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-                                  >
+                                  <Button size="sm" variant="tertiary" isDisabled={isBusy} onPress={() => handleFetchZqDetail(order.id)} className="border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-100">
                                     ZQ Detail
-                                  </button>
-                                  <button
-                                    disabled={isBusy}
-                                    onClick={() => handleSyncZqTracking(order.id)}
-                                    className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-sky-50 text-sky-700 border border-sky-200 hover:bg-sky-100 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-                                  >
+                                  </Button>
+                                  <Button size="sm" variant="tertiary" isDisabled={isBusy} onPress={() => handleSyncZqTracking(order.id)} className="border border-sky-200 bg-sky-50 px-3 py-1.5 text-xs font-semibold text-sky-700 transition hover:bg-sky-100">
                                     ZQ Tracking
-                                  </button>
+                                  </Button>
                                 </div>
                               </div>
                             ) : (
-                              <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-500">
+                              <Chip size="sm" variant="soft" className="border border-slate-200 bg-slate-50 text-[11px] font-semibold text-slate-500">
                                 {order.approval_status === 'pending_approval' ? 'Awaiting approval' : 'No actions'}
-                              </span>
+                              </Chip>
                             )}
                           </td>
                         </tr>
@@ -915,14 +1020,56 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
               </table>
             </div>
 
-            <AdminPagination
-              currentPage={data?.meta?.current_page ?? 1}
-              totalPages={data?.meta?.last_page ?? 1}
-              from={data?.meta?.from}
-              to={data?.meta?.to}
-              totalRecords={data?.meta?.total ?? 0}
-              onPageChange={setPage}
-            />
+            {totalPages > 1 && (
+              <div className="border-t border-slate-100 px-4 py-3">
+                <Pagination size="sm" className="w-full justify-between gap-3">
+                  <Pagination.Summary>
+                    {(data?.meta?.from ?? 0).toLocaleString()} to {(data?.meta?.to ?? 0).toLocaleString()} of {(data?.meta?.total ?? 0).toLocaleString()} results
+                  </Pagination.Summary>
+                  <Pagination.Content>
+                    <Pagination.Item>
+                      <Pagination.Previous
+                        isDisabled={currentPage === 1}
+                        onPress={() => setPage(Math.max(1, currentPage - 1))}
+                      >
+                        <Pagination.PreviousIcon />
+                        Prev
+                      </Pagination.Previous>
+                    </Pagination.Item>
+
+                    {paginationPages.map((pageNumber, index) => {
+                      const previousPage = paginationPages[index - 1]
+                      const shouldShowEllipsis = typeof previousPage === 'number' && pageNumber - previousPage > 1
+
+                      return (
+                        <span key={`fragment-${pageNumber}`} className="contents">
+                          {shouldShowEllipsis && (
+                            <Pagination.Item>
+                              <Pagination.Ellipsis />
+                            </Pagination.Item>
+                          )}
+                          <Pagination.Item>
+                            <Pagination.Link isActive={pageNumber === currentPage} onPress={() => setPage(pageNumber)}>
+                              {pageNumber}
+                            </Pagination.Link>
+                          </Pagination.Item>
+                        </span>
+                      )
+                    })}
+
+                    <Pagination.Item>
+                      <Pagination.Next
+                        isDisabled={currentPage === totalPages}
+                        onPress={() => setPage(Math.min(totalPages, currentPage + 1))}
+                      >
+                        Next
+                        <Pagination.NextIcon />
+                      </Pagination.Next>
+                    </Pagination.Item>
+                  </Pagination.Content>
+                </Pagination>
+              </div>
+            )}
           </div>
         </motion.div>
       )}

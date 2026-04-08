@@ -117,15 +117,15 @@ body {
 }
 
 @keyframes google-line-primary {
-  0% { transform: translateX(-140%) scaleX(0.2); }
-  45% { transform: translateX(18%) scaleX(0.95); }
-  100% { transform: translateX(140%) scaleX(0.25); }
+  0% { transform: translateX(-165%) scaleX(0.28); }
+  42% { transform: translateX(-10%) scaleX(1.08); }
+  100% { transform: translateX(145%) scaleX(0.42); }
 }
 
 @keyframes google-line-secondary {
-  0% { transform: translateX(-180%) scaleX(0.15); }
-  55% { transform: translateX(-55%) scaleX(0.45); }
-  100% { transform: translateX(130%) scaleX(0.3); }
+  0% { transform: translateX(-220%) scaleX(0.2); }
+  52% { transform: translateX(-30%) scaleX(0.72); }
+  100% { transform: translateX(150%) scaleX(0.4); }
 }
 
 .google-loading-bar {
@@ -142,7 +142,7 @@ body {
   content: "";
   position: absolute;
   inset: 0 auto 0 0;
-  width: 45%;
+  width: 68%;
   border-radius: inherit;
   transform-origin: left center;
   will-change: transform;
@@ -150,13 +150,13 @@ body {
 
 .google-loading-bar::before {
   background: linear-gradient(90deg, rgba(45, 212, 191, 0.18), rgba(20, 184, 166, 0.96), rgba(34, 211, 238, 0.82));
-  animation: google-line-primary 1.7s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+  animation: google-line-primary 1.8s cubic-bezier(0.65, 0, 0.35, 1) infinite;
 }
 
 .google-loading-bar::after {
   background: linear-gradient(90deg, rgba(96, 165, 250, 0.12), rgba(45, 212, 191, 0.82), rgba(16, 185, 129, 0.34));
-  animation: google-line-secondary 1.7s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-  animation-delay: 0.18s;
+  animation: google-line-secondary 1.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  animation-delay: 0.12s;
 }
 
 .google-loading-bar--violet::before {
