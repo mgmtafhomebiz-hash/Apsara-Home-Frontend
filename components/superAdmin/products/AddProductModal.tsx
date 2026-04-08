@@ -1200,10 +1200,17 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
         i === index
           ? {
               ...item,
-              pv_extra_styles: dedupeVariantValues([
-                ...item.pv_extra_styles,
-                ...(normalizeVariantLabel(item.pv_style).toLowerCase() === value.toLowerCase() ? [] : [value]),
-              ]),
+              ...(item.pv_style.trim()
+                ? {
+                    pv_extra_styles: dedupeVariantValues([
+                      ...item.pv_extra_styles,
+                      ...(normalizeVariantLabel(item.pv_style).toLowerCase() === value.toLowerCase() ? [] : [value]),
+                    ]),
+                  }
+                : {
+                    pv_style: value,
+                    pv_extra_styles: dedupeVariantValues(item.pv_extra_styles),
+                  }),
             }
           : item,
       ),
@@ -1211,12 +1218,19 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
     setNewStyleInputs((prev) => ({ ...prev, [index]: '' }))
   }
 
-  const removeVariantExtraStyle = (variantIndex: number, styleIndex: number) =>
+  const removeVariantStyle = (variantIndex: number, styleIndex: number) =>
     setVariants((prev) =>
       prev.map((item, i) =>
-        i === variantIndex
-          ? { ...item, pv_extra_styles: item.pv_extra_styles.filter((_, si) => si !== styleIndex) }
-          : item,
+        i !== variantIndex
+          ? item
+          : (() => {
+              const nextStyles = getAllVariantStyles(item).filter((_, si) => si !== styleIndex)
+              return {
+                ...item,
+                pv_style: nextStyles[0] ?? '',
+                pv_extra_styles: nextStyles.slice(1),
+              }
+            })(),
       ),
     )
 
@@ -2223,29 +2237,14 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
                                       </div>
                                       <div className="space-y-1">
                                         <label className="text-[11px] font-semibold text-slate-500 block">Style</label>
-                                        <input value={variant.pv_style} onChange={e => setVariant(index, 'pv_style', e.target.value)} placeholder="e.g. Left Facing, Armless, Recliner" className={variantInputCls}/>
                                         <p className="text-[10px] text-slate-400">Use this for layout/style choices that should not appear under Size.</p>
-                                        {variant.pv_extra_styles.length > 0 && (
-                                          <div className="flex flex-wrap gap-1.5 pt-1">
-                                            {variant.pv_extra_styles.map((style, styleIndex) => (
-                                              <span key={`${style}-${styleIndex}`} className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-2 py-0.5 shadow-sm">
-                                                <span className="text-slate-600 font-medium text-[11px]">{style}</span>
-                                                <button type="button" onClick={() => removeVariantExtraStyle(index, styleIndex)} className="text-slate-300 hover:text-red-500 transition-colors leading-none">
-                                                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12"/>
-                                                  </svg>
-                                                </button>
-                                              </span>
-                                            ))}
-                                          </div>
-                                        )}
-                                        <div className="flex gap-2 items-center pt-1">
+                                        <div className="flex gap-2 items-center">
                                           <input
                                             type="text"
                                             value={newStyleInputs[index] ?? ''}
                                             onChange={e => setNewStyleInputs(prev => ({ ...prev, [index]: e.target.value }))}
                                             onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addVariantExtraStyle(index))}
-                                            placeholder="Add another style value"
+                                            placeholder="e.g. Left Facing, Armless, Recliner"
                                             className={variantInputCls}
                                           />
                                           <button
@@ -2256,6 +2255,20 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
                                             + Add
                                           </button>
                                         </div>
+                                        {getAllVariantStyles(variant).length > 0 && (
+                                          <div className="flex flex-wrap gap-1.5 pt-1">
+                                            {getAllVariantStyles(variant).map((style, styleIndex) => (
+                                              <span key={`${style}-${styleIndex}`} className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-2 py-0.5 shadow-sm">
+                                                <span className="text-slate-600 font-medium text-[11px]">{style}</span>
+                                                <button type="button" onClick={() => removeVariantStyle(index, styleIndex)} className="text-slate-300 hover:text-red-500 transition-colors leading-none">
+                                                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12"/>
+                                                  </svg>
+                                                </button>
+                                              </span>
+                                            ))}
+                                          </div>
+                                        )}
                                       </div>
                                       <div className="space-y-1">
                                         <label className="text-[11px] font-semibold text-slate-500 block">Size</label>

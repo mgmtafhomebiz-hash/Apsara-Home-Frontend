@@ -213,16 +213,6 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange }
         return Array.from(map.entries()).map(([name, image]) => ({ name, image }));
     }, [variantOptions]);
 
-    const styleOptions = useMemo(() => {
-        const map = new Map<string, string | undefined>();
-        variantOptions.forEach((variant) => {
-            const styleName = variant.style?.trim();
-            if (!styleName) return;
-            map.set(styleName, variant.images?.[0]);
-        });
-        return Array.from(map.entries()).map(([name, image]) => ({ name, image }));
-    }, [variantOptions]);
-
     const groupedVariantChoices = useMemo(() => {
         const groupedSkuCounts = variantOptions.reduce((map, variant) => {
             const groupKey = `${getVariantCoreGroupKey(variant)}|${stripVariantColorSuffix(variant.sku, variant.color)}`;
@@ -309,10 +299,32 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange }
     const effectiveSelectedColor = selectedColor || colorOptions[0]?.name || '';
     const hasColorSelector = colorOptions.length > 0;
     const hasPrimaryOptionSelector = variantNameOptions.length > 1;
-    const hasStyleSelector = styleOptions.length > 1;
     const showNewBadge = isNewProduct(product.createdAt);
     const effectiveSelectedPrimaryName = selectedVariantName || (hasPrimaryOptionSelector ? variantNameOptions[0]?.name || '' : '');
-    const effectiveSelectedStyle = selectedStyle || (hasStyleSelector ? styleOptions[0]?.name || '' : '');
+    const displayedStyleOptions = useMemo(() => {
+        let filteredVariants = variantOptions;
+
+        if (hasColorSelector && effectiveSelectedColor) {
+            filteredVariants = filteredVariants.filter((variant) => !variant.color || variant.color === effectiveSelectedColor);
+        }
+
+        if (hasPrimaryOptionSelector && effectiveSelectedPrimaryName) {
+            filteredVariants = filteredVariants.filter((variant) => (variant.name ?? '').trim() === effectiveSelectedPrimaryName);
+        }
+
+        const map = new Map<string, string | undefined>();
+        filteredVariants.forEach((variant) => {
+            const styleName = variant.style?.trim();
+            if (!styleName) return;
+            map.set(styleName, variant.images?.[0]);
+        });
+
+        return Array.from(map.entries()).map(([name, image]) => ({ name, image }));
+    }, [effectiveSelectedColor, effectiveSelectedPrimaryName, hasColorSelector, hasPrimaryOptionSelector, variantOptions]);
+    const hasStyleSelector = displayedStyleOptions.length > 0;
+    const effectiveSelectedStyle = displayedStyleOptions.some((option) => option.name === selectedStyle)
+        ? selectedStyle
+        : (displayedStyleOptions[0]?.name || '');
     const primaryOptionLabel = optionLabels.primaryLabel?.trim() || 'Options';
     const hasSecondarySizeValues = logicalSizeChoices.length > 0;
     const secondaryOptionLabel = optionLabels.secondaryLabel?.trim() || (hasSecondarySizeValues ? 'Size' : '');
@@ -815,11 +827,11 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange }
                 </div>
             )}
 
-            {hasRealVariants && hasStyleSelector && styleOptions.length > 0 && (
+            {hasRealVariants && hasStyleSelector && displayedStyleOptions.length > 0 && (
                 <div className="flex flex-col gap-2">
                     <span className="text-sm font-semibold text-slate-700">Style</span>
                     <div className="flex gap-2 flex-wrap">
-                        {styleOptions.map((styleOption) => (
+                        {displayedStyleOptions.map((styleOption) => (
                             <button
                                 key={styleOption.name}
                                 onClick={() => setSelectedStyle(styleOption.name)}

@@ -89,14 +89,17 @@ const BuyNowOptionsModal = ({
     [product.variants],
   );
   const hasVariantOptions = variantOptions.length > 0;
+  const effectiveVariantSku = variantPickerOpen
+    ? (modalSelectedVariantSku || selectedVariant?.sku || '')
+    : (selectedVariant?.sku || modalSelectedVariantSku || '');
 
   const activeVariant = useMemo(() => {
     if (!hasVariantOptions) return undefined;
-    if (modalSelectedVariantSku) {
-      return variantOptions.find((variant) => (variant.sku ?? '') === modalSelectedVariantSku) ?? selectedVariant ?? variantOptions[0];
+    if (effectiveVariantSku) {
+      return variantOptions.find((variant) => (variant.sku ?? '') === effectiveVariantSku) ?? selectedVariant ?? variantOptions[0];
     }
     return selectedVariant ?? variantOptions[0];
-  }, [hasVariantOptions, modalSelectedVariantSku, selectedVariant, variantOptions]);
+  }, [effectiveVariantSku, hasVariantOptions, selectedVariant, variantOptions]);
 
   const activeSelectedColor = activeVariant?.color ?? selectedColor ?? null;
   const activeSelectedStyle = activeVariant?.style ?? selectedStyle ?? null;
