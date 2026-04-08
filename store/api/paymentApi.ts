@@ -24,6 +24,7 @@ export interface CreateCheckoutSessionPayload {
     product_image?: string
     quantity?: number
     selected_color?: string | null
+    selected_style?: string | null
     selected_size?: string | null
     selected_type?: string | null
     subtotal?: number
@@ -72,6 +73,7 @@ export interface CustomerOrderItem {
   quantity: number
   price: number
   selected_color?: string | null
+  selected_style?: string | null
   selected_size?: string | null
   selected_type?: string | null
 }

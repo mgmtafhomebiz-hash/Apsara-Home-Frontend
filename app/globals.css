@@ -113,8 +113,6 @@ body {
   animation: loading-sweep 1.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
 
-<<<<<<< Updated upstream
-=======
 @keyframes google-line-primary {
   0% { transform: translateX(-160%) scaleX(0.28); }
   42% { transform: translateX(-8%) scaleX(1.08); }
@@ -165,8 +163,6 @@ body {
 .google-loading-bar--violet::after {
   background: linear-gradient(90deg, rgba(196, 181, 253, 0.12), rgba(168, 85, 247, 0.82), rgba(129, 140, 248, 0.34));
 }
-
->>>>>>> Stashed changes
 @keyframes blob {
   0% {
     transform: translate(0px, 0px) scale(1);

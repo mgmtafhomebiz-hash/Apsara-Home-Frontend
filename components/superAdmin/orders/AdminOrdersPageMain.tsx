@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
-import { Button, Card, Chip, ListBox, ListBoxItem, Pagination, Select } from '@heroui/react'
+import { Button, Card, Chip, Label, ListBox, ListBoxItem, Pagination, SearchField, Select } from '@heroui/react'
 import { useSession } from 'next-auth/react'
 import { useSearchParams } from 'next/navigation'
 import {
@@ -447,6 +447,27 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
     } finally { setBusyId(null) }
   }
 
+  const handlePushToZq = async (id: number) => {
+    setBusyId(id)
+    try {
+      showErrorToast(`ZQ push is not available on this branch yet for order #${id}.`)
+    } finally { setBusyId(null) }
+  }
+
+  const handleFetchZqDetail = async (id: number) => {
+    setBusyId(id)
+    try {
+      showErrorToast(`ZQ detail is not available on this branch yet for order #${id}.`)
+    } finally { setBusyId(null) }
+  }
+
+  const handleSyncZqTracking = async (id: number) => {
+    setBusyId(id)
+    try {
+      showErrorToast(`ZQ tracking sync is not available on this branch yet for order #${id}.`)
+    } finally { setBusyId(null) }
+  }
+
   const counts = data?.counts
   const currentPage = data?.meta?.current_page ?? 1
   const totalPages = data?.meta?.last_page ?? 1
@@ -469,8 +490,8 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
             size="sm"
             variant="soft"
             className={canApprove ? 'border border-teal-200 bg-teal-50 text-teal-700' : 'border border-slate-200 bg-slate-100 text-slate-500'}
-            startContent={<span className={`h-1.5 w-1.5 rounded-full ${canApprove ? 'bg-teal-500' : 'bg-slate-400'}`} />}
           >
+            <span className={`mr-1.5 inline-block h-1.5 w-1.5 rounded-full ${canApprove ? 'bg-teal-500' : 'bg-slate-400'}`} />
             {role || 'staff'}
           </Chip>
           <Button variant="tertiary" className="border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition-all hover:border-slate-300 hover:bg-slate-50">
@@ -513,10 +534,10 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm flex flex-wrap items-center gap-3"
+        className="rounded-3xl border border-slate-100 bg-white/95 p-4 shadow-sm"
       >
         {/* Search */}
-        <div className="min-w-50 flex-1">
+        <div className="hidden min-w-50 flex-1">
           <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
@@ -530,6 +551,7 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
 
         {/* Sort */}
         <select
+          hidden
           value={sortBy}
           onChange={e => setSortBy(e.target.value as typeof sortBy)}
           className="text-sm border border-slate-200 rounded-xl px-3 py-2.5 bg-slate-50 text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-400 transition"
@@ -540,7 +562,7 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
         </select>
 
         {/* Overdue toggle */}
-        <label className="flex items-center gap-2 cursor-pointer select-none">
+        <label className="hidden items-center gap-2 cursor-pointer select-none">
           <div
             onClick={() => setOverdueFirst(v => !v)}
             className={`relative h-5 w-9 rounded-full transition-colors cursor-pointer ${overdueFirst ? 'bg-teal-500' : 'bg-slate-200'}`}
@@ -551,9 +573,62 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
         </label>
 
         {/* Active filter pill */}
-        <span className="text-xs text-slate-400 bg-slate-50 border border-slate-100 px-2.5 py-1 rounded-full font-medium ml-auto">
+        <span className="hidden text-xs text-slate-400 bg-slate-50 border border-slate-100 px-2.5 py-1 rounded-full font-medium ml-auto">
           {FILTER_LABELS[effectiveFilter] ?? 'All Orders'}
         </span>
+        <div className="flex w-full flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="w-full max-w-2xl">
+            <SearchField
+              aria-label="Search admin orders"
+              value={search}
+              onChange={(value) => {
+                setSearch(value)
+                setPage(1)
+              }}
+              className="w-full"
+            >
+              <Label className="sr-only">Search admin orders</Label>
+              <SearchField.Group className="flex min-h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 transition-all duration-200 focus-within:border-teal-300 focus-within:bg-white">
+                <SearchField.SearchIcon className="h-4 w-4 text-slate-400" />
+                <SearchField.Input
+                  placeholder="Search checkout ID, customer, or product..."
+                  className="flex-1 border-none bg-transparent p-0 text-sm text-slate-700 outline-none placeholder:text-slate-400"
+                />
+                {search ? <SearchField.ClearButton className="text-slate-400 transition hover:text-slate-600" /> : null}
+              </SearchField.Group>
+            </SearchField>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="min-w-[190px]">
+              <AdminOrderSelect
+                ariaLabel="Sort admin orders"
+                value={sortBy}
+                options={[
+                  { value: 'default', label: 'Sort: Default' },
+                  { value: 'customer_az', label: 'Customer A-Z' },
+                  { value: 'amount_low_high', label: 'Amount: Low to High' },
+                ]}
+                onChange={(value) => setSortBy(value as typeof sortBy)}
+              />
+            </div>
+
+            <Button
+              size="sm"
+              variant="tertiary"
+              onPress={() => setOverdueFirst((value) => !value)}
+              className={overdueFirst
+                ? 'border border-teal-200 bg-teal-50 px-3.5 py-2 text-xs font-semibold text-teal-700'
+                : 'border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-600'}
+            >
+              {overdueFirst ? 'Overdue First: On' : 'Overdue First: Off'}
+            </Button>
+
+            <Chip size="sm" variant="soft" className="border border-slate-200 bg-slate-50 text-slate-500">
+              {FILTER_LABELS[effectiveFilter] ?? 'All Orders'}
+            </Chip>
+          </div>
+        </div>
       </motion.div>
 
       {/* ── Error ── */}
@@ -594,9 +669,7 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
           className="space-y-3"
         >
           {isFetching && (
-            <div className="h-1 w-full overflow-hidden rounded-full bg-slate-100">
-              <div className="h-full w-1/3 animate-pulse rounded-full bg-teal-400" />
-            </div>
+            <div className="google-loading-bar" />
           )}
 
           <div className="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden">
@@ -686,8 +759,8 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                               size="sm"
                               variant="soft"
                               className={`border text-[11px] font-semibold ${approval.badge}`}
-                              startContent={<span className={`h-1.5 w-1.5 rounded-full ${approval.dot}`} />}
                             >
+                              <span className={`mr-1.5 inline-block h-1.5 w-1.5 rounded-full ${approval.dot}`} />
                               {approval.label}
                             </Chip>
                           </td>
@@ -700,8 +773,8 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                                   size="sm"
                                   variant="soft"
                                   className={`border text-[11px] font-semibold ${sla.badge}`}
-                                  startContent={<span className={`h-1.5 w-1.5 rounded-full ${sla.dot}`} />}
                                 >
+                                  <span className={`mr-1.5 inline-block h-1.5 w-1.5 rounded-full ${sla.dot}`} />
                                   {sla.label}
                                 </Chip>
                                 {order.sla?.state === 'overdue' && (
@@ -830,28 +903,6 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                           {/* Actions */}
                           <td className="px-4 py-3.5">
                             {canApproveThisOrder ? (
-<<<<<<< Updated upstream
-                              <div className="flex items-center gap-1.5">
-                                <button
-                                  disabled={isBusy}
-                                  onClick={() => handleApprove(order.id)}
-                                  className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-                                >
-                                  Approve
-                                </button>
-                                <button
-                                  disabled={isBusy}
-                                  onClick={() => handleReject(order.id)}
-                                  className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-                                >
-                                  Reject
-                                </button>
-                              </div>
-                            ) : (
-                              <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-500">
-                                {order.approval_status === 'approved' ? 'Use Tracking' : 'No actions'}
-                              </span>
-=======
                               <div className="flex flex-col items-start gap-2">
                                 <div className="flex items-center gap-1.5">
                                   <Button
@@ -939,7 +990,6 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                               <Chip size="sm" variant="soft" className="border border-slate-200 bg-slate-50 text-[11px] font-semibold text-slate-500">
                                 {order.approval_status === 'pending_approval' ? 'Awaiting approval' : 'No actions'}
                               </Chip>
->>>>>>> Stashed changes
                             )}
                           </td>
                         </tr>

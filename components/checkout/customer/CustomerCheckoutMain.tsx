@@ -221,6 +221,7 @@ const CustomerCheckoutMain = ({ initialCategories = [] }: { initialCategories?: 
                     product_image: checkoutData.product.image,
                     quantity: checkoutData.quantity,
                     selected_color: checkoutData.selectedColor ?? null,
+                    selected_style: checkoutData.selectedStyle ?? null,
                     selected_size: checkoutData.selectedSize ?? null,
                     selected_type: checkoutData.selectedType ?? null,
                     subtotal: checkoutData.subtotal,
