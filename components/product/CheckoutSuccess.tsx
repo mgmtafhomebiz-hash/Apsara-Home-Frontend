@@ -36,6 +36,7 @@ function CheckoutSuccessPage() {
 
     const verify = async (isInitial = false) => {
       const checkoutId = localStorage.getItem('last_checkout_id');
+      const paymentMode = localStorage.getItem('last_checkout_payment_mode') || undefined;
       if (!checkoutId) {
         if (!isMounted) return;
         setError('No checkout reference found in local storage.');
@@ -44,7 +45,7 @@ function CheckoutSuccessPage() {
         return;
       }
       try {
-        const data = await verifyCheckoutSession(checkoutId).unwrap();
+        const data = await verifyCheckoutSession({ checkoutId, paymentMode: paymentMode === 'test' || paymentMode === 'live' ? paymentMode : undefined }).unwrap();
         if (!isMounted) return;
         setResult(data);
 

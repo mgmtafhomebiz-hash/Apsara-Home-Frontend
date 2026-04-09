@@ -1,6 +1,8 @@
 import { baseApi } from './baseApi'
 
 export type CheckoutPaymentMethod = 'online_banking' | 'card' | 'gcash' | 'maya'
+export type CheckoutPaymentMode = 'test' | 'live'
+export type CheckoutOnlineBankingProvider = 'dob' | 'ubp'
 
 export interface CheckoutCustomerPayload {
   name?: string
@@ -15,6 +17,8 @@ export interface CreateCheckoutSessionPayload {
   amount: number
   description: string
   payment_method: CheckoutPaymentMethod
+  payment_mode?: CheckoutPaymentMode
+  online_banking_provider?: CheckoutOnlineBankingProvider
   voucher_code?: string
   customer?: CheckoutCustomerPayload
   order?: {
@@ -36,12 +40,14 @@ export interface CreateCheckoutSessionPayload {
 export interface CreateCheckoutSessionResponse {
   checkout_id: string | null
   checkout_url: string | null
+  payment_mode?: CheckoutPaymentMode | null
 }
 
 export interface VerifyCheckoutSessionResponse {
   checkout_id: string
   status: string | null
   payment_intent_id: string | null
+  payment_mode?: CheckoutPaymentMode | null
   raw?: Record<string, unknown>
 }
 
@@ -120,11 +126,17 @@ export const paymentApi = baseApi.injectEndpoints({
         body,
       }),
     }),
-    verifyCheckoutSession: builder.query<VerifyCheckoutSessionResponse, string>({
-      query: (checkoutId) => ({
-        url: `/api/payments/checkout-session/${checkoutId}`,
-        method: 'GET',
-      }),
+    verifyCheckoutSession: builder.query<VerifyCheckoutSessionResponse, string | { checkoutId: string; paymentMode?: CheckoutPaymentMode }>({
+      query: (arg) => {
+        const checkoutId = typeof arg === 'string' ? arg : arg.checkoutId
+        const paymentMode = typeof arg === 'string' ? undefined : arg.paymentMode
+
+        return {
+          url: `/api/payments/checkout-session/${checkoutId}`,
+          method: 'GET',
+          params: paymentMode ? { payment_mode: paymentMode } : undefined,
+        }
+      },
     }),
     validateVoucher: builder.mutation<ValidateVoucherResponse, { code: string; subtotal?: number }>({
       query: (body) => ({

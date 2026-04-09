@@ -158,17 +158,10 @@ export default function CustomerCheckoutOrderSummary({ checkoutData, loading, on
           <span className="font-extrabold text-orange-500 text-xl">PHP {displayTotal.toLocaleString()}</span>
         </div>
 
-        {handlingFee === 0 ? (
-          <div className="mt-3 flex items-center gap-2 px-3 py-2 bg-green-50 rounded-xl border border-green-100">
-            <svg className="w-3.5 h-3.5 text-green-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            <p className="text-xs text-green-700 font-medium">Free shipping on orders PHP 5,000+</p>
-          </div>
-        ) : (
-          <div className="mt-3 flex items-center gap-2 px-3 py-2 bg-slate-50 rounded-xl border border-slate-100">
-            <svg className="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            <p className="text-xs text-slate-400">Add more to get free shipping (PHP 5,000+)</p>
-          </div>
-        )}
+        <div className="mt-3 flex items-center gap-2 px-3 py-2 bg-green-50 rounded-xl border border-green-100">
+          <svg className="w-3.5 h-3.5 text-green-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          <p className="text-xs text-green-700 font-medium">Shipping fee is temporarily set to PHP 0.00 for checkout testing.</p>
+        </div>
       </div>
 
       {/* Place Order CTA */}

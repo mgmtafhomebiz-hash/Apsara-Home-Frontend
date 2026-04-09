@@ -4,7 +4,7 @@ import Loading from "@/app/loading";
 import Footer from "@/components/layout/Footer";
 import Navbar from "@/components/layout/Navbar";
 import TopBar from "@/components/layout/TopBar";
-import { GuestForm, FormErrors, CustomerCheckoutData, PaymentMethod } from "@/types/CustomerCheckout/types";
+import { GuestForm, FormErrors, CustomerCheckoutData, PaymentMethod, PaymentMode } from "@/types/CustomerCheckout/types";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -13,7 +13,7 @@ import CustomerCheckoutContactForm from "./CustomerCheckoutContactForm";
 import CustomerCheckoutAddressForm from "./CustomerCheckoutAddressForm";
 import CustomerCheckoutPaymentMethod from "./CustomerCheckoutPaymentMethod";
 import CustomerCheckoutOrderSummary from "./CustomerCheckoutOrderSummary";
-import { useCreateCheckoutSessionMutation, useValidateVoucherMutation } from "@/store/api/paymentApi";
+import { CheckoutOnlineBankingProvider, useCreateCheckoutSessionMutation, useValidateVoucherMutation } from "@/store/api/paymentApi";
 import { getStoredReferralCode } from "@/libs/referral";
 import { useMeQuery } from "@/store/api/userApi";
 import type { Category } from '@/store/api/categoriesApi';
@@ -42,6 +42,8 @@ const REQUIRED_FIELD_ORDER: Array<keyof GuestForm> = [
     'city',
     'barangay',
 ];
+
+const LOCAL_PAYMENT_MODE_HOSTS = new Set(['localhost', '127.0.0.1']);
 
 type DraftCheckoutItem = NonNullable<CustomerCheckoutData['items']>[number];
 
@@ -107,11 +109,25 @@ const CustomerCheckoutMain = ({ initialCategories = [] }: { initialCategories?: 
         [isLoggedIn]
     );
     const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>('gcash');
+    const [selectedOnlineBankingProvider, setSelectedOnlineBankingProvider] = useState<CheckoutOnlineBankingProvider>('dob');
+    const [paymentMode, setPaymentMode] = useState<PaymentMode>(() => {
+        if (typeof window === 'undefined') return 'live';
+        return LOCAL_PAYMENT_MODE_HOSTS.has(window.location.hostname) ? 'test' : 'live';
+    });
     const [notice, setNotice] = useState('');
     const [createCheckoutSession, { isLoading: loading }] = useCreateCheckoutSessionMutation();
     const [validateVoucher, { isLoading: voucherLoading }] = useValidateVoucherMutation();
     const [voucherInfo, setVoucherInfo] = useState<{ code: string; amount: number; discount: number } | null>(null);
     const [voucherError, setVoucherError] = useState<string | null>(null);
+    const canSwitchPaymentMode = useMemo(() => {
+        if (typeof window === 'undefined') return false;
+        return LOCAL_PAYMENT_MODE_HOSTS.has(window.location.hostname);
+    }, []);
+    const paymentModeOptions = useMemo<PaymentMode[]>(
+        () => (canSwitchPaymentMode ? ['test', 'live'] : ['live']),
+        [canSwitchPaymentMode]
+    );
+    const showOnlineBankingProviderPicker = paymentMode === 'test';
 
     const form = useMemo<GuestForm>(() => ({
         ...defaultForm,
@@ -139,15 +155,11 @@ const CustomerCheckoutMain = ({ initialCategories = [] }: { initialCategories?: 
         if (!checkoutData) return;
         const code = form.voucher_coupon.trim();
 
-        if (!code) {
-            setVoucherInfo(null);
-            setVoucherError(null);
-            return;
-        }
+        if (!code) return;
 
-        setVoucherError(null);
         const handle = setTimeout(async () => {
             try {
+                setVoucherError(null);
                 const res = await validateVoucher({ code, subtotal: checkoutData.subtotal }).unwrap();
                 setVoucherInfo({
                     code: res.voucher.code,
@@ -168,6 +180,10 @@ const CustomerCheckoutMain = ({ initialCategories = [] }: { initialCategories?: 
     const setField = useCallback((key: keyof GuestForm, value: string) => {
         setFormOverrides(prev => ({ ...prev, [key]: value }))
         setErrors(prev => ({ ...prev, [key]: undefined }))
+        if (key === 'voucher_coupon') {
+            setVoucherInfo(null)
+            setVoucherError(null)
+        }
     }, [])
 
     const validate = (): FormErrors => {
@@ -207,7 +223,7 @@ const CustomerCheckoutMain = ({ initialCategories = [] }: { initialCategories?: 
 
         const control = target.querySelector<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>('input, select, textarea');
         control?.focus({ preventScroll: true });
-    }, []);
+    }, [requiredFieldOrder]);
 
     const handleSubmit = async () => {
         const errs = validate();
@@ -218,11 +234,6 @@ const CustomerCheckoutMain = ({ initialCategories = [] }: { initialCategories?: 
         }
 
         if (!checkoutData) return;
-        if (selectedMethod === 'online_banking') {
-            setNotice('Online Banking is coming soon.');
-            return;
-        }
-
         if (form.voucher_coupon.trim() && !voucherInfo) {
             setVoucherError(voucherError || 'Voucher code is invalid or expired.');
             return;
@@ -236,6 +247,10 @@ const CustomerCheckoutMain = ({ initialCategories = [] }: { initialCategories?: 
                 amount: computedTotal,
                 description: checkoutData.product.name,
                 payment_method: selectedMethod,
+                payment_mode: paymentMode,
+                online_banking_provider: selectedMethod === 'online_banking' && showOnlineBankingProviderPicker
+                    ? selectedOnlineBankingProvider
+                    : undefined,
                 voucher_code: voucherInfo?.code,
                 customer: {
                     name: form.name,
@@ -268,6 +283,7 @@ const CustomerCheckoutMain = ({ initialCategories = [] }: { initialCategories?: 
 
             if (data.checkout_id) {
                 localStorage.setItem('last_checkout_id', data.checkout_id);
+                localStorage.setItem('last_checkout_payment_mode', data.payment_mode || paymentMode);
             }
             localStorage.removeItem('guest_checkout');
             window.location.href = data.checkout_url;
@@ -276,6 +292,9 @@ const CustomerCheckoutMain = ({ initialCategories = [] }: { initialCategories?: 
                 data?: {
                     message?: string;
                     errors?: Record<string, string[]>;
+                    error?: {
+                        errors?: Array<{ detail?: string; code?: string; source?: Record<string, string> }>;
+                    };
                 };
             };
 
@@ -289,8 +308,8 @@ const CustomerCheckoutMain = ({ initialCategories = [] }: { initialCategories?: 
                 requestAnimationFrame(() => focusFirstErrorField(nextErrors));
                 return;
             }
-
-            alert(apiError?.data?.message || 'Something went wrong');
+            const gatewayError = apiError?.data?.error?.errors?.[0]?.detail;
+            alert(gatewayError || apiError?.data?.message || 'Something went wrong');
         }
     }
 
@@ -360,6 +379,12 @@ const CustomerCheckoutMain = ({ initialCategories = [] }: { initialCategories?: 
                                     setSelectedMethod(m);
                                     setNotice('');
                                 }}
+                                paymentMode={paymentMode}
+                                paymentModeOptions={paymentModeOptions}
+                                onPaymentModeChange={setPaymentMode}
+                                selectedOnlineBankingProvider={selectedOnlineBankingProvider}
+                                onOnlineBankingProviderChange={setSelectedOnlineBankingProvider}
+                                showOnlineBankingProviderPicker={showOnlineBankingProviderPicker}
                                 notice={notice}
                             />
                         </div>

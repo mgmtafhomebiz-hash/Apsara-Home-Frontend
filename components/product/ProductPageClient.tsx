@@ -42,7 +42,7 @@ const ProductPageClient = ({ product, categoryLabel, reviewSummary }: ProductPag
             const quantity = 1;
             const unitPrice = Number(selectedVariant?.priceSrp ?? product.price ?? 0);
             const subtotal = unitPrice * quantity;
-            const handlingFee = subtotal >= 5000 ? 0 : 99;
+            const handlingFee = 0;
             const total = subtotal + handlingFee;
 
             localStorage.setItem('guest_checkout', JSON.stringify({

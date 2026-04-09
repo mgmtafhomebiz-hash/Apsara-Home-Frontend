@@ -149,7 +149,7 @@ export default function CartDrawer() {
   const handleCustomerCheckout = () => {
     if (checkoutItems.length === 0) return
 
-    const handlingFee = selectedTotal >= 5000 ? 0 : 99
+    const handlingFee = 0
     const firstItem = checkoutItems[0]
 
     localStorage.setItem('guest_checkout', JSON.stringify({
@@ -349,81 +349,6 @@ export default function CartDrawer() {
     </div>
   </motion.div>
 ))}
-
-                          >
-                            <label className="mt-1 flex items-start">
-                              <input
-                                type="checkbox"
-                                checked={selectedIds.includes(item.id)}
-                                onChange={() => toggleItemSelected(item.id)}
-                                className="h-4 w-4 rounded border-gray-300 text-orange-500 focus:ring-orange-200"
-                              />
-                            </label>
-                            <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl">
-                              <Image src={item.image} alt={item.name} fill className="object-cover" />
-                            </div>
-
-                            <div className="min-w-0 flex-1">
-                              <p className="truncate text-sm font-semibold text-gray-800">{item.name}</p>
-                              {(item.selectedColor || item.selectedSize || item.selectedType || item.selectedSku) ? (
-                                <div className="mt-1 flex flex-wrap gap-1">
-                                  {item.selectedColor ? <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600">{item.selectedColor}</span> : null}
-                                  {item.selectedSize ? <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600">{item.selectedSize}</span> : null}
-                                  {item.selectedType ? <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600">{item.selectedType}</span> : null}
-                                  {item.selectedSku ? <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600">{item.selectedSku}</span> : null}
-                                </div>
-                              ) : null}
-                              <div className="mt-0.5 flex flex-wrap items-center gap-2">
-                                <p className="text-sm font-bold text-orange-500">
-                                  {'\u20b1'}{item.price.toLocaleString()}
-                                </p>
-                                {typeof item.originalPrice === 'number' && item.originalPrice > item.price && (
-                                  <p className="text-xs font-semibold text-slate-400 line-through">
-                                    {'\u20b1'}{item.originalPrice.toLocaleString()}
-                                  </p>
-                                )}
-                                {typeof item.prodpv === 'number' && item.prodpv > 0 && (
-                                  <span className="rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-[10px] font-semibold text-blue-700">
-                                    PV {item.prodpv.toLocaleString()}
-                                  </span>
-                                )}
-                              </div>
-                              <div className="mt-2 flex items-center gap-2">
-                                <button
-                                  onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                                  className="flex h-7 w-7 items-center justify-center rounded-lg border border-gray-200 bg-white text-base font-bold leading-none transition-colors hover:border-orange-400 hover:text-orange-500"
-                                >
-                                  -
-                                </button>
-                                <span className="w-5 text-center text-sm font-semibold">{item.quantity}</span>
-                                <button
-                                  onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                                  className="flex h-7 w-7 items-center justify-center rounded-lg border border-gray-200 bg-white text-base font-bold leading-none transition-colors hover:border-orange-400 hover:text-orange-500"
-                                >
-                                  +
-                                </button>
-                              </div>
-                            </div>
-
-                            <div className="flex flex-col items-end justify-between">
-                              <button
-                                onClick={() => removeFromCart(item.id)}
-                                className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-500"
-                              >
-                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                  <polyline points="3 6 5 6 21 6" />
-                                  <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-                                  <path d="M10 11v6" />
-                                  <path d="M14 11v6" />
-                                  <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
-                                </svg>
-                              </button>
-                              <p className="text-sm font-bold text-slate-900">
-                                {'\u20b1'}{(item.price * item.quantity).toLocaleString()}
-                              </p>
-                            </div>
-                          </motion.div>
-                        ))}
                       </div>
                     ))}
                   </AnimatePresence>
