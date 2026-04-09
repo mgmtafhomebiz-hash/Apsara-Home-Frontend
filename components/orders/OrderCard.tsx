@@ -143,17 +143,25 @@ const OrderCard = ({ order }: OrderCardProps) => {
           <div className="flex -space-x-2">
             {previewItems.map((item) => {
               const href = buildProductHref(item);
-              const Wrapper = href ? Link : 'div';
-              return (
-                <Wrapper
+              const imageClassName = `h-10 w-10 rounded-lg border-2 border-white overflow-hidden bg-gray-100 shrink-0 ${
+                href ? 'transition-transform hover:scale-105' : ''
+              }`;
+
+              return href ? (
+                <Link
                   key={item.id}
-                  {...(href ? { href } : {})}
-                  className={`h-10 w-10 rounded-lg border-2 border-white overflow-hidden bg-gray-100 shrink-0 ${
-                    href ? 'transition-transform hover:scale-105' : ''
-                  }`}
+                  href={href}
+                  className={imageClassName}
                 >
                   <Image src={item.image} alt={item.name} width={40} height={40} className="h-full w-full object-cover" />
-                </Wrapper>
+                </Link>
+              ) : (
+                <div
+                  key={item.id}
+                  className={imageClassName}
+                >
+                  <Image src={item.image} alt={item.name} width={40} height={40} className="h-full w-full object-cover" />
+                </div>
               );
             })}
             {extraCount > 0 && (
@@ -166,15 +174,18 @@ const OrderCard = ({ order }: OrderCardProps) => {
             {(() => {
               const firstItem = order.items[0];
               const href = firstItem ? buildProductHref(firstItem) : null;
-              const TitleWrapper = href ? Link : 'span';
               return (
                 <p className="text-sm text-gray-700 truncate">
-                  <TitleWrapper
-                    {...(href ? { href } : {})}
-                    className={href ? 'font-semibold text-slate-800 hover:text-orange-500 transition-colors' : ''}
-                  >
-                    {firstItem?.name}
-                  </TitleWrapper>
+                  {href ? (
+                    <Link
+                      href={href}
+                      className="font-semibold text-slate-800 hover:text-orange-500 transition-colors"
+                    >
+                      {firstItem?.name}
+                    </Link>
+                  ) : (
+                    <span>{firstItem?.name}</span>
+                  )}
                   {order.items.length > 1 && (
                     <span className="text-gray-400"> +{order.items.length - 1} more item{order.items.length > 2 ? 's' : ''}</span>
                   )}
@@ -297,25 +308,36 @@ const OrderCard = ({ order }: OrderCardProps) => {
                 <div className="space-y-2">
                   {order.items.map((item) => {
                     const href = buildProductHref(item);
-                    const Wrapper = href ? Link : 'div';
+                    const imageClassName = `h-12 w-12 rounded-lg overflow-hidden bg-gray-100 shrink-0 ${
+                      href ? 'transition-transform hover:scale-105' : ''
+                    }`;
+
                     return (
                       <div key={item.id} className="flex items-center gap-3 rounded-xl border border-gray-100 bg-white px-3 py-2.5">
-                        <Wrapper
-                          {...(href ? { href } : {})}
-                          className={`h-12 w-12 rounded-lg overflow-hidden bg-gray-100 shrink-0 ${
-                            href ? 'transition-transform hover:scale-105' : ''
-                          }`}
-                        >
-                          <Image src={item.image} alt={item.name} width={48} height={48} className="h-full w-full object-cover" />
-                        </Wrapper>
+                        {href ? (
+                          <Link
+                            href={href}
+                            className={imageClassName}
+                          >
+                            <Image src={item.image} alt={item.name} width={48} height={48} className="h-full w-full object-cover" />
+                          </Link>
+                        ) : (
+                          <div className={imageClassName}>
+                            <Image src={item.image} alt={item.name} width={48} height={48} className="h-full w-full object-cover" />
+                          </div>
+                        )}
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-gray-800 truncate">
-                            <Wrapper
-                              {...(href ? { href } : {})}
-                              className={href ? 'hover:text-orange-500 transition-colors' : ''}
-                            >
-                              {item.name}
-                            </Wrapper>
+                            {href ? (
+                              <Link
+                                href={href}
+                                className="hover:text-orange-500 transition-colors"
+                              >
+                                {item.name}
+                              </Link>
+                            ) : (
+                              <span>{item.name}</span>
+                            )}
                           </p>
                           <p className="text-xs text-gray-400">Qty: {item.quantity}</p>
                         {getSelectedOptions(item).length > 0 && (
