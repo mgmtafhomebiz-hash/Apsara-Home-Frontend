@@ -247,7 +247,7 @@ const CustomerCheckoutMain = ({ initialCategories = [] }: { initialCategories?: 
                 amount: computedTotal,
                 description: checkoutData.product.name,
                 payment_method: selectedMethod,
-                payment_mode: paymentMode,
+                payment_mode: canSwitchPaymentMode ? paymentMode : undefined,
                 online_banking_provider: selectedMethod === 'online_banking' && showOnlineBankingProviderPicker
                     ? selectedOnlineBankingProvider
                     : undefined,
@@ -283,7 +283,7 @@ const CustomerCheckoutMain = ({ initialCategories = [] }: { initialCategories?: 
 
             if (data.checkout_id) {
                 localStorage.setItem('last_checkout_id', data.checkout_id);
-                localStorage.setItem('last_checkout_payment_mode', data.payment_mode || paymentMode);
+                localStorage.setItem('last_checkout_payment_mode', canSwitchPaymentMode ? (data.payment_mode || paymentMode) : 'live');
             }
             localStorage.removeItem('guest_checkout');
             window.location.href = data.checkout_url;
