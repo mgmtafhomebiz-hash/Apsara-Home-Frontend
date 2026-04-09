@@ -19,8 +19,7 @@ interface Props {
 }
 
 const onlineBankingOptions: Array<{ id: CheckoutOnlineBankingProvider; label: string; description: string }> = [
-  { id: 'dob', label: 'BDO', description: 'Direct Online Banking via PayMongo' },
-  { id: 'ubp', label: 'UnionBank', description: 'Direct Online Banking via PayMongo' },
+  { id: 'dob', label: 'BDO', description: 'Currently supported online banking option via PayMongo' },
 ];
 const cardOptions = ['Visa', 'Mastercard'];
 
@@ -133,7 +132,7 @@ export default function CustomerCheckoutPaymentMethod({
               {showOnlineBankingProviderPicker ? (
                 <>
                   <p className="text-xs font-bold text-sky-700 mb-2.5">Choose your bank</p>
-                  <p className="mb-3 text-[11px] text-sky-700/80">Local test mode lets you pin the exact provider before redirecting to PayMongo.</p>
+                  <p className="mb-3 text-[11px] text-sky-700/80">Local mode lets you pin the currently supported bank before redirecting to PayMongo.</p>
                   <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                     {onlineBankingOptions.map(bank => (
                       <button key={bank.id} type="button" onClick={() => onOnlineBankingProviderChange(bank.id)}
@@ -149,7 +148,7 @@ export default function CustomerCheckoutPaymentMethod({
               ) : (
                 <>
                   <p className="text-xs font-bold text-sky-700">Bank selection will continue on the PayMongo payment page.</p>
-                  <p className="mt-2 text-[11px] text-sky-700/80">Live mode sends the enabled online banking options directly to PayMongo, so the final bank UI will appear after redirect.</p>
+                  <p className="mt-2 text-[11px] text-sky-700/80">Live mode sends only the currently supported online banking option to PayMongo, so the final bank UI will appear after redirect.</p>
                 </>
               )}
             </div>

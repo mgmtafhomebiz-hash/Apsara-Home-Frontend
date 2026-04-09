@@ -2,7 +2,7 @@ import { baseApi } from './baseApi'
 
 export type CheckoutPaymentMethod = 'online_banking' | 'card' | 'gcash' | 'maya'
 export type CheckoutPaymentMode = 'test' | 'live'
-export type CheckoutOnlineBankingProvider = 'dob' | 'ubp'
+export type CheckoutOnlineBankingProvider = 'dob'
 
 export interface CheckoutCustomerPayload {
   name?: string
