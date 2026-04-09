@@ -8,6 +8,20 @@ import type { CustomerCheckoutLineItem } from '@/types/CustomerCheckout/types'
 import { useLazyGetPublicProductQuery } from '@/store/api/productsApi'
 import { useEffect, useMemo, useState } from 'react'
 
+type ProductSearchBrand = {
+  pb_name?: string | null
+  name?: string | null
+}
+
+type ProductSearchItem = {
+  brand?: string | ProductSearchBrand | null
+  brand_name?: string | null
+}
+
+type ProductSearchResponse = {
+  products?: ProductSearchItem[]
+}
+
 export default function CartDrawer() {
   const router = useRouter()
   const [brandByBaseId, setBrandByBaseId] = useState<Record<string, string>>({})
@@ -32,6 +46,17 @@ export default function CartDrawer() {
   } = useCart()
 
   const parseBaseId = (id: string) => id.split('::')[0] ?? id
+  const resolveProductBrand = (product?: ProductSearchItem) => {
+    if (!product) return null
+
+    const brand = product.brand
+    if (typeof brand === 'string') return brand
+    if (brand && typeof brand === 'object') {
+      return brand.pb_name ?? brand.name ?? null
+    }
+
+    return product.brand_name ?? null
+  }
 
   useEffect(() => {
     const missing = items.filter((item) => !item.brand)
@@ -70,14 +95,9 @@ export default function CartDrawer() {
           cache: 'no-store',
         })
         if (!res.ok) return
-        const json = (await res.json()) as { products?: Array<{ brand?: string | null; brand_name?: string | null; brand?: { pb_name?: string; name?: string } }> }
+        const json = (await res.json()) as ProductSearchResponse
         const product = (json.products ?? [])[0]
-        const brand =
-          (product as any)?.brand
-            ? (typeof (product as any).brand === 'string'
-              ? (product as any).brand
-              : (product as any).brand?.pb_name ?? (product as any).brand?.name)
-            : (product as any)?.brand_name
+        const brand = resolveProductBrand(product)
         if (brand && typeof brand === 'string') {
           setBrandBySku((prev) => ({ ...prev, [sku]: brand }))
         }
@@ -104,14 +124,9 @@ export default function CartDrawer() {
           cache: 'no-store',
         })
         if (!res.ok) return
-        const json = (await res.json()) as { products?: Array<{ brand?: string | null; brand_name?: string | null; brand?: { pb_name?: string; name?: string } }> }
+        const json = (await res.json()) as ProductSearchResponse
         const product = (json.products ?? [])[0]
-        const brand =
-          (product as any)?.brand
-            ? (typeof (product as any).brand === 'string'
-              ? (product as any).brand
-              : (product as any).brand?.pb_name ?? (product as any).brand?.name)
-            : (product as any)?.brand_name
+        const brand = resolveProductBrand(product)
         if (brand && typeof brand === 'string') {
           setBrandByName((prev) => ({ ...prev, [nameKey]: brand }))
         }
