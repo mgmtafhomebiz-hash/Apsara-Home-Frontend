@@ -15,17 +15,37 @@ export function StepImages({ message }: { message: StepImagesMessage }) {
   };
   const goPrev = () => setActiveIndex((idx) => (idx - 1 + total) % total);
   const goNext = () => setActiveIndex((idx) => (idx + 1) % total);
-  const isSteps = message.images.length > 0 && message.images.every((img) => img.url.includes('/images/steps/'));
+  const isSteps =
+    message.images.length > 0 &&
+    message.images.every((img) => img.url.toLowerCase().includes('/images/steps/'));
 
   useEffect(() => {
     if (!isSteps) return;
     const first = message.images[0]?.url ?? '';
-    const match = first.match(/(.*\/)r\d+\.(\w+)$/i);
+    const match = first.match(/(.*\/)r{1,2}\d+\.(\w+)$/i);
     if (!match) return;
     const base = match[1];
     const ext = match[2];
+    const extCandidates = Array.from(
+      new Set([
+        ext.toLowerCase(),
+        ext.toUpperCase(),
+        'png',
+        'PNG',
+        'jpg',
+        'JPG',
+        'jpeg',
+        'JPEG',
+        'webp',
+        'WEBP',
+      ]),
+    );
     const maxProbe = 20;
-    const urls = Array.from({ length: maxProbe }, (_, i) => `${base}r${i + 1}.${ext}`);
+    const urls = Array.from({ length: maxProbe }, (_, i) => {
+      const n = i + 1;
+      const prefixes = [`r${n}`, `rr${n}`];
+      return prefixes.flatMap((prefix) => extCandidates.map((candidate) => `${base}${prefix}.${candidate}`));
+    }).flat();
 
     const loadImage = (url: string) =>
       new Promise<boolean>((resolve) => {
@@ -36,8 +56,14 @@ export function StepImages({ message }: { message: StepImagesMessage }) {
       });
 
     Promise.all(urls.map((u) => loadImage(u))).then((results) => {
+      const seen = new Set<string>();
       const next = urls
         .filter((_, i) => results[i])
+        .filter((url) => {
+          if (seen.has(url)) return false;
+          seen.add(url);
+          return true;
+        })
         .map((url, i) => ({
           url,
           caption: message.images[i]?.caption,

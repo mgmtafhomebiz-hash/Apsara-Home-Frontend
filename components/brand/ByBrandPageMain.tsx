@@ -8,7 +8,12 @@ import { useSearchParams } from 'next/navigation'
 import { useGetPublicProductBrandsQuery } from '@/store/api/productBrandsApi'
 import { useGetPublicProductsQuery } from '@/store/api/productsApi'
 
-const toSlug = (value: string) => value.toLowerCase().trim().replace(/\s+/g, '-')
+const toSlug = (value: string) =>
+  value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
 const formatPeso = (value: number) => `P${Number(value || 0).toLocaleString('en-PH', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`
 const getBrandInitials = (value: string) => value.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part.charAt(0).toUpperCase()).join('') || 'BR'
 

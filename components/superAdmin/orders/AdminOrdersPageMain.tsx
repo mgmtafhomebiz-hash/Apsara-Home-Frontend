@@ -89,9 +89,12 @@ const formatMoney = (value: number) =>
 
 const formatDateTime = (value?: string | null) => {
   if (!value) return 'N/A'
-  const date = new Date(value)
+  const hasTimeZone = /([zZ]|[+-]\d{2}:\d{2})$/.test(value.trim())
+  const normalized = value.includes('T') ? value.trim() : value.trim().replace(' ', 'T')
+  const date = new Date(hasTimeZone ? normalized : `${normalized}Z`)
   if (Number.isNaN(date.getTime())) return 'N/A'
   return new Intl.DateTimeFormat('en-PH', {
+    timeZone: 'Asia/Manila',
     year: 'numeric', month: 'short', day: 'numeric',
     hour: 'numeric', minute: '2-digit',
   }).format(date)

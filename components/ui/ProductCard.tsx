@@ -126,7 +126,11 @@ export default function ProductCard({
   const [removeWishlist, { isLoading: isRemoving }] = useRemoveWishlistMutation();
 
   const safeName = (name || 'Untitled Product').trim();
-  const slug = safeName.toLowerCase().replace(/\s+/g, '-');
+  const slug = safeName
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
   const productPath = typeof id === 'number' ? `/product/${slug}-i${id}` : `/product/${slug}`;
   const srpPrice = Number(price ?? 0);
   const memberPrice = Number(priceMember ?? 0);
