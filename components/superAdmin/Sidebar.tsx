@@ -69,8 +69,8 @@ const navItems: NavItem[] = [
     children: [
       { label: 'All Orders', path: '/admin/orders' },
       { label: 'Needs Approval', path: '/admin/orders/pending' },
-      { label: 'Ready to Process', path: '/admin/orders/paid' },
-      { label: 'In Fulfillment', path: '/admin/orders/processing' },
+      { label: 'Ready to Process', path: '/admin/orders/processing' },
+      { label: 'In Fulfillment', path: '/admin/orders/shipped' },
       { label: 'In Transit', path: '/admin/orders/out_for_delivery' },
       { label: 'Completed', path: '/admin/orders/completed' },
       { label: 'Returns / Refunds', path: '/admin/orders/returned_refunded' },
@@ -252,8 +252,8 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
   const orderCountQueryOptions = { skip: !sessionAccessToken }
   const { data: allOrdersData } = useGetAdminOrdersQuery({ filter: 'all', page: 1, perPage: 1 }, orderCountQueryOptions)
   const { data: pendingOrdersData } = useGetAdminOrdersQuery({ filter: 'pending', page: 1, perPage: 1 }, orderCountQueryOptions)
-  const { data: paidOrdersData } = useGetAdminOrdersQuery({ filter: 'paid', page: 1, perPage: 1 }, orderCountQueryOptions)
   const { data: processingOrdersData } = useGetAdminOrdersQuery({ filter: 'processing', page: 1, perPage: 1 }, orderCountQueryOptions)
+  const { data: shippedOrdersData } = useGetAdminOrdersQuery({ filter: 'shipped', page: 1, perPage: 1 }, orderCountQueryOptions)
   const { data: transitOrdersData } = useGetAdminOrdersQuery({ filter: 'out_for_delivery', page: 1, perPage: 1 }, orderCountQueryOptions)
   const { data: completedOrdersData } = useGetAdminOrdersQuery({ filter: 'completed', page: 1, perPage: 1 }, orderCountQueryOptions)
   const { data: returnedOrdersData } = useGetAdminOrdersQuery({ filter: 'returned_refunded', page: 1, perPage: 1 }, orderCountQueryOptions)
@@ -328,8 +328,8 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
   const orderCountsByPath: Record<string, number> = {
     '/admin/orders': allOrdersData?.meta.total ?? 0,
     '/admin/orders/pending': pendingOrdersData?.meta.total ?? 0,
-    '/admin/orders/paid': paidOrdersData?.meta.total ?? 0,
     '/admin/orders/processing': processingOrdersData?.meta.total ?? 0,
+    '/admin/orders/shipped': shippedOrdersData?.meta.total ?? 0,
     '/admin/orders/out_for_delivery': transitOrdersData?.meta.total ?? 0,
     '/admin/orders/completed': completedOrdersData?.meta.total ?? 0,
     '/admin/orders/returned_refunded': returnedOrdersData?.meta.total ?? 0,
