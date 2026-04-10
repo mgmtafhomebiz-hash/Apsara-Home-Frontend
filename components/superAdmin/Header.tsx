@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import Image from "next/image";
 import { signOut, useSession } from "next-auth/react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
     adminNotificationsApi,
     AdminNotificationItem,
@@ -104,6 +104,7 @@ const Header = ({ onMenuClick }: HeaderProps) => {
     const dispatch = useAppDispatch();
     const [notifOpen, setNotifOpen] = useState(false);
     const [userOpen, setUserOpen] = useState(false);
+    const [optimisticReadIds, setOptimisticReadIds] = useState<string[]>([]);
     const { data: session } = useSession();
     const sessionAccessToken = String((session?.user as { accessToken?: string } | undefined)?.accessToken ?? '');
     const adminIdentityKey = sessionAccessToken
@@ -130,7 +131,6 @@ const Header = ({ onMenuClick }: HeaderProps) => {
     });
     const [markNotificationRead] = useMarkAdminNotificationReadMutation();
     const [markAllNotificationsRead] = useMarkAllAdminNotificationsReadMutation();
-    const unreadCount = notifications?.unread_count ?? 0;
     const displayName = String(adminMe?.name ?? session?.user?.name ?? '').trim() || 'Admin';
     const displayRole = formatRole(adminMe?.role ?? session?.user?.role);
     const displayInitials = getInitials(displayName);
@@ -233,8 +233,26 @@ const Header = ({ onMenuClick }: HeaderProps) => {
         };
     }, [accessToken, dispatch, effectivePermissions, effectiveRole, effectiveUserLevelId, refetchNotifs]);
 
+    const visibleNotifications = useMemo(() => {
+        const items = notifications?.items ?? [];
+
+        return items.map((item) => {
+            const isOptimisticallyRead = optimisticReadIds.includes(item.id);
+            return {
+                ...item,
+                is_read: Boolean(item.is_read || isOptimisticallyRead),
+                count: item.is_read || isOptimisticallyRead ? 0 : item.count,
+            };
+        });
+    }, [notifications?.items, optimisticReadIds]);
+
+    const unreadCount = useMemo(() => {
+        return visibleNotifications.reduce((total, item) => total + (item.is_read ? 0 : 1), 0);
+    }, [visibleNotifications]);
+
     const handleNotificationClick = (notif: AdminNotificationItem) => {
         setNotifOpen(false);
+        setOptimisticReadIds((current) => (current.includes(notif.id) ? current : [...current, notif.id]));
         router.push(resolveNotificationHref(notif));
         void markNotificationRead(notif.id).unwrap().catch(() => {
             // Keep navigation smooth even if read-state update fails.
@@ -242,10 +260,17 @@ const Header = ({ onMenuClick }: HeaderProps) => {
     };
 
     const handleMarkAllNotificationsRead = async () => {
+        const pendingIds = visibleNotifications.filter((item) => !item.is_read).map((item) => item.id);
+        if (pendingIds.length === 0) {
+            return;
+        }
+
+        setOptimisticReadIds((current) => Array.from(new Set([...current, ...pendingIds])));
         try {
             await markAllNotificationsRead().unwrap();
             await refetchNotifs();
         } catch {
+            setOptimisticReadIds((current) => current.filter((id) => !pendingIds.includes(id)));
             // Keep UI stable; next poll/realtime event will refresh the feed.
         }
     };
@@ -428,8 +453,8 @@ const Header = ({ onMenuClick }: HeaderProps) => {
                                             <p className="text-sm text-red-500 font-medium">Failed to load notifications</p>
                                             <p className="text-xs text-slate-400 mt-1">Please try again later.</p>
                                         </div>
-                                    ) : notifications?.items?.length ? (
-                                        notifications.items.map((notif) => {
+                                    ) : visibleNotifications.length ? (
+                                        visibleNotifications.map((notif) => {
                                             const isNew = !notif.is_read;
                                             const severity = notif.severity ?? 'info';
                                             const sc = severity === 'critical'
