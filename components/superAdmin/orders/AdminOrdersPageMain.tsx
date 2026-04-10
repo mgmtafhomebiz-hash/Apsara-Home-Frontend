@@ -753,6 +753,10 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                       const rawCourierStatus = extractCourierStatus(order.shipment_payload)
                       const zqStatusKey = String(order.zq_status ?? '').trim().toLowerCase()
                       const zqBadgeClass = ZQ_STATUS_STYLES[zqStatusKey] ?? 'bg-slate-50 text-slate-600 border-slate-200'
+                      const hasZqOrder = Boolean(order.zq_platform_order_id || order.zq_order_id || zqStatusKey)
+                      const canPushZq = canTrackThisOrder && !hasZqOrder
+                      const canUseZqLookup = canTrackThisOrder && hasZqOrder
+                      const canUseCourierFlow = canTrackThisOrder && !hasZqOrder
                       const showNewBadge = isNewOrder(order.created_at)
                       const isCourierCancelled =
                         order.shipment_status === 'cancelled'
@@ -871,21 +875,21 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                                 ariaLabel={`Courier for order ${order.checkout_id}`}
                                 value={courierByOrder[order.id] ?? (((order.courier ?? '').toLowerCase() === 'xde' ? 'xde' : 'jnt') as AdminCourier)}
                                 options={COURIER_OPTIONS}
-                                isDisabled={isBusy || !canTrackThisOrder}
+                                isDisabled={isBusy || !canUseCourierFlow}
                                 onChange={(value) => setCourierByOrder(prev => ({ ...prev, [order.id]: value as AdminCourier }))}
                               />
                               <AdminOrderSelect
                                 ariaLabel={`Shipment status for order ${order.checkout_id}`}
                                 value={(order.shipment_status as AdminShipmentStatus | undefined) ?? 'for_pickup'}
                                 options={SHIPMENT_STATUS_OPTIONS}
-                                isDisabled={isBusy || !canTrackThisOrder || isCourierBooked}
+                                isDisabled={isBusy || !canUseCourierFlow || isCourierBooked}
                                 onChange={(value) => handleShipmentStatusChange(order.id, value as AdminShipmentStatus)}
                               />
                               <div className="grid grid-cols-2 gap-1">
                                 <Button
                                   size="sm"
                                   variant="tertiary"
-                                  isDisabled={isBusy || !canTrackThisOrder || isCourierCancelled}
+                                  isDisabled={isBusy || !canUseCourierFlow || isCourierCancelled}
                                   onPress={() => handleBookCourier(order.id)}
                                   className="border border-teal-200 bg-teal-50 px-2 py-1.5 text-[11px] font-semibold text-teal-700 transition hover:bg-teal-100"
                                 >
@@ -894,7 +898,7 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                                 <Button
                                   size="sm"
                                   variant="tertiary"
-                                  isDisabled={isBusy || !canTrackThisOrder || !order.tracking_no || isCourierCancelled}
+                                  isDisabled={isBusy || !canUseCourierFlow || !order.tracking_no || isCourierCancelled}
                                   onPress={() => handleTrackCourier(order.id)}
                                   className="border border-slate-200 bg-slate-50 px-2 py-1.5 text-[11px] font-semibold text-slate-700 transition hover:bg-slate-100"
                                 >
@@ -903,7 +907,7 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                                 <Button
                                   size="sm"
                                   variant="tertiary"
-                                  isDisabled={isBusy || !canTrackThisOrder || courierByOrder[order.id] !== 'xde' || !order.tracking_no || isCourierCancelled}
+                                  isDisabled={isBusy || !canUseCourierFlow || courierByOrder[order.id] !== 'xde' || !order.tracking_no || isCourierCancelled}
                                   onPress={() => handleOpenWaybill(order.id)}
                                   className="border border-blue-200 bg-blue-50 px-2 py-1.5 text-[11px] font-semibold text-blue-700 transition hover:bg-blue-100"
                                 >
@@ -912,7 +916,7 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                                 <Button
                                   size="sm"
                                   variant="tertiary"
-                                  isDisabled={isBusy || !canTrackThisOrder || courierByOrder[order.id] !== 'xde' || !order.tracking_no || order.shipment_status !== 'delivered'}
+                                  isDisabled={isBusy || !canUseCourierFlow || courierByOrder[order.id] !== 'xde' || !order.tracking_no || order.shipment_status !== 'delivered'}
                                   onPress={() => handleOpenEpod(order.id)}
                                   className="border border-amber-200 bg-amber-50 px-2 py-1.5 text-[11px] font-semibold text-amber-700 transition hover:bg-amber-100"
                                 >
@@ -921,13 +925,18 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                                 <Button
                                   size="sm"
                                   variant="tertiary"
-                                  isDisabled={isBusy || !canTrackThisOrder || courierByOrder[order.id] !== 'xde' || !order.tracking_no || isCourierCancelled}
+                                  isDisabled={isBusy || !canUseCourierFlow || courierByOrder[order.id] !== 'xde' || !order.tracking_no || isCourierCancelled}
                                   onPress={() => handleCancelCourier(order.id)}
                                   className="col-span-2 border border-red-200 bg-red-50 px-2 py-1.5 text-[11px] font-semibold text-red-700 transition hover:bg-red-100"
                                 >
                                   Cancel
                                 </Button>
                               </div>
+                              {hasZqOrder && (
+                                <p className="text-[11px] text-violet-600">
+                                  ZQ fulfillment is active. Use ZQ detail/tracking instead of local courier actions.
+                                </p>
+                              )}
                               {(isDelivered || isCancelled || isRefunded) && (
                                 <p className="text-[11px] text-slate-400">
                                   {isDelivered ? 'Delivered orders are locked.' : 'Tracking is disabled for this status.'}
@@ -1003,9 +1012,6 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                           <td className="px-4 py-3.5">
                             {canApproveThisOrder ? (
                               <div className="flex w-36 flex-col gap-1.5">
-                                <Button size="sm" variant="tertiary" isDisabled={isBusy} onPress={() => handlePushToZq(order.id)} className="w-full border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-semibold text-violet-700 transition hover:bg-violet-100">
-                                  Push ZQ
-                                </Button>
                                 <div className="grid grid-cols-2 gap-1">
                                   <Button size="sm" variant="tertiary" isDisabled={isBusy} onPress={() => handleApprove(order.id)} className="border border-emerald-200 bg-emerald-50 px-2 py-1.5 text-[11px] font-semibold text-emerald-700 transition hover:bg-emerald-100">
                                     Approve
@@ -1015,27 +1021,33 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                                   </Button>
                                 </div>
                                 <div className="grid grid-cols-2 gap-1">
-                                  <Button size="sm" variant="tertiary" isDisabled={isBusy} onPress={() => handleFetchZqDetail(order.id)} className="border border-slate-200 bg-slate-50 px-2 py-1.5 text-[11px] font-semibold text-slate-700 transition hover:bg-slate-100">
+                                  <Button size="sm" variant="tertiary" isDisabled className="border border-slate-200 bg-slate-50 px-2 py-1.5 text-[11px] font-semibold text-slate-400">
                                     ZQ Detail
                                   </Button>
-                                  <Button size="sm" variant="tertiary" isDisabled={isBusy} onPress={() => handleSyncZqTracking(order.id)} className="border border-sky-200 bg-sky-50 px-2 py-1.5 text-[11px] font-semibold text-sky-700 transition hover:bg-sky-100">
+                                  <Button size="sm" variant="tertiary" isDisabled className="border border-sky-200 bg-sky-50 px-2 py-1.5 text-[11px] font-semibold text-sky-400">
                                     ZQ Track
                                   </Button>
                                 </div>
+                                <p className="text-[11px] text-slate-400">Approve first before fulfillment actions.</p>
                               </div>
                             ) : order.approval_status === 'approved' ? (
                               <div className="flex w-36 flex-col gap-1.5">
-                                <Button size="sm" variant="tertiary" isDisabled={isBusy} onPress={() => handlePushToZq(order.id)} className="w-full border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-semibold text-violet-700 transition hover:bg-violet-100">
-                                  Push ZQ
+                                <Button size="sm" variant="tertiary" isDisabled={isBusy || !canPushZq} onPress={() => handlePushToZq(order.id)} className={`w-full border px-3 py-1.5 text-xs font-semibold transition ${canPushZq ? 'border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-100' : 'border-slate-200 bg-slate-50 text-slate-400'}`}>
+                                  {hasZqOrder ? 'ZQ Pushed' : 'Push ZQ'}
                                 </Button>
                                 <div className="grid grid-cols-2 gap-1">
-                                  <Button size="sm" variant="tertiary" isDisabled={isBusy} onPress={() => handleFetchZqDetail(order.id)} className="border border-slate-200 bg-slate-50 px-2 py-1.5 text-[11px] font-semibold text-slate-700 transition hover:bg-slate-100">
+                                  <Button size="sm" variant="tertiary" isDisabled={isBusy || !canUseZqLookup} onPress={() => handleFetchZqDetail(order.id)} className={`border px-2 py-1.5 text-[11px] font-semibold transition ${canUseZqLookup ? 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100' : 'border-slate-200 bg-slate-50 text-slate-400'}`}>
                                     ZQ Detail
                                   </Button>
-                                  <Button size="sm" variant="tertiary" isDisabled={isBusy} onPress={() => handleSyncZqTracking(order.id)} className="border border-sky-200 bg-sky-50 px-2 py-1.5 text-[11px] font-semibold text-sky-700 transition hover:bg-sky-100">
+                                  <Button size="sm" variant="tertiary" isDisabled={isBusy || !canUseZqLookup} onPress={() => handleSyncZqTracking(order.id)} className={`border px-2 py-1.5 text-[11px] font-semibold transition ${canUseZqLookup ? 'border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100' : 'border-slate-200 bg-slate-50 text-slate-400'}`}>
                                     ZQ Track
                                   </Button>
                                 </div>
+                                {!hasZqOrder ? (
+                                  <p className="text-[11px] text-slate-400">Push to ZQ first to unlock detail and tracking.</p>
+                                ) : (
+                                  <p className="text-[11px] text-violet-600">ZQ lookup is now available for this order.</p>
+                                )}
                               </div>
                             ) : (
                               <Chip size="sm" variant="soft" className="border border-slate-200 bg-slate-50 text-[11px] font-semibold text-slate-500">
