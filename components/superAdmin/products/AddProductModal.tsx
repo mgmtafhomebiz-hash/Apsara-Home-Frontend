@@ -16,7 +16,7 @@ import BulkProductImportPanel from '@/components/superAdmin/products/BulkProduct
 import { colorNameToHex, hexToColorName } from '@/libs/colorUtils'
 import { mergeVariantOptionLabelsMeta } from '@/libs/productVariantOptions'
 import { ROOM_OPTIONS, inferRoomTypeFromCategory } from '@/libs/roomConfig'
-import { Button, Card } from '@heroui/react'
+import { Button, Card, ListBox, ListBoxItem, Select } from '@heroui/react'
 
 /* ─── types ──────────────────────────────────────────────── */
 
@@ -744,6 +744,56 @@ function Field({
         </p>
       )}
     </div>
+  )
+}
+
+function ModalSelectField({
+  ariaLabel,
+  value,
+  options,
+  isDisabled,
+  hasError,
+  onChange,
+}: {
+  ariaLabel: string
+  value: string
+  options: Array<{ value: string; label: string }>
+  isDisabled?: boolean
+  hasError?: boolean
+  onChange: (value: string) => void
+}) {
+  const selectedLabel = options.find((option) => option.value === value)?.label ?? options[0]?.label ?? 'Select'
+
+  return (
+    <Select
+      aria-label={ariaLabel}
+      selectedKey={value}
+      onSelectionChange={(key) => onChange(key == null ? '' : String(key))}
+      isDisabled={isDisabled}
+      className="w-full"
+    >
+      <Select.Trigger
+        className={[
+          'flex min-h-[50px] w-full items-center justify-between rounded-2xl border bg-slate-50/85 px-4 text-left text-sm text-slate-700 shadow-sm transition-all duration-200',
+          hasError
+            ? 'border-red-300 bg-red-50/60 focus:border-red-400'
+            : 'border-slate-200 hover:border-slate-300 focus:border-teal-400 focus:bg-white',
+          isDisabled ? 'cursor-not-allowed opacity-60' : '',
+        ].join(' ')}
+      >
+        <span className="truncate">{selectedLabel}</span>
+        <Select.Indicator className="h-4 w-4 text-slate-400" />
+      </Select.Trigger>
+      <Select.Popover className="min-w-[var(--trigger-width)]">
+        <ListBox className="p-1">
+          {options.map((option) => (
+            <ListBoxItem id={option.value} key={`${option.value}-${option.label}`}>
+              {option.label}
+            </ListBoxItem>
+          ))}
+        </ListBox>
+      </Select.Popover>
+    </Select>
   )
 }
 
@@ -1490,16 +1540,17 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
                     <p className="mt-1 text-xs text-slate-500">Choose manual entry or bulk CSV import in a cleaner product form.</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3">
                   <div className="flex rounded-2xl border border-slate-200 bg-white/90 p-1 shadow-sm">
                     {[
                       { value: 'manual', label: 'Manual' },
                       { value: 'csv', label: 'CSV Import' },
                     ].map((option) => (
-                      <button
+                      <Button
                         key={option.value}
                         type="button"
-                        onClick={() => setEntryMode(option.value as 'manual' | 'csv')}
+                        onPress={() => setEntryMode(option.value as 'manual' | 'csv')}
+                        variant="tertiary"
                         className={`rounded-xl px-4 py-2 text-xs font-semibold transition ${
                           entryMode === option.value
                             ? 'bg-slate-900 text-white shadow-sm'
@@ -1507,7 +1558,7 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
                         }`}
                       >
                         {option.label}
-                      </button>
+                      </Button>
                     ))}
                   </div>
                   <button
@@ -1689,55 +1740,53 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
 
                   <div className="grid grid-cols-2 gap-3">
                     <Field label="Category" required error={errors.pd_catid}>
-                      <select
+                      <ModalSelectField
+                        ariaLabel="Select product category"
                         value={form.pd_catid}
-                        onChange={e => {
-                          set('pd_catid', e.target.value)
+                        hasError={!!errors.pd_catid}
+                        onChange={(value) => {
+                          set('pd_catid', value)
                           if (!roomTouched) {
-                            const selectedCategory = categories.find((category) => String(category.id) === e.target.value)
+                            const selectedCategory = categories.find((category) => String(category.id) === value)
                             const inferredRoomType = inferRoomTypeFromCategory(selectedCategory)
                             set('pd_room_type', inferredRoomType ? String(inferredRoomType) : '')
                           }
                         }}
-                        className={inputCls(!!errors.pd_catid)}
-                      >
-                        <option value="">Select category…</option>
-                        {categories.map(cat => (
-                          <option key={cat.id} value={String(cat.id)}>{cat.name}</option>
-                        ))}
-                      </select>
+                        options={[
+                          { value: '', label: 'Select category...' },
+                          ...categories.map((cat) => ({ value: String(cat.id), label: cat.name })),
+                        ]}
+                      />
                     </Field>
 
                     <Field label="Shop By Room">
                       <div className="space-y-1">
-                        <select
+                        <ModalSelectField
+                          ariaLabel="Select room type"
                           value={form.pd_room_type}
-                          onChange={e => {
+                          onChange={(value) => {
                             setRoomTouched(true)
-                            set('pd_room_type', e.target.value)
+                            set('pd_room_type', value)
                           }}
-                          className={inputCls()}
-                        >
-                          <option value="">Auto / Not assigned</option>
-                          {ROOM_OPTIONS.map((room) => (
-                            <option key={room.id} value={String(room.id)}>{room.label}</option>
-                          ))}
-                        </select>
+                          options={[
+                            { value: '', label: 'Auto / Not assigned' },
+                            ...ROOM_OPTIONS.map((room) => ({ value: String(room.id), label: room.label })),
+                          ]}
+                        />
                         <p className="text-[11px] text-slate-500">Auto-filled from category when possible, but you can override it before saving.</p>
                       </div>
                     </Field>
 
                     <Field label="Brand">
-                      <select
+                      <ModalSelectField
+                        ariaLabel="Select brand"
                         value={form.pd_brand_type}
-                        onChange={e => set('pd_brand_type', e.target.value)}
-                        className={inputCls()}
-                      >
-                        <option value="">Not assigned</option>
-                        {brands.map((brand) => (
-                          <option key={brand.id} value={String(brand.id)}>{brand.name}</option>
-                        ))}
-                      </select>
+                        onChange={(value) => set('pd_brand_type', value)}
+                        options={[
+                          { value: '', label: 'Not assigned' },
+                          ...brands.map((brand) => ({ value: String(brand.id), label: brand.name })),
+                        ]}
+                      />
                     </Field>
 
                     <Field label="SKU">
@@ -1789,12 +1838,15 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
                       <input type="text" value={form.pd_material} onChange={e => set('pd_material', e.target.value)} placeholder="e.g. Solid Wood & Fabric" className={inputCls()}/>
                     </Field>
                     <Field label="Warranty">
-                      <select value={form.pd_warranty} onChange={e => set('pd_warranty', e.target.value)} className={inputCls()}>
-                        <option value="">Select warranty…</option>
-                        {WARRANTY_OPTIONS.map((option) => (
-                          <option key={option} value={option}>{option}</option>
-                        ))}
-                      </select>
+                      <ModalSelectField
+                        ariaLabel="Select warranty"
+                        value={form.pd_warranty}
+                        onChange={(value) => set('pd_warranty', value)}
+                        options={[
+                          { value: '', label: 'Select warranty...' },
+                          ...WARRANTY_OPTIONS.map((option) => ({ value: option, label: option })),
+                        ]}
+                      />
                     </Field>
                   </div>
                   <Field label="Assembly Required">
@@ -1821,11 +1873,12 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
                   <div className="grid grid-cols-2 gap-3 lg:grid-cols-6">
                     <Field label="PV Pricing Tier">
                       <div className="space-y-1">
-                        <select value={form.pd_pricing_tier} onChange={e => set('pd_pricing_tier', e.target.value)} className={inputCls()}>
-                          {PRICING_TIER_OPTIONS.map((option) => (
-                            <option key={option.value} value={option.value}>{option.label}</option>
-                          ))}
-                        </select>
+                        <ModalSelectField
+                          ariaLabel="Select pricing tier"
+                          value={form.pd_pricing_tier}
+                          onChange={(value) => set('pd_pricing_tier', value)}
+                          options={PRICING_TIER_OPTIONS.map((option) => ({ value: option.value, label: option.label }))}
+                        />
                         <p className="text-[11px] text-slate-500">Low-End is active for the current formula. High-End will follow once its formula is finalized.</p>
                       </div>
                     </Field>
@@ -1899,10 +1952,11 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
                     <Field label="Status">
                       <div className="flex items-center p-1 bg-slate-100 rounded-xl gap-0.5">
                         {[{ value: '1', label: 'Active' }, { value: '0', label: 'Inactive (Draft)' }].map(opt => (
-                          <button
+                          <Button
                             key={opt.value}
                             type="button"
-                            onClick={() => set('pd_status', opt.value)}
+                            onPress={() => set('pd_status', opt.value)}
+                            variant="tertiary"
                             className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                               form.pd_status === opt.value
                                 ? opt.value === '1' ? 'bg-white text-teal-700 shadow-sm' : 'bg-white text-slate-600 shadow-sm'
@@ -1910,7 +1964,7 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
                             }`}
                           >
                             {opt.label}
-                          </button>
+                          </Button>
                         ))}
                       </div>
                     </Field>
