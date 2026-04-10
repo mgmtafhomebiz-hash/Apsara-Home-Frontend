@@ -14,6 +14,13 @@ import { useSession } from "next-auth/react";
 
 type Mode = 'login' | 'signup' | 'force-password-change'
 
+function resolveCallbackPath(value: string | null | undefined): string {
+  const normalized = String(value ?? '').trim();
+  if (!normalized.startsWith('/')) return '/shop';
+  if (normalized.startsWith('//')) return '/shop';
+  return normalized;
+}
+
 export default function LoginPageClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -23,15 +30,16 @@ export default function LoginPageClient() {
   const forcePasswordChange = searchParams.get('force-password-change') === '1';
   const passwordChangeRequired = Boolean(session?.user?.passwordChangeRequired);
   const hasReferral = Boolean(searchParams.get('ref') || searchParams.get('referred_by'));
+  const callbackPath = resolveCallbackPath(searchParams.get('callback') || searchParams.get('callbackUrl'));
   const [manualMode, setManualMode] = useState<'login' | 'signup' | null>(null);
 
   useEffect(() => {
     if (!isCustomerSession) return;
 
     if (!passwordChangeRequired && !forcePasswordChange) {
-      router.replace('/shop');
+      router.replace(callbackPath);
     }
-  }, [forcePasswordChange, isCustomerSession, passwordChangeRequired, router]);
+  }, [callbackPath, forcePasswordChange, isCustomerSession, passwordChangeRequired, router]);
 
   const mode: Mode = passwordChangeRequired || forcePasswordChange
     ? 'force-password-change'

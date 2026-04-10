@@ -14,6 +14,13 @@ import { Button } from "@heroui/react";
 const REMEMBER_USER_EMAIL_KEY = 'afhome_user_login'
 const BLOCKED_KEYWORDS = ['banned', 'blocked', 'contact support']
 
+function resolveCallbackPath(value: string | null | undefined): string {
+    const normalized = String(value ?? '').trim()
+    if (!normalized.startsWith('/')) return '/shop'
+    if (normalized.startsWith('//')) return '/shop'
+    return normalized
+}
+
 function getRememberedUserEmail() {
     if (typeof window === 'undefined') return ''
     return window.localStorage.getItem(REMEMBER_USER_EMAIL_KEY) ?? ''
@@ -83,6 +90,7 @@ const LoginForm = ({ onSwitchToSignUp, onRequirePasswordChange }: LoginFormProps
     })
 
     const blockedFromRedirect = searchParams.get('blocked') === '1'
+    const callbackPath = resolveCallbackPath(searchParams.get('callback') || searchParams.get('callbackUrl'))
 
     const set = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) =>
         setForm(f => ({ ...f, [field]: e.target.value }))
@@ -101,6 +109,7 @@ const LoginForm = ({ onSwitchToSignUp, onRequirePasswordChange }: LoginFormProps
             email: form.email,
             password: form.password,
             redirect: false,
+            callbackUrl: callbackPath,
         })
 
         setIsLoading(false)
@@ -124,7 +133,7 @@ const LoginForm = ({ onSwitchToSignUp, onRequirePasswordChange }: LoginFormProps
             }
 
             showSuccessToast('Login successful. Welcome back!')
-            router.replace('/shop');
+            router.replace(callbackPath);
         } else {
             const rawError = String(result?.error ?? '').trim()
             const isBlockedError = BLOCKED_KEYWORDS.some((keyword) => rawError.toLowerCase().includes(keyword))
