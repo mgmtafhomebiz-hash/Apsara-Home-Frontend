@@ -132,7 +132,7 @@ export default function ProductsToolbar({
               <Button
                 key={tab.value}
                 size="sm"
-                variant={status === tab.value ? 'solid' : 'tertiary'}
+                variant={status === tab.value ? 'primary' : 'tertiary'}
                 onPress={() => onStatus(tab.value)}
                 className={status === tab.value
                   ? 'rounded-xl bg-teal-600 px-4 text-xs font-semibold text-white hover:bg-teal-700'

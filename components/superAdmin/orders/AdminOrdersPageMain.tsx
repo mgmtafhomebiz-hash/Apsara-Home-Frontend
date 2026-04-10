@@ -112,6 +112,18 @@ const formatDuration = (minutes: number | null | undefined) => {
   return hrs <= 0 ? `${mins}m` : `${hrs}h ${mins}m`
 }
 
+const getPaginationPages = (currentPage: number, totalPages: number) => {
+  if (totalPages <= 7) {
+    return Array.from({ length: totalPages }, (_, index) => index + 1)
+  }
+
+  const pages = new Set<number>([1, totalPages, currentPage, currentPage - 1, currentPage + 1])
+
+  return Array.from(pages)
+    .filter((page) => page >= 1 && page <= totalPages)
+    .sort((first, second) => first - second)
+}
+
 const isNewOrder = (value?: string | null) => {
   if (!value) return false
   const createdAt = new Date(value)
@@ -548,6 +560,7 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
   const counts = data?.counts
   const currentPage = data?.meta?.current_page ?? 1
   const totalPages = data?.meta?.last_page ?? 1
+  const paginationPages = useMemo(() => getPaginationPages(currentPage, totalPages), [currentPage, totalPages])
 
   return (
     <div className="space-y-6">
@@ -1180,15 +1193,49 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                   <span className="font-semibold text-slate-700">{(data?.meta?.to ?? 0).toLocaleString()}</span> of{' '}
                   <span className="font-semibold text-slate-700">{(data?.meta?.total ?? 0).toLocaleString()}</span> orders
                 </p>
-                <Pagination
-                  showControls
-                  page={currentPage}
-                  total={totalPages}
-                  onChange={setPage}
-                  variant="flat"
-                  color="secondary"
-                  className="justify-start md:justify-end"
-                />
+                <Pagination size="sm" className="w-full justify-start gap-3 md:justify-end">
+                  <Pagination.Content>
+                    <Pagination.Item>
+                      <Pagination.Previous
+                        isDisabled={currentPage === 1}
+                        onPress={() => setPage(Math.max(1, currentPage - 1))}
+                      >
+                        <Pagination.PreviousIcon />
+                        Prev
+                      </Pagination.Previous>
+                    </Pagination.Item>
+
+                    {paginationPages.map((pageNumber, index) => {
+                      const previousPage = paginationPages[index - 1]
+                      const shouldShowEllipsis = typeof previousPage === 'number' && pageNumber - previousPage > 1
+
+                      return (
+                        <span key={`fragment-${pageNumber}`} className="contents">
+                          {shouldShowEllipsis && (
+                            <Pagination.Item>
+                              <Pagination.Ellipsis />
+                            </Pagination.Item>
+                          )}
+                          <Pagination.Item>
+                            <Pagination.Link isActive={pageNumber === currentPage} onPress={() => setPage(pageNumber)}>
+                              {pageNumber}
+                            </Pagination.Link>
+                          </Pagination.Item>
+                        </span>
+                      )
+                    })}
+
+                    <Pagination.Item>
+                      <Pagination.Next
+                        isDisabled={currentPage === totalPages}
+                        onPress={() => setPage(Math.min(totalPages, currentPage + 1))}
+                      >
+                        Next
+                        <Pagination.NextIcon />
+                      </Pagination.Next>
+                    </Pagination.Item>
+                  </Pagination.Content>
+                </Pagination>
               </div>
             )}
           </div>
