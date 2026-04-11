@@ -49,6 +49,7 @@ export interface ProductVariant {
   color?: string
   colorHex?: string
   size?: string
+  style?: string
   width?: number
   dimension?: number
   height?: number
@@ -73,6 +74,26 @@ export interface ProductsMeta {
 export interface ProductsResponse {
   products: Product[]
   meta: ProductsMeta
+}
+
+export interface ProductReviewSummary {
+  average: number
+  count: number
+  breakdown: Record<number, number>
+}
+
+export interface ProductReview {
+  id: number
+  rating: number
+  review: string
+  customer_name: string
+  customer_avatar?: string | null
+  created_at?: string | null
+}
+
+export interface ProductReviewsResponse {
+  summary: ProductReviewSummary
+  reviews: ProductReview[]
 }
 
 export interface ProductActivityLog {
@@ -154,6 +175,58 @@ export interface BulkImportProductsResponse {
   }>
 }
 
+export interface BulkPriceRow {
+  id?: number
+  sku?: string
+  price_srp?: number | string | null
+  price_dp?: number | string | null
+  price_member?: number | string | null
+}
+
+export interface BulkPricePreviewResponse {
+  message: string
+  summary: {
+    total: number
+    ready: number
+    failed: number
+  }
+  results: Array<{
+    row: number
+    status: 'ready' | 'failed'
+    product_id?: number | null
+    sku?: string | null
+    name?: string | null
+    current?: {
+      price_srp?: number | null
+      price_dp?: number | null
+      price_member?: number | null
+    }
+    next?: {
+      price_srp?: number | null
+      price_dp?: number | null
+      price_member?: number | null
+    }
+    message: string
+  }>
+}
+
+export interface BulkPriceApplyResponse {
+  message: string
+  summary: {
+    total: number
+    updated: number
+    failed: number
+  }
+  results: Array<{
+    row: number
+    status: 'updated' | 'failed'
+    product_id?: number | null
+    sku?: string | null
+    name?: string | null
+    message: string
+  }>
+}
+
 export interface PublicProductResponse {
   product: Product
 }
@@ -197,6 +270,7 @@ export interface CreateProductVariantPayload {
   pv_color?: string
   pv_color_hex?: string
   pv_size?: string
+  pv_style?: string
   pv_width?: number
   pv_dimension?: number
   pv_height?: number
@@ -227,6 +301,11 @@ interface ProductActivityLogsQueryParams {
   scope?: 'my' | 'all'
 }
 
+const cleanParams = (params: Record<string, unknown>) =>
+  Object.fromEntries(
+    Object.entries(params).filter(([, value]) => value !== undefined && value !== null && value !== ''),
+  )
+
 const toStringArray = (value: unknown): string[] => {
   if (Array.isArray(value)) {
     return value.filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
@@ -254,6 +333,7 @@ const getProductVariantKey = (variant: ProductVariant) => {
     variant.color?.trim().toLowerCase() ?? '',
     variant.colorHex?.trim().toLowerCase() ?? '',
     variant.size?.trim().toLowerCase() ?? '',
+    variant.style?.trim().toLowerCase() ?? '',
     String(variant.width ?? ''),
     String(variant.dimension ?? ''),
     String(variant.height ?? ''),
@@ -313,6 +393,7 @@ export const normalizeProduct = (input: Product & Record<string, unknown>): Prod
           color: typeof row.color === 'string' ? row.color : (typeof row.pv_color === 'string' ? row.pv_color : undefined),
           colorHex: typeof row.colorHex === 'string' ? row.colorHex : (typeof row.pv_color_hex === 'string' ? row.pv_color_hex : undefined),
           size: typeof row.size === 'string' ? row.size : (typeof row.pv_size === 'string' ? row.pv_size : undefined),
+          style: typeof row.style === 'string' ? row.style : (typeof row.pv_style === 'string' ? row.pv_style : undefined),
           width: typeof row.width === 'number' ? row.width : (typeof row.width === 'string' ? Number(row.width) : (typeof row.pv_width === 'number' ? row.pv_width : (typeof row.pv_width === 'string' ? Number(row.pv_width) : undefined))),
           dimension: typeof row.dimension === 'number' ? row.dimension : (typeof row.dimension === 'string' ? Number(row.dimension) : (typeof row.pv_dimension === 'number' ? row.pv_dimension : (typeof row.pv_dimension === 'string' ? Number(row.pv_dimension) : undefined))),
           height: typeof row.height === 'number' ? row.height : (typeof row.height === 'string' ? Number(row.height) : (typeof row.pv_height === 'number' ? row.pv_height : (typeof row.pv_height === 'string' ? Number(row.pv_height) : undefined))),
@@ -389,7 +470,13 @@ export const normalizeProduct = (input: Product & Record<string, unknown>): Prod
     brand:
       typeof input.brand === 'string'
         ? input.brand
-        : (typeof input.brand_name === 'string' ? input.brand_name : null),
+        : (typeof input.brand_name === 'string'
+          ? input.brand_name
+          : (typeof (input as { brand?: { pb_name?: string; name?: string } }).brand === 'object'
+            ? ((input as { brand?: { pb_name?: string; name?: string } }).brand?.pb_name
+              ?? (input as { brand?: { pb_name?: string; name?: string } }).brand?.name
+              ?? null)
+            : null)),
     qty:
       effectiveQty,
     weight:
@@ -456,16 +543,17 @@ export const productsApi = baseApi.injectEndpoints({
         url: '/api/products',
         method: 'GET',
         cache: 'no-store',
-        params: {
+        params: cleanParams({
           page: params?.page ?? 1,
           per_page: params?.perPage ?? 25,
           q: params?.search,
+          search: params?.search,
           status: params?.status,
           cat_id: params?.catId,
           room_type: params?.roomType,
           brand_type: params?.brandType,
           supplier_id: params?.supplierId,
-        },
+        }),
       }),
       transformResponse: (response: ProductsResponse) => normalizeProductsResponse(response),
       providesTags: ['Products'],
@@ -482,21 +570,29 @@ export const productsApi = baseApi.injectEndpoints({
       },
       providesTags: ['Products'],
     }),
+    getProductReviews: builder.query<ProductReviewsResponse, number>({
+      query: (id) => ({
+        url: `/api/products/${id}/reviews`,
+        method: 'GET',
+      }),
+      providesTags: ['Products'],
+    }),
     getProducts: builder.query<ProductsResponse, ProductsQueryParams | void>({
       query: (params) => ({
         url: '/api/admin/products',
         method: 'GET',
         cache: 'no-store',
-        params: {
+        params: cleanParams({
           page: params?.page ?? 1,
           per_page: params?.perPage ?? 25,
           q: params?.search,
+          search: params?.search,
           status: params?.status,
           cat_id: params?.catId,
           room_type: params?.roomType,
           brand_type: params?.brandType,
           supplier_id: params?.supplierId,
-        },
+        }),
       }),
       transformResponse: (response: ProductsResponse) => normalizeProductsResponse(response),
       providesTags: ['Products'],
@@ -531,6 +627,21 @@ export const productsApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['Products'],
     }),
+    bulkPricePreview: builder.mutation<BulkPricePreviewResponse, { rows: BulkPriceRow[] }>({
+      query: (body) => ({
+        url: '/api/admin/products/bulk-price/preview',
+        method: 'POST',
+        body,
+      }),
+    }),
+    bulkPriceApply: builder.mutation<BulkPriceApplyResponse, { rows: BulkPriceRow[] }>({
+      query: (body) => ({
+        url: '/api/admin/products/bulk-price/apply',
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: ['Products'],
+    }),
     updateProduct: builder.mutation<{ message: string; product?: Product }, { id: number; data: Partial<CreateProductPayload> }>({
       query: ({ id, data }) => ({
         url: `/api/admin/products/${id}`,
@@ -556,10 +667,13 @@ export const productsApi = baseApi.injectEndpoints({
 export const {
   useGetPublicProductsQuery,
   useLazyGetPublicProductQuery,
+  useGetProductReviewsQuery,
   useGetProductsQuery,
   useGetProductActivityLogsQuery,
   useCreateProductMutation,
   useBulkImportProductsMutation,
+  useBulkPricePreviewMutation,
+  useBulkPriceApplyMutation,
   useUpdateProductMutation,
   useDeleteProductMutation,
 } = productsApi

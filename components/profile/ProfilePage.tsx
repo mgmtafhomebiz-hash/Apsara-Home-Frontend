@@ -249,7 +249,7 @@ const ProfilePage = ({ initialProfile = null }: ProfilePageProps) => {
   const searchParams = useSearchParams();
   const { data: session, update: updateSession } = useSession();
   const { data } = useMeQuery();
-  const { data: referralTree, isLoading: isReferralTreeLoading } = useReferralTreeQuery(undefined, {
+  const { data: referralTree, isLoading: isReferralTreeLoading } = useReferralTreeQuery(data?.id, {
     refetchOnMountOrArgChange: true,
     refetchOnFocus: true,
     refetchOnReconnect: true,
@@ -1803,8 +1803,8 @@ const ProfilePage = ({ initialProfile = null }: ProfilePageProps) => {
                           onChange={(e) => setPrefs((p) => ({ ...p, language: e.target.value as 'en' | 'fil' }))}
                           className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300"
                         >
-                          <option value="en">ðŸŒ English</option>
-                          <option value="fil">ðŸ‡µðŸ‡­ Filipino</option>
+                          <option value="en">🌐 English</option>
+                          <option value="fil">🇵🇭 Filipino</option>
                         </select>
                       </div>
                       <div className="space-y-1.5">
@@ -1814,7 +1814,7 @@ const ProfilePage = ({ initialProfile = null }: ProfilePageProps) => {
                           onChange={(e) => setPrefs((p) => ({ ...p, currency: e.target.value as 'PHP' | 'USD' }))}
                           className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300"
                         >
-                          <option value="PHP">â‚± Philippine Peso (PHP)</option>
+                          <option value="PHP">₱ Philippine Peso (PHP)</option>
                           <option value="USD">$ US Dollar (USD)</option>
                         </select>
                       </div>
@@ -1832,7 +1832,7 @@ const ProfilePage = ({ initialProfile = null }: ProfilePageProps) => {
                 </motion.div>
               )}
 
-              {/* â"€â"€ Activity tab â"€â"€ */}
+              {/* --- Activity tab --- */}
               {activeTab === 'wallet' && (
                 <motion.div
                   key="wallet"

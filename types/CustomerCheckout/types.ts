@@ -64,4 +64,5 @@ export interface CustomerCheckoutData {
 }
 
 export type PaymentMethod = 'gcash' | 'maya' | 'online_banking' | 'card';
+export type PaymentMode = 'test' | 'live';
 export type FormErrors = Partial<Record<keyof GuestForm, string>>;

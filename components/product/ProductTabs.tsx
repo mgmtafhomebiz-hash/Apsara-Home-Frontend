@@ -1,16 +1,18 @@
 'use client';
 
 import { CategoryProduct } from "@/libs/CategoryData";
-import { mockReviews } from "@/libs/MockProductData";
 import { displayColorName } from "@/libs/colorUtils";
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import StarRating from "../ui/StarRating";
+import type { ProductReview, ProductReviewSummary } from "@/store/api/productsApi";
 
 interface ProductTabsProps {
     product: CategoryProduct;
     defaultTab?: 'description' | 'specs' | 'reviews';
     onTabChange?: (tab: string) => void;
+    reviews?: ProductReview[];
+    reviewSummary?: ProductReviewSummary | null;
 }
 
 const tabs: { id: 'description' | 'specs' | 'reviews'; label: string }[] = [
@@ -55,7 +57,7 @@ const cleanProductDescription = (value: string) => {
         .trim();
 };
 
-const ProductTabs = ({ product, defaultTab = 'description', onTabChange }: ProductTabsProps) => {
+const ProductTabs = ({ product, defaultTab = 'description', onTabChange, reviews = [], reviewSummary }: ProductTabsProps) => {
     const [activeTab, setActiveTab] = useState<'description' | 'specs' | 'reviews'>(defaultTab);
     const cleanedDescription = product.description ? cleanProductDescription(product.description) : '';
 
@@ -64,7 +66,25 @@ const ProductTabs = ({ product, defaultTab = 'description', onTabChange }: Produ
         onTabChange?.(tab);
     };
 
-    const avgRating = (mockReviews.reduce((s, r) => s + r.rating, 0) / mockReviews.length).toFixed(1);
+    const reviewCount = reviewSummary?.count ?? reviews.length ?? 0;
+    const avgRatingValue = typeof reviewSummary?.average === 'number'
+        ? reviewSummary.average
+        : (reviewCount > 0 ? reviews.reduce((s, r) => s + r.rating, 0) / reviewCount : 0);
+    const avgRating = avgRatingValue.toFixed(1);
+    const breakdown = reviewSummary?.breakdown ?? { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    const formattedDate = (value?: string | null) => {
+        if (!value) return '';
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return '';
+        return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(date);
+    };
+    const getInitials = (name: string) =>
+        name
+            .split(' ')
+            .filter(Boolean)
+            .map((part) => part[0]?.toUpperCase())
+            .slice(0, 2)
+            .join('') || 'CU';
 
     return (
         <motion.div
@@ -87,7 +107,7 @@ const ProductTabs = ({ product, defaultTab = 'description', onTabChange }: Produ
                             <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${
                                 activeTab === 'reviews' ? 'bg-orange-100 text-orange-500' : 'bg-gray-100 text-gray-400'
                             }`}>
-                                {mockReviews.length}
+                                {reviewCount}
                             </span>
                         )}
                         {activeTab === tab.id && (
@@ -174,12 +194,12 @@ const ProductTabs = ({ product, defaultTab = 'description', onTabChange }: Produ
                                 <div className="text-center shrink-0">
                                     <div className="text-4xl sm:text-5xl font-bold text-orange-500">{avgRating}</div>
                                     <StarRating rating={Math.round(Number(avgRating))} size={14} />
-                                    <div className="text-xs text-gray-400 mt-1">{mockReviews.length} reviews</div>
+                                    <div className="text-xs text-gray-400 mt-1">{reviewCount} reviews</div>
                                 </div>
                                 <div className="flex-1 space-y-1.5">
                                     {[5, 4, 3, 2, 1].map(star => {
-                                        const count = mockReviews.filter(r => r.rating === star).length;
-                                        const pct = (count / mockReviews.length) * 100;
+                                        const count = breakdown[star] ?? 0;
+                                        const pct = reviewCount > 0 ? (count / reviewCount) * 100 : 0;
                                         return (
                                             <div key={star} className="flex items-center gap-2 text-xs">
                                                 <span className="w-3 text-gray-500">{star}</span>
@@ -201,29 +221,46 @@ const ProductTabs = ({ product, defaultTab = 'description', onTabChange }: Produ
                                 </div>
                             </div>
 
-                            {mockReviews.map((review, index) => (
-                                <motion.div
-                                    key={index}
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: index * 0.08 }}
-                                    className="border border-gray-100 rounded-2xl p-4 sm:p-5 hover:border-orange-100 hover:shadow-sm transition-all"
-                                >
-                                    <div className="flex items-start gap-3 mb-3">
-                                        <div className="w-9 h-9 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 text-xs font-bold shrink-0">
-                                            {review.avatar}
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-center justify-between gap-2 flex-wrap">
-                                                <span className="text-sm font-semibold text-slate-800">{review.name}</span>
-                                                <span className="text-xs text-gray-400 shrink-0">{review.date}</span>
+                            {reviews.length > 0 ? (
+                                reviews.map((review, index) => (
+                                    <motion.div
+                                        key={review.id ?? index}
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: index * 0.08 }}
+                                        className="border border-gray-100 rounded-2xl p-4 sm:p-5 hover:border-orange-100 hover:shadow-sm transition-all"
+                                    >
+                                        <div className="flex items-start gap-3 mb-3">
+                                            {review.customer_avatar ? (
+                                                // eslint-disable-next-line @next/next/no-img-element
+                                                <img
+                                                    src={review.customer_avatar}
+                                                    alt={review.customer_name}
+                                                    className="w-9 h-9 rounded-full object-cover border border-orange-100 shrink-0"
+                                                />
+                                            ) : (
+                                                <div className="w-9 h-9 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 text-xs font-bold shrink-0">
+                                                    {getInitials(review.customer_name)}
+                                                </div>
+                                            )}
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-center justify-between gap-2 flex-wrap">
+                                                    <span className="text-sm font-semibold text-slate-800">{review.customer_name}</span>
+                                                    {review.created_at && (
+                                                        <span className="text-xs text-gray-400 shrink-0">{formattedDate(review.created_at)}</span>
+                                                    )}
+                                                </div>
+                                                <StarRating rating={review.rating} size={12} />
                                             </div>
-                                            <StarRating rating={review.rating} size={12} />
                                         </div>
-                                    </div>
-                                    <p className="text-sm text-gray-600 leading-relaxed">{review.comment}</p>
-                                </motion.div>
-                            ))}
+                                        <p className="text-sm text-gray-600 leading-relaxed">{review.review}</p>
+                                    </motion.div>
+                                ))
+                            ) : (
+                                <div className="border border-dashed border-gray-200 rounded-2xl p-6 text-center text-sm text-gray-400">
+                                    No reviews yet. Be the first to share your experience.
+                                </div>
+                            )}
                         </div>
                     )}
                 </motion.div>

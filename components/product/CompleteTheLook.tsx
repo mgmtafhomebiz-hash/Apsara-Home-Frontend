@@ -51,6 +51,7 @@ const CompleteTheLook = ({ currentCategory }: CompleteTheLookProps) => {
                 name: p.name,
                 price: p.price,
                 image: p.image,
+                brand: p.brand ?? null,
             });
         });
     };

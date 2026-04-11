@@ -3,15 +3,24 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 import { useState } from 'react';
-import { PaymentMethod } from '@/types/CustomerCheckout/types';
+import { PaymentMethod, PaymentMode } from '@/types/CustomerCheckout/types';
+import { CheckoutOnlineBankingProvider } from '@/store/api/paymentApi';
 
 interface Props {
   selectedMethod: PaymentMethod;
   onSelect: (m: PaymentMethod) => void;
   notice: string;
+  paymentMode: PaymentMode;
+  paymentModeOptions: PaymentMode[];
+  onPaymentModeChange: (mode: PaymentMode) => void;
+  selectedOnlineBankingProvider: CheckoutOnlineBankingProvider;
+  onOnlineBankingProviderChange: (provider: CheckoutOnlineBankingProvider) => void;
+  showOnlineBankingProviderPicker: boolean;
 }
 
-const onlineBankingOptions = ['BPI', 'BDO', 'UnionBank', 'Landbank'];
+const onlineBankingOptions: Array<{ id: CheckoutOnlineBankingProvider; label: string; description: string }> = [
+  { id: 'dob', label: 'BDO', description: 'Currently supported online banking option via PayMongo' },
+];
 const cardOptions = ['Visa', 'Mastercard'];
 
 const paymentMethods = [
@@ -21,8 +30,17 @@ const paymentMethods = [
   { id: 'card' as PaymentMethod, label: 'Credit / Debit Card', note: 'Visa or Mastercard', badge: '3DS Secured', badgeColor: 'bg-slate-700', logos: ['/payment-logos/visa.svg', '/payment-logos/mastercard.svg'] },
 ];
 
-export default function CustomerCheckoutPaymentMethod({ selectedMethod, onSelect, notice }: Props) {
-  const [selectedBank, setSelectedBank] = useState(onlineBankingOptions[0]);
+export default function CustomerCheckoutPaymentMethod({
+  selectedMethod,
+  onSelect,
+  notice,
+  paymentMode,
+  paymentModeOptions,
+  onPaymentModeChange,
+  selectedOnlineBankingProvider,
+  onOnlineBankingProviderChange,
+  showOnlineBankingProviderPicker,
+}: Props) {
   const [selectedCard, setSelectedCard] = useState(cardOptions[0]);
 
   return (
@@ -31,6 +49,36 @@ export default function CustomerCheckoutPaymentMethod({ selectedMethod, onSelect
         <div className="h-6 w-6 rounded-full bg-orange-500 text-white text-xs font-bold flex items-center justify-center shrink-0">3</div>
         Payment Method
       </h2>
+
+      {paymentModeOptions.length > 1 && (
+        <div className="mb-4 rounded-2xl border border-orange-200 bg-orange-50/70 p-4">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.18em] text-orange-600">Payment Mode</p>
+              <p className="mt-1 text-xs text-slate-500">Local-only switch for testing PayMongo test and live credentials.</p>
+            </div>
+            <div className="inline-flex rounded-2xl border border-orange-200 bg-white p-1 shadow-sm">
+              {paymentModeOptions.map((mode) => {
+                const selected = paymentMode === mode;
+                return (
+                  <button
+                    key={mode}
+                    type="button"
+                    onClick={() => onPaymentModeChange(mode)}
+                    className={`rounded-xl px-4 py-2 text-xs font-bold capitalize transition ${
+                      selected
+                        ? 'bg-orange-500 text-white shadow-sm'
+                        : 'text-slate-500 hover:bg-orange-50 hover:text-orange-700'
+                    }`}
+                  >
+                    {mode}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Method cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -81,15 +129,28 @@ export default function CustomerCheckoutPaymentMethod({ selectedMethod, onSelect
         {selectedMethod === 'online_banking' && (
           <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.2 }} className="overflow-hidden">
             <div className="mt-3 p-4 rounded-2xl border border-sky-100 bg-sky-50/60">
-              <p className="text-xs font-bold text-sky-700 mb-2.5">Choose your bank</p>
-              <div className="grid grid-cols-2 gap-2">
-                {onlineBankingOptions.map(bank => (
-                  <button key={bank} onClick={() => setSelectedBank(bank)}
-                    className={`px-3 py-2.5 rounded-xl text-xs font-bold border-2 transition-all ${
-                      selectedBank === bank ? 'bg-sky-600 text-white border-sky-600' : 'bg-white text-sky-700 border-sky-200 hover:border-sky-400'
-                    }`}>{bank}</button>
-                ))}
-              </div>
+              {showOnlineBankingProviderPicker ? (
+                <>
+                  <p className="text-xs font-bold text-sky-700 mb-2.5">Choose your bank</p>
+                  <p className="mb-3 text-[11px] text-sky-700/80">Local mode lets you pin the currently supported bank before redirecting to PayMongo.</p>
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    {onlineBankingOptions.map(bank => (
+                      <button key={bank.id} type="button" onClick={() => onOnlineBankingProviderChange(bank.id)}
+                        className={`rounded-xl border-2 px-3 py-3 text-left transition-all ${
+                          selectedOnlineBankingProvider === bank.id ? 'border-sky-600 bg-sky-600 text-white' : 'border-sky-200 bg-white text-sky-700 hover:border-sky-400'
+                        }`}>
+                        <p className="text-xs font-bold">{bank.label}</p>
+                        <p className={`mt-1 text-[11px] ${selectedOnlineBankingProvider === bank.id ? 'text-sky-100' : 'text-sky-700/70'}`}>{bank.description}</p>
+                      </button>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p className="text-xs font-bold text-sky-700">Bank selection will continue on the PayMongo payment page.</p>
+                  <p className="mt-2 text-[11px] text-sky-700/80">Live mode sends only the currently supported online banking option to PayMongo, so the final bank UI will appear after redirect.</p>
+                </>
+              )}
             </div>
           </motion.div>
         )}

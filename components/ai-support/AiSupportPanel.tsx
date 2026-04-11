@@ -17,6 +17,9 @@ interface Props {
   onClose: () => void;
   onInputChange: (v: string) => void;
   onSend: (text: string) => void;
+  images: string[];
+  onImageChange: (dataUrls: string[]) => void;
+  hasImage: boolean;
 }
 
 export function AiSupportPanel({
@@ -29,6 +32,9 @@ export function AiSupportPanel({
   onClose,
   onInputChange,
   onSend,
+  images,
+  onImageChange,
+  hasImage,
 }: Props) {
   return (
     <AnimatePresence>
@@ -43,7 +49,7 @@ export function AiSupportPanel({
             'bg-white border border-indigo-100/60 rounded-3xl',
             'shadow-2xl shadow-slate-200/60',
             /* desktop */
-            'left-[18px] bottom-[126px] w-[370px] h-[580px] max-h-[74vh]',
+            'left-[18px] bottom-[120px] w-[370px] h-[580px] max-h-[74vh]',
             /* mobile */
             'max-[576px]:left-2.5 max-[576px]:right-2.5 max-[576px]:bottom-[106px] max-[576px]:w-auto max-[576px]:h-[70vh]',
             'max-w-[calc(100vw-20px)]',
@@ -57,6 +63,9 @@ export function AiSupportPanel({
             value={inputValue}
             onChange={onInputChange}
             onSend={() => onSend(inputValue)}
+            images={images}
+            onImageChange={onImageChange}
+            hasImage={hasImage}
             disabled={isLoading}
           />
         </motion.div>

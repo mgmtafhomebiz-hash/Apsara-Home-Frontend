@@ -66,7 +66,8 @@ const AdminLoginForm = () => {
             clearAccessTokenCache()
 
             // Refresh the app shell using Next router navigation.
-            router.replace('/admin/dashboard')
+            // Let /admin decide the correct landing page per role.
+            router.replace('/admin')
             router.refresh()
         } catch {
             setError('Unable to sign in. Please try again');

@@ -15,15 +15,20 @@ import { showErrorToast, showSuccessToast } from '@/libs/toast';
 interface ProductCardProps {
   id?: number;
   name: string;
+  brand?: string | null;
   createdAt?: string | null;
   price: number;
   priceMember?: number;
   prodpv?: number;
   originalPrice?: number;
   image: string;
+  sku?: string;
   badge?: string;
   stock?: number;
   variants?: CategoryProduct['variants'];
+  viewMode?: 'grid' | 'list';
+  rating?: number;
+  reviewCount?: number;
 }
 
 type VariantOption = NonNullable<CategoryProduct['variants']>[number];
@@ -91,15 +96,20 @@ const getVariantChoiceKey = (variant: VariantOption) => [
 export default function ProductCard({
   id,
   name,
+  brand,
   createdAt,
   price,
   priceMember,
   prodpv,
   originalPrice,
   image,
+  sku,
   badge,
   stock,
   variants,
+  viewMode = 'grid',
+  rating,
+  reviewCount,
 }: ProductCardProps) {
   const { addToCart } = useCart();
   const { data: session } = useSession();
@@ -116,7 +126,11 @@ export default function ProductCard({
   const [removeWishlist, { isLoading: isRemoving }] = useRemoveWishlistMutation();
 
   const safeName = (name || 'Untitled Product').trim();
-  const slug = safeName.toLowerCase().replace(/\s+/g, '-');
+  const slug = safeName
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
   const productPath = typeof id === 'number' ? `/product/${slug}-i${id}` : `/product/${slug}`;
   const srpPrice = Number(price ?? 0);
   const memberPrice = Number(priceMember ?? 0);
@@ -127,6 +141,11 @@ export default function ProductCard({
   const normalizedStock = getEffectiveStock(stock, resolvedVariants);
   const isInStock = normalizedStock > 0;
   const showNewBadge = isNewProduct(createdAt);
+  const isList = viewMode === 'list';
+  const ratingValue =
+    typeof rating === 'number' && Number.isFinite(rating) ? Math.max(0, Math.min(5, rating)) : null;
+  const normalizedReviewCount =
+    typeof reviewCount === 'number' && Number.isFinite(reviewCount) ? Math.max(0, Math.floor(reviewCount)) : null;
 
   useEffect(() => {
     const nextVariants = variants ?? [];
@@ -214,8 +233,16 @@ export default function ProductCard({
   const isWishlistPending = isAdding || isRemoving;
 
   const addResolvedVariantToCart = (variant?: VariantOption) => {
+    const variantSrp = Number(variant?.priceSrp ?? displayPrice ?? 0) || displayPrice;
+    const variantMember = Number(variant?.priceMember ?? 0);
+    const hasVariantMember = isLoggedIn && variantMember > 0 && variantMember < variantSrp;
+    const variantPrice = hasVariantMember ? variantMember : variantSrp;
+    const variantOriginal = hasVariantMember
+      ? variantSrp
+      : (strikePrice > variantPrice ? strikePrice : undefined);
     const variantLabel = [
       variant?.name?.trim(),
+      variant?.style?.trim(),
       variant?.size?.trim(),
       variant?.color ? displayColorName(variant.color) : '',
     ].filter(Boolean).join(' • ');
@@ -225,13 +252,16 @@ export default function ProductCard({
     addToCart({
       id: itemId,
       name: variantLabel ? `${safeName} (${variantLabel})` : safeName,
-      price: Number(variant?.priceMember ?? variant?.priceSrp ?? displayPrice ?? 0) || displayPrice,
+      price: variantPrice,
+      originalPrice: typeof variantOriginal === 'number' ? variantOriginal : null,
       image: variant?.images?.[0] || imageSrc,
       prodpv: Number(variant?.prodpv ?? prodpv ?? 0) || 0,
+      brand: brand ?? null,
       selectedColor: variant?.color ?? null,
+      selectedStyle: variant?.style ?? null,
       selectedSize: variant?.size ?? null,
       selectedType: variant?.name ?? null,
-      selectedSku: variant?.sku ?? null,
+      selectedSku: variant?.sku ?? sku ?? null,
     });
   };
 
@@ -298,9 +328,15 @@ export default function ProductCard({
         <motion.div
           whileHover={{ y: -6 }}
           transition={{ duration: 0.3, ease: 'easeOut' }}
-          className="group relative cursor-pointer overflow-hidden rounded-2xl bg-white shadow-sm transition-shadow duration-500 hover:shadow-2xl"
+          className={`group relative cursor-pointer overflow-hidden rounded-2xl bg-white shadow-sm transition-shadow duration-500 hover:shadow-2xl ${
+            isList ? 'sm:flex sm:items-stretch' : ''
+          }`}
         >
-          <div className="relative aspect-square overflow-hidden bg-gray-50">
+          <div
+            className={`relative overflow-hidden bg-gray-50 ${
+              isList ? 'aspect-[4/3] sm:aspect-auto sm:h-40 sm:w-56 sm:min-w-[14rem]' : 'aspect-square'
+            }`}
+          >
             <Image
               src={imageSrc}
               alt={safeName}
@@ -355,8 +391,36 @@ export default function ProductCard({
             </div>
           </div>
 
-          <div className="p-4">
+          <div className={`p-4 ${isList ? 'sm:flex-1' : ''}`}>
             <h3 className="truncate text-sm font-medium text-gray-800 transition-colors duration-200 group-hover:text-orange-500">{safeName}</h3>
+            {(ratingValue !== null || normalizedReviewCount !== null) && (
+              <div className="mt-1 flex items-center gap-1.5 text-xs text-slate-500">
+                <div className="flex items-center gap-0.5">
+                  {Array.from({ length: 5 }).map((_, index) => {
+                    const filled = ratingValue !== null && ratingValue >= index + 1;
+                    return (
+                      <svg
+                        key={index}
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="12"
+                        height="12"
+                        viewBox="0 0 24 24"
+                        fill={filled ? '#f59e0b' : 'none'}
+                        stroke={filled ? '#f59e0b' : '#cbd5f5'}
+                        strokeWidth="2"
+                      >
+                        <path d="M12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+                      </svg>
+                    );
+                  })}
+                </div>
+                {ratingValue !== null && <span className="font-semibold text-slate-600">{ratingValue.toFixed(1)}</span>}
+                {normalizedReviewCount !== null && <span>{`(${normalizedReviewCount})`}</span>}
+              </div>
+            )}
+            {ratingValue === null && normalizedReviewCount === null && isList && (
+              <div className="mt-1 text-xs text-slate-400">No reviews yet</div>
+            )}
             <div className="mt-1 flex items-center gap-2">
               <span className="text-base font-bold text-orange-500">{`₱${displayPrice.toLocaleString()}`}</span>
               {strikePrice > displayPrice ? (
@@ -385,12 +449,13 @@ export default function ProductCard({
             />
 
             <motion.div
-              initial={{ opacity: 0, y: 40 }}
+              initial={{ opacity: 0, y: 24 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 24 }}
+              exit={{ opacity: 0, y: 16 }}
               transition={{ duration: 0.22, ease: 'easeOut' }}
-              className="fixed inset-x-0 bottom-0 z-[120] mx-auto w-full max-w-xl rounded-t-3xl bg-white shadow-2xl"
+              className="fixed inset-0 z-[120] flex items-center justify-center p-4"
             >
+              <div className="w-full max-w-xl rounded-3xl bg-white shadow-2xl">
               <div className="border-b border-slate-100 px-5 py-4">
                 <div className="flex items-start justify-between gap-3">
                   <div>
@@ -491,6 +556,7 @@ export default function ProductCard({
                 >
                   Add Selected Variant to Cart
                 </button>
+              </div>
               </div>
             </motion.div>
           </>

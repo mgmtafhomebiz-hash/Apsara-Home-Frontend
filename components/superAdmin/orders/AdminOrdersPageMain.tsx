@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
-import { Button, Card, Chip, Label, ListBox, ListBoxItem, Pagination, SearchField, Select } from '@heroui/react'
+import { Button, Card, Chip, Label, ListBox, ListBoxItem, Pagination, SearchField, Select, Table } from '@heroui/react'
 import { useSession } from 'next-auth/react'
 import { useSearchParams } from 'next/navigation'
 import {
@@ -13,8 +13,11 @@ import {
   useGetAdminOrderCourierWaybillMutation,
   useGetAdminOrderCourierEpodMutation,
   useApproveAdminOrderMutation,
+  useFetchAdminOrderZqDetailMutation,
   useGetAdminOrdersQuery,
+  usePushAdminOrderToZqMutation,
   useRejectAdminOrderMutation,
+  useSyncAdminOrderZqTrackingMutation,
   useTrackAdminOrderCourierMutation,
   useUpdateAdminOrderShipmentStatusMutation,
 } from '@/store/api/adminOrdersApi'
@@ -55,6 +58,14 @@ const COURIER_OPTIONS: Array<{ value: AdminCourier; label: string }> = [
   { value: 'xde', label: 'XDE' },
 ]
 
+type FulfillmentMode = 'manual' | 'local_courier' | 'zq'
+
+const FULFILLMENT_MODE_OPTIONS: Array<{ value: FulfillmentMode; label: string }> = [
+  { value: 'manual', label: 'Manual' },
+  { value: 'local_courier', label: 'Local Courier' },
+  { value: 'zq', label: 'ZQ Supplier' },
+]
+
 const APPROVAL_CONFIG: Record<string, { dot: string; badge: string; label: string }> = {
   approved:        { dot: 'bg-emerald-400', badge: 'bg-emerald-50 text-emerald-700 border-emerald-200', label: 'Approved'        },
   rejected:        { dot: 'bg-red-400',     badge: 'bg-red-50 text-red-700 border-red-200',             label: 'Rejected'        },
@@ -70,6 +81,15 @@ const SLA_CONFIG = {
   on_track:  { badge: 'bg-emerald-50 text-emerald-700 border-emerald-200', dot: 'bg-emerald-400', label: 'On Track' },
 }
 
+const ZQ_STATUS_STYLES: Record<string, string> = {
+  submitted: 'bg-sky-50 text-sky-700 border-sky-200',
+  processing: 'bg-amber-50 text-amber-700 border-amber-200',
+  unfulfilled: 'bg-slate-50 text-slate-700 border-slate-200',
+  paid: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+  success: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  close: 'bg-rose-50 text-rose-700 border-rose-200',
+}
+
 /* ─── helpers ──────────────────────────────────────────────── */
 
 const formatMoney = (value: number) =>
@@ -77,9 +97,12 @@ const formatMoney = (value: number) =>
 
 const formatDateTime = (value?: string | null) => {
   if (!value) return 'N/A'
-  const date = new Date(value)
+  const hasTimeZone = /([zZ]|[+-]\d{2}:\d{2})$/.test(value.trim())
+  const normalized = value.includes('T') ? value.trim() : value.trim().replace(' ', 'T')
+  const date = new Date(hasTimeZone ? normalized : `${normalized}Z`)
   if (Number.isNaN(date.getTime())) return 'N/A'
   return new Intl.DateTimeFormat('en-PH', {
+    timeZone: 'Asia/Manila',
     year: 'numeric', month: 'short', day: 'numeric',
     hour: 'numeric', minute: '2-digit',
   }).format(date)
@@ -102,6 +125,13 @@ const getPaginationPages = (currentPage: number, totalPages: number) => {
   return Array.from(pages)
     .filter((page) => page >= 1 && page <= totalPages)
     .sort((first, second) => first - second)
+}
+
+const isNewOrder = (value?: string | null) => {
+  if (!value) return false
+  const createdAt = new Date(value)
+  if (Number.isNaN(createdAt.getTime())) return false
+  return Date.now() - createdAt.getTime() <= 24 * 60 * 60 * 1000
 }
 
 const getInitials = (name?: string | null) => {
@@ -161,18 +191,36 @@ function StatCard({ label, value, bg, text, border, icon }: {
 }) {
   return (
     <Card variant="default" className={`border ${border} bg-white shadow-none`}>
-      <Card.Content className="px-4 py-4">
-        <div className="mb-3 flex items-center gap-3">
-          <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${bg} ${text}`}>
+      <Card.Content className="px-5 py-5">
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{label}</p>
+            <p className="mt-2.5 text-3xl font-bold text-slate-800">{value}</p>
+          </div>
+          <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${bg} ${text}`}>
             {icon}
           </div>
-          <p className="text-[11px] font-medium leading-tight text-slate-400">{label}</p>
         </div>
-        <p className="text-xl font-bold text-slate-800">{value}</p>
       </Card.Content>
     </Card>
   )
 }
+
+function EmptyOrdersState() {
+  return (
+    <div className="flex flex-col items-center gap-2 py-16 text-center">
+      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100">
+        <svg className="h-7 w-7 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+        </svg>
+      </div>
+      <p className="text-sm font-semibold text-slate-500">No orders found</p>
+      <p className="text-xs text-slate-400">Try adjusting your search or filter.</p>
+    </div>
+  )
+}
+
+/* ─── main ─────────────────────────────────────────────────── */
 
 function AdminOrderSelect({
   ariaLabel,
@@ -216,8 +264,6 @@ function AdminOrderSelect({
   )
 }
 
-/* ─── main ─────────────────────────────────────────────────── */
-
 interface Props { initialFilter?: string }
 
 export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
@@ -227,6 +273,7 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
   const [page,        setPage]        = useState(1)
   const [busyId,      setBusyId]      = useState<number | null>(null)
   const [courierByOrder, setCourierByOrder] = useState<Record<number, AdminCourier>>({})
+  const [fulfillmentModeByOrder, setFulfillmentModeByOrder] = useState<Record<number, FulfillmentMode>>({})
   const [overdueFirst, setOverdueFirst] = useState(true)
   const [sortBy,      setSortBy]      = useState<'default' | 'customer_az' | 'amount_low_high'>('default')
   const [highlightedOrderId, setHighlightedOrderId] = useState<number | null>(null)
@@ -259,6 +306,9 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
   const [cancelCourier] = useCancelAdminOrderCourierMutation()
   const [getCourierEpod] = useGetAdminOrderCourierEpodMutation()
   const [updateShipmentStatus] = useUpdateAdminOrderShipmentStatusMutation()
+  const [pushToZq] = usePushAdminOrderToZqMutation()
+  const [fetchZqDetail] = useFetchAdminOrderZqDetailMutation()
+  const [syncZqTracking] = useSyncAdminOrderZqTrackingMutation()
 
   const visibleOrders = useMemo(() => {
     const list = [...(data?.orders ?? [])]
@@ -291,6 +341,21 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
         const courier = ((order.courier ?? '').toLowerCase() === 'xde' ? 'xde' : 'jnt') as AdminCourier
         if (!next[order.id]) {
           next[order.id] = courier
+        }
+      }
+      return next
+    })
+  }, [data?.orders])
+
+  useEffect(() => {
+    if (!data?.orders?.length) return
+
+    setFulfillmentModeByOrder((prev) => {
+      const next = { ...prev }
+      for (const order of data.orders) {
+        const hasExistingZqFlow = Boolean(order.zq_platform_order_id || order.zq_order_id || order.zq_status)
+        if (!next[order.id]) {
+          next[order.id] = hasExistingZqFlow ? 'zq' : (order.courier ? 'local_courier' : 'manual')
         }
       }
       return next
@@ -450,21 +515,48 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
   const handlePushToZq = async (id: number) => {
     setBusyId(id)
     try {
-      showErrorToast(`ZQ push is not available on this branch yet for order #${id}.`)
+      const result = await pushToZq({ id }).unwrap()
+      if (result.zq) {
+        setPayloadPreview({
+          checkoutId: visibleOrders.find((order) => order.id === id)?.checkout_id ?? `Order #${id}`,
+          payload: result.zq,
+        })
+      }
+      showSuccessToast(result.message || 'Order pushed to ZQ successfully.')
+    } catch (err: unknown) {
+      showErrorToast(extractApiError(err, 'Failed to push order to ZQ.'))
     } finally { setBusyId(null) }
   }
 
   const handleFetchZqDetail = async (id: number) => {
     setBusyId(id)
     try {
-      showErrorToast(`ZQ detail is not available on this branch yet for order #${id}.`)
+      const result = await fetchZqDetail({ id }).unwrap()
+      if (result.zq) {
+        setPayloadPreview({
+          checkoutId: visibleOrders.find((order) => order.id === id)?.checkout_id ?? `Order #${id}`,
+          payload: result.zq,
+        })
+      }
+      showSuccessToast(result.message || 'ZQ order detail fetched successfully.')
+    } catch (err: unknown) {
+      showErrorToast(extractApiError(err, 'Failed to fetch ZQ detail.'))
     } finally { setBusyId(null) }
   }
 
   const handleSyncZqTracking = async (id: number) => {
     setBusyId(id)
     try {
-      showErrorToast(`ZQ tracking sync is not available on this branch yet for order #${id}.`)
+      const result = await syncZqTracking({ id }).unwrap()
+      if (result.zq) {
+        setPayloadPreview({
+          checkoutId: visibleOrders.find((order) => order.id === id)?.checkout_id ?? `Order #${id}`,
+          payload: result.zq,
+        })
+      }
+      showSuccessToast(result.message || 'ZQ tracking synced successfully.')
+    } catch (err: unknown) {
+      showErrorToast(extractApiError(err, 'Failed to sync ZQ tracking.'))
     } finally { setBusyId(null) }
   }
 
@@ -486,15 +578,17 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
           <p className="text-sm text-slate-500 mt-0.5">Track checkout orders and handle approval workflow</p>
         </div>
         <div className="flex items-center gap-2">
-          <Chip
-            size="sm"
-            variant="soft"
-            className={canApprove ? 'border border-teal-200 bg-teal-50 text-teal-700' : 'border border-slate-200 bg-slate-100 text-slate-500'}
-          >
-            <span className={`mr-1.5 inline-block h-1.5 w-1.5 rounded-full ${canApprove ? 'bg-teal-500' : 'bg-slate-400'}`} />
+          <span className={`inline-flex items-center px-3 py-1.5 rounded-xl text-xs font-semibold border ${
+            canApprove ? 'bg-teal-50 text-teal-700 border-teal-200' : 'bg-slate-100 text-slate-500 border-slate-200'
+          }`}>
+            <span className={`h-1.5 w-1.5 rounded-full mr-1.5 ${canApprove ? 'bg-teal-500' : 'bg-slate-400'}`} />
             {role || 'staff'}
-          </Chip>
-          <Button variant="tertiary" className="border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition-all hover:border-slate-300 hover:bg-slate-50">
+          </span>
+          <Button
+            size="sm"
+            variant="secondary"
+            className="border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm"
+          >
             <svg className="w-4 h-4 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
             </svg>
@@ -537,7 +631,7 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
         className="rounded-3xl border border-slate-100 bg-white/95 p-4 shadow-sm"
       >
         {/* Search */}
-        <div className="hidden min-w-50 flex-1">
+        <div className="hidden relative flex-1 min-w-50">
           <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
@@ -672,7 +766,7 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
             <div className="google-loading-bar" />
           )}
 
-          <div className="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden">
+          <div className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
             <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
               <h2 className="text-sm font-bold text-slate-800">Order Queue</h2>
               <Chip size="sm" variant="soft" className="border border-slate-100 bg-slate-50 text-slate-500">
@@ -680,32 +774,52 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
               </Chip>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-left min-w-240">
-                <thead>
-                  <tr className="border-b border-slate-100 bg-slate-50">
-                    {['Checkout', 'Date', 'Customer', 'Product', 'Amount', 'Approval', 'SLA', 'Tracking', 'Actions'].map(h => (
-                      <th key={h} className="px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wide">{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-50">
-                  {visibleOrders.length ? (
-                    visibleOrders.map(order => {
+            <Table className="w-full">
+              <Table.ScrollContainer>
+                <Table.Content aria-label="Admin orders table" className="min-w-[1640px]">
+                  <Table.Header>
+                    <Table.Column className="min-w-[250px] text-xs font-semibold uppercase tracking-wide text-slate-400">Product</Table.Column>
+                    <Table.Column className="min-w-[180px] text-xs font-semibold uppercase tracking-wide text-slate-400">Checkout</Table.Column>
+                    <Table.Column className="min-w-[170px] text-xs font-semibold uppercase tracking-wide text-slate-400">Date</Table.Column>
+                    <Table.Column className="min-w-[240px] text-xs font-semibold uppercase tracking-wide text-slate-400">Customer</Table.Column>
+                    <Table.Column className="min-w-[130px] text-xs font-semibold uppercase tracking-wide text-slate-400">Amount</Table.Column>
+                    <Table.Column className="min-w-[120px] text-xs font-semibold uppercase tracking-wide text-slate-400">Approval</Table.Column>
+                    <Table.Column className="min-w-[120px] text-xs font-semibold uppercase tracking-wide text-slate-400">SLA</Table.Column>
+                    <Table.Column className="min-w-[360px] text-xs font-semibold uppercase tracking-wide text-slate-400">Tracking</Table.Column>
+                    <Table.Column className="min-w-[220px] text-xs font-semibold uppercase tracking-wide text-slate-400">Actions</Table.Column>
+                  </Table.Header>
+                  <Table.Body>
+                    {visibleOrders.length ? (
+                      visibleOrders.map(order => {
                       const isBusy             = busyId === order.id
                       const canApproveThisOrder = canApprove && order.approval_status === 'pending_approval'
-                      const canTrackThisOrder   = canTrack && order.approval_status === 'approved'
+                      const isDelivered = order.fulfillment_status === 'delivered'
+                      const isCancelled = order.fulfillment_status === 'cancelled'
+                      const isRefunded = order.fulfillment_status === 'refunded'
+                      const canTrackThisOrder   = canTrack && order.approval_status === 'approved' && !isDelivered && !isCancelled && !isRefunded
                       const approval = APPROVAL_CONFIG[order.approval_status] ?? APPROVAL_CONFIG.pending
                       const sla      = order.sla?.state ? SLA_CONFIG[order.sla.state as keyof typeof SLA_CONFIG] : null
                       const isCourierBooked = Boolean(order.courier && order.tracking_no)
                       const rawCourierStatus = extractCourierStatus(order.shipment_payload)
+                      const zqStatusKey = String(order.zq_status ?? '').trim().toLowerCase()
+                      const zqBadgeClass = ZQ_STATUS_STYLES[zqStatusKey] ?? 'bg-slate-50 text-slate-600 border-slate-200'
+                      const hasZqOrder = Boolean(order.zq_platform_order_id || order.zq_order_id || zqStatusKey)
+                      const selectedFulfillmentMode = fulfillmentModeByOrder[order.id] ?? (hasZqOrder ? 'zq' : 'manual')
+                      const isManualMode = selectedFulfillmentMode === 'manual'
+                      const isLocalCourierMode = selectedFulfillmentMode === 'local_courier'
+                      const isZqMode = selectedFulfillmentMode === 'zq'
+                      const canPushZq = canTrackThisOrder && isZqMode && !hasZqOrder
+                      const canUseZqLookup = canTrackThisOrder && isZqMode && hasZqOrder
+                      const canUseCourierFlow = canTrackThisOrder && isLocalCourierMode && !hasZqOrder
+                      const canUseManualFlow = canTrackThisOrder && isManualMode && !hasZqOrder
+                      const showNewBadge = isNewOrder(order.created_at)
                       const isCourierCancelled =
                         order.shipment_status === 'cancelled'
                         || rawCourierStatus === 'package_cancelled'
                         || rawCourierStatus === 'package cancelled'
 
                       return (
-                        <tr
+                        <Table.Row
                           id={`admin-order-row-${order.id}`}
                           key={order.id}
                           className={`transition-colors ${
@@ -714,24 +828,55 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                               : 'hover:bg-slate-50/70'
                           }`}
                         >
+                          {/* Product */}
+                          <Table.Cell className="px-4 py-3.5 align-top">
+                            <div className="flex items-start gap-3">
+                              <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
+                                {order.product_image ? (
+                                  // eslint-disable-next-line @next/next/no-img-element
+                                  <img
+                                    src={order.product_image}
+                                    alt={order.product_name}
+                                    className="h-full w-full object-cover"
+                                  />
+                                ) : (
+                                  <svg className="h-5 w-5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.6} d="M20 13V7a2 2 0 00-1-1.73l-6-3.43a2 2 0 00-2 0L5 5.27A2 2 0 004 7v6a2 2 0 001 1.73l6 3.43a2 2 0 002 0l6-3.43A2 2 0 0020 13z" />
+                                  </svg>
+                                )}
+                              </div>
+                              <div className="min-w-0">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <p className="text-sm font-semibold text-slate-800">{order.product_name}</p>
+                                  {showNewBadge ? (
+                                    <Chip size="sm" variant="soft" className="border border-sky-200 bg-sky-50 text-[10px] font-bold uppercase tracking-wide text-sky-700">
+                                      New
+                                    </Chip>
+                                  ) : null}
+                                </div>
+                                <p className="mt-0.5 text-xs text-slate-400">Qty: {order.quantity}</p>
+                              </div>
+                            </div>
+                          </Table.Cell>
+
                           {/* Checkout */}
-                          <td className="px-4 py-3.5">
-                            <p className="text-sm font-semibold text-slate-800">{order.checkout_id}</p>
-                            <p className="text-xs text-slate-400 mt-0.5 capitalize">{order.payment_status}</p>
-                          </td>
+                          <Table.Cell className="px-4 py-3.5 align-top">
+                            <p className="font-mono text-xs font-semibold text-slate-800">{order.checkout_id}</p>
+                            <p className="text-xs text-slate-400 mt-1 capitalize">{order.payment_status}</p>
+                          </Table.Cell>
 
                           {/* Date */}
-                          <td className="px-4 py-3.5 text-xs text-slate-500 whitespace-nowrap">
+                          <Table.Cell className="px-4 py-3.5 align-top text-xs text-slate-500 whitespace-nowrap">
                             <p>{formatDateTime(order.created_at)}</p>
                             {order.paid_at && (
                               <p className="mt-0.5 text-slate-400">Paid: {formatDateTime(order.paid_at)}</p>
                             )}
-                          </td>
+                          </Table.Cell>
 
                           {/* Customer */}
-                          <td className="px-4 py-3.5">
+                          <Table.Cell className="px-4 py-3.5 align-top">
                             <div className="flex items-center gap-2.5">
-                              <div className="h-8 w-8 rounded-full bg-linear-to-br from-teal-400 to-teal-600 flex items-center justify-center text-white text-[10px] font-bold shrink-0">
+                              <div className="h-9 w-9 rounded-full bg-linear-to-br from-teal-400 to-teal-600 flex items-center justify-center text-white text-[11px] font-bold shrink-0">
                                 {getInitials(order.customer_name)}
                               </div>
                               <div>
@@ -739,41 +884,27 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                                 <p className="text-xs text-slate-400">{order.customer_email || ''}</p>
                               </div>
                             </div>
-                          </td>
-
-                          {/* Product */}
-                          <td className="px-4 py-3.5">
-                            <p className="text-sm font-medium text-slate-700">{order.product_name}</p>
-                            <p className="text-xs text-slate-400 mt-0.5">Qty: {order.quantity}</p>
-                          </td>
+                          </Table.Cell>
 
                           {/* Amount */}
-                          <td className="px-4 py-3.5">
+                          <Table.Cell className="px-4 py-3.5 align-top">
                             <p className="text-sm font-bold text-slate-800">{formatMoney(order.amount)}</p>
                             <p className="text-xs text-slate-400 mt-0.5">{order.payment_method || '-'}</p>
-                          </td>
+                          </Table.Cell>
 
                           {/* Approval badge */}
-                          <td className="px-4 py-3.5">
-                            <Chip
-                              size="sm"
-                              variant="soft"
-                              className={`border text-[11px] font-semibold ${approval.badge}`}
-                            >
+                          <Table.Cell className="px-4 py-3.5 align-top">
+                            <Chip size="sm" variant="soft" className={`border text-[11px] font-semibold ${approval.badge}`}>
                               <span className={`mr-1.5 inline-block h-1.5 w-1.5 rounded-full ${approval.dot}`} />
                               {approval.label}
                             </Chip>
-                          </td>
+                          </Table.Cell>
 
                           {/* SLA */}
-                          <td className="px-4 py-3.5">
+                          <Table.Cell className="px-4 py-3.5 align-top">
                             {sla ? (
                               <div className="space-y-1">
-                                <Chip
-                                  size="sm"
-                                  variant="soft"
-                                  className={`border text-[11px] font-semibold ${sla.badge}`}
-                                >
+                                <Chip size="sm" variant="soft" className={`border text-[11px] font-semibold ${sla.badge}`}>
                                   <span className={`mr-1.5 inline-block h-1.5 w-1.5 rounded-full ${sla.dot}`} />
                                   {sla.label}
                                 </Chip>
@@ -790,74 +921,160 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                             ) : (
                               <span className="text-xs text-slate-300">No SLA</span>
                             )}
-                          </td>
+                          </Table.Cell>
 
                           {/* Tracking select */}
-                          <td className="px-4 py-3.5">
+                          <Table.Cell className="px-4 py-3.5 align-top">
                             <div className="space-y-1.5">
                               <AdminOrderSelect
-                                ariaLabel={`Courier for order ${order.checkout_id}`}
-                                value={courierByOrder[order.id] ?? (((order.courier ?? '').toLowerCase() === 'xde' ? 'xde' : 'jnt') as AdminCourier)}
-                                options={COURIER_OPTIONS}
-                                isDisabled={isBusy || !canTrackThisOrder}
-                                onChange={(value) => setCourierByOrder(prev => ({ ...prev, [order.id]: value as AdminCourier }))}
+                                ariaLabel={`Fulfillment mode for order ${order.checkout_id}`}
+                                value={selectedFulfillmentMode}
+                                options={FULFILLMENT_MODE_OPTIONS}
+                                isDisabled={isBusy || order.approval_status !== 'approved' || hasZqOrder}
+                                onChange={(value) => setFulfillmentModeByOrder(prev => ({ ...prev, [order.id]: value as FulfillmentMode }))}
                               />
-                              <AdminOrderSelect
-                                ariaLabel={`Shipment status for order ${order.checkout_id}`}
-                                value={(order.shipment_status as AdminShipmentStatus | undefined) ?? 'for_pickup'}
-                                options={SHIPMENT_STATUS_OPTIONS}
-                                isDisabled={isBusy || !canTrackThisOrder || isCourierBooked}
-                                onChange={(value) => handleShipmentStatusChange(order.id, value as AdminShipmentStatus)}
-                              />
-                              <div className="flex flex-wrap gap-1.5">
-                                <Button
-                                  size="sm"
-                                  variant="tertiary"
-                                  isDisabled={isBusy || !canTrackThisOrder || isCourierCancelled}
-                                  onPress={() => handleBookCourier(order.id)}
-                                  className="border border-teal-200 bg-teal-50 px-2.5 py-1.5 text-[11px] font-semibold text-teal-700 transition hover:bg-teal-100"
-                                >
-                                  Book
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="tertiary"
-                                  isDisabled={isBusy || !canTrackThisOrder || !order.tracking_no || isCourierCancelled}
-                                  onPress={() => handleTrackCourier(order.id)}
-                                  className="border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-[11px] font-semibold text-slate-700 transition hover:bg-slate-100"
-                                >
-                                  Track
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="tertiary"
-                                  isDisabled={isBusy || !canTrackThisOrder || courierByOrder[order.id] !== 'xde' || !order.tracking_no || isCourierCancelled}
-                                  onPress={() => handleOpenWaybill(order.id)}
-                                  className="border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-[11px] font-semibold text-blue-700 transition hover:bg-blue-100"
-                                >
-                                  A6 Waybill
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="tertiary"
-                                  isDisabled={isBusy || !canTrackThisOrder || courierByOrder[order.id] !== 'xde' || !order.tracking_no || order.shipment_status !== 'delivered'}
-                                  onPress={() => handleOpenEpod(order.id)}
-                                  className="border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-[11px] font-semibold text-amber-700 transition hover:bg-amber-100"
-                                >
-                                  EPOD
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="tertiary"
-                                  isDisabled={isBusy || !canTrackThisOrder || courierByOrder[order.id] !== 'xde' || !order.tracking_no || isCourierCancelled}
-                                  onPress={() => handleCancelCourier(order.id)}
-                                  className="border border-red-200 bg-red-50 px-2.5 py-1.5 text-[11px] font-semibold text-red-700 transition hover:bg-red-100"
-                                >
-                                  Cancel
-                                </Button>
-                              </div>
+
+                              {isZqMode ? (
+                                <div className="rounded-2xl border border-violet-200 bg-violet-50 p-3">
+                                  <div className="flex items-center justify-between gap-2">
+                                    <p className="text-[10px] font-bold uppercase tracking-wide text-violet-700">ZQ Supplier Flow</p>
+                                    <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold ${zqBadgeClass}`}>
+                                      {order.zq_status ?? 'Not sent'}
+                                    </span>
+                                  </div>
+                                  <p className="mt-2 text-[11px] leading-relaxed text-violet-700">
+                                    {hasZqOrder
+                                      ? 'ZQ handoff is active for this order. Use ZQ detail and tracking below.'
+                                      : order.approval_status === 'approved'
+                                        ? 'Push this order to ZQ first to unlock detail and tracking.'
+                                        : 'Approve the order first before pushing it to ZQ.'}
+                                  </p>
+                                  {order.zq_platform_order_id ? (
+                                    <p className="mt-2 break-all text-[11px] font-semibold text-slate-800">
+                                      Platform ID: {order.zq_platform_order_id}
+                                    </p>
+                                  ) : null}
+                                  {order.zq_order_id ? (
+                                    <p className="mt-1 break-all text-[11px] text-slate-600">
+                                      ZQ Order: {order.zq_order_id}
+                                    </p>
+                                  ) : null}
+                                </div>
+                              ) : isManualMode ? (
+                                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                                  <div className="flex items-center justify-between gap-2">
+                                    <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">Manual Flow</p>
+                                    <span className="inline-flex items-center rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-semibold text-slate-600">
+                                      Internal
+                                    </span>
+                                  </div>
+                                  <p className="mt-2 text-[11px] leading-relaxed text-slate-600">
+                                    This order is managed manually. No courier booking or ZQ handoff will be used.
+                                  </p>
+                                  <AdminOrderSelect
+                                    ariaLabel={`Manual shipment status for order ${order.checkout_id}`}
+                                    value={(order.shipment_status as AdminShipmentStatus | undefined) ?? 'for_pickup'}
+                                    options={SHIPMENT_STATUS_OPTIONS}
+                                    isDisabled={isBusy || !canUseManualFlow}
+                                    onChange={(value) => handleShipmentStatusChange(order.id, value as AdminShipmentStatus)}
+                                  />
+                                </div>
+                              ) : (
+                                <>
+                                  <AdminOrderSelect
+                                    ariaLabel={`Courier for order ${order.checkout_id}`}
+                                    value={courierByOrder[order.id] ?? (((order.courier ?? '').toLowerCase() === 'xde' ? 'xde' : 'jnt') as AdminCourier)}
+                                    options={COURIER_OPTIONS}
+                                    isDisabled={isBusy || !canUseCourierFlow}
+                                    onChange={(value) => setCourierByOrder(prev => ({ ...prev, [order.id]: value as AdminCourier }))}
+                                  />
+                                  <AdminOrderSelect
+                                    ariaLabel={`Shipment status for order ${order.checkout_id}`}
+                                    value={(order.shipment_status as AdminShipmentStatus | undefined) ?? 'for_pickup'}
+                                    options={SHIPMENT_STATUS_OPTIONS}
+                                    isDisabled={isBusy || !canUseCourierFlow || isCourierBooked}
+                                    onChange={(value) => handleShipmentStatusChange(order.id, value as AdminShipmentStatus)}
+                                  />
+                                  <div className="grid grid-cols-2 gap-1">
+                                    <Button
+                                      size="sm"
+                                      variant="tertiary"
+                                      isDisabled={isBusy || !canUseCourierFlow || isCourierCancelled}
+                                      onPress={() => handleBookCourier(order.id)}
+                                      className="border border-teal-200 bg-teal-50 px-2 py-1.5 text-[11px] font-semibold text-teal-700 transition hover:bg-teal-100"
+                                    >
+                                      Book
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="tertiary"
+                                      isDisabled={isBusy || !canUseCourierFlow || !order.tracking_no || isCourierCancelled}
+                                      onPress={() => handleTrackCourier(order.id)}
+                                      className="border border-slate-200 bg-slate-50 px-2 py-1.5 text-[11px] font-semibold text-slate-700 transition hover:bg-slate-100"
+                                    >
+                                      Track
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="tertiary"
+                                      isDisabled={isBusy || !canUseCourierFlow || courierByOrder[order.id] !== 'xde' || !order.tracking_no || isCourierCancelled}
+                                      onPress={() => handleOpenWaybill(order.id)}
+                                      className="border border-blue-200 bg-blue-50 px-2 py-1.5 text-[11px] font-semibold text-blue-700 transition hover:bg-blue-100"
+                                    >
+                                      Waybill
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="tertiary"
+                                      isDisabled={isBusy || !canUseCourierFlow || courierByOrder[order.id] !== 'xde' || !order.tracking_no || order.shipment_status !== 'delivered'}
+                                      onPress={() => handleOpenEpod(order.id)}
+                                      className="border border-amber-200 bg-amber-50 px-2 py-1.5 text-[11px] font-semibold text-amber-700 transition hover:bg-amber-100"
+                                    >
+                                      EPOD
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="tertiary"
+                                      isDisabled={isBusy || !canUseCourierFlow || courierByOrder[order.id] !== 'xde' || !order.tracking_no || isCourierCancelled}
+                                      onPress={() => handleCancelCourier(order.id)}
+                                      className="col-span-2 border border-red-200 bg-red-50 px-2 py-1.5 text-[11px] font-semibold text-red-700 transition hover:bg-red-100"
+                                    >
+                                      Cancel
+                                    </Button>
+                                  </div>
+                                  <p className="text-[11px] text-teal-600">
+                                    Local courier mode is active. Use J&T/XDE booking and tracking controls here.
+                                  </p>
+                                </>
+                              )}
+
+                              {(isDelivered || isCancelled || isRefunded) && (
+                                <p className="text-[11px] text-slate-400">
+                                  {isDelivered ? 'Delivered orders are locked.' : 'Tracking is disabled for this status.'}
+                                </p>
+                              )}
                               {order.courier || order.tracking_no || order.shipment_status ? (
                                 <div className="space-y-2 text-[11px] text-slate-500 leading-relaxed">
+                                  {order.zq_platform_order_id || order.zq_status ? (
+                                    <div className="rounded-xl border border-violet-200 bg-violet-50 p-2.5">
+                                      <div className="flex items-center justify-between gap-2">
+                                        <p className="text-[10px] font-bold uppercase tracking-wide text-violet-700">ZQ</p>
+                                        <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold ${zqBadgeClass}`}>
+                                          {order.zq_status ?? 'Not sent'}
+                                        </span>
+                                      </div>
+                                      {order.zq_platform_order_id ? (
+                                        <p className="mt-1 break-all text-[11px] font-semibold text-slate-800">
+                                          Platform ID: {order.zq_platform_order_id}
+                                        </p>
+                                      ) : null}
+                                      {order.zq_order_id ? (
+                                        <p className="mt-1 break-all text-[11px] text-slate-600">
+                                          ZQ Order: {order.zq_order_id}
+                                        </p>
+                                      ) : null}
+                                    </div>
+                                  ) : null}
                                   {order.courier ? <p className="uppercase">Courier: {order.courier}</p> : null}
                                   {rawCourierStatus ? <p className="capitalize">Courier Status: {rawCourierStatus.replace(/_/g, ' ')}</p> : null}
                                   {order.tracking_no ? (
@@ -865,9 +1082,10 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                                       <p className="text-[10px] font-bold uppercase tracking-wide text-teal-700">Tracking Number</p>
                                       <div className="mt-1 flex items-center gap-2">
                                         <p className="min-w-0 flex-1 break-all text-sm font-bold text-slate-900">{order.tracking_no}</p>
-                                        <button
-                                          type="button"
-                                          onClick={async () => {
+                                        <Button
+                                          size="sm"
+                                          variant="tertiary"
+                                          onPress={async () => {
                                             try {
                                               await copyText(order.tracking_no as string)
                                               showSuccessToast('Tracking number copied.')
@@ -876,21 +1094,22 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                                               showErrorToast(message)
                                             }
                                           }}
-                                          className="shrink-0 rounded-lg border border-teal-200 bg-white px-2 py-1 text-[10px] font-semibold text-teal-700 transition hover:bg-teal-100"
+                                          className="shrink-0 border border-teal-200 bg-white px-2 py-1 text-[10px] font-semibold text-teal-700 transition hover:bg-teal-100"
                                         >
                                           Copy
-                                        </button>
+                                        </Button>
                                       </div>
                                     </div>
                                   ) : null}
                                   {order.shipment_status ? <p className="capitalize">Shipment: {order.shipment_status.replace(/_/g, ' ')}</p> : null}
-                                  <button
-                                    type="button"
-                                    onClick={() => setPayloadPreview({ checkoutId: order.checkout_id, payload: order.shipment_payload ?? null })}
-                                    className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-[10px] font-semibold text-slate-700 transition hover:bg-slate-100"
+                                  <Button
+                                    size="sm"
+                                    variant="tertiary"
+                                    onPress={() => setPayloadPreview({ checkoutId: order.checkout_id, payload: order.shipment_payload ?? null })}
+                                    className="border border-slate-200 bg-slate-50 px-2 py-1 text-[10px] font-semibold text-slate-700 transition hover:bg-slate-100"
                                   >
                                     {order.shipment_payload ? 'View Payload' : 'No Payload Yet'}
-                                  </button>
+                                  </Button>
                                 </div>
                               ) : (
                                 <p className="text-[11px] text-slate-300">
@@ -898,126 +1117,86 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                                 </p>
                               )}
                             </div>
-                          </td>
+                          </Table.Cell>
 
                           {/* Actions */}
-                          <td className="px-4 py-3.5">
+                          <Table.Cell className="px-4 py-3.5 align-top">
                             {canApproveThisOrder ? (
-                              <div className="flex flex-col items-start gap-2">
-                                <div className="flex items-center gap-1.5">
-                                  <Button
-                                    size="sm"
-                                    variant="tertiary"
-                                    isDisabled={isBusy}
-                                    onPress={() => handlePushToZq(order.id)}
-                                    className="border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-semibold text-violet-700 transition hover:bg-violet-100"
-                                  >
-                                    Push ZQ
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="tertiary"
-                                    isDisabled={isBusy}
-                                    onPress={() => handleApprove(order.id)}
-                                    className="border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100"
-                                  >
+                              <div className="flex w-36 flex-col gap-1.5">
+                                <div className="grid grid-cols-2 gap-1">
+                                  <Button size="sm" variant="tertiary" isDisabled={isBusy} onPress={() => handleApprove(order.id)} className="border border-emerald-200 bg-emerald-50 px-2 py-1.5 text-[11px] font-semibold text-emerald-700 transition hover:bg-emerald-100">
                                     Approve
                                   </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="tertiary"
-                                    isDisabled={isBusy}
-                                    onPress={() => handleReject(order.id)}
-                                    className="border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-100"
-                                  >
+                                  <Button size="sm" variant="tertiary" isDisabled={isBusy} onPress={() => handleReject(order.id)} className="border border-red-200 bg-red-50 px-2 py-1.5 text-[11px] font-semibold text-red-600 transition hover:bg-red-100">
                                     Reject
                                   </Button>
                                 </div>
-                                <div className="flex items-center gap-1.5">
-                                  <Button
-                                    size="sm"
-                                    variant="tertiary"
-                                    isDisabled={isBusy}
-                                    onPress={() => handleFetchZqDetail(order.id)}
-                                    className="border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
-                                  >
-                                    ZQ Detail
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="tertiary"
-                                    isDisabled={isBusy}
-                                    onPress={() => handleSyncZqTracking(order.id)}
-                                    className="border border-sky-200 bg-sky-50 px-3 py-1.5 text-xs font-semibold text-sky-700 transition hover:bg-sky-100"
-                                  >
-                                    ZQ Tracking
-                                  </Button>
-                                </div>
+                                <p className="text-[11px] text-slate-400">Approve first before fulfillment actions.</p>
                               </div>
                             ) : order.approval_status === 'approved' ? (
-                              <div className="flex flex-col items-start gap-2">
-                                <Button
-                                  size="sm"
-                                  variant="tertiary"
-                                  isDisabled={isBusy}
-                                  onPress={() => handlePushToZq(order.id)}
-                                  className="border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-semibold text-violet-700 transition hover:bg-violet-100"
-                                >
-                                  Push ZQ
-                                </Button>
-                                <div className="flex items-center gap-1.5">
-                                  <Button
-                                    size="sm"
-                                    variant="tertiary"
-                                    isDisabled={isBusy}
-                                    onPress={() => handleFetchZqDetail(order.id)}
-                                    className="border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
-                                  >
-                                    ZQ Detail
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="tertiary"
-                                    isDisabled={isBusy}
-                                    onPress={() => handleSyncZqTracking(order.id)}
-                                    className="border border-sky-200 bg-sky-50 px-3 py-1.5 text-xs font-semibold text-sky-700 transition hover:bg-sky-100"
-                                  >
-                                    ZQ Tracking
-                                  </Button>
-                                </div>
+                              <div className="flex w-36 flex-col gap-1.5">
+                                {isZqMode ? (
+                                  <>
+                                    <Button size="sm" variant="tertiary" isDisabled={isBusy || !canPushZq} onPress={() => handlePushToZq(order.id)} className={`w-full border px-3 py-1.5 text-xs font-semibold transition ${canPushZq ? 'border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-100' : 'border-slate-200 bg-slate-50 text-slate-400'}`}>
+                                      {hasZqOrder ? 'ZQ Pushed' : 'Push ZQ'}
+                                    </Button>
+                                    <div className="grid grid-cols-2 gap-1">
+                                      <Button size="sm" variant="tertiary" isDisabled={isBusy || !canUseZqLookup} onPress={() => handleFetchZqDetail(order.id)} className={`border px-2 py-1.5 text-[11px] font-semibold transition ${canUseZqLookup ? 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100' : 'border-slate-200 bg-slate-50 text-slate-400'}`}>
+                                        ZQ Detail
+                                      </Button>
+                                      <Button size="sm" variant="tertiary" isDisabled={isBusy || !canUseZqLookup} onPress={() => handleSyncZqTracking(order.id)} className={`border px-2 py-1.5 text-[11px] font-semibold transition ${canUseZqLookup ? 'border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100' : 'border-slate-200 bg-slate-50 text-slate-400'}`}>
+                                        ZQ Track
+                                      </Button>
+                                    </div>
+                                  </>
+                                ) : (
+                                  <Chip size="sm" variant="soft" className={`border text-[11px] font-semibold ${isManualMode ? 'border-slate-200 bg-slate-50 text-slate-700' : 'border-teal-200 bg-teal-50 text-teal-700'}`}>
+                                    {isManualMode ? 'Manual Flow' : 'Local Courier Flow'}
+                                  </Chip>
+                                )}
+                                {isZqMode ? (
+                                  !hasZqOrder ? (
+                                    <p className="text-[11px] text-slate-400">Push to ZQ first to unlock detail and tracking.</p>
+                                  ) : (
+                                    <p className="text-[11px] text-violet-600">ZQ lookup is now available for this order.</p>
+                                  )
+                                ) : (
+                                  <p className="text-[11px] text-slate-400">
+                                    {isManualMode
+                                      ? 'Use the tracking column for manual shipment status updates only.'
+                                      : 'Use the courier controls in the tracking column for local fulfillment.'}
+                                  </p>
+                                )}
                               </div>
                             ) : (
                               <Chip size="sm" variant="soft" className="border border-slate-200 bg-slate-50 text-[11px] font-semibold text-slate-500">
                                 {order.approval_status === 'pending_approval' ? 'Awaiting approval' : 'No actions'}
                               </Chip>
                             )}
-                          </td>
-                        </tr>
+                          </Table.Cell>
+                        </Table.Row>
                       )
                     })
                   ) : (
-                    <tr>
-                      <td colSpan={9} className="px-5 py-14 text-center">
-                        <div className="flex flex-col items-center gap-2">
-                          <svg className="w-8 h-8 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                          </svg>
-                          <p className="text-sm font-semibold text-slate-500">No orders found</p>
-                          <p className="text-xs text-slate-400">Try adjusting your search or filter</p>
-                        </div>
-                      </td>
-                    </tr>
+                    <Table.Row key="empty">
+                      <Table.Cell colSpan={9}>
+                        <EmptyOrdersState />
+                      </Table.Cell>
+                    </Table.Row>
                   )}
-                </tbody>
-              </table>
-            </div>
+                  </Table.Body>
+                </Table.Content>
+              </Table.ScrollContainer>
+            </Table>
 
             {totalPages > 1 && (
-              <div className="border-t border-slate-100 px-4 py-3">
-                <Pagination size="sm" className="w-full justify-between gap-3">
-                  <Pagination.Summary>
-                    {(data?.meta?.from ?? 0).toLocaleString()} to {(data?.meta?.to ?? 0).toLocaleString()} of {(data?.meta?.total ?? 0).toLocaleString()} results
-                  </Pagination.Summary>
+              <div className="flex flex-col gap-3 border-t border-slate-100 px-4 py-4 md:flex-row md:items-center md:justify-between">
+                <p className="text-sm text-slate-500">
+                  Showing <span className="font-semibold text-slate-700">{(data?.meta?.from ?? 0).toLocaleString()}</span> to{' '}
+                  <span className="font-semibold text-slate-700">{(data?.meta?.to ?? 0).toLocaleString()}</span> of{' '}
+                  <span className="font-semibold text-slate-700">{(data?.meta?.total ?? 0).toLocaleString()}</span> orders
+                </p>
+                <Pagination size="sm" className="w-full justify-start gap-3 md:justify-end">
                   <Pagination.Content>
                     <Pagination.Item>
                       <Pagination.Previous

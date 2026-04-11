@@ -14,6 +14,13 @@ import { useSession } from "next-auth/react";
 
 type Mode = 'login' | 'signup' | 'force-password-change'
 
+function resolveCallbackPath(value: string | null | undefined): string {
+  const normalized = String(value ?? '').trim();
+  if (!normalized.startsWith('/')) return '/shop';
+  if (normalized.startsWith('//')) return '/shop';
+  return normalized;
+}
+
 export default function LoginPageClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -23,15 +30,16 @@ export default function LoginPageClient() {
   const forcePasswordChange = searchParams.get('force-password-change') === '1';
   const passwordChangeRequired = Boolean(session?.user?.passwordChangeRequired);
   const hasReferral = Boolean(searchParams.get('ref') || searchParams.get('referred_by'));
+  const callbackPath = resolveCallbackPath(searchParams.get('callback') || searchParams.get('callbackUrl'));
   const [manualMode, setManualMode] = useState<'login' | 'signup' | null>(null);
 
   useEffect(() => {
     if (!isCustomerSession) return;
 
     if (!passwordChangeRequired && !forcePasswordChange) {
-      router.replace('/shop');
+      router.replace(callbackPath);
     }
-  }, [forcePasswordChange, isCustomerSession, passwordChangeRequired, router]);
+  }, [callbackPath, forcePasswordChange, isCustomerSession, passwordChangeRequired, router]);
 
   const mode: Mode = passwordChangeRequired || forcePasswordChange
     ? 'force-password-change'
@@ -68,9 +76,9 @@ export default function LoginPageClient() {
           initial={{ opacity: 0, y: 32, scale: 0.95 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1]}}
-          className={`w-full transition-all duration-300 ${mode === 'signup' ? 'max-w-xl' : 'max-w-md'}`}
+          className={`w-full transition-all duration-300 ${mode === 'signup' ? 'max-w-4xl' : 'max-w-md'}`}
         >
-          <div className="bg-slate-800/85 backdrop-blur-xl border border-white/10 rounded-3xl p-8 shadow-2xl">
+          <div className={`bg-slate-800/85 backdrop-blur-xl border border-white/10 rounded-3xl shadow-2xl ${mode === 'signup' ? 'p-9 sm:p-10' : 'p-8'}`}>
             {mode !== 'force-password-change' && (
               <AuthTabs mode={mode === 'signup' ? 'signup' : 'login'} setMode={handleTabChange} />
             )}
