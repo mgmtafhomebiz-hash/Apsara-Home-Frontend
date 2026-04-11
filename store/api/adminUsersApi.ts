@@ -10,6 +10,7 @@ export interface AdminUserItem {
   supplier_id?: number | null
   supplier_name?: string | null
   admin_permissions?: string[]
+  storefront_ids?: number[]
   is_banned?: boolean
   is_online?: boolean
   last_seen_at?: string | null
@@ -66,6 +67,7 @@ export interface CreateAdminUserPayload {
   user_level_id: number
   supplier_id?: number | null
   admin_permissions?: string[]
+  storefront_ids?: number[]
 }
 
 export interface CreateAdminUserResponse {
@@ -92,6 +94,7 @@ export interface UpdateAdminUserPayload {
   user_level_id?: number
   supplier_id?: number | null
   admin_permissions?: string[]
+  storefront_ids?: number[]
 }
 
 export const adminUsersApi = baseApi.injectEndpoints({
