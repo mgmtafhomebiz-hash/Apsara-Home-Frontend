@@ -753,6 +753,8 @@ function ModalSelectField({
   options,
   isDisabled,
   hasError,
+  searchable = false,
+  searchPlaceholder = 'Search options...',
   onChange,
 }: {
   ariaLabel: string
@@ -760,9 +762,18 @@ function ModalSelectField({
   options: Array<{ value: string; label: string }>
   isDisabled?: boolean
   hasError?: boolean
+  searchable?: boolean
+  searchPlaceholder?: string
   onChange: (value: string) => void
 }) {
+  const [search, setSearch] = useState('')
   const selectedLabel = options.find((option) => option.value === value)?.label ?? options[0]?.label ?? 'Select'
+  const normalizedSearch = search.trim().toLowerCase()
+  const visibleOptions = useMemo(() => {
+    if (!searchable || !normalizedSearch) return options
+
+    return options.filter((option) => option.label.toLowerCase().includes(normalizedSearch))
+  }, [normalizedSearch, options, searchable])
 
   return (
     <Select
@@ -785,12 +796,52 @@ function ModalSelectField({
         <Select.Indicator className="h-4 w-4 text-slate-400" />
       </Select.Trigger>
       <Select.Popover className="min-w-[var(--trigger-width)]">
+        {searchable ? (
+          <div className="border-b border-slate-100 p-2">
+            <div className="flex min-h-10 items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 transition-all duration-200 focus-within:border-teal-300 focus-within:bg-white">
+              <svg className="h-4 w-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35m1.6-5.15a6.75 6.75 0 11-13.5 0 6.75 6.75 0 0113.5 0z" />
+              </svg>
+              <input
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                onKeyDown={(event) => event.stopPropagation()}
+                onKeyUp={(event) => event.stopPropagation()}
+                onClick={(event) => event.stopPropagation()}
+                onMouseDown={(event) => event.stopPropagation()}
+                autoFocus
+                placeholder={searchPlaceholder}
+                className="flex-1 border-none bg-transparent p-0 text-sm text-slate-700 outline-none placeholder:text-slate-400"
+              />
+              {search ? (
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation()
+                    setSearch('')
+                  }}
+                  className="text-slate-400 transition hover:text-slate-600"
+                >
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              ) : null}
+            </div>
+          </div>
+        ) : null}
         <ListBox className="p-1">
-          {options.map((option) => (
-            <ListBoxItem id={option.value} key={`${option.value}-${option.label}`}>
-              {option.label}
+          {visibleOptions.length > 0 ? (
+            visibleOptions.map((option) => (
+              <ListBoxItem id={option.value} key={`${option.value}-${option.label}`}>
+                {option.label}
+              </ListBoxItem>
+            ))
+          ) : (
+            <ListBoxItem id="no-results" className="text-slate-400" isDisabled>
+              No results found
             </ListBoxItem>
-          ))}
+          )}
         </ListBox>
       </Select.Popover>
     </Select>
@@ -1744,6 +1795,8 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
                         ariaLabel="Select product category"
                         value={form.pd_catid}
                         hasError={!!errors.pd_catid}
+                        searchable
+                        searchPlaceholder="Search categories..."
                         onChange={(value) => {
                           set('pd_catid', value)
                           if (!roomTouched) {
@@ -1781,6 +1834,8 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
                       <ModalSelectField
                         ariaLabel="Select brand"
                         value={form.pd_brand_type}
+                        searchable
+                        searchPlaceholder="Search brands..."
                         onChange={(value) => set('pd_brand_type', value)}
                         options={[
                           { value: '', label: 'Not assigned' },

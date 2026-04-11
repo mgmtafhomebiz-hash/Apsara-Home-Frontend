@@ -127,6 +127,14 @@ export interface MemberKycResponse {
   }
 }
 
+export interface GenerateTemporaryPasswordResponse {
+  message: string
+  temporary_password: string
+  username: string
+  member_name: string
+  password_change_required: boolean
+}
+
 interface MemberKycQueryParams {
   page?: number
   perPage?: number
@@ -191,6 +199,13 @@ export const membersApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['Members'],
     }),
+    generateMemberTemporaryPassword: builder.mutation<GenerateTemporaryPasswordResponse, number>({
+      query: (id) => ({
+        url: `/api/admin/members/${id}/temporary-password`,
+        method: 'POST',
+      }),
+      invalidatesTags: ['Members'],
+    }),
     approveMemberKyc: builder.mutation<{ message: string }, { id: number; notes?: string }>({
       query: ({ id, notes }) => ({
         url: `/api/admin/members/kyc/${id}/approve`,
@@ -218,6 +233,7 @@ export const {
   useGetMembersKycQuery,
   useUpdateMemberMutation,
   useDeleteMemberMutation,
+  useGenerateMemberTemporaryPasswordMutation,
   useApproveMemberKycMutation,
   useRejectMemberKycMutation,
 } = membersApi

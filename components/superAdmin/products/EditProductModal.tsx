@@ -15,7 +15,7 @@ import ImagePositionEditorModal from '@/components/superAdmin/products/ImagePosi
 import { colorNameToHex, hexToColorName } from '@/libs/colorUtils'
 import { extractVariantOptionLabels, mergeVariantOptionLabelsMeta } from '@/libs/productVariantOptions'
 import { ROOM_OPTIONS, inferRoomTypeFromCategory } from '@/libs/roomConfig'
-import { Button, Card } from '@heroui/react'
+import { Button, Card, ListBox, ListBoxItem, Select } from '@heroui/react'
 
 /* ─── types ──────────────────────────────────────────────── */
 
@@ -1014,6 +1014,107 @@ function Field({
 
 const sectionCardCls = 'overflow-hidden rounded-[28px] border border-slate-200/80 bg-white/95 shadow-[0_22px_60px_-36px_rgba(15,23,42,0.35)]'
 const sectionCardBodyCls = 'px-4 py-4 sm:px-5 sm:py-5'
+
+function ModalSelectField({
+  ariaLabel,
+  value,
+  options,
+  isDisabled,
+  hasError,
+  searchable = false,
+  searchPlaceholder = 'Search options...',
+  onChange,
+}: {
+  ariaLabel: string
+  value: string
+  options: Array<{ value: string; label: string }>
+  isDisabled?: boolean
+  hasError?: boolean
+  searchable?: boolean
+  searchPlaceholder?: string
+  onChange: (value: string) => void
+}) {
+  const [search, setSearch] = useState('')
+  const selectedLabel = options.find((option) => option.value === value)?.label ?? options[0]?.label ?? 'Select'
+  const normalizedSearch = search.trim().toLowerCase()
+  const visibleOptions = useMemo(() => {
+    if (!searchable || !normalizedSearch) return options
+
+    return options.filter((option) => option.label.toLowerCase().includes(normalizedSearch))
+  }, [normalizedSearch, options, searchable])
+
+  return (
+    <Select
+      aria-label={ariaLabel}
+      selectedKey={value}
+      onSelectionChange={(key) => onChange(key == null ? '' : String(key))}
+      isDisabled={isDisabled}
+      className="w-full"
+    >
+      <Select.Trigger
+        className={[
+          'flex min-h-[50px] w-full items-center justify-between rounded-2xl border bg-slate-50/85 px-4 text-left text-sm text-slate-700 shadow-sm transition-all duration-200',
+          hasError
+            ? 'border-red-300 bg-red-50/60 focus:border-red-400'
+            : 'border-slate-200 hover:border-slate-300 focus:border-teal-400 focus:bg-white',
+          isDisabled ? 'cursor-not-allowed opacity-60' : '',
+        ].join(' ')}
+      >
+        <span className="truncate">{selectedLabel}</span>
+        <Select.Indicator className="h-4 w-4 text-slate-400" />
+      </Select.Trigger>
+      <Select.Popover className="min-w-[var(--trigger-width)]">
+        {searchable ? (
+          <div className="border-b border-slate-100 p-2">
+            <div className="flex min-h-10 items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 transition-all duration-200 focus-within:border-teal-300 focus-within:bg-white">
+              <svg className="h-4 w-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35m1.6-5.15a6.75 6.75 0 11-13.5 0 6.75 6.75 0 0113.5 0z" />
+              </svg>
+              <input
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  onKeyDown={(event) => event.stopPropagation()}
+                  onKeyUp={(event) => event.stopPropagation()}
+                  onClick={(event) => event.stopPropagation()}
+                  onMouseDown={(event) => event.stopPropagation()}
+                  autoFocus
+                  placeholder={searchPlaceholder}
+                  className="flex-1 border-none bg-transparent p-0 text-sm text-slate-700 outline-none placeholder:text-slate-400"
+              />
+              {search ? (
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation()
+                    setSearch('')
+                  }}
+                  className="text-slate-400 transition hover:text-slate-600"
+                >
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              ) : null}
+            </div>
+          </div>
+        ) : null}
+        <ListBox className="p-1">
+          {visibleOptions.length > 0 ? (
+            visibleOptions.map((option) => (
+              <ListBoxItem id={option.value} key={`${option.value}-${option.label}`}>
+                {option.label}
+              </ListBoxItem>
+            ))
+          ) : (
+            <ListBoxItem id="no-results" className="text-slate-400" isDisabled>
+              No results found
+            </ListBoxItem>
+          )}
+        </ListBox>
+      </Select.Popover>
+    </Select>
+  )
+}
 
 const inputCls = (hasError = false) => [
   'w-full rounded-2xl border bg-slate-50/85 px-4 py-3 text-sm text-slate-700 placeholder-slate-400 shadow-sm',
@@ -2125,55 +2226,57 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
 
                   <div className="grid grid-cols-2 gap-3">
                     <Field label="Category" required error={errors.pd_catid}>
-                      <select
+                      <ModalSelectField
+                        ariaLabel="Select product category"
                         value={form.pd_catid}
-                        onChange={e => {
-                          set('pd_catid', e.target.value)
+                        hasError={!!errors.pd_catid}
+                        searchable
+                        searchPlaceholder="Search categories..."
+                        onChange={(value) => {
+                          set('pd_catid', value)
                           if (!roomTouched) {
-                            const selectedCategory = categories.find((category) => String(category.id) === e.target.value)
+                            const selectedCategory = categories.find((category) => String(category.id) === value)
                             const inferredRoomType = inferRoomTypeFromCategory(selectedCategory)
                             set('pd_room_type', inferredRoomType ? String(inferredRoomType) : '')
                           }
                         }}
-                        className={inputCls(!!errors.pd_catid)}
-                      >
-                        <option value="">Select category…</option>
-                        {categories.map(cat => (
-                          <option key={cat.id} value={String(cat.id)}>{cat.name}</option>
-                        ))}
-                      </select>
+                        options={[
+                          { value: '', label: 'Select category...' },
+                          ...categories.map((cat) => ({ value: String(cat.id), label: cat.name })),
+                        ]}
+                      />
                     </Field>
 
                     <Field label="Shop By Room">
                       <div className="space-y-1">
-                        <select
+                        <ModalSelectField
+                          ariaLabel="Select room type"
                           value={form.pd_room_type}
-                          onChange={e => {
+                          onChange={(value) => {
                             setRoomTouched(true)
-                            set('pd_room_type', e.target.value)
+                            set('pd_room_type', value)
                           }}
-                          className={inputCls()}
-                        >
-                          <option value="">Auto / Not assigned</option>
-                          {ROOM_OPTIONS.map((room) => (
-                            <option key={room.id} value={String(room.id)}>{room.label}</option>
-                          ))}
-                        </select>
+                          options={[
+                            { value: '', label: 'Auto / Not assigned' },
+                            ...ROOM_OPTIONS.map((room) => ({ value: String(room.id), label: room.label })),
+                          ]}
+                        />
                         <p className="text-[11px] text-slate-500">Auto-filled from category when possible, but still editable here.</p>
                       </div>
                     </Field>
 
                     <Field label="Brand">
-                      <select
+                      <ModalSelectField
+                        ariaLabel="Select brand"
                         value={form.pd_brand_type}
-                        onChange={e => set('pd_brand_type', e.target.value)}
-                        className={inputCls()}
-                      >
-                        <option value="">Not assigned</option>
-                        {brands.map((brand) => (
-                          <option key={brand.id} value={String(brand.id)}>{brand.name}</option>
-                        ))}
-                      </select>
+                        searchable
+                        searchPlaceholder="Search brands..."
+                        onChange={(value) => set('pd_brand_type', value)}
+                        options={[
+                          { value: '', label: 'Not assigned' },
+                          ...brands.map((brand) => ({ value: String(brand.id), label: brand.name })),
+                        ]}
+                      />
                     </Field>
 
                     <Field label="SKU">
@@ -2225,12 +2328,15 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
                       <input type="text" value={form.pd_material} onChange={e => set('pd_material', e.target.value)} placeholder="e.g. Solid Wood & Fabric" className={inputCls()}/>
                     </Field>
                     <Field label="Warranty">
-                      <select value={form.pd_warranty} onChange={e => set('pd_warranty', e.target.value)} className={inputCls()}>
-                        <option value="">Select warranty…</option>
-                        {WARRANTY_OPTIONS.map((option) => (
-                          <option key={option} value={option}>{option}</option>
-                        ))}
-                      </select>
+                      <ModalSelectField
+                        ariaLabel="Select warranty"
+                        value={form.pd_warranty}
+                        onChange={(value) => set('pd_warranty', value)}
+                        options={[
+                          { value: '', label: 'Select warranty...' },
+                          ...WARRANTY_OPTIONS.map((option) => ({ value: option, label: option })),
+                        ]}
+                      />
                     </Field>
                   </div>
                   <Field label="Assembly Required">
@@ -2257,11 +2363,12 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
                   <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
                     <Field label="PV Pricing Tier">
                       <div className="space-y-1">
-                        <select value={form.pd_pricing_tier} onChange={e => set('pd_pricing_tier', e.target.value)} className={inputCls()}>
-                          {PRICING_TIER_OPTIONS.map((option) => (
-                            <option key={option.value} value={option.value}>{option.label}</option>
-                          ))}
-                        </select>
+                        <ModalSelectField
+                          ariaLabel="Select pricing tier"
+                          value={form.pd_pricing_tier}
+                          onChange={(value) => set('pd_pricing_tier', value)}
+                          options={PRICING_TIER_OPTIONS.map((option) => ({ value: option.value, label: option.label }))}
+                        />
                         <p className="text-[11px] text-slate-500">Low-End is active for the current formula. High-End will follow once its formula is finalized.</p>
                       </div>
                     </Field>

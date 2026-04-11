@@ -8,7 +8,7 @@ import TierBadge from "@/components/ui/TierBadge"
 import { useEffect, useRef, useState } from "react"
 import AdminPagination from '@/components/superAdmin/AdminPagination'
 import { MemberStatus, MemberTier } from "@/types/members/types"
-import { useDeleteMemberMutation, useUpdateMemberMutation } from "@/store/api/membersApi"
+import { useDeleteMemberMutation, useGenerateMemberTemporaryPasswordMutation, useUpdateMemberMutation } from "@/store/api/membersApi"
 import { createPortal } from "react-dom"
 
 const avatarColors = [
@@ -241,6 +241,194 @@ function EditMemberModal({
   )
 }
 
+function MemberDetailsModal({
+  member,
+  onClose,
+  onCopy,
+}: {
+  member: Member
+  onClose: () => void
+  onCopy: (value: string, label: string) => Promise<void>
+}) {
+  const [generateTemporaryPassword, { isLoading }] = useGenerateMemberTemporaryPasswordMutation()
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+  const [generatedPassword, setGeneratedPassword] = useState<string | null>(null)
+
+  const verificationBadge = (selectedMember: Member) => {
+    const status = selectedMember.verificationStatus ?? 'not_verified'
+    if (status === 'verified') {
+      return <Chip size="sm" variant="soft" className="bg-emerald-50 text-emerald-700">Verified</Chip>
+    }
+    if (status === 'pending_review') {
+      return <Chip size="sm" variant="soft" className="bg-amber-50 text-amber-700">Pending Review</Chip>
+    }
+    if (status === 'blocked') {
+      return <Chip size="sm" variant="soft" className="bg-red-50 text-red-700">Blocked</Chip>
+    }
+    return <Chip size="sm" variant="soft">Not Verified</Chip>
+  }
+
+  const handleGeneratePassword = async () => {
+    setMessage(null)
+
+    try {
+      const response = await generateTemporaryPassword(member.id).unwrap()
+      setGeneratedPassword(response.temporary_password)
+      setMessage({
+        type: 'success',
+        text: 'Temporary password generated. Share it with the member and they will be required to create a new password after login.',
+      })
+    } catch (error: unknown) {
+      setMessage({
+        type: 'error',
+        text: getApiErrorMessage(error, 'Failed to generate a temporary password.'),
+      })
+    }
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 bg-slate-900/45 backdrop-blur-sm p-4"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ opacity: 0, y: 12, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 10, scale: 0.98 }}
+        transition={{ duration: 0.2 }}
+        className="mx-auto mt-10 w-full max-w-xl rounded-2xl border border-slate-200 bg-white p-5 shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="mb-5 flex items-start justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-teal-600">Member Details</p>
+            <h3 className="mt-1 text-xl font-bold text-slate-900">{member.name}</h3>
+          </div>
+          <Button onPress={onClose} variant="secondary" className="rounded-xl">
+            Close
+          </Button>
+        </div>
+
+        <div className="mb-5 flex items-center gap-4 rounded-xl border border-slate-100 bg-slate-50 p-4">
+          <MemberAvatar
+            member={member}
+            className="h-16 w-16 rounded-full shrink-0 ring-2 ring-white shadow"
+            initialsClassName="text-white font-bold text-lg"
+          />
+          <div>
+            <p className="text-sm font-semibold text-slate-900">{member.email}</p>
+            {member.username && (
+              <p className="mt-1 text-xs text-slate-500">@{member.username}</p>
+            )}
+            <p className="mt-1 text-xs text-slate-500">{member.contactNumber && member.contactNumber !== '0' ? member.contactNumber : 'No contact number'}</p>
+            <div className="mt-2 flex items-center gap-2">
+              <MembersStatusBadge status={member.status} />
+              {verificationBadge(member)}
+            </div>
+          </div>
+        </div>
+
+        {message && (
+          <div className={`mb-4 rounded-2xl border px-4 py-3 text-sm ${message.type === 'success' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-rose-200 bg-rose-50 text-rose-700'}`}>
+            {message.text}
+          </div>
+        )}
+
+        <div className="mb-4 rounded-xl border border-orange-100 bg-orange-50/70 p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-orange-600">Security</p>
+              <p className="mt-1 text-sm font-semibold text-slate-900">Generate Temporary Password</p>
+              <p className="mt-1 text-xs text-slate-500">
+                Use this when the member forgot their password. They can sign in once with the generated password,
+                then they will be required to create a new one.
+              </p>
+            </div>
+            <Button
+              onPress={handleGeneratePassword}
+              isDisabled={isLoading}
+              className="rounded-xl bg-orange-500 text-white transition hover:bg-orange-600 disabled:bg-orange-300"
+            >
+              {isLoading ? 'Generating...' : 'Generate Password'}
+            </Button>
+          </div>
+
+          {generatedPassword ? (
+            <div className="mt-4 rounded-2xl border border-orange-200 bg-white px-4 py-3">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-orange-500">Temporary Password</p>
+              <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
+                <code className="rounded-xl bg-slate-900 px-3 py-2 text-sm font-semibold text-white">{generatedPassword}</code>
+                <Button
+                  variant="secondary"
+                  className="rounded-xl"
+                  onPress={() => void onCopy(generatedPassword, 'Temporary password copied to clipboard.')}
+                >
+                  Copy
+                </Button>
+              </div>
+              <p className="mt-2 text-xs text-slate-500">
+                This password is shown once in the admin panel. Share it with the member securely.
+              </p>
+            </div>
+          ) : null}
+        </div>
+
+        <div className="grid grid-cols-2 gap-3 text-sm">
+          <div className="col-span-2 rounded-xl border border-slate-100 p-3">
+            <p className="text-xs text-slate-500">Address</p>
+            <p className="mt-1 font-semibold text-slate-800">
+              {member.fullAddress || 'No address provided'}
+            </p>
+          </div>
+          <div className="rounded-xl border border-slate-100 p-3">
+            <p className="text-xs text-slate-500">Tier</p>
+            <div className="mt-1"><TierBadge tier={member.tier} /></div>
+          </div>
+          <div className="rounded-xl border border-slate-100 p-3">
+            <p className="text-xs text-slate-500">Username</p>
+            <p className="mt-1 font-semibold text-slate-800">{member.username ? `@${member.username}` : 'No username'}</p>
+          </div>
+          <div className="rounded-xl border border-slate-100 p-3">
+            <p className="text-xs text-slate-500">Orders</p>
+            <p className="mt-1 font-semibold text-slate-800">{member.orders}</p>
+          </div>
+          <div className="rounded-xl border border-slate-100 p-3">
+            <p className="text-xs text-slate-500">Total Spent</p>
+            <p className="mt-1 font-semibold text-slate-800">PHP {member.totalSpent.toLocaleString()}</p>
+          </div>
+          <div className="rounded-xl border border-slate-100 p-3">
+            <p className="text-xs text-slate-500">Earnings</p>
+            <p className="mt-1 font-semibold text-teal-700">PHP {member.earnings.toLocaleString()}</p>
+          </div>
+          <div className="rounded-xl border border-slate-100 p-3">
+            <p className="text-xs text-slate-500">Wallet Cash Credits</p>
+            <p className="mt-1 font-semibold text-emerald-700">+{Number(member.walletCashCredits ?? 0).toLocaleString()}</p>
+          </div>
+          <div className="rounded-xl border border-slate-100 p-3">
+            <p className="text-xs text-slate-500">Wallet PV Credits</p>
+            <p className="mt-1 font-semibold text-indigo-700">+{Number(member.walletPvCredits ?? 0).toLocaleString()}</p>
+          </div>
+          <div className="rounded-xl border border-slate-100 p-3">
+            <p className="text-xs text-slate-500">Contact Number</p>
+            <p className="mt-1 font-semibold text-slate-800">{member.contactNumber && member.contactNumber !== '0' ? member.contactNumber : 'No contact number'}</p>
+          </div>
+          <div className="rounded-xl border border-slate-100 p-3">
+            <p className="text-xs text-slate-500">Referrals</p>
+            <p className="mt-1 font-semibold text-slate-800">{member.referrals}</p>
+          </div>
+          <div className="rounded-xl border border-slate-100 p-3">
+            <p className="text-xs text-slate-500">Joined</p>
+            <p className="mt-1 font-semibold text-slate-800">{member.joinedAt}</p>
+          </div>
+        </div>
+      </motion.div>
+    </motion.div>
+  )
+}
+
 /* ── Portal dropdown ─────────────────────────────────────── */
 
 function MemberMenuPortal({
@@ -428,20 +616,6 @@ const MembersTable = ({
     const timeout = setTimeout(() => setQuickMessage(null), 2200)
     return () => clearTimeout(timeout)
   }, [quickMessage])
-
-  const verificationBadge = (member: Member) => {
-    const status = member.verificationStatus ?? 'not_verified'
-    if (status === 'verified') {
-      return <Chip size="sm" variant="soft" className="bg-emerald-50 text-emerald-700">Verified</Chip>
-    }
-    if (status === 'pending_review') {
-      return <Chip size="sm" variant="soft" className="bg-amber-50 text-amber-700">Pending Review</Chip>
-    }
-    if (status === 'blocked') {
-      return <Chip size="sm" variant="soft" className="bg-red-50 text-red-700">Blocked</Chip>
-    }
-    return <Chip size="sm" variant="soft">Not Verified</Chip>
-  }
 
   const handleCopy = async (value: string, successText: string) => {
     try {
@@ -728,100 +902,11 @@ const MembersTable = ({
 
       <AnimatePresence>
         {selectedMember && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-slate-900/45 backdrop-blur-sm p-4"
-            onClick={() => setSelectedMember(null)}
-          >
-            <motion.div
-              initial={{ opacity: 0, y: 12, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 10, scale: 0.98 }}
-              transition={{ duration: 0.2 }}
-              className="mx-auto mt-10 w-full max-w-xl rounded-2xl border border-slate-200 bg-white p-5 shadow-2xl"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="mb-5 flex items-start justify-between">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-teal-600">Member Details</p>
-                  <h3 className="mt-1 text-xl font-bold text-slate-900">{selectedMember.name}</h3>
-                </div>
-                <Button onPress={() => setSelectedMember(null)} variant="secondary" className="rounded-xl">
-                  Close
-                </Button>
-              </div>
-
-              <div className="mb-5 flex items-center gap-4 rounded-xl border border-slate-100 bg-slate-50 p-4">
-                <MemberAvatar
-                  member={selectedMember}
-                  className="h-16 w-16 rounded-full shrink-0 ring-2 ring-white shadow"
-                  initialsClassName="text-white font-bold text-lg"
-                />
-                <div>
-                  <p className="text-sm font-semibold text-slate-900">{selectedMember.email}</p>
-                  {selectedMember.username && (
-                    <p className="mt-1 text-xs text-slate-500">@{selectedMember.username}</p>
-                  )}
-                  <p className="mt-1 text-xs text-slate-500">{selectedMember.contactNumber && selectedMember.contactNumber !== '0' ? selectedMember.contactNumber : 'No contact number'}</p>
-                  <div className="mt-2 flex items-center gap-2">
-                    <MembersStatusBadge status={selectedMember.status} />
-                    {verificationBadge(selectedMember)}
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                <div className="col-span-2 rounded-xl border border-slate-100 p-3">
-                  <p className="text-xs text-slate-500">Address</p>
-                  <p className="mt-1 font-semibold text-slate-800">
-                    {selectedMember.fullAddress || 'No address provided'}
-                  </p>
-                </div>
-                <div className="rounded-xl border border-slate-100 p-3">
-                  <p className="text-xs text-slate-500">Tier</p>
-                  <div className="mt-1"><TierBadge tier={selectedMember.tier} /></div>
-                </div>
-                <div className="rounded-xl border border-slate-100 p-3">
-                  <p className="text-xs text-slate-500">Username</p>
-                  <p className="mt-1 font-semibold text-slate-800">{selectedMember.username ? `@${selectedMember.username}` : 'No username'}</p>
-                </div>
-                <div className="rounded-xl border border-slate-100 p-3">
-                  <p className="text-xs text-slate-500">Orders</p>
-                  <p className="mt-1 font-semibold text-slate-800">{selectedMember.orders}</p>
-                </div>
-                <div className="rounded-xl border border-slate-100 p-3">
-                  <p className="text-xs text-slate-500">Total Spent</p>
-                  <p className="mt-1 font-semibold text-slate-800">PHP {selectedMember.totalSpent.toLocaleString()}</p>
-                </div>
-                <div className="rounded-xl border border-slate-100 p-3">
-                  <p className="text-xs text-slate-500">Earnings</p>
-                  <p className="mt-1 font-semibold text-teal-700">PHP {selectedMember.earnings.toLocaleString()}</p>
-                </div>
-                <div className="rounded-xl border border-slate-100 p-3">
-                  <p className="text-xs text-slate-500">Wallet Cash Credits</p>
-                  <p className="mt-1 font-semibold text-emerald-700">+{Number(selectedMember.walletCashCredits ?? 0).toLocaleString()}</p>
-                </div>
-                <div className="rounded-xl border border-slate-100 p-3">
-                  <p className="text-xs text-slate-500">Wallet PV Credits</p>
-                  <p className="mt-1 font-semibold text-indigo-700">+{Number(selectedMember.walletPvCredits ?? 0).toLocaleString()}</p>
-                </div>
-                <div className="rounded-xl border border-slate-100 p-3">
-                  <p className="text-xs text-slate-500">Contact Number</p>
-                  <p className="mt-1 font-semibold text-slate-800">{selectedMember.contactNumber && selectedMember.contactNumber !== '0' ? selectedMember.contactNumber : 'No contact number'}</p>
-                </div>
-                <div className="rounded-xl border border-slate-100 p-3">
-                  <p className="text-xs text-slate-500">Referrals</p>
-                  <p className="mt-1 font-semibold text-slate-800">{selectedMember.referrals}</p>
-                </div>
-                <div className="rounded-xl border border-slate-100 p-3">
-                  <p className="text-xs text-slate-500">Joined</p>
-                  <p className="mt-1 font-semibold text-slate-800">{selectedMember.joinedAt}</p>
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
+          <MemberDetailsModal
+            member={selectedMember}
+            onClose={() => setSelectedMember(null)}
+            onCopy={handleCopy}
+          />
         )}
       </AnimatePresence>
 
