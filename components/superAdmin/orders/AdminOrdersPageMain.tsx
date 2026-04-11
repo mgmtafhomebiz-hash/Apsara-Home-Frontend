@@ -2,11 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
-<<<<<<< HEAD
-import { Button, Card, Chip, ListBox, ListBoxItem, Pagination, Select } from '@heroui/react'
-=======
 import { Button, Card, Chip, Label, ListBox, ListBoxItem, Pagination, SearchField, Select, Table } from '@heroui/react'
->>>>>>> origin/main
 import { useSession } from 'next-auth/react'
 import { useSearchParams } from 'next/navigation'
 import {
@@ -131,8 +127,6 @@ const getPaginationPages = (currentPage: number, totalPages: number) => {
     .sort((first, second) => first - second)
 }
 
-<<<<<<< HEAD
-=======
 const isNewOrder = (value?: string | null) => {
   if (!value) return false
   const createdAt = new Date(value)
@@ -140,7 +134,6 @@ const isNewOrder = (value?: string | null) => {
   return Date.now() - createdAt.getTime() <= 24 * 60 * 60 * 1000
 }
 
->>>>>>> origin/main
 const getInitials = (name?: string | null) => {
   if (!name) return '?'
   return name.split(' ').map(p => p[0]).join('').slice(0, 2).toUpperCase()
@@ -198,16 +191,6 @@ function StatCard({ label, value, bg, text, border, icon }: {
 }) {
   return (
     <Card variant="default" className={`border ${border} bg-white shadow-none`}>
-<<<<<<< HEAD
-      <Card.Content className="px-4 py-4">
-        <div className="mb-3 flex items-center gap-3">
-          <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${bg} ${text}`}>
-            {icon}
-          </div>
-          <p className="text-[11px] font-medium leading-tight text-slate-400">{label}</p>
-        </div>
-        <p className="text-xl font-bold text-slate-800">{value}</p>
-=======
       <Card.Content className="px-5 py-5">
         <div className="flex items-start justify-between gap-2">
           <div>
@@ -218,53 +201,11 @@ function StatCard({ label, value, bg, text, border, icon }: {
             {icon}
           </div>
         </div>
->>>>>>> origin/main
       </Card.Content>
     </Card>
   )
 }
 
-<<<<<<< HEAD
-function AdminOrderSelect({
-  ariaLabel,
-  value,
-  options,
-  isDisabled,
-  onChange,
-}: {
-  ariaLabel: string
-  value: string
-  options: Array<{ value: string; label: string }>
-  isDisabled?: boolean
-  onChange: (value: string) => void
-}) {
-  const selectedLabel = options.find((option) => option.value === value)?.label ?? options[0]?.label ?? 'Select'
-
-  return (
-    <Select
-      aria-label={ariaLabel}
-      selectedKey={value}
-      onSelectionChange={(key) => {
-        if (key != null) onChange(String(key))
-      }}
-      isDisabled={isDisabled}
-      className="w-full"
-    >
-      <Select.Trigger className="flex min-h-10 w-full items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 text-left text-xs text-slate-700 transition-all duration-200 hover:bg-white focus:border-teal-300 focus:bg-white disabled:cursor-not-allowed disabled:opacity-50">
-        <span className="truncate">{selectedLabel}</span>
-        <Select.Indicator className="h-4 w-4 text-slate-400" />
-      </Select.Trigger>
-      <Select.Popover className="min-w-[var(--trigger-width)]">
-        <ListBox className="p-1">
-          {options.map((option) => (
-            <ListBoxItem id={option.value} key={option.value}>
-              {option.label}
-            </ListBoxItem>
-          ))}
-        </ListBox>
-      </Select.Popover>
-    </Select>
-=======
 function EmptyOrdersState() {
   return (
     <div className="flex flex-col items-center gap-2 py-16 text-center">
@@ -276,7 +217,6 @@ function EmptyOrdersState() {
       <p className="text-sm font-semibold text-slate-500">No orders found</p>
       <p className="text-xs text-slate-400">Try adjusting your search or filter.</p>
     </div>
->>>>>>> origin/main
   )
 }
 
@@ -575,9 +515,6 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
   const handlePushToZq = async (id: number) => {
     setBusyId(id)
     try {
-<<<<<<< HEAD
-      showErrorToast(`ZQ push is not available on this branch yet for order #${id}.`)
-=======
       const result = await pushToZq({ id }).unwrap()
       if (result.zq) {
         setPayloadPreview({
@@ -588,16 +525,12 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
       showSuccessToast(result.message || 'Order pushed to ZQ successfully.')
     } catch (err: unknown) {
       showErrorToast(extractApiError(err, 'Failed to push order to ZQ.'))
->>>>>>> origin/main
     } finally { setBusyId(null) }
   }
 
   const handleFetchZqDetail = async (id: number) => {
     setBusyId(id)
     try {
-<<<<<<< HEAD
-      showErrorToast(`ZQ detail is not available on this branch yet for order #${id}.`)
-=======
       const result = await fetchZqDetail({ id }).unwrap()
       if (result.zq) {
         setPayloadPreview({
@@ -608,16 +541,12 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
       showSuccessToast(result.message || 'ZQ order detail fetched successfully.')
     } catch (err: unknown) {
       showErrorToast(extractApiError(err, 'Failed to fetch ZQ detail.'))
->>>>>>> origin/main
     } finally { setBusyId(null) }
   }
 
   const handleSyncZqTracking = async (id: number) => {
     setBusyId(id)
     try {
-<<<<<<< HEAD
-      showErrorToast(`ZQ tracking sync is not available on this branch yet for order #${id}.`)
-=======
       const result = await syncZqTracking({ id }).unwrap()
       if (result.zq) {
         setPayloadPreview({
@@ -628,7 +557,6 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
       showSuccessToast(result.message || 'ZQ tracking synced successfully.')
     } catch (err: unknown) {
       showErrorToast(extractApiError(err, 'Failed to sync ZQ tracking.'))
->>>>>>> origin/main
     } finally { setBusyId(null) }
   }
 
@@ -650,24 +578,17 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
           <p className="text-sm text-slate-500 mt-0.5">Track checkout orders and handle approval workflow</p>
         </div>
         <div className="flex items-center gap-2">
-          <Chip
-            size="sm"
-            variant="soft"
-            className={canApprove ? 'border border-teal-200 bg-teal-50 text-teal-700' : 'border border-slate-200 bg-slate-100 text-slate-500'}
-          >
-            <span className={`h-1.5 w-1.5 rounded-full ${canApprove ? 'bg-teal-500' : 'bg-slate-400'}`} />
+          <span className={`inline-flex items-center px-3 py-1.5 rounded-xl text-xs font-semibold border ${
+            canApprove ? 'bg-teal-50 text-teal-700 border-teal-200' : 'bg-slate-100 text-slate-500 border-slate-200'
+          }`}>
+            <span className={`h-1.5 w-1.5 rounded-full mr-1.5 ${canApprove ? 'bg-teal-500' : 'bg-slate-400'}`} />
             {role || 'staff'}
-<<<<<<< HEAD
-          </Chip>
-          <Button variant="tertiary" className="border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition-all hover:border-slate-300 hover:bg-slate-50">
-=======
           </span>
           <Button
             size="sm"
             variant="secondary"
             className="border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm"
           >
->>>>>>> origin/main
             <svg className="w-4 h-4 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
             </svg>
@@ -707,17 +628,10 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-<<<<<<< HEAD
-        className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm flex flex-wrap items-center gap-3"
-      >
-        {/* Search */}
-        <div className="min-w-50 flex-1">
-=======
         className="rounded-3xl border border-slate-100 bg-white/95 p-4 shadow-sm"
       >
         {/* Search */}
         <div className="hidden relative flex-1 min-w-50">
->>>>>>> origin/main
           <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
@@ -979,41 +893,19 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                           </Table.Cell>
 
                           {/* Approval badge */}
-<<<<<<< HEAD
-                          <td className="px-4 py-3.5">
-                            <Chip
-                              size="sm"
-                              variant="soft"
-                              className={`border text-[11px] font-semibold ${approval.badge}`}
-                            >
-                              <span className={`h-1.5 w-1.5 rounded-full ${approval.dot}`} />
-                              {approval.label}
-                            </Chip>
-                          </td>
-=======
                           <Table.Cell className="px-4 py-3.5 align-top">
                             <Chip size="sm" variant="soft" className={`border text-[11px] font-semibold ${approval.badge}`}>
                               <span className={`mr-1.5 inline-block h-1.5 w-1.5 rounded-full ${approval.dot}`} />
                               {approval.label}
                             </Chip>
                           </Table.Cell>
->>>>>>> origin/main
 
                           {/* SLA */}
                           <Table.Cell className="px-4 py-3.5 align-top">
                             {sla ? (
                               <div className="space-y-1">
-<<<<<<< HEAD
-                                <Chip
-                                  size="sm"
-                                  variant="soft"
-                                  className={`border text-[11px] font-semibold ${sla.badge}`}
-                                >
-                                  <span className={`h-1.5 w-1.5 rounded-full ${sla.dot}`} />
-=======
                                 <Chip size="sm" variant="soft" className={`border text-[11px] font-semibold ${sla.badge}`}>
                                   <span className={`mr-1.5 inline-block h-1.5 w-1.5 rounded-full ${sla.dot}`} />
->>>>>>> origin/main
                                   {sla.label}
                                 </Chip>
                                 {order.sla?.state === 'overdue' && (
@@ -1035,68 +927,6 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                           <Table.Cell className="px-4 py-3.5 align-top">
                             <div className="space-y-1.5">
                               <AdminOrderSelect
-<<<<<<< HEAD
-                                ariaLabel={`Courier for order ${order.checkout_id}`}
-                                value={courierByOrder[order.id] ?? (((order.courier ?? '').toLowerCase() === 'xde' ? 'xde' : 'jnt') as AdminCourier)}
-                                options={COURIER_OPTIONS}
-                                isDisabled={isBusy || !canTrackThisOrder}
-                                onChange={(value) => setCourierByOrder(prev => ({ ...prev, [order.id]: value as AdminCourier }))}
-                              />
-                              <AdminOrderSelect
-                                ariaLabel={`Shipment status for order ${order.checkout_id}`}
-                                value={(order.shipment_status as AdminShipmentStatus | undefined) ?? 'for_pickup'}
-                                options={SHIPMENT_STATUS_OPTIONS}
-                                isDisabled={isBusy || !canTrackThisOrder || isCourierBooked}
-                                onChange={(value) => handleShipmentStatusChange(order.id, value as AdminShipmentStatus)}
-                              />
-                              <div className="flex flex-wrap gap-1.5">
-                                <Button
-                                  size="sm"
-                                  variant="tertiary"
-                                  isDisabled={isBusy || !canTrackThisOrder || isCourierCancelled}
-                                  onPress={() => handleBookCourier(order.id)}
-                                  className="border border-teal-200 bg-teal-50 px-2.5 py-1.5 text-[11px] font-semibold text-teal-700 transition hover:bg-teal-100"
-                                >
-                                  Book
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="tertiary"
-                                  isDisabled={isBusy || !canTrackThisOrder || !order.tracking_no || isCourierCancelled}
-                                  onPress={() => handleTrackCourier(order.id)}
-                                  className="border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-[11px] font-semibold text-slate-700 transition hover:bg-slate-100"
-                                >
-                                  Track
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="tertiary"
-                                  isDisabled={isBusy || !canTrackThisOrder || courierByOrder[order.id] !== 'xde' || !order.tracking_no || isCourierCancelled}
-                                  onPress={() => handleOpenWaybill(order.id)}
-                                  className="border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-[11px] font-semibold text-blue-700 transition hover:bg-blue-100"
-                                >
-                                  A6 Waybill
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="tertiary"
-                                  isDisabled={isBusy || !canTrackThisOrder || courierByOrder[order.id] !== 'xde' || !order.tracking_no || order.shipment_status !== 'delivered'}
-                                  onPress={() => handleOpenEpod(order.id)}
-                                  className="border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-[11px] font-semibold text-amber-700 transition hover:bg-amber-100"
-                                >
-                                  EPOD
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="tertiary"
-                                  isDisabled={isBusy || !canTrackThisOrder || courierByOrder[order.id] !== 'xde' || !order.tracking_no || isCourierCancelled}
-                                  onPress={() => handleCancelCourier(order.id)}
-                                  className="border border-red-200 bg-red-50 px-2.5 py-1.5 text-[11px] font-semibold text-red-700 transition hover:bg-red-100"
-                                >
-                                  Cancel
-                                </Button>
-                              </div>
-=======
                                 ariaLabel={`Fulfillment mode for order ${order.checkout_id}`}
                                 value={selectedFulfillmentMode}
                                 options={FULFILLMENT_MODE_OPTIONS}
@@ -1223,7 +1053,6 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                                   {isDelivered ? 'Delivered orders are locked.' : 'Tracking is disabled for this status.'}
                                 </p>
                               )}
->>>>>>> origin/main
                               {order.courier || order.tracking_no || order.shipment_status ? (
                                 <div className="space-y-2 text-[11px] text-slate-500 leading-relaxed">
                                   {order.zq_platform_order_id || order.zq_status ? (
@@ -1293,90 +1122,6 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                           {/* Actions */}
                           <Table.Cell className="px-4 py-3.5 align-top">
                             {canApproveThisOrder ? (
-<<<<<<< HEAD
-                              <div className="flex flex-col items-start gap-2">
-                                <div className="flex items-center gap-1.5">
-                                  <Button
-                                    size="sm"
-                                    variant="tertiary"
-                                    isDisabled={isBusy}
-                                    onPress={() => handlePushToZq(order.id)}
-                                    className="border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-semibold text-violet-700 transition hover:bg-violet-100"
-                                  >
-                                    Push ZQ
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="tertiary"
-                                    isDisabled={isBusy}
-                                    onPress={() => handleApprove(order.id)}
-                                    className="border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100"
-                                  >
-                                    Approve
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="tertiary"
-                                    isDisabled={isBusy}
-                                    onPress={() => handleReject(order.id)}
-                                    className="border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-100"
-                                  >
-                                    Reject
-                                  </Button>
-                                </div>
-                                <div className="flex items-center gap-1.5">
-                                  <Button
-                                    size="sm"
-                                    variant="tertiary"
-                                    isDisabled={isBusy}
-                                    onPress={() => handleFetchZqDetail(order.id)}
-                                    className="border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
-                                  >
-                                    ZQ Detail
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="tertiary"
-                                    isDisabled={isBusy}
-                                    onPress={() => handleSyncZqTracking(order.id)}
-                                    className="border border-sky-200 bg-sky-50 px-3 py-1.5 text-xs font-semibold text-sky-700 transition hover:bg-sky-100"
-                                  >
-                                    ZQ Tracking
-                                  </Button>
-                                </div>
-                              </div>
-                            ) : order.approval_status === 'approved' ? (
-                              <div className="flex flex-col items-start gap-2">
-                                <Button
-                                  size="sm"
-                                  variant="tertiary"
-                                  isDisabled={isBusy}
-                                  onPress={() => handlePushToZq(order.id)}
-                                  className="border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-semibold text-violet-700 transition hover:bg-violet-100"
-                                >
-                                  Push ZQ
-                                </Button>
-                                <div className="flex items-center gap-1.5">
-                                  <Button
-                                    size="sm"
-                                    variant="tertiary"
-                                    isDisabled={isBusy}
-                                    onPress={() => handleFetchZqDetail(order.id)}
-                                    className="border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
-                                  >
-                                    ZQ Detail
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="tertiary"
-                                    isDisabled={isBusy}
-                                    onPress={() => handleSyncZqTracking(order.id)}
-                                    className="border border-sky-200 bg-sky-50 px-3 py-1.5 text-xs font-semibold text-sky-700 transition hover:bg-sky-100"
-                                  >
-                                    ZQ Tracking
-                                  </Button>
-                                </div>
-=======
                               <div className="flex w-36 flex-col gap-1.5">
                                 <div className="grid grid-cols-2 gap-1">
                                   <Button size="sm" variant="tertiary" isDisabled={isBusy} onPress={() => handleApprove(order.id)} className="border border-emerald-200 bg-emerald-50 px-2 py-1.5 text-[11px] font-semibold text-emerald-700 transition hover:bg-emerald-100">
@@ -1422,7 +1167,6 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                                       : 'Use the courier controls in the tracking column for local fulfillment.'}
                                   </p>
                                 )}
->>>>>>> origin/main
                               </div>
                             ) : (
                               <Chip size="sm" variant="soft" className="border border-slate-200 bg-slate-50 text-[11px] font-semibold text-slate-500">
@@ -1446,13 +1190,6 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
             </Table>
 
             {totalPages > 1 && (
-<<<<<<< HEAD
-              <div className="border-t border-slate-100 px-4 py-3">
-                <Pagination size="sm" className="w-full justify-between gap-3">
-                  <Pagination.Summary>
-                    {(data?.meta?.from ?? 0).toLocaleString()} to {(data?.meta?.to ?? 0).toLocaleString()} of {(data?.meta?.total ?? 0).toLocaleString()} results
-                  </Pagination.Summary>
-=======
               <div className="flex flex-col gap-3 border-t border-slate-100 px-4 py-4 md:flex-row md:items-center md:justify-between">
                 <p className="text-sm text-slate-500">
                   Showing <span className="font-semibold text-slate-700">{(data?.meta?.from ?? 0).toLocaleString()}</span> to{' '}
@@ -1460,7 +1197,6 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                   <span className="font-semibold text-slate-700">{(data?.meta?.total ?? 0).toLocaleString()}</span> orders
                 </p>
                 <Pagination size="sm" className="w-full justify-start gap-3 md:justify-end">
->>>>>>> origin/main
                   <Pagination.Content>
                     <Pagination.Item>
                       <Pagination.Previous
