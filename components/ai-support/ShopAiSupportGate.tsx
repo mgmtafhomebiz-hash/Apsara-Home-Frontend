@@ -21,6 +21,9 @@ const extractPartnerSlug = (pathname: string) => {
 
 export default function ShopAiSupportGate() {
   const pathname = usePathname()
+  if (pathname.startsWith('/admin') || pathname.startsWith('/partner')) {
+    return null
+  }
   const partnerSlug = useMemo(() => extractPartnerSlug(pathname), [pathname])
   const [partnerAiVisible, setPartnerAiVisible] = useState(false)
 

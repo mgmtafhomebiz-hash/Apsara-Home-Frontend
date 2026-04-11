@@ -82,6 +82,7 @@ export interface AdminMeResponse {
   user_level_id: number
   supplier_id?: number | null
   admin_permissions?: string[]
+  storefront_ids?: number[]
   avatar_url?: string
 }
 
