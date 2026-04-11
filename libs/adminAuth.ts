@@ -7,6 +7,7 @@ type TokenUser = {
   role?: string;
   userLevelId?: number;
   adminPermissions?: string[];
+  storefrontIds?: number[];
   supplierId?: number | null;
   image?: string | null;
   picture?: string | null;
@@ -66,6 +67,7 @@ export const adminAuthOptions: NextAuthOptions = {
             role: data.user.role,
             userLevelId: data.user.user_level_id,
             adminPermissions: data.user.admin_permissions ?? [],
+            storefrontIds: Array.isArray(data.user.storefront_ids) ? data.user.storefront_ids : [],
             supplierId: data.user.supplier_id ?? null,
             image: data.user.avatar_url ?? null,
             isBanned: data.user.is_banned ?? false,
@@ -124,6 +126,7 @@ export const adminAuthOptions: NextAuthOptions = {
         token.role = authUser.role;
         token.userLevelId = authUser.userLevelId;
         token.adminPermissions = authUser.adminPermissions;
+        token.storefrontIds = authUser.storefrontIds;
         token.supplierId = authUser.supplierId;
         token.picture = authUser.image ?? null;
         token.isBanned = authUser.isBanned ?? false;
@@ -133,6 +136,7 @@ export const adminAuthOptions: NextAuthOptions = {
           role?: string;
           userLevelId?: number;
           adminPermissions?: string[];
+          storefrontIds?: number[];
           supplierId?: number | null;
           image?: string | null;
         };
@@ -144,6 +148,9 @@ export const adminAuthOptions: NextAuthOptions = {
         }
         if (Array.isArray(nextSession.adminPermissions)) {
           token.adminPermissions = nextSession.adminPermissions;
+        }
+        if (Array.isArray(nextSession.storefrontIds)) {
+          token.storefrontIds = nextSession.storefrontIds;
         }
         if (typeof nextSession.supplierId !== 'undefined') {
           token.supplierId = nextSession.supplierId;
@@ -163,6 +170,7 @@ export const adminAuthOptions: NextAuthOptions = {
         sessionUser.role = authToken.role;
         sessionUser.userLevelId = authToken.userLevelId;
         sessionUser.adminPermissions = authToken.adminPermissions;
+        sessionUser.storefrontIds = authToken.storefrontIds;
         sessionUser.supplierId = authToken.supplierId;
         sessionUser.image = typeof authToken.picture === 'string' ? authToken.picture : null;
         sessionUser.isBanned = typeof authToken.isBanned === 'boolean' ? authToken.isBanned : false;

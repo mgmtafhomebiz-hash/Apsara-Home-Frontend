@@ -22,14 +22,14 @@ async function getAdminCsrfToken(): Promise<string | null> {
   }
 }
 
-export async function clearAdminSession(): Promise<void> {
+export async function clearAdminSession(callbackUrl: string = '/admin/login'): Promise<void> {
   const csrfToken = await getAdminCsrfToken()
   if (!csrfToken) return
 
   const body = new URLSearchParams({
     csrfToken,
     json: 'true',
-    callbackUrl: '/admin/login',
+    callbackUrl,
   })
 
   try {

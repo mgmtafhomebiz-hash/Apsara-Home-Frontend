@@ -23,7 +23,7 @@ const resolveAccessToken = async (): Promise<string | undefined> => {
 
     if (!tokenPromise) {
         const pathname = window.location.pathname || ''
-        const sessionPath = pathname.startsWith('/admin')
+        const sessionPath = pathname.startsWith('/admin') || pathname.startsWith('/partner')
             ? '/api/admin/auth/session'
             : pathname.startsWith('/supplier')
               ? '/api/supplier/auth/session'
@@ -97,9 +97,14 @@ const baseQueryWithBanCheck: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQ
         const { signOut } = await import('next-auth/react')
         const pathname = window.location.pathname || ''
         const isAdminRoute = pathname.startsWith('/admin')
-        const loginPath = isAdminRoute ? '/admin/login?suspended=1' : '/login?blocked=1'
+        const isPartnerRoute = pathname.startsWith('/partner')
+        const loginPath = isAdminRoute
+            ? '/admin/login?suspended=1'
+            : isPartnerRoute
+              ? '/partner/login?suspended=1'
+              : '/login?blocked=1'
 
-        if (!isAdminRoute) {
+        if (!isAdminRoute && !isPartnerRoute) {
             window.dispatchEvent(new CustomEvent('afhome:customer-blocked'))
             window.setTimeout(async () => {
                 await signOut({ redirect: false })

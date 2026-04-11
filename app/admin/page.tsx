@@ -14,7 +14,7 @@ export default async function AdminIndexPage() {
   }
 
   if (userLevelId === 4) {
-    redirect("/admin/webpages/partner-storefronts");
+    redirect("/partner/webpages/partner-storefronts");
   }
 
   redirect("/admin/dashboard");

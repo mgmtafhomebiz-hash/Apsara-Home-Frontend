@@ -166,6 +166,7 @@ const navItems: NavItem[] = [
     children: [
       { label: 'Shop Builder', path: '/admin/webpages/shop-builder' },
       { label: 'Partner Storefronts', path: '/admin/webpages/partner-storefronts' },
+      { label: 'Partner Users', path: '/admin/webpages/partner-users' },
       { label: 'Assembly Guides', path: '/admin/webpages/assembly-guides' },
       { label: 'Bulk Edit', path: '/admin/webpages/bulk-edit' },
       { label: 'Adds Content', path: '/admin/webpages/adds-content' },
@@ -260,16 +261,18 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
   const { data: failedOrdersData } = useGetAdminOrdersQuery({ filter: 'failed_payments', page: 1, perPage: 1 }, orderCountQueryOptions)
   const resolvedAdminMe = adminMe
   const displayName = String(resolvedAdminMe?.name ?? session?.user?.name ?? '').trim() || 'Admin'
-  const displayEmail = String(resolvedAdminMe?.email ?? session?.user?.email ?? '').trim() || 'admin@afhome.com'
+  const displayEmail = String(resolvedAdminMe?.email ?? session?.user?.email ?? '').trim()
+  const displayEmailText = displayEmail || 'No email on file'
   const effectiveRole = String(resolvedAdminMe?.role ?? sessionRole).toLowerCase()
   const effectiveUserLevelId = Number(resolvedAdminMe?.user_level_id ?? sessionUserLevelId)
   const isSuperAdmin = effectiveRole === 'super_admin' || effectiveUserLevelId === 1
   const isAdmin = effectiveRole === 'admin' || effectiveUserLevelId === 2
+  const isWebContent = effectiveRole === 'web_content' || effectiveUserLevelId === 4
   const isAccounting = effectiveRole === 'accounting' || effectiveUserLevelId === 5
   const isFinanceOfficer = effectiveRole === 'finance_officer' || effectiveUserLevelId === 6
   const isMerchantAdmin = effectiveRole === 'merchant_admin' || effectiveUserLevelId === 7
   const isSupplierAdmin = effectiveRole === 'supplier_admin' || effectiveUserLevelId === 8
-  const isAdminPortalRole = isSuperAdmin || isAdmin || isAccounting || isFinanceOfficer || isMerchantAdmin || isSupplierAdmin
+  const isAdminPortalRole = isSuperAdmin || isAdmin || isWebContent || isAccounting || isFinanceOfficer || isMerchantAdmin || isSupplierAdmin
   const effectiveAdminPermissions = normalizeAdminPermissions(resolvedAdminMe?.admin_permissions ?? sessionPermissions)
   const adminPermissions = effectiveAdminPermissions
   const hasCustomAdminPermissions = isAdmin && adminPermissions.length > 0
@@ -293,18 +296,29 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
     if (!adminMe || !isAdminPortalRole) return
 
     const sessionLevel = Number((session?.user as { userLevelId?: number } | undefined)?.userLevelId ?? 0)
+    const sessionId = String((session?.user as { id?: string | number } | undefined)?.id ?? '')
+    const adminMeId = String(adminMe.id ?? '')
+    if (sessionId && adminMeId && sessionId !== adminMeId) {
+      // Do not overwrite the current session with a different admin identity.
+      return
+    }
     const latestPermissions = normalizeAdminPermissions(adminMe.admin_permissions ?? [])
+    const latestStorefrontIds = Array.isArray((adminMe as { storefront_ids?: number[] }).storefront_ids)
+      ? (adminMe as { storefront_ids?: number[] }).storefront_ids ?? []
+      : []
 
     const roleChanged = sessionRole !== String(adminMe.role ?? '').toLowerCase()
     const levelChanged = sessionLevel !== Number(adminMe.user_level_id ?? 0)
     const permissionsChanged = sessionPermissions.join('|') !== latestPermissions.join('|')
+    const storefrontsChanged = ((session?.user as { storefrontIds?: number[] } | undefined)?.storefrontIds ?? []).join('|') !== latestStorefrontIds.join('|')
 
-    if (!roleChanged && !levelChanged && !permissionsChanged) return
+    if (!roleChanged && !levelChanged && !permissionsChanged && !storefrontsChanged) return
 
     void update({
       role: adminMe.role,
       userLevelId: adminMe.user_level_id,
       adminPermissions: latestPermissions,
+      storefrontIds: latestStorefrontIds,
       supplierId: adminMe.supplier_id ?? null,
     })
   }, [adminMe, isAdminPortalRole, session?.user, sessionPermissions, sessionRole, update])
@@ -314,13 +328,15 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
 
   const handleLogout = async () => {
     setIsLoggingOut(true)
+    const isPartnerRoute = pathname.startsWith('/partner')
+    const loginPath = isPartnerRoute ? '/partner/login' : '/admin/login'
     dispatch(baseApi.util.resetApiState())
     clearAccessTokenCache()
-    await clearAdminSession()
+    await clearAdminSession(loginPath)
     void logoutApi().unwrap().catch((error) => {
       console.log(error)
     })
-    void signOut({ callbackUrl: '/admin/login' })
+    void signOut({ callbackUrl: loginPath })
   }
 
   const isActive = (path: string) => pathname === path
@@ -364,10 +380,23 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
 
         return settingsChildren.length > 0 ? { ...item, children: settingsChildren } : null
       }
+
+      if (item.id === 'webpages' && isWebContent) {
+        const partnerOnly = (item.children ?? [])
+          .filter((child) =>
+            child.path === '/admin/webpages/partner-storefronts' || child.path === '/admin/webpages/partner-users'
+          )
+          .map((child) => ({
+            ...child,
+            path: child.path.replace('/admin', '/partner'),
+          }))
+        return partnerOnly.length > 0 ? { ...item, children: partnerOnly } : null
+      }
       return item
     })
     .filter((item): item is NavItem => Boolean(item))
     .filter((item) => {
+    if (isWebContent) return item.id === 'webpages'
     if (isSuperAdmin) return true
     if (isAccounting) return item.id === 'accounting' || item.id === 'encashment'
     if (isFinanceOfficer) return item.id === 'finance'
@@ -398,8 +427,12 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
           ...(hasCustomAdminPermissions && adminPermissions.includes('orders') ? ['/admin/orders'] : ['/admin/orders']),
           ...(hasCustomAdminPermissions && adminPermissions.includes('interior_requests') ? ['/admin/interior-requests'] : ['/admin/interior-requests']),
           ...(hasCustomAdminPermissions && adminPermissions.includes('products') ? ['/admin/products', '/admin/products/categories'] : ['/admin/products', '/admin/products/categories']),
-          ...(hasCustomAdminPermissions && adminPermissions.includes('web_content') ? ['/admin/webpages'] : ['/admin/webpages']),
+          ...(isWebContent ? ['/admin/webpages'] : []),
           ...(hasCustomAdminPermissions && adminPermissions.includes('settings_users') ? ['/admin/settings/users'] : []),
+        ]
+      : isWebContent
+      ? [
+          '/admin/webpages',
         ]
       : [
           '/admin/dashboard',
@@ -597,7 +630,7 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
               )}
               <div className="flex-1 min-w-0">
                 <p className="text-white text-xs font-semibold truncate">{displayName}</p>
-                <p className="text-slate-400 text-xs truncate">{displayEmail}</p>
+                <p className="text-slate-400 text-xs truncate">{displayEmailText}</p>
               </div>
             </div>
           )}

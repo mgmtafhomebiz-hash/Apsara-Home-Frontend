@@ -1,10 +1,10 @@
 import { notFound } from 'next/navigation'
-import { buildPageMetadata } from '@/app/seo'
 import PartnerStorefrontPage from '@/components/partner/PartnerStorefrontPage'
 import { filterPartnerCategories, filterPartnerProducts, getPartnerStorefrontConfig } from '@/libs/partnerStorefront'
 import type { Category } from '@/store/api/categoriesApi'
 import type { Product } from '@/store/api/productsApi'
 import type { WebPageItem } from '@/store/api/webPagesApi'
+import type { Metadata } from 'next'
 
 type PageProps = {
   params: Promise<{
@@ -29,11 +29,40 @@ type ApiWebPagesResponse = {
 
 export async function generateMetadata({ params }: PageProps) {
   const resolved = await params
-  return buildPageMetadata({
-    title: `${resolved.partner} Shop`,
-    description: `Browse the curated storefront for ${resolved.partner}.`,
-    path: `/shop/${resolved.partner}`,
-  })
+  const RAW_SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://afhome.ph'
+  const SITE_URL = RAW_SITE_URL.startsWith('http') ? RAW_SITE_URL : `https://${RAW_SITE_URL}`
+  const title = `${resolved.partner} Shop`
+  const description = `Browse the curated storefront for ${resolved.partner}.`
+  const path = `/shop/${resolved.partner}`
+  const canonicalUrl = `${SITE_URL}${path}`
+  const isSynergy = resolved.partner.toLowerCase() === 'synergy-shop'
+
+  const metadata: Metadata = {
+    title,
+    description,
+    alternates: { canonical: canonicalUrl },
+    openGraph: {
+      title,
+      description,
+      url: canonicalUrl,
+      siteName: 'AF Home',
+      type: 'website',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+    },
+  }
+
+  if (isSynergy) {
+    metadata.icons = {
+      icon: [{ url: '/Images/synergy.png', type: 'image/png' }],
+      apple: '/Images/synergy.png',
+    }
+  }
+
+  return metadata
 }
 
 async function getPartnerStorefrontData(partnerSlug: string, selectedCategoryId?: number) {
