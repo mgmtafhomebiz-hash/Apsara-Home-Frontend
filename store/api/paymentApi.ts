@@ -1,6 +1,8 @@
 import { baseApi } from './baseApi'
 
 export type CheckoutPaymentMethod = 'online_banking' | 'card' | 'gcash' | 'maya'
+export type CheckoutPaymentMode = 'test' | 'live'
+export type CheckoutOnlineBankingProvider = 'dob'
 
 export interface CheckoutCustomerPayload {
   name?: string
@@ -8,12 +10,15 @@ export interface CheckoutCustomerPayload {
   phone?: string
   address?: string
   referred_by?: string
+  is_member?: boolean
 }
 
 export interface CreateCheckoutSessionPayload {
   amount: number
   description: string
   payment_method: CheckoutPaymentMethod
+  payment_mode?: CheckoutPaymentMode
+  online_banking_provider?: CheckoutOnlineBankingProvider
   voucher_code?: string
   customer?: CheckoutCustomerPayload
   order?: {
@@ -35,12 +40,14 @@ export interface CreateCheckoutSessionPayload {
 export interface CreateCheckoutSessionResponse {
   checkout_id: string | null
   checkout_url: string | null
+  payment_mode?: CheckoutPaymentMode | null
 }
 
 export interface VerifyCheckoutSessionResponse {
   checkout_id: string
   status: string | null
   payment_intent_id: string | null
+  payment_mode?: CheckoutPaymentMode | null
   raw?: Record<string, unknown>
 }
 
@@ -68,6 +75,7 @@ export type CustomerOrderStatus =
 
 export interface CustomerOrderItem {
   id: number
+  product_id?: number | null
   name: string
   image: string
   quantity: number
@@ -118,11 +126,17 @@ export const paymentApi = baseApi.injectEndpoints({
         body,
       }),
     }),
-    verifyCheckoutSession: builder.query<VerifyCheckoutSessionResponse, string>({
-      query: (checkoutId) => ({
-        url: `/api/payments/checkout-session/${checkoutId}`,
-        method: 'GET',
-      }),
+    verifyCheckoutSession: builder.query<VerifyCheckoutSessionResponse, string | { checkoutId: string; paymentMode?: CheckoutPaymentMode }>({
+      query: (arg) => {
+        const checkoutId = typeof arg === 'string' ? arg : arg.checkoutId
+        const paymentMode = typeof arg === 'string' ? undefined : arg.paymentMode
+
+        return {
+          url: `/api/payments/checkout-session/${checkoutId}`,
+          method: 'GET',
+          params: paymentMode ? { payment_mode: paymentMode } : undefined,
+        }
+      },
     }),
     validateVoucher: builder.mutation<ValidateVoucherResponse, { code: string; subtotal?: number }>({
       query: (body) => ({
@@ -148,6 +162,14 @@ export const paymentApi = baseApi.injectEndpoints({
         },
       }),
     }),
+    confirmOrder: builder.mutation<{ message: string }, { id: number; rating: number; review: string }>({
+      query: ({ id, rating, review }) => ({
+        url: `/api/orders/${id}/confirm`,
+        method: 'POST',
+        body: { rating, review },
+      }),
+      invalidatesTags: ['Orders'],
+    }),
   }),
 })
 
@@ -157,4 +179,5 @@ export const {
   useValidateVoucherMutation,
   useGetCheckoutHistoryQuery,
   useLazyTrackGuestOrderQuery,
+  useConfirmOrderMutation,
 } = paymentApi

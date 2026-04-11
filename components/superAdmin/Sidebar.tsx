@@ -7,13 +7,14 @@ import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import { signOut, useSession } from 'next-auth/react'
 import { useGetAdminMeQuery, useLogoutMutation } from '@/store/api/authApi'
+import { useGetAdminOrdersQuery } from '@/store/api/adminOrdersApi'
 import { membersApi } from '@/store/api/membersApi'
 import { baseApi, clearAccessTokenCache } from '@/store/api/baseApi'
 import { useAppDispatch } from '@/store/hooks'
 import { normalizeAdminPermissions } from '@/libs/adminPermissions'
 import { clearAdminSession } from '@/libs/adminSession'
 
-interface SubItem { label: string; path: string }
+interface SubItem { label: string; path: string; badge?: number }
 interface NavItem {
   id: string
   label: string
@@ -68,8 +69,8 @@ const navItems: NavItem[] = [
     children: [
       { label: 'All Orders', path: '/admin/orders' },
       { label: 'Needs Approval', path: '/admin/orders/pending' },
-      { label: 'Ready to Process', path: '/admin/orders/paid' },
-      { label: 'In Fulfillment', path: '/admin/orders/processing' },
+      { label: 'Ready to Process', path: '/admin/orders/processing' },
+      { label: 'In Fulfillment', path: '/admin/orders/shipped' },
       { label: 'In Transit', path: '/admin/orders/out_for_delivery' },
       { label: 'Completed', path: '/admin/orders/completed' },
       { label: 'Returns / Refunds', path: '/admin/orders/returned_refunded' },
@@ -166,6 +167,8 @@ const navItems: NavItem[] = [
       { label: 'Shop Builder', path: '/admin/webpages/shop-builder' },
       { label: 'Partner Storefronts', path: '/admin/webpages/partner-storefronts' },
       { label: 'Assembly Guides', path: '/admin/webpages/assembly-guides' },
+      { label: 'Bulk Edit', path: '/admin/webpages/bulk-edit' },
+      { label: 'Adds Content', path: '/admin/webpages/adds-content' },
     ],
   },
   {
@@ -245,16 +248,17 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
   const adminIdentityKey = sessionAccessToken
     ? `${String((session?.user as { id?: string } | undefined)?.id ?? 'unknown')}:${sessionAccessToken}`
     : undefined
-  const { data: adminMe, isLoading: isAdminMeLoading } = useGetAdminMeQuery(adminIdentityKey, { skip: !sessionAccessToken })
-  const [stableAdminMe, setStableAdminMe] = useState<typeof adminMe | null>(null)
-
-  useEffect(() => {
-    if (adminMe) {
-      setStableAdminMe(adminMe)
-    }
-  }, [adminMe])
-
-  const resolvedAdminMe = adminMe ?? stableAdminMe
+  const { data: adminMe } = useGetAdminMeQuery(adminIdentityKey, { skip: !sessionAccessToken })
+  const orderCountQueryOptions = { skip: !sessionAccessToken }
+  const { data: allOrdersData } = useGetAdminOrdersQuery({ filter: 'all', page: 1, perPage: 1 }, orderCountQueryOptions)
+  const { data: pendingOrdersData } = useGetAdminOrdersQuery({ filter: 'pending', page: 1, perPage: 1 }, orderCountQueryOptions)
+  const { data: processingOrdersData } = useGetAdminOrdersQuery({ filter: 'processing', page: 1, perPage: 1 }, orderCountQueryOptions)
+  const { data: shippedOrdersData } = useGetAdminOrdersQuery({ filter: 'shipped', page: 1, perPage: 1 }, orderCountQueryOptions)
+  const { data: transitOrdersData } = useGetAdminOrdersQuery({ filter: 'out_for_delivery', page: 1, perPage: 1 }, orderCountQueryOptions)
+  const { data: completedOrdersData } = useGetAdminOrdersQuery({ filter: 'completed', page: 1, perPage: 1 }, orderCountQueryOptions)
+  const { data: returnedOrdersData } = useGetAdminOrdersQuery({ filter: 'returned_refunded', page: 1, perPage: 1 }, orderCountQueryOptions)
+  const { data: failedOrdersData } = useGetAdminOrdersQuery({ filter: 'failed_payments', page: 1, perPage: 1 }, orderCountQueryOptions)
+  const resolvedAdminMe = adminMe
   const displayName = String(resolvedAdminMe?.name ?? session?.user?.name ?? '').trim() || 'Admin'
   const displayEmail = String(resolvedAdminMe?.email ?? session?.user?.email ?? '').trim() || 'admin@afhome.com'
   const effectiveRole = String(resolvedAdminMe?.role ?? sessionRole).toLowerCase()
@@ -303,7 +307,7 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
       adminPermissions: latestPermissions,
       supplierId: adminMe.supplier_id ?? null,
     })
-  }, [adminMe, isAdminPortalRole, session?.user, update])
+  }, [adminMe, isAdminPortalRole, session?.user, sessionPermissions, sessionRole, update])
 
   const toggleMenu = (id: string) =>
     setOpenMenus(prev => prev.includes(id) ? prev.filter(m => m !== id) : [...prev, id])
@@ -321,9 +325,30 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
 
   const isActive = (path: string) => pathname === path
   const isChildActive = (children?: SubItem[]) => children?.some(c => pathname === c.path) ?? false
+  const orderCountsByPath: Record<string, number> = {
+    '/admin/orders': allOrdersData?.meta.total ?? 0,
+    '/admin/orders/pending': pendingOrdersData?.meta.total ?? 0,
+    '/admin/orders/processing': processingOrdersData?.meta.total ?? 0,
+    '/admin/orders/shipped': shippedOrdersData?.meta.total ?? 0,
+    '/admin/orders/out_for_delivery': transitOrdersData?.meta.total ?? 0,
+    '/admin/orders/completed': completedOrdersData?.meta.total ?? 0,
+    '/admin/orders/returned_refunded': returnedOrdersData?.meta.total ?? 0,
+    '/admin/orders/failed_payments': failedOrdersData?.meta.total ?? 0,
+  }
 
   const visibleNavItems = navItems
     .map((item) => {
+      if (item.id === 'orders') {
+        return {
+          ...item,
+          badge: orderCountsByPath['/admin/orders'] ?? 0,
+          children: item.children?.map((child) => ({
+            ...child,
+            badge: orderCountsByPath[child.path] ?? 0,
+          })),
+        }
+      }
+
       if (item.id === 'settings') {
         const settingsChildren = (item.children ?? []).filter((child) => {
           if (child.path === '/admin/settings/users') {
@@ -476,7 +501,11 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
                     {!isCollapsed && (
                       <>
                         <span className="flex-1 text-left font-medium">{item.label}</span>
-                        {item.badge && <span className="bg-teal-500 text-white text-xs px-1.5 py-0.5 rounded-full font-bold min-w-[20px] text-center">{item.badge}</span>}
+                        {typeof item.badge === 'number' && item.badge > 0 && (
+                          <span className="bg-teal-500 text-white text-xs px-1.5 py-0.5 rounded-full font-bold min-w-[20px] text-center">
+                            {item.badge}
+                          </span>
+                        )}
                         {!isAccounting && !isFinanceOfficer && (
                           <svg className={`w-4 h-4 shrink-0 transition-transform duration-200 ${menuOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                         )}
@@ -527,7 +556,16 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
                               `}
                             >
                               <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${isActive(child.path) ? 'bg-teal-400' : 'bg-slate-600'}`} />
-                              {child.label}
+                              <span className="flex-1 truncate">{child.label}</span>
+                              {typeof child.badge === 'number' && child.badge > 0 && (
+                                <span className={`min-w-[20px] rounded-full px-1.5 py-0.5 text-[10px] font-semibold text-center ${
+                                  isActive(child.path)
+                                    ? 'bg-teal-500/15 text-teal-300'
+                                    : 'bg-slate-800 text-slate-300'
+                                }`}>
+                                  {child.badge}
+                                </span>
+                              )}
                             </Link>
                           ))}
                         </div>

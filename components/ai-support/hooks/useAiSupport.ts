@@ -64,6 +64,7 @@ export function useAiSupport() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [quickReplies, setQuickReplies] = useState<string[]>([]);
   const [inputValue, setInputValue] = useState('');
+  const [imageDataUrls, setImageDataUrls] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const initialized = useRef(false);
 
@@ -96,12 +97,20 @@ export function useAiSupport() {
   const send = useCallback(
     async (text: string) => {
       const msg = text.trim();
-      if (!msg || isLoading) return;
+      if ((!msg && imageDataUrls.length === 0) || isLoading) return;
 
       setInputValue('');
 
       setMessages(prev => {
-        const next: ChatMessage[] = [...prev, { kind: 'text', role: 'user', text: msg }];
+        const next: ChatMessage[] = [...prev];
+        if (imageDataUrls.length > 0) {
+          imageDataUrls.forEach((url) => {
+            next.push({ kind: 'image', role: 'user', url });
+          });
+        }
+        if (msg) {
+          next.push({ kind: 'text', role: 'user', text: msg });
+        }
         persist({ messages: next, quickReplies });
         return next;
       });
@@ -111,8 +120,11 @@ export function useAiSupport() {
       try {
         const res = await fetch(apiEndpoint('/api/ai-support'), {
           method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
-          body: 'message=' + encodeURIComponent(msg),
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: msg,
+            images: imageDataUrls,
+          }),
         });
         const data = (await res.json()) as ApiResponse;
         const newQRs = data.quick_replies?.slice(0, 14) ?? [];
@@ -122,7 +134,7 @@ export function useAiSupport() {
           if (data.status === 'ok') {
             if (data.reply) next.push({ kind: 'text', role: 'bot', text: data.reply });
             if (data.product_cards?.length)
-              next.push({ kind: 'cards', cards: data.product_cards.slice(0, 10) });
+              next.push({ kind: 'cards', cards: data.product_cards });
             if (data.brand_cards?.length)
               next.push({
                 kind: 'brand_cards',
@@ -131,6 +143,8 @@ export function useAiSupport() {
               });
             if (data.category_cards?.length)
               next.push({ kind: 'category_cards', cards: data.category_cards.slice(0, 10) });
+            if (data.step_images?.length)
+              next.push({ kind: 'step_images', images: data.step_images.slice(0, 10) });
           } else {
             next.push({ kind: 'text', role: 'bot', text: 'I could not process your request right now.' });
           }
@@ -149,10 +163,26 @@ export function useAiSupport() {
         });
       } finally {
         setIsLoading(false);
+        if (imageDataUrls.length > 0) {
+          setImageDataUrls([]);
+        }
       }
     },
-    [isLoading, quickReplies],
+    [imageDataUrls, isLoading, quickReplies],
   );
 
-  return { isOpen, open, close, toggle, messages, quickReplies, inputValue, setInputValue, send, isLoading };
+  return {
+    isOpen,
+    open,
+    close,
+    toggle,
+    messages,
+    quickReplies,
+    inputValue,
+    setInputValue,
+    imageDataUrls,
+    setImageDataUrls,
+    send,
+    isLoading,
+  };
 }

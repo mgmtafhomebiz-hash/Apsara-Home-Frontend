@@ -1,24 +1,35 @@
 import type { TextMessage as TextMessageType } from '../types';
 
+const API_BASE = (process.env.NEXT_PUBLIC_LARAVEL_API_URL ?? '').replace(/\/+$/, '');
+const ROBOT_SRC = `${API_BASE}/Image/sir.png`;
+
 function Linkify({ text }: { text: string }) {
-  const parts = text.split(/(https?:\/\/[^\s]+)/g);
+  const lines = text.split(/\r?\n/);
   return (
     <>
-      {parts.map((part, i) =>
-        /^https?:\/\//.test(part) ? (
-          <a
-            key={i}
-            href={part}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="underline text-cyan-300 break-all"
-          >
-            {part}
-          </a>
-        ) : (
-          part
-        ),
-      )}
+      {lines.map((line, lineIdx) => {
+        const parts = line.split(/(https?:\/\/[^\s]+)/g);
+        return (
+          <span key={`line-${lineIdx}`}>
+            {parts.map((part, i) =>
+              /^https?:\/\//.test(part) ? (
+                <a
+                  key={`link-${lineIdx}-${i}`}
+                  href={part}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline text-cyan-300 break-all"
+                >
+                  {part}
+                </a>
+              ) : (
+                part
+              ),
+            )}
+            {lineIdx < lines.length - 1 && <br />}
+          </span>
+        );
+      })}
     </>
   );
 }
@@ -28,8 +39,8 @@ export function TextMessage({ message }: { message: TextMessageType }) {
   return (
     <div className={`flex items-end gap-2 ${isBot ? 'justify-start' : 'justify-end'}`}>
       {isBot && (
-        <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-indigo-600 to-indigo-400 flex items-center justify-center text-[11px] text-white flex-shrink-0 shadow-sm">
-          ✦
+        <div className="w-10 h-10 overflow-hidden flex-shrink-0 rounded-none">
+          <img src={ROBOT_SRC} alt="AI" className="w-full h-full object-contain" />
         </div>
       )}
       <div
@@ -44,3 +55,5 @@ export function TextMessage({ message }: { message: TextMessageType }) {
     </div>
   );
 }
+
+

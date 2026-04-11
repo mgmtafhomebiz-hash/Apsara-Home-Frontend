@@ -571,9 +571,7 @@ export default function EncashmentPageMain({ initialFilter = 'all' }: Props) {
           className="space-y-3"
         >
           {isFetching && (
-            <div className="h-1 w-full overflow-hidden rounded-full bg-slate-100">
-              <div className="h-full w-1/3 animate-pulse rounded-full bg-teal-400" />
-            </div>
+            <div className="google-loading-bar" />
           )}
 
           <div className="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden">

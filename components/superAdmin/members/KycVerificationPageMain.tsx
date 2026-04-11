@@ -624,9 +624,7 @@ export default function KycVerificationPageMain() {
         >
           {/* Fetching progress */}
           {isFetching && (
-            <div className="h-1 w-full overflow-hidden rounded-full bg-slate-100">
-              <div className="h-full w-1/3 animate-pulse rounded-full bg-teal-400" />
-            </div>
+            <div className="google-loading-bar" />
           )}
 
           {/* Table */}

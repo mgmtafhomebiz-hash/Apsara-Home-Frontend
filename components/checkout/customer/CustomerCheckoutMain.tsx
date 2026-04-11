@@ -4,7 +4,7 @@ import Loading from "@/app/loading";
 import Footer from "@/components/layout/Footer";
 import Navbar from "@/components/layout/Navbar";
 import TopBar from "@/components/layout/TopBar";
-import { GuestForm, FormErrors, CustomerCheckoutData, PaymentMethod } from "@/types/CustomerCheckout/types";
+import { GuestForm, FormErrors, CustomerCheckoutData, PaymentMethod, PaymentMode } from "@/types/CustomerCheckout/types";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -13,7 +13,7 @@ import CustomerCheckoutContactForm from "./CustomerCheckoutContactForm";
 import CustomerCheckoutAddressForm from "./CustomerCheckoutAddressForm";
 import CustomerCheckoutPaymentMethod from "./CustomerCheckoutPaymentMethod";
 import CustomerCheckoutOrderSummary from "./CustomerCheckoutOrderSummary";
-import { useCreateCheckoutSessionMutation, useValidateVoucherMutation } from "@/store/api/paymentApi";
+import { CheckoutOnlineBankingProvider, useCreateCheckoutSessionMutation, useValidateVoucherMutation } from "@/store/api/paymentApi";
 import { getStoredReferralCode } from "@/libs/referral";
 import { useMeQuery } from "@/store/api/userApi";
 import type { Category } from '@/store/api/categoriesApi';
@@ -43,12 +43,40 @@ const REQUIRED_FIELD_ORDER: Array<keyof GuestForm> = [
     'barangay',
 ];
 
+const LOCAL_PAYMENT_MODE_HOSTS = new Set(['localhost', '127.0.0.1']);
+
+type DraftCheckoutItem = NonNullable<CustomerCheckoutData['items']>[number];
+
 function readCheckoutDraft(): CustomerCheckoutData | null {
     if (typeof window === 'undefined') return null;
 
     try {
         const raw = localStorage.getItem('guest_checkout');
-        return raw ? JSON.parse(raw) as CustomerCheckoutData : null;
+        if (!raw) return null;
+
+        const parsed = JSON.parse(raw) as CustomerCheckoutData & {
+            product?: CustomerCheckoutData['product'] & { id?: number | string };
+            items?: Array<DraftCheckoutItem & { id?: number | string }>;
+        };
+
+        const normalizedProductId = Number(parsed?.product?.id);
+        const normalizedItems = Array.isArray(parsed.items)
+            ? parsed.items.map((item) => ({
+                ...item,
+                id: String(item.id),
+            }))
+            : parsed.items;
+
+        return {
+            ...parsed,
+            product: parsed.product
+                ? {
+                    ...parsed.product,
+                    id: Number.isFinite(normalizedProductId) ? normalizedProductId : undefined,
+                }
+                : parsed.product,
+            items: normalizedItems,
+        } as CustomerCheckoutData;
     } catch {
         return null;
     }
@@ -76,12 +104,30 @@ const CustomerCheckoutMain = ({ initialCategories = [] }: { initialCategories?: 
 
     const [formOverrides, setFormOverrides] = useState<GuestForm>(defaultForm);
     const [errors, setErrors] = useState<FormErrors>({});
+    const requiredFieldOrder = useMemo(
+        () => (isLoggedIn ? REQUIRED_FIELD_ORDER.filter((key) => key !== 'referred_by') : REQUIRED_FIELD_ORDER),
+        [isLoggedIn]
+    );
     const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>('gcash');
+    const [selectedOnlineBankingProvider, setSelectedOnlineBankingProvider] = useState<CheckoutOnlineBankingProvider>('dob');
+    const [paymentMode, setPaymentMode] = useState<PaymentMode>(() => {
+        if (typeof window === 'undefined') return 'live';
+        return LOCAL_PAYMENT_MODE_HOSTS.has(window.location.hostname) ? 'test' : 'live';
+    });
     const [notice, setNotice] = useState('');
     const [createCheckoutSession, { isLoading: loading }] = useCreateCheckoutSessionMutation();
     const [validateVoucher, { isLoading: voucherLoading }] = useValidateVoucherMutation();
     const [voucherInfo, setVoucherInfo] = useState<{ code: string; amount: number; discount: number } | null>(null);
     const [voucherError, setVoucherError] = useState<string | null>(null);
+    const canSwitchPaymentMode = useMemo(() => {
+        if (typeof window === 'undefined') return false;
+        return LOCAL_PAYMENT_MODE_HOSTS.has(window.location.hostname);
+    }, []);
+    const paymentModeOptions = useMemo<PaymentMode[]>(
+        () => (canSwitchPaymentMode ? ['test', 'live'] : ['live']),
+        [canSwitchPaymentMode]
+    );
+    const showOnlineBankingProviderPicker = paymentMode === 'test';
 
     const form = useMemo<GuestForm>(() => ({
         ...defaultForm,
@@ -109,15 +155,11 @@ const CustomerCheckoutMain = ({ initialCategories = [] }: { initialCategories?: 
         if (!checkoutData) return;
         const code = form.voucher_coupon.trim();
 
-        if (!code) {
-            setVoucherInfo(null);
-            setVoucherError(null);
-            return;
-        }
+        if (!code) return;
 
-        setVoucherError(null);
         const handle = setTimeout(async () => {
             try {
+                setVoucherError(null);
                 const res = await validateVoucher({ code, subtotal: checkoutData.subtotal }).unwrap();
                 setVoucherInfo({
                     code: res.voucher.code,
@@ -138,6 +180,10 @@ const CustomerCheckoutMain = ({ initialCategories = [] }: { initialCategories?: 
     const setField = useCallback((key: keyof GuestForm, value: string) => {
         setFormOverrides(prev => ({ ...prev, [key]: value }))
         setErrors(prev => ({ ...prev, [key]: undefined }))
+        if (key === 'voucher_coupon') {
+            setVoucherInfo(null)
+            setVoucherError(null)
+        }
     }, [])
 
     const validate = (): FormErrors => {
@@ -156,7 +202,7 @@ const CustomerCheckoutMain = ({ initialCategories = [] }: { initialCategories?: 
     }
 
     const focusFirstErrorField = useCallback((validationErrors: FormErrors) => {
-        const firstErrorKey = REQUIRED_FIELD_ORDER.find((key) => Boolean(validationErrors[key]));
+        const firstErrorKey = requiredFieldOrder.find((key) => Boolean(validationErrors[key]));
         if (!firstErrorKey) return;
 
         const target = document.querySelector<HTMLElement>(`[data-error-field="${firstErrorKey}"]`);
@@ -177,7 +223,7 @@ const CustomerCheckoutMain = ({ initialCategories = [] }: { initialCategories?: 
 
         const control = target.querySelector<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>('input, select, textarea');
         control?.focus({ preventScroll: true });
-    }, []);
+    }, [requiredFieldOrder]);
 
     const handleSubmit = async () => {
         const errs = validate();
@@ -188,11 +234,6 @@ const CustomerCheckoutMain = ({ initialCategories = [] }: { initialCategories?: 
         }
 
         if (!checkoutData) return;
-        if (selectedMethod === 'online_banking') {
-            setNotice('Online Banking is coming soon.');
-            return;
-        }
-
         if (form.voucher_coupon.trim() && !voucherInfo) {
             setVoucherError(voucherError || 'Voucher code is invalid or expired.');
             return;
@@ -201,10 +242,15 @@ const CustomerCheckoutMain = ({ initialCategories = [] }: { initialCategories?: 
         try {
             const voucherDiscount = voucherInfo?.discount ?? 0;
             const computedTotal = Math.max(0, checkoutData.subtotal - voucherDiscount) + checkoutData.handlingFee;
+            const normalizedProductId = Number(checkoutData.product.id);
             const data = await createCheckoutSession({
                 amount: computedTotal,
                 description: checkoutData.product.name,
                 payment_method: selectedMethod,
+                payment_mode: canSwitchPaymentMode ? paymentMode : undefined,
+                online_banking_provider: selectedMethod === 'online_banking' && showOnlineBankingProviderPicker
+                    ? selectedOnlineBankingProvider
+                    : undefined,
                 voucher_code: voucherInfo?.code,
                 customer: {
                     name: form.name,
@@ -212,15 +258,17 @@ const CustomerCheckoutMain = ({ initialCategories = [] }: { initialCategories?: 
                     phone: form.phone,
                     address: `${form.address}, ${form.barangay}, ${form.city}, ${form.province}, ${form.region}${form.zip ? ` ${form.zip}` : ''}`,
                     referred_by: form.referred_by.trim(),
+                    is_member: isLoggedIn,
                 },
                 order: {
                     product_name: checkoutData.product.name,
-                    product_id: checkoutData.product.id,
+                    product_id: Number.isFinite(normalizedProductId) ? normalizedProductId : undefined,
                     product_sku: checkoutData.selectedSku ?? checkoutData.product.sku ?? null,
                     product_pv: checkoutData.product.prodpv ?? 0,
                     product_image: checkoutData.product.image,
                     quantity: checkoutData.quantity,
                     selected_color: checkoutData.selectedColor ?? null,
+                    selected_style: checkoutData.selectedStyle ?? null,
                     selected_size: checkoutData.selectedSize ?? null,
                     selected_type: checkoutData.selectedType ?? null,
                     subtotal: checkoutData.subtotal,
@@ -235,6 +283,7 @@ const CustomerCheckoutMain = ({ initialCategories = [] }: { initialCategories?: 
 
             if (data.checkout_id) {
                 localStorage.setItem('last_checkout_id', data.checkout_id);
+                localStorage.setItem('last_checkout_payment_mode', canSwitchPaymentMode ? (data.payment_mode || paymentMode) : 'live');
             }
             localStorage.removeItem('guest_checkout');
             window.location.href = data.checkout_url;
@@ -243,6 +292,9 @@ const CustomerCheckoutMain = ({ initialCategories = [] }: { initialCategories?: 
                 data?: {
                     message?: string;
                     errors?: Record<string, string[]>;
+                    error?: {
+                        errors?: Array<{ detail?: string; code?: string; source?: Record<string, string> }>;
+                    };
                 };
             };
 
@@ -256,8 +308,8 @@ const CustomerCheckoutMain = ({ initialCategories = [] }: { initialCategories?: 
                 requestAnimationFrame(() => focusFirstErrorField(nextErrors));
                 return;
             }
-
-            alert(apiError?.data?.message || 'Something went wrong');
+            const gatewayError = apiError?.data?.error?.errors?.[0]?.detail;
+            alert(gatewayError || apiError?.data?.message || 'Something went wrong');
         }
     }
 
@@ -289,7 +341,7 @@ const CustomerCheckoutMain = ({ initialCategories = [] }: { initialCategories?: 
                                 </h1>
                             </div>
                         </div>
-                        <Link href="/" className="flex items-center gap-1.5 text-white/80 hover:text-white text-xs font-semibold transition-colors bg-white/10 hover:bg-white/20 px-3 py-2 rounded-xl border border-white/20">
+                        <Link href="/shop" className="flex items-center gap-1.5 text-white/80 hover:text-white text-xs font-semibold transition-colors bg-white/10 hover:bg-white/20 px-3 py-2 rounded-xl border border-white/20">
                             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                             </svg>
@@ -305,6 +357,7 @@ const CustomerCheckoutMain = ({ initialCategories = [] }: { initialCategories?: 
                                 form={form}
                                 errors={errors}
                                 setField={setField}
+                                showReferral={!isLoggedIn}
                                 lockReferralField={hasLockedReferral}
                                 referralSourceCode={hasLockedReferral ? effectiveReferral : ''}
                                 voucherStatus={{
@@ -326,6 +379,12 @@ const CustomerCheckoutMain = ({ initialCategories = [] }: { initialCategories?: 
                                     setSelectedMethod(m);
                                     setNotice('');
                                 }}
+                                paymentMode={paymentMode}
+                                paymentModeOptions={paymentModeOptions}
+                                onPaymentModeChange={setPaymentMode}
+                                selectedOnlineBankingProvider={selectedOnlineBankingProvider}
+                                onOnlineBankingProviderChange={setSelectedOnlineBankingProvider}
+                                showOnlineBankingProviderPicker={showOnlineBankingProviderPicker}
                                 notice={notice}
                             />
                         </div>

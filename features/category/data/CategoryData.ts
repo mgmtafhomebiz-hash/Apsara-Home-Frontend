@@ -14,6 +14,8 @@ export interface CategoryProduct {
     specifications?: string;
     sku?: string;
     stock?: number;
+    rating?: number;
+    reviewCount?: number;
     variants?: Array<{
         id?: number;
         sku?: string;
@@ -21,6 +23,7 @@ export interface CategoryProduct {
         color?: string;
         colorHex?: string;
         size?: string;
+        style?: string;
         width?: number;
         dimension?: number;
         height?: number;

@@ -23,6 +23,8 @@ import {
   DEFAULT_ADMIN_PERMISSIONS,
   normalizeAdminPermissions,
 } from '@/libs/adminPermissions'
+import { getPartnerStorefrontConfig } from '@/libs/partnerStorefront'
+import { useGetAdminWebPageItemsQuery, type WebPageItem } from '@/store/api/webPagesApi'
 
 /* ─── types ──────────────────────────────────────────────── */
 
@@ -33,6 +35,7 @@ type CreateForm = {
   user_level_id: number
   supplier_id: number | null
   admin_permissions: AdminPermissionId[]
+  storefront_ids: number[]
 }
 
 type EditForm = CreateForm & {
@@ -40,7 +43,7 @@ type EditForm = CreateForm & {
 }
 
 const initialForm: CreateForm = {
-  name: '', username: '', email: '', user_level_id: 3, supplier_id: null, admin_permissions: [],
+  name: '', username: '', email: '', user_level_id: 3, supplier_id: null, admin_permissions: [], storefront_ids: [],
 }
 
 const initialEditForm: EditForm = {
@@ -613,7 +616,7 @@ function AdminActivityModal({
 }
 
 function EditModal({
-  target, form, busy, onChange, onSubmit, onClose, supplierOptions, roleOptions,
+  target, form, busy, onChange, onSubmit, onClose, supplierOptions, roleOptions, storefronts,
 }: {
   target: AdminUserItem; form: EditForm; busy: boolean
   onChange: (patch: Partial<EditForm>) => void
@@ -621,6 +624,10 @@ function EditModal({
   onClose: () => void
   supplierOptions: Array<{ id: number; label: string }>
   roleOptions: typeof ROLE_OPTIONS
+  storefronts: Array<{
+    item: WebPageItem
+    config: NonNullable<ReturnType<typeof getPartnerStorefrontConfig>>
+  }>
 }) {
   const permissionsRef = useRef<HTMLDivElement | null>(null)
   const [isPermissionsSpotlightActive, setIsPermissionsSpotlightActive] = useState(false)
@@ -688,6 +695,7 @@ function EditModal({
             onChange={v => {
               onChange({
                 user_level_id: v,
+                storefront_ids: v === 4 ? form.storefront_ids : [],
                 admin_permissions: v === 2
                   ? (form.admin_permissions.length ? form.admin_permissions : DEFAULT_ADMIN_PERMISSIONS)
                   : [],
@@ -720,6 +728,52 @@ function EditModal({
               onChange={(supplierId) => onChange({ supplier_id: supplierId })}
               options={supplierOptions}
             />
+          )}
+          {form.user_level_id === 4 && (
+            <div className="rounded-2xl border border-amber-100 bg-amber-50/60 p-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-700">
+                Partner Storefronts
+              </p>
+              <p className="mt-1 text-xs text-slate-500">
+                Select which storefronts this Web Content account can manage.
+              </p>
+              <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                {storefronts.length === 0 ? (
+                  <div className="rounded-xl border border-dashed border-amber-200 bg-white px-3 py-3 text-xs text-slate-500">
+                    No partner storefronts found yet.
+                  </div>
+                ) : (
+                  storefronts.map(({ item, config }) => (
+                    <label key={item.id} className="flex items-start gap-3 rounded-xl border border-amber-100 bg-white px-3 py-2.5 text-xs text-slate-700">
+                      <input
+                        type="checkbox"
+                        checked={form.storefront_ids.includes(item.id)}
+                        onChange={() =>
+                          onChange({
+                            storefront_ids: form.storefront_ids.includes(item.id)
+                              ? form.storefront_ids.filter((entry) => entry !== item.id)
+                              : [...form.storefront_ids, item.id],
+                          })
+                        }
+                        className="mt-1 h-4 w-4 rounded border-slate-300 text-amber-600 focus:ring-amber-500"
+                      />
+                      <div className="flex-1">
+                        <p className="text-xs font-semibold text-slate-700">{config.displayName}</p>
+                        <p className="mt-0.5 text-[11px] text-slate-500">Slug: {config.slug}</p>
+                      </div>
+                      <a
+                        href={`/shop/${config.slug}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="mt-0.5 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-700 hover:bg-amber-100 transition"
+                      >
+                        Open
+                      </a>
+                    </label>
+                  ))
+                )}
+              </div>
+            </div>
           )}
           <SectionLabel>Security</SectionLabel>
           <InputField
@@ -768,6 +822,12 @@ export default function AdminUsersPageMain() {
   const canManageUsers = isSuperAdmin || isAdmin
   const [latestInvite, setLatestInvite] = useState<CreateAdminUserResponse | null>(null)
   const { data: suppliersData } = useGetSuppliersQuery(undefined, { skip: !isSuperAdmin })
+  const { data: storefrontData } = useGetAdminWebPageItemsQuery({
+    type: 'partner-storefront',
+    page: 1,
+    perPage: 100,
+    status: 'all',
+  })
 
   const [search,          setSearch]          = useState('')
   const [roleFilter,      setRoleFilter]      = useState('')
@@ -814,6 +874,17 @@ export default function AdminUsersPageMain() {
     })),
     [suppliersData?.suppliers],
   )
+  const storefronts = useMemo(
+    () =>
+      (storefrontData?.items ?? [])
+        .map((item) => ({
+          item,
+          config: getPartnerStorefrontConfig(item),
+        }))
+        .filter((entry): entry is { item: WebPageItem; config: NonNullable<ReturnType<typeof getPartnerStorefrontConfig>> } => Boolean(entry.config))
+        .sort((a, b) => a.config.displayName.localeCompare(b.config.displayName)),
+    [storefrontData?.items],
+  )
   const allowedRoleOptions = useMemo(() => {
     if (isSuperAdmin) return ROLE_OPTIONS
     if (isAdmin) return ROLE_OPTIONS.filter((roleOption) => [3, 4, 5, 6, 7].includes(roleOption.value))
@@ -826,6 +897,9 @@ export default function AdminUsersPageMain() {
     window.setTimeout(() => setIsCreatePermissionsSpotlightActive(false), 1600)
   }
 
+  const toggleStorefrontSelection = (current: number[], id: number) =>
+    current.includes(id) ? current.filter((item) => item !== id) : [...current, id]
+
   const handleCreate = async (e: React.SyntheticEvent) => {
     e.preventDefault()
     try {
@@ -833,14 +907,19 @@ export default function AdminUsersPageMain() {
         ...createForm,
         email: createForm.email.trim() || undefined,
         admin_permissions: createForm.user_level_id === 2 ? createForm.admin_permissions : [],
+        storefront_ids: createForm.user_level_id === 4 ? createForm.storefront_ids : [],
       }).unwrap()
       showSuccessToast(result.message)
       setLatestInvite(result)
-      setCreateForm({
+      setCreateForm((prev) => ({
         ...initialForm,
-        user_level_id: isSuperAdmin ? 2 : 3,
-        admin_permissions: isSuperAdmin ? DEFAULT_ADMIN_PERMISSIONS : [],
-      })
+        user_level_id: prev.user_level_id,
+        supplier_id: prev.user_level_id === 8 ? prev.supplier_id : null,
+        admin_permissions: prev.user_level_id === 2
+          ? (prev.admin_permissions.length ? prev.admin_permissions : DEFAULT_ADMIN_PERMISSIONS)
+          : [],
+        storefront_ids: prev.user_level_id === 4 ? prev.storefront_ids : [],
+      }))
     } catch (err: unknown) {
       const apiErr = err as { data?: { message?: string; errors?: Record<string, string[]> } }
       const msg = (apiErr?.data?.errors ? Object.values(apiErr.data.errors)[0]?.[0] : undefined)
@@ -863,6 +942,7 @@ export default function AdminUsersPageMain() {
           ? normalizeAdminPermissions(row.admin_permissions)
           : DEFAULT_ADMIN_PERMISSIONS)
         : [],
+      storefront_ids: row.storefront_ids ?? [],
     })
   }
 
@@ -876,6 +956,7 @@ export default function AdminUsersPageMain() {
         email: editForm.email, user_level_id: editForm.user_level_id,
         supplier_id: editForm.user_level_id === 8 ? editForm.supplier_id : null,
         admin_permissions: editForm.user_level_id === 2 ? editForm.admin_permissions : [],
+        storefront_ids: editForm.user_level_id === 4 ? editForm.storefront_ids : [],
         password: editForm.password.trim() || undefined,
       }).unwrap()
       showSuccessToast(`Updated account for ${editTarget.username}.`)
@@ -1017,6 +1098,7 @@ export default function AdminUsersPageMain() {
                 ...p,
                 user_level_id: v,
                 supplier_id: v === 8 ? p.supplier_id : null,
+                storefront_ids: v === 4 ? p.storefront_ids : [],
                 admin_permissions: v === 2
                   ? (p.admin_permissions.length ? p.admin_permissions : DEFAULT_ADMIN_PERMISSIONS)
                   : [],
@@ -1049,6 +1131,51 @@ export default function AdminUsersPageMain() {
               onChange={(supplierId) => setCreateForm((prev) => ({ ...prev, supplier_id: supplierId }))}
               options={supplierOptions}
             />
+          )}
+          {createForm.user_level_id === 4 && (
+            <div className="rounded-2xl border border-amber-100 bg-amber-50/60 p-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-700">
+                Partner Storefronts
+              </p>
+              <p className="mt-1 text-xs text-slate-500">
+                Select which storefronts this Web Content account can manage.
+              </p>
+              <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                {storefronts.length === 0 ? (
+                  <div className="rounded-xl border border-dashed border-amber-200 bg-white px-3 py-3 text-xs text-slate-500">
+                    No partner storefronts found yet.
+                  </div>
+                ) : (
+                  storefronts.map(({ item, config }) => (
+                    <label key={item.id} className="flex items-start gap-3 rounded-xl border border-amber-100 bg-white px-3 py-2.5 text-xs text-slate-700">
+                      <input
+                        type="checkbox"
+                        checked={createForm.storefront_ids.includes(item.id)}
+                        onChange={() =>
+                          setCreateForm((prev) => ({
+                            ...prev,
+                            storefront_ids: toggleStorefrontSelection(prev.storefront_ids, item.id),
+                          }))
+                        }
+                        className="mt-1 h-4 w-4 rounded border-slate-300 text-amber-600 focus:ring-amber-500"
+                      />
+                      <div className="flex-1">
+                        <p className="text-xs font-semibold text-slate-700">{config.displayName}</p>
+                        <p className="mt-0.5 text-[11px] text-slate-500">Slug: {config.slug}</p>
+                      </div>
+                      <a
+                        href={`/shop/${config.slug}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="mt-0.5 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-700 hover:bg-amber-100 transition"
+                      >
+                        Open
+                      </a>
+                    </label>
+                  ))
+                )}
+              </div>
+            </div>
           )}
         </div>
 
@@ -1375,6 +1502,7 @@ export default function AdminUsersPageMain() {
             onClose={() => { setEditTarget(null); setEditForm(initialEditForm) }}
             supplierOptions={supplierOptions}
             roleOptions={allowedRoleOptions}
+            storefronts={storefronts}
           />
         )}
       </AnimatePresence>

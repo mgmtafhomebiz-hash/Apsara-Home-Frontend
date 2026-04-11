@@ -25,8 +25,8 @@ const formatActivityDate = (value?: string | null) => {
   }).format(parsed)
 }
 
-const actionLabel = (action: string) => {
-  switch (action) {
+const actionLabel = (action?: string | null) => {
+  switch ((action ?? '').toLowerCase()) {
     case 'created':
       return 'Added'
     case 'updated':
@@ -34,12 +34,12 @@ const actionLabel = (action: string) => {
     case 'deleted':
       return 'Deleted'
     default:
-      return action
+      return action?.trim() ? action : 'Activity'
   }
 }
 
-const actionBadgeClass = (action: string) => {
-  switch (action) {
+const actionBadgeClass = (action?: string | null) => {
+  switch ((action ?? '').toLowerCase()) {
     case 'created':
       return 'bg-emerald-50 text-emerald-700 border-emerald-200'
     case 'updated':
@@ -51,8 +51,8 @@ const actionBadgeClass = (action: string) => {
   }
 }
 
-const statusBadgeClass = (status: string) => {
-  switch (status) {
+const statusBadgeClass = (status?: string | null) => {
+  switch ((status ?? '').toLowerCase()) {
     case 'failed':
       return 'bg-red-50 text-red-600 border-red-200'
     case 'success':
@@ -62,8 +62,14 @@ const statusBadgeClass = (status: string) => {
   }
 }
 
-const splitImageValues = (value?: string | null) => {
+const splitImageValues = (value?: string | string[] | null) => {
   if (!value) return []
+
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => item.trim())
+      .filter((item) => /^https?:\/\//i.test(item))
+  }
 
   return value
     .split(/\n|\s*\|\s*/)
@@ -71,21 +77,30 @@ const splitImageValues = (value?: string | null) => {
     .filter((item) => /^https?:\/\//i.test(item))
 }
 
-const isImageField = (field: string) => {
-  const normalized = field.trim().toLowerCase()
+const isImageField = (field?: string | null) => {
+  const normalized = (field ?? '').trim().toLowerCase()
   return normalized === 'primary image' || normalized === 'image gallery'
 }
 
 function ActivityRow({ log }: { log: ProductActivityLog }) {
+  const safeChanges = Array.isArray(log.changes)
+    ? log.changes.filter((change): change is NonNullable<ProductActivityLog['changes']>[number] =>
+      Boolean(change) && typeof change === 'object')
+    : []
+
+  const safeStatus = log.status?.trim() ? log.status : 'unknown'
+  const safeProductName = log.productName?.trim() ? log.productName : 'Unknown product'
+  const safeAction = log.action?.trim() ? log.action : 'activity'
+
   return (
     <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-semibold ${actionBadgeClass(log.action)}`}>
-              {actionLabel(log.action)}
+            <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-semibold ${actionBadgeClass(safeAction)}`}>
+              {actionLabel(safeAction)}
             </span>
-            <p className="text-sm font-semibold text-slate-800 truncate">{log.productName}</p>
+            <p className="text-sm font-semibold text-slate-800 truncate">{safeProductName}</p>
           </div>
           <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
             <span>SKU: {log.productSku?.trim() ? log.productSku : 'N/A'}</span>
@@ -99,19 +114,22 @@ function ActivityRow({ log }: { log: ProductActivityLog }) {
             </div>
           )}
         </div>
-        <div className={`shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] ${statusBadgeClass(log.status)}`}>
-          {log.status}
+        <div className={`shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] ${statusBadgeClass(safeStatus)}`}>
+          {safeStatus}
         </div>
       </div>
-      {log.changes && log.changes.length > 0 ? (
+      {safeChanges.length > 0 ? (
         <div className="mt-3 rounded-xl border border-slate-100 bg-slate-50 px-3 py-3">
           <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">Field Changes</p>
           <div className="mt-2 space-y-2">
-            {log.changes.map((change, index) => (
-              <div key={`${change.field}-${index}`} className="rounded-lg bg-white px-3 py-2 text-xs text-slate-600 border border-slate-100">
-                <span className="font-semibold text-slate-700">{change.field}</span>
+            {safeChanges.map((change, index) => {
+              const fieldLabel = typeof change.field === 'string' && change.field.trim() ? change.field : 'Unknown field'
+
+              return (
+              <div key={`${fieldLabel}-${index}`} className="rounded-lg bg-white px-3 py-2 text-xs text-slate-600 border border-slate-100">
+                <span className="font-semibold text-slate-700">{fieldLabel}</span>
                 <span className="mx-2 text-slate-300">:</span>
-                {isImageField(change.field) ? (
+                {isImageField(fieldLabel) ? (
                   <div className="mt-2 grid gap-3 sm:grid-cols-2">
                     <div>
                       <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400">Before</p>
@@ -150,7 +168,7 @@ function ActivityRow({ log }: { log: ProductActivityLog }) {
                   </>
                 )}
               </div>
-            ))}
+            )})}
           </div>
         </div>
       ) : null}
@@ -217,7 +235,7 @@ export default function ProductActivityLogsModal({ isOpen, onClose }: ProductAct
 
               <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="inline-flex items-center rounded-xl bg-teal-50 px-4 py-2 text-sm font-semibold text-teal-700">
-                  This account's activity only
+                  This account&apos;s activity only
                 </div>
                 <div className="relative w-full sm:max-w-sm">
                   <svg className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

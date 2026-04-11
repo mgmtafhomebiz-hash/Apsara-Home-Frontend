@@ -30,6 +30,29 @@ export interface CreateCategoryPayload {
   cat_order?: number
 }
 
+const normalizeCategoryText = (value: string) => {
+  const trimmed = (value ?? '').trim()
+  if (!trimmed) return ''
+  if (trimmed.includes('Ã') || trimmed.includes('Â')) {
+    try {
+      const decoded = decodeURIComponent(escape(trimmed))
+      if (decoded) return decoded
+    } catch {
+      return trimmed
+    }
+  }
+  return trimmed
+}
+
+const normalizeCategoriesResponse = (response: CategoriesResponse): CategoriesResponse => ({
+  ...response,
+  categories: (response.categories ?? []).map((category) => ({
+    ...category,
+    name: normalizeCategoryText(category.name),
+    description: normalizeCategoryText(category.description),
+  })),
+})
+
 export const categoriesApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getCategories: builder.query<CategoriesResponse, GetCategoriesParams | void>({
@@ -44,6 +67,7 @@ export const categoriesApi = baseApi.injectEndpoints({
           used_only: params?.used_only,
         },
       }),
+      transformResponse: (response: CategoriesResponse) => normalizeCategoriesResponse(response),
       providesTags: ['Categories'],
     }),
     createCategory: builder.mutation<{ message: string; category: Partial<Category> }, CreateCategoryPayload>({

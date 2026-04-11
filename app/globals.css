@@ -1,6 +1,9 @@
 @import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,600;9..144,700&family=Manrope:wght@400;500;600;700&display=swap");
 @import "tailwindcss";
+@import "@heroui/styles";
 @plugin "@tailwindcss/typography";
+@source "../node_modules/@heroui/react/dist/**/*.{js,ts,jsx,tsx}";
+@source "../node_modules/@heroui/styles/dist/**/*.{js,ts,jsx,tsx}";
 
 :root {
   --af-cream: #faf8f5;
@@ -114,6 +117,7 @@ body {
 }
 
 @keyframes google-line-primary {
+<<<<<<< HEAD
   0% { transform: translateX(-160%) scaleX(0.28); }
   42% { transform: translateX(-8%) scaleX(1.08); }
   100% { transform: translateX(125%) scaleX(0.42); }
@@ -123,6 +127,17 @@ body {
   0% { transform: translateX(-210%) scaleX(0.2); }
   50% { transform: translateX(-32%) scaleX(0.72); }
   100% { transform: translateX(138%) scaleX(0.4); }
+=======
+  0% { transform: translateX(-165%) scaleX(0.28); }
+  42% { transform: translateX(-10%) scaleX(1.08); }
+  100% { transform: translateX(145%) scaleX(0.42); }
+}
+
+@keyframes google-line-secondary {
+  0% { transform: translateX(-220%) scaleX(0.2); }
+  52% { transform: translateX(-30%) scaleX(0.72); }
+  100% { transform: translateX(150%) scaleX(0.4); }
+>>>>>>> origin/main
 }
 
 .google-loading-bar {
@@ -139,7 +154,11 @@ body {
   content: "";
   position: absolute;
   inset: 0 auto 0 0;
+<<<<<<< HEAD
   width: 64%;
+=======
+  width: 68%;
+>>>>>>> origin/main
   border-radius: inherit;
   transform-origin: left center;
   will-change: transform;
@@ -163,6 +182,10 @@ body {
 .google-loading-bar--violet::after {
   background: linear-gradient(90deg, rgba(196, 181, 253, 0.12), rgba(168, 85, 247, 0.82), rgba(129, 140, 248, 0.34));
 }
+<<<<<<< HEAD
+=======
+
+>>>>>>> origin/main
 @keyframes blob {
   0% {
     transform: translate(0px, 0px) scale(1);

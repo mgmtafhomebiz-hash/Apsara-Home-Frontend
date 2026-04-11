@@ -440,9 +440,7 @@ export default function CategoriesPageMain() {
 
       {/* Fetching indicator */}
       {isFetching && !isLoading && (
-        <div className="h-1 w-full overflow-hidden rounded-full bg-slate-200">
-          <div className="h-full w-1/3 animate-pulse rounded-full bg-violet-500"/>
-        </div>
+        <div className="google-loading-bar google-loading-bar--violet" />
       )}
 
       {/* Bulk delete bar */}

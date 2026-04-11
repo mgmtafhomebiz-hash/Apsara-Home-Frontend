@@ -5,6 +5,8 @@ import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import { useLazyVerifyCheckoutSessionQuery } from '@/store/api/paymentApi';
 
+const LOCAL_PAYMENT_MODE_HOSTS = new Set(['localhost', '127.0.0.1']);
+
 function CheckoutSuccessPage() {
   const [verifyCheckoutSession] = useLazyVerifyCheckoutSessionQuery();
   const [loading, setLoading] = useState(true);
@@ -36,6 +38,11 @@ function CheckoutSuccessPage() {
 
     const verify = async (isInitial = false) => {
       const checkoutId = localStorage.getItem('last_checkout_id');
+      const canUseLocalPaymentMode =
+        typeof window !== 'undefined' && LOCAL_PAYMENT_MODE_HOSTS.has(window.location.hostname);
+      const paymentMode = canUseLocalPaymentMode
+        ? (localStorage.getItem('last_checkout_payment_mode') || undefined)
+        : 'live';
       if (!checkoutId) {
         if (!isMounted) return;
         setError('No checkout reference found in local storage.');
@@ -44,7 +51,7 @@ function CheckoutSuccessPage() {
         return;
       }
       try {
-        const data = await verifyCheckoutSession(checkoutId).unwrap();
+        const data = await verifyCheckoutSession({ checkoutId, paymentMode: paymentMode === 'test' || paymentMode === 'live' ? paymentMode : undefined }).unwrap();
         if (!isMounted) return;
         setResult(data);
 

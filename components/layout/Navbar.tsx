@@ -4,12 +4,15 @@ import { useState, useEffect, useRef, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import Image from 'next/image'
+import { createPortal } from 'react-dom'
+import { Card, Label, SearchField } from '@heroui/react'
 import { useCart } from '@/context/CartContext'
 import { useSession, signOut } from 'next-auth/react'
 import { useLogoutMutation } from '@/store/api/authApi'
 import { baseApi, clearAccessTokenCache } from '@/store/api/baseApi'
 import type { Category } from '@/store/api/categoriesApi'
 import { useGetPublicProductsQuery } from '@/store/api/productsApi'
+import formatPrice from '@/helpers/FormatPrice'
 import { useMeQuery } from '@/store/api/userApi'
 import { useGetCustomerNotificationsQuery } from '@/store/api/customerNotificationsApi'
 import { useRouter } from 'next/navigation'
@@ -99,9 +102,7 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null)
   const [profileMenuOpen, setProfileMenuOpen] = useState(false)
   const [notifMenuOpen, setNotifMenuOpen] = useState(false)
-  const [desktopSearchQuery, setDesktopSearchQuery] = useState('')
-  const [mobileTopSearchQuery, setMobileTopSearchQuery] = useState('')
-  const [activeSearchField, setActiveSearchField] = useState<'desktop' | 'mobile' | null>(null)
+  const [searchModalQuery, setSearchModalQuery] = useState('')
   const [megaSearch, setMegaSearch] = useState('')
   const [mobileSearch, setMobileSearch] = useState('')
   const [brandSearch, setBrandSearch] = useState('')
@@ -133,10 +134,10 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const profileMenuRef = useRef<HTMLDivElement | null>(null)
   const notifMenuRef = useRef<HTMLDivElement | null>(null)
-  const desktopSearchRef = useRef<HTMLFormElement | null>(null)
-  const mobileTopSearchRef = useRef<HTMLFormElement | null>(null)
+  const searchInputRef = useRef<HTMLInputElement | null>(null)
+  const [searchModalOpen, setSearchModalOpen] = useState(false)
 
-  const activeSearchQuery = (activeSearchField === 'mobile' ? mobileTopSearchQuery : desktopSearchQuery).trim()
+  const activeSearchQuery = searchModalQuery.trim()
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(activeSearchQuery)
 
   useEffect(() => {
@@ -149,9 +150,8 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
   const { data: searchedProductsData, isFetching: isSearchingProducts } = useGetPublicProductsQuery(
     {
       page: 1,
-      perPage: 8,
+      perPage: 50,
       search: debouncedSearchQuery,
-      status: '1',
     },
     {
       skip: debouncedSearchQuery.length < 2,
@@ -160,55 +160,57 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
 
   const searchedProducts = useMemo(() => {
     const rows = searchedProductsData?.products ?? []
+    const normalizedQuery = debouncedSearchQuery.trim().toLowerCase()
     return rows
       .map((product) => {
         const name = String(product.name ?? '').trim()
         if (!name) return null
+        const nameLower = name.toLowerCase()
+        if (normalizedQuery) {
+          if (!nameLower.includes(normalizedQuery)) return null
+        }
         const imageFromArray = Array.isArray(product.images)
           ? product.images.find((item) => typeof item === 'string' && item.trim().length > 0)
           : null
         const image = product.image || imageFromArray || null
         const slug = toSlug(name)
         const id = typeof product.id === 'number' ? product.id : null
+        const priceDp = typeof product.priceDp === 'number' ? product.priceDp : null
+        const priceSrp = typeof product.priceSrp === 'number' ? product.priceSrp : null
+        const prodpv = typeof product.prodpv === 'number' ? product.prodpv : null
         return {
           id: id ?? slug,
           name,
           image,
           path: id ? `/product/${slug}-i${id}` : `/product/${slug}`,
+          priceDp,
+          priceSrp,
+          prodpv,
         }
       })
-      .filter((product): product is { id: number | string; name: string; image: string | null; path: string } => Boolean(product))
-  }, [searchedProductsData?.products])
+      .filter(
+        (
+          product,
+        ): product is {
+          id: number | string
+          name: string
+          image: string | null
+          path: string
+          priceDp: number | null
+          priceSrp: number | null
+          prodpv: number | null
+        } => Boolean(product),
+      )
+  }, [searchedProductsData?.products, debouncedSearchQuery])
 
-  const desktopSuggestions = useMemo(() => {
-    if (activeSearchField !== 'desktop') return []
-    return searchedProducts
-  }, [activeSearchField, searchedProducts])
-
-  const mobileSuggestions = useMemo(() => {
-    if (activeSearchField !== 'mobile') return []
-    return searchedProducts
-  }, [activeSearchField, searchedProducts])
-
-  const desktopSearchTerm = desktopSearchQuery.trim()
-  const mobileSearchTerm = mobileTopSearchQuery.trim()
-  const showDesktopNotFound =
-    activeSearchField === 'desktop' &&
-    desktopSearchTerm.length >= 2 &&
+  const showSearchNotFound =
+    searchModalOpen &&
+    activeSearchQuery.length >= 2 &&
     !isSearchingProducts &&
-    desktopSuggestions.length === 0
-  const showDesktopSearching =
-    activeSearchField === 'desktop' &&
-    desktopSearchTerm.length >= 2 &&
-    isSearchingProducts
-  const showMobileNotFound =
-    activeSearchField === 'mobile' &&
-    mobileSearchTerm.length >= 2 &&
-    !isSearchingProducts &&
-    mobileSuggestions.length === 0
-  const showMobileSearching =
-    activeSearchField === 'mobile' &&
-    mobileSearchTerm.length >= 2 &&
+    searchedProducts.length === 0
+  const showSearchSearching =
+    searchModalOpen &&
+    activeSearchQuery.length >= 2 &&
     isSearchingProducts
 
   useEffect(() => {
@@ -216,6 +218,30 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
     window.addEventListener('scroll', handler)
     return () => window.removeEventListener('scroll', handler)
   }, [])
+
+  useEffect(() => {
+    if (!searchModalOpen) return
+
+    const timeoutId = window.setTimeout(() => {
+      searchInputRef.current?.focus()
+    }, 80)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [searchModalOpen])
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return
+
+    const originalOverflow = document.body.style.overflow
+
+    if (searchModalOpen) {
+      document.body.style.overflow = 'hidden'
+    }
+
+    return () => {
+      document.body.style.overflow = originalOverflow
+    }
+  }, [searchModalOpen])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -249,8 +275,6 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
       const target = event.target as Node
       const clickedOutsideProfile = !profileMenuRef.current || !profileMenuRef.current.contains(target)
       const clickedOutsideNotifications = !notifMenuRef.current || !notifMenuRef.current.contains(target)
-      const clickedOutsideDesktopSearch = !desktopSearchRef.current || !desktopSearchRef.current.contains(target)
-      const clickedOutsideMobileSearch = !mobileTopSearchRef.current || !mobileTopSearchRef.current.contains(target)
 
       if (clickedOutsideProfile) {
         setProfileMenuOpen(false)
@@ -258,12 +282,15 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
       if (clickedOutsideNotifications) {
         setNotifMenuOpen(false)
       }
-      if (clickedOutsideDesktopSearch && clickedOutsideMobileSearch) setActiveSearchField(null)
     }
 
     const onEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') setProfileMenuOpen(false)
       if (event.key === 'Escape') setNotifMenuOpen(false)
+      if (event.key === 'Escape') {
+        setSearchModalOpen(false)
+        setSearchModalQuery('')
+      }
     }
 
     document.addEventListener('mousedown', onPointerDown)
@@ -287,7 +314,20 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
   const formatCustomerNotificationTime = (value: string | null | undefined) => {
     if (!value) return null
 
-    const date = new Date(value)
+    const normalizeTimestamp = (raw: string) => {
+      const trimmed = raw.trim()
+      if (!trimmed) return trimmed
+      const hasTimezone = /([zZ]|[+-]\d{2}:?\d{2})$/.test(trimmed)
+      if (hasTimezone) return trimmed
+      const isoLike = trimmed.includes('T') ? trimmed : trimmed.replace(' ', 'T')
+      return `${isoLike}Z`
+    }
+
+    const normalized = normalizeTimestamp(value)
+    let date = new Date(normalized)
+    if (Number.isNaN(date.getTime())) {
+      date = new Date(value)
+    }
     if (Number.isNaN(date.getTime())) return null
 
     return new Intl.DateTimeFormat('en-PH', {
@@ -396,21 +436,17 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
   //   await signOut({ callbackUrl: '/' })
   // }
 
-  const handleProductSearchSubmit = (query: string, field: 'desktop' | 'mobile') => {
+  const handleProductSearchSubmit = (query: string) => {
     const q = query.trim().toLowerCase()
     if (!q) return
 
     const exactMatch = searchedProducts.find((p) => p.name.toLowerCase() === q)
     const firstMatch = exactMatch ?? searchedProducts.find((p) => p.name.toLowerCase().includes(q))
-    if (!firstMatch) {
-      setActiveSearchField(field)
-      return
-    }
+    if (!firstMatch) return
 
     router.push(firstMatch.path)
-    setDesktopSearchQuery('')
-    setMobileTopSearchQuery('')
-    setActiveSearchField(null)
+    setSearchModalQuery('')
+    setSearchModalOpen(false)
   }
 
   const handleCustomerLogout = async (callbackUrl: string) => {
@@ -443,6 +479,7 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
   }
 
   return (
+    <>
     <motion.header
       initial={{ y: -80 }}
       animate={{ y: 0 }}
@@ -465,73 +502,25 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
 
           {/* Search */}
           <div className="flex-1 max-w-xl hidden md:block">
-            <form
-              className="relative"
-              ref={desktopSearchRef}
-              onSubmit={(e) => {
-                e.preventDefault()
-                handleProductSearchSubmit(desktopSearchQuery, 'desktop')
-              }}
-            >
-              <input
-                type="text"
-                value={desktopSearchQuery}
-                onChange={(e) => setDesktopSearchQuery(e.target.value)}
-                onFocus={() => setActiveSearchField('desktop')}
-                placeholder="Search products..."
-                className="w-full pl-4 pr-11 py-2.5 bg-gray-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 focus:bg-white transition-all duration-300 placeholder:text-gray-400"
-              />
-              <button type="submit" className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-orange-500 transition-colors">
-                {showDesktopSearching ? (
-                  <div className="h-[18px] w-[18px] rounded-full border-2 border-orange-300 border-t-orange-500 animate-spin" />
-                ) : (
-                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></svg>
-                )}
-              </button>
-
-              <AnimatePresence>
-                {activeSearchField === 'desktop' && (desktopSuggestions.length > 0 || showDesktopNotFound || showDesktopSearching) && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 6 }}
-                    className="absolute left-0 right-0 mt-2 bg-white border border-gray-100 rounded-xl shadow-lg shadow-black/10 overflow-hidden z-50"
-                  >
-                    {showDesktopSearching ? (
-                      <div className="flex items-center gap-2.5 px-4 py-3.5">
-                        <div className="h-4 w-4 rounded-full border-2 border-orange-200 border-t-orange-500 animate-spin shrink-0" />
-                        <p className="text-sm text-gray-500">Searching products...</p>
-                      </div>
-                    ) : desktopSuggestions.length > 0 ? (
-                      desktopSuggestions.map((product) => (
-                        <Link
-                          key={product.id}
-                          href={product.path}
-                          onClick={() => {
-                            setDesktopSearchQuery('')
-                            setActiveSearchField(null)
-                          }}
-                          className="flex items-center gap-3 px-3 py-2.5 hover:bg-orange-50 transition-colors"
-                        >
-                          <span className="relative h-10 w-10 rounded-md overflow-hidden bg-gray-100 shrink-0">
-                            {product.image ? (
-                              <Image src={product.image} alt={product.name} fill className="object-cover" />
-                            ) : (
-                              <span className="flex h-full w-full items-center justify-center text-[10px] font-semibold text-gray-400">
-                                AF
-                              </span>
-                            )}
-                          </span>
-                          <span className="text-sm text-gray-700 truncate">{product.name}</span>
-                        </Link>
-                      ))
-                    ) : (
-                      <div className="px-3 py-3 text-sm text-gray-500">Product not found</div>
-                    )}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </form>
+            <SearchField aria-label="Open product search" className="w-full">
+              <Label className="sr-only">Search</Label>
+              <SearchField.Group
+                className="flex h-13 cursor-pointer items-center gap-3 rounded-[26px] border border-slate-200 bg-white px-5 shadow-sm shadow-slate-200/50 transition-all duration-200 hover:border-slate-300 hover:shadow-md"
+                onClick={() => setSearchModalOpen(true)}
+              >
+                <SearchField.SearchIcon className="h-[18px] w-[18px] text-slate-400" />
+                <SearchField.Input
+                  readOnly
+                  placeholder="Search"
+                  onFocus={() => setSearchModalOpen(true)}
+                  className="flex-1 cursor-pointer border-none bg-transparent p-0 text-sm text-slate-700 outline-none placeholder:text-slate-500"
+                />
+                <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-100 px-2.5 py-1 text-[12px] font-medium leading-none text-slate-500">
+                  <span>Ctrl</span>
+                  <span>K</span>
+                </span>
+              </SearchField.Group>
+            </SearchField>
           </div>
 
           {/* Icons */}
@@ -864,17 +853,19 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
                   <span className="text-sm font-medium">Track Order</span>
                 </Link>
 
-                <Link
-                  href="/login"
-                  className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-gray-100 transition-colors text-gray-700"
-                  title="Sign in"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                    <circle cx="12" cy="7" r="4" />
-                  </svg>
-                  <span className="text-sm font-medium">Sign in</span>
-                </Link>
+                <motion.div whileTap={{ scale: 0.96 }} transition={{ duration: 0.12 }}>
+                  <Link
+                    href="/login"
+                    className="flex h-11 min-w-0 items-center gap-2 rounded-[18px] bg-slate-800 px-5 font-semibold text-white shadow-sm transition hover:bg-slate-700"
+                    title="Sign in"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0">
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                      <circle cx="12" cy="7" r="4" />
+                    </svg>
+                    <span className="text-sm font-medium">Sign in</span>
+                  </Link>
+                </motion.div>
               </>
             )}
 
@@ -893,73 +884,25 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
 
         {/* Mobile search */}
         <div className="md:hidden pb-3">
-          <form
-            className="relative"
-            ref={mobileTopSearchRef}
-            onSubmit={(e) => {
-              e.preventDefault()
-              handleProductSearchSubmit(mobileTopSearchQuery, 'mobile')
-            }}
-          >
-            <input
-              type="text"
-              value={mobileTopSearchQuery}
-              onChange={(e) => setMobileTopSearchQuery(e.target.value)}
-              onFocus={() => setActiveSearchField('mobile')}
-              placeholder="Search products..."
-              className="w-full pl-4 pr-11 py-2.5 bg-gray-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 focus:bg-white transition-all duration-300 placeholder:text-gray-400"
-            />
-            <button type="submit" className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-orange-500 transition-colors">
-              {showMobileSearching ? (
-                <div className="h-4.25 w-4.25 rounded-full border-2 border-orange-300 border-t-orange-500 animate-spin" />
-              ) : (
-                <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></svg>
-              )}
-            </button>
-
-            <AnimatePresence>
-              {activeSearchField === 'mobile' && (mobileSuggestions.length > 0 || showMobileNotFound || showMobileSearching) && (
-                <motion.div
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 6 }}
-                  className="absolute left-0 right-0 mt-2 bg-white border border-gray-100 rounded-xl shadow-lg shadow-black/10 overflow-hidden z-50"
-                >
-                  {showMobileSearching ? (
-                    <div className="flex items-center gap-2.5 px-4 py-3.5">
-                      <div className="h-4 w-4 rounded-full border-2 border-orange-200 border-t-orange-500 animate-spin shrink-0" />
-                      <p className="text-sm text-gray-500">Searching products...</p>
-                    </div>
-                  ) : mobileSuggestions.length > 0 ? (
-                    mobileSuggestions.map((product) => (
-                      <Link
-                        key={product.id}
-                        href={product.path}
-                        onClick={() => {
-                          setMobileTopSearchQuery('')
-                          setActiveSearchField(null)
-                        }}
-                        className="flex items-center gap-3 px-3 py-2.5 hover:bg-orange-50 transition-colors"
-                      >
-                        <span className="relative h-10 w-10 rounded-md overflow-hidden bg-gray-100 shrink-0">
-                          {product.image ? (
-                            <Image src={product.image} alt={product.name} fill className="object-cover" />
-                          ) : (
-                            <span className="flex h-full w-full items-center justify-center text-[10px] font-semibold text-gray-400">
-                              AF
-                            </span>
-                          )}
-                        </span>
-                        <span className="text-sm text-gray-700 truncate">{product.name}</span>
-                      </Link>
-                    ))
-                  ) : (
-                    <div className="px-3 py-3 text-sm text-gray-500">Product not found</div>
-                  )}
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </form>
+          <SearchField aria-label="Open product search" className="w-full">
+            <Label className="sr-only">Search</Label>
+            <SearchField.Group
+              className="flex h-13 cursor-pointer items-center gap-3 rounded-[26px] border border-slate-200 bg-white px-5 shadow-sm shadow-slate-200/50 transition-all duration-200 hover:border-slate-300 hover:shadow-md"
+              onClick={() => setSearchModalOpen(true)}
+            >
+              <SearchField.SearchIcon className="h-[18px] w-[18px] text-slate-400" />
+              <SearchField.Input
+                readOnly
+                placeholder="Search"
+                onFocus={() => setSearchModalOpen(true)}
+                className="flex-1 cursor-pointer border-none bg-transparent p-0 text-sm text-slate-700 outline-none placeholder:text-slate-500"
+              />
+              <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-100 px-2.5 py-1 text-[12px] font-medium leading-none text-slate-500">
+                <span>Ctrl</span>
+                <span>K</span>
+              </span>
+            </SearchField.Group>
+          </SearchField>
         </div>
       </div>
 
@@ -1318,13 +1261,19 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
                     </div>
                   </div>
                   <div className="bg-white px-4 py-3 flex gap-2">
-                    <Link
-                      href="/login"
-                      onClick={() => setMobileOpen(false)}
-                      className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-orange-500 hover:bg-orange-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors"
-                    >
-                      Sign In
-                    </Link>
+                    <motion.div whileTap={{ scale: 0.97 }} transition={{ duration: 0.12 }} className="flex-1">
+                      <Link
+                        href="/login"
+                        onClick={() => setMobileOpen(false)}
+                        className="flex h-11 w-full items-center justify-center gap-2 rounded-[18px] bg-slate-800 px-4 text-sm font-semibold text-white transition hover:bg-slate-700"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0">
+                          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                          <circle cx="12" cy="7" r="4" />
+                        </svg>
+                        <span>Sign In</span>
+                      </Link>
+                    </motion.div>
                     <Link
                       href="/track-order"
                       onClick={() => setMobileOpen(false)}
@@ -1522,7 +1471,154 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
           </motion.div>
         )}
       </AnimatePresence>
+
     </motion.header>
+    {typeof document !== 'undefined' && createPortal(
+      <AnimatePresence>
+        {searchModalOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[120] bg-white/45 backdrop-blur-md"
+            onClick={() => {
+              setSearchModalOpen(false)
+              setSearchModalQuery('')
+            }}
+          >
+            <div className="flex min-h-screen items-start justify-center px-4 pt-16 sm:px-6 sm:pt-24">
+              <motion.div
+                initial={{ opacity: 0, y: 18, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 16, scale: 0.98 }}
+                transition={{ duration: 0.18, ease: 'easeOut' }}
+                className="w-full max-w-3xl"
+                onClick={(event) => event.stopPropagation()}
+              >
+                <Card variant="default" className="overflow-hidden rounded-[28px] border-white/70 bg-white shadow-2xl shadow-black/20">
+                  <Card.Content className="space-y-0 px-0 py-0">
+                    <form
+                      className="border-b border-slate-100 px-4 py-4 sm:px-5"
+                      onSubmit={(event) => {
+                        event.preventDefault()
+                        handleProductSearchSubmit(searchModalQuery)
+                      }}
+                    >
+                      <div className="flex items-center gap-3">
+                        <SearchField
+                          aria-label="Search products"
+                          value={searchModalQuery}
+                          onChange={setSearchModalQuery}
+                          onSubmit={() => handleProductSearchSubmit(searchModalQuery)}
+                          className="w-full"
+                        >
+                          <Label className="sr-only">Search products</Label>
+                          <SearchField.Group className="flex min-h-13 items-center gap-3 rounded-[26px] border border-slate-200 bg-slate-50 px-5 transition-all duration-200 focus-within:border-orange-300 focus-within:bg-white">
+                            <SearchField.SearchIcon className="h-[18px] w-[18px] text-slate-400" />
+                            <SearchField.Input
+                              ref={searchInputRef}
+                              autoFocus
+                              placeholder="What are you searching for?"
+                              className="flex-1 border-none bg-transparent p-0 text-base text-slate-700 outline-none placeholder:text-slate-400"
+                            />
+                            {searchModalQuery ? <SearchField.ClearButton className="text-slate-400 transition hover:text-slate-600" /> : null}
+                          </SearchField.Group>
+                        </SearchField>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSearchModalQuery('')
+                            setSearchModalOpen(false)
+                          }}
+                          className="shrink-0 rounded-xl bg-slate-100 px-2.5 py-1 text-xs font-semibold tracking-wide text-slate-500 transition hover:bg-slate-200"
+                        >
+                          ESC
+                        </button>
+                      </div>
+                    </form>
+
+                    <div className="max-h-[60vh] overflow-y-auto px-3 py-3 sm:max-h-[65vh] sm:px-4">
+                      {activeSearchQuery.length < 2 ? (
+                        <div className="px-2 py-2">
+                          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Start typing</p>
+                          <p className="mt-2 text-sm text-slate-500">Search products by name and open the result directly from this modal.</p>
+                        </div>
+                      ) : showSearchSearching ? (
+                        <div className="flex items-center gap-3 px-3 py-4 text-sm text-slate-500">
+                          <div className="h-4 w-4 animate-spin rounded-full border-2 border-orange-200 border-t-orange-500" />
+                          Searching products...
+                        </div>
+                      ) : showSearchNotFound ? (
+                        <div className="px-3 py-4">
+                          <p className="text-sm font-medium text-slate-700">No products found</p>
+                          <p className="mt-1 text-sm text-slate-500">No matches for &quot;{searchModalQuery.trim()}&quot;.</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          {searchedProducts.map((product) => (
+                            <Link
+                              key={product.id}
+                              href={product.path}
+                              onClick={() => {
+                                setSearchModalQuery('')
+                                setSearchModalOpen(false)
+                                setMobileOpen(false)
+                              }}
+                              className="block rounded-3xl border border-orange-200/60 bg-white p-4 shadow-sm transition hover:border-orange-300 hover:bg-orange-50/40"
+                            >
+                              <div className="flex items-center gap-4">
+                                <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-2xl bg-slate-100">
+                                  {product.image ? (
+                                    <Image src={product.image} alt={product.name} fill className="object-cover" />
+                                  ) : (
+                                    <span className="flex h-full w-full items-center justify-center text-[11px] font-semibold text-slate-400">
+                                      AF
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <p className="truncate text-sm font-semibold uppercase tracking-wide text-slate-800">
+                                    {product.name}
+                                  </p>
+                                  <p className="mt-1 text-xs text-slate-500">Search match for &quot;{searchModalQuery.trim()}&quot;</p>
+                                  {(product.priceDp ?? product.priceSrp ?? product.prodpv) && (
+                                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                                      {product.priceDp !== null && (
+                                        <span className="text-sm font-semibold text-orange-600">
+                                          {formatPrice(product.priceDp)}
+                                        </span>
+                                      )}
+                                      {product.priceSrp !== null &&
+                                        product.priceDp !== null &&
+                                        product.priceSrp > product.priceDp && (
+                                          <span className="text-xs text-slate-400 line-through">
+                                            {formatPrice(product.priceSrp)}
+                                          </span>
+                                        )}
+                                      {product.prodpv !== null && product.prodpv > 0 && (
+                                        <span className="rounded-full border border-blue-100 bg-blue-50 px-2 py-0.5 text-[11px] font-semibold text-blue-600">
+                                          PV {product.prodpv.toLocaleString('en-PH', { maximumFractionDigits: 2 })}
+                                        </span>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </Card.Content>
+                </Card>
+              </motion.div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>,
+      document.body,
+    )}
+    </>
   )
 }
 

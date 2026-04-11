@@ -43,6 +43,7 @@ export interface CustomerCheckoutLineItem {
   quantity: number;
   prodpv?: number | null;
   selectedColor?: string | null;
+  selectedStyle?: string | null;
   selectedSize?: string | null;
   selectedType?: string | null;
   selectedSku?: string | null;
@@ -52,6 +53,7 @@ export interface CustomerCheckoutData {
   product: CustomerCheckoutProduct;
   quantity: number;
   selectedColor?: string | null;
+  selectedStyle?: string | null;
   selectedSize?: string | null;
   selectedType?: string | null;
   selectedSku?: string | null;
@@ -62,4 +64,5 @@ export interface CustomerCheckoutData {
 }
 
 export type PaymentMethod = 'gcash' | 'maya' | 'online_banking' | 'card';
+export type PaymentMode = 'test' | 'live';
 export type FormErrors = Partial<Record<keyof GuestForm, string>>;
