@@ -43,12 +43,12 @@ export default function ExperienceSection() {
             transition={{ duration: 0.8 }}
             className="flex-1 lg:max-w-xl"
           >
-            <span className="text-orange-500 font-mono tracking-widest text-sm uppercase mb-4 block">
+            <span className="text-orange-500 dark:text-orange-400 font-mono tracking-widest text-sm uppercase mb-4 block">
               Experience
             </span>
-            <h2 className="font-display text-3xl md:text-5xl font-medium text-af-black dark:text-white mb-6 leading-tight">
+            <h2 className="font-display text-3xl md:text-5xl font-medium text-gray-900 dark:text-white mb-6 leading-tight">
               More Than Products.{' '}
-              <span className="text-blue-600 italic">
+              <span className="text-blue-600 dark:text-blue-400 italic">
                 A Better Home Experience.
               </span>
             </h2>
@@ -65,7 +65,7 @@ export default function ExperienceSection() {
                   whileInView={{ opacity: 1, x: 0 }}
                   viewport={{ once: true }}
                   transition={{ duration: 0.5, delay: index * 0.1 }}
-                  className="flex items-center gap-3 text-af-black dark:text-gray-200 font-medium"
+                  className="flex items-center gap-3 text-gray-900 dark:text-gray-200 font-medium"
                 >
                   <span className="w-2 h-2 rounded-full bg-orange-500" />
                   {highlight}
