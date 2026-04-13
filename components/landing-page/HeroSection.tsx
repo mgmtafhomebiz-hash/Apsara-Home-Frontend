@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
-import { ArrowRight, ChevronDown, Home, Coins, Users, Armchair, Award } from 'lucide-react';
+import { ArrowRight, ArrowDown, Home, Coins, Users, Armchair, Award } from 'lucide-react';
 import PrimaryButton from '@/components/ui/buttons/PrimaryButton';
 import TransparentButton from '@/components/ui/buttons/TransparentButton';
 
@@ -147,7 +147,7 @@ export default function HeroSection() {
               </PrimaryButton>
               <TransparentButton href="#how-it-works">
                 See How It Works
-                <ChevronDown size={18} className="hidden group-hover:inline-block" />
+                <ArrowDown size={18} className="hidden group-hover:inline-block" />
               </TransparentButton>
             </motion.div>
           </div>
