@@ -69,11 +69,9 @@ export default function QuickViewModal({
             className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[95%] max-w-4xl max-h-[90vh] z-50 overflow-hidden"
           >
             <div
-              className="bg-white/95 backdrop-blur-xl rounded-3xl shadow-soft-lg overflow-hidden"
+              className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl rounded-3xl shadow-soft-lg overflow-hidden"
               style={{
                 border: '1px solid rgba(255, 255, 255, 0.3)',
-                background:
-                  'linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.9) 100%)',
               }}
             >
               {/* Close Button */}
@@ -81,14 +79,14 @@ export default function QuickViewModal({
                 whileHover={{ scale: 1.1, rotate: 90 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={onClose}
-                className="absolute top-4 right-4 z-10 w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-soft text-af-text hover:text-af-forest transition-colors"
+                className="absolute top-4 right-4 z-10 w-10 h-10 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center shadow-soft dark:shadow-none text-af-text dark:text-gray-100 hover:text-af-forest dark:hover:text-orange-400 transition-colors"
               >
                 <X size={20} />
               </motion.button>
 
               <div className="grid md:grid-cols-2 gap-0">
                 {/* Image Gallery */}
-                <div className="relative bg-[#f5f5f3] aspect-square md:aspect-auto">
+                <div className="relative bg-[#f5f5f3] dark:bg-gray-950 aspect-square md:aspect-auto">
                   <motion.img
                     key={currentImage}
                     initial={{ opacity: 0 }}
@@ -104,7 +102,7 @@ export default function QuickViewModal({
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={prevImage}
-                    className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/80 backdrop-blur-sm rounded-full flex items-center justify-center shadow-soft text-af-text hover:bg-white transition-all"
+                    className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-full flex items-center justify-center shadow-soft dark:shadow-none text-af-text dark:text-gray-100 hover:bg-white dark:hover:bg-gray-700 transition-all"
                   >
                     <ChevronLeft size={20} />
                   </motion.button>
@@ -112,7 +110,7 @@ export default function QuickViewModal({
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={nextImage}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/80 backdrop-blur-sm rounded-full flex items-center justify-center shadow-soft text-af-text hover:bg-white transition-all"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-full flex items-center justify-center shadow-soft dark:shadow-none text-af-text dark:text-gray-100 hover:bg-white dark:hover:bg-gray-700 transition-all"
                   >
                     <ChevronRight size={20} />
                   </motion.button>
@@ -126,7 +124,7 @@ export default function QuickViewModal({
                         className={`w-2.5 h-2.5 rounded-full transition-all ${
                           currentImage === index
                             ? 'bg-af-forest w-6'
-                            : 'bg-white/60'
+                            : 'bg-white/60 dark:bg-gray-500/70'
                         }`}
                       />
                     ))}
@@ -151,10 +149,10 @@ export default function QuickViewModal({
 
                 {/* Product Details */}
                 <div className="p-8 md:p-10 flex flex-col justify-center">
-                  <span className="font-mono text-xs text-af-text-secondary uppercase tracking-wider">
+                  <span className="font-mono text-xs text-af-text-secondary dark:text-gray-400 uppercase tracking-wider">
                     {product.category}
                   </span>
-                  <h2 className="font-display text-2xl md:text-3xl font-semibold text-af-text mt-2 mb-4">
+                  <h2 className="font-display text-2xl md:text-3xl font-semibold text-af-text dark:text-white mt-2 mb-4">
                     {product.name}
                   </h2>
 
@@ -163,13 +161,13 @@ export default function QuickViewModal({
                       ${product.price.toLocaleString()}
                     </span>
                     {product.originalPrice && (
-                      <span className="font-mono text-lg text-af-text-secondary line-through">
+                      <span className="font-mono text-lg text-af-text-secondary dark:text-gray-400 line-through">
                         ${product.originalPrice.toLocaleString()}
                       </span>
                     )}
                   </div>
 
-                  <p className="text-af-text-secondary leading-relaxed mb-8">
+                  <p className="text-af-text-secondary dark:text-gray-400 leading-relaxed mb-8">
                     Crafted with premium materials and meticulous attention to
                     detail, this piece brings both comfort and sophistication to
                     your space. Designed to complement any modern interior while
@@ -178,24 +176,24 @@ export default function QuickViewModal({
 
                   {/* Quantity Selector */}
                   <div className="flex items-center gap-4 mb-6">
-                    <span className="text-af-text font-medium">Quantity:</span>
-                    <div className="flex items-center gap-3 bg-[#f5f5f3] rounded-full px-2 py-1">
+                    <span className="text-af-text dark:text-white font-medium">Quantity:</span>
+                    <div className="flex items-center gap-3 bg-[#f5f5f3] dark:bg-gray-800 rounded-full px-2 py-1">
                       <motion.button
                         whileHover={{ scale: 1.1 }}
                         whileTap={{ scale: 0.95 }}
                         onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                        className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-white transition-colors"
+                        className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-white dark:hover:bg-gray-700 transition-colors"
                       >
                         <Minus size={16} />
                       </motion.button>
-                      <span className="font-mono text-lg w-8 text-center">
+                      <span className="font-mono text-lg w-8 text-center dark:text-white">
                         {quantity}
                       </span>
                       <motion.button
                         whileHover={{ scale: 1.1 }}
                         whileTap={{ scale: 0.95 }}
                         onClick={() => setQuantity(quantity + 1)}
-                        className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-white transition-colors"
+                        className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-white dark:hover:bg-gray-700 transition-colors"
                       >
                         <Plus size={16} />
                       </motion.button>
@@ -251,7 +249,7 @@ export default function QuickViewModal({
                   </motion.button>
 
                   {/* Trust Indicators */}
-                  <div className="flex flex-wrap gap-4 mt-6 text-sm text-af-text-secondary">
+                  <div className="flex flex-wrap gap-4 mt-6 text-sm text-af-text-secondary dark:text-gray-400">
                     <span className="flex items-center gap-1">
                       <Check size={14} className="text-af-forest" /> Free Shipping
                     </span>
