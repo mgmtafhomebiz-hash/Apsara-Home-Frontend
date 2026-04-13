@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
-import { useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import Loading from '@/components/Loading'
 import { signIn, signOut } from "next-auth/react";
 import { baseApi, clearAccessTokenCache } from "@/store/api/baseApi";
@@ -23,7 +23,11 @@ function isBanMessage(msg: string) {
 const AdminLoginForm = () => {
     const dispatch = useAppDispatch();
     const router = useRouter();
+    const pathname = usePathname();
     const searchParams = useSearchParams();
+    const isPartnerLogin = pathname.startsWith('/partner');
+    const loginPath = isPartnerLogin ? '/partner/login' : '/admin/login';
+    const portalRoot = isPartnerLogin ? '/partner' : '/admin';
     const isSuspendedRedirect = searchParams.get('suspended') === '1';
     const [showPass, setShowPass] = useState(false);
     const [error, setError] = useState('');
@@ -43,7 +47,7 @@ const AdminLoginForm = () => {
             // Reset any previous admin session/token to prevent role carry-over.
             dispatch(baseApi.util.resetApiState())
             clearAccessTokenCache()
-            await clearAdminSession()
+            await clearAdminSession(loginPath)
             await signOut({ redirect: false })
 
             const result = await signIn('admin-credentials', {
@@ -67,7 +71,7 @@ const AdminLoginForm = () => {
 
             // Refresh the app shell using Next router navigation.
             // Let /admin decide the correct landing page per role.
-            router.replace('/admin')
+            router.replace(portalRoot)
             router.refresh()
         } catch {
             setError('Unable to sign in. Please try again');
@@ -148,7 +152,7 @@ const AdminLoginForm = () => {
                                     setBanMessage('');
                                     setForm({ login: '', password: '' });
                                     if (isSuspendedRedirect) {
-                                        router.replace('/admin/login');
+                                        router.replace(loginPath);
                                     }
                                 }}
                                 className="w-full py-2.5 rounded-xl border border-slate-700 text-slate-400 hover:text-slate-200 hover:border-slate-500 text-sm font-medium transition-all"
@@ -169,7 +173,7 @@ const AdminLoginForm = () => {
                                 className="h-7 w-auto object-contain brightness-0 invert opacity-90"
                             />
                         </div>
-                        <h1 className="text-xl font-bold text-white tracking-tight">Admin Portal</h1>
+                        <h1 className="text-xl font-bold text-white tracking-tight">{isPartnerLogin ? 'Partner Portal' : 'Admin Portal'}</h1>
                         <p className="text-slate-400 text-xs mt-1">Sign in to your admin account</p>
                     </div>
 

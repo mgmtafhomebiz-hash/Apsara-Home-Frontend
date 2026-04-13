@@ -33,7 +33,7 @@ const testimonials = [
 
 export default function Testimonials() {
   return (
-    <section className="py-24 md:py-32 bg-white">
+    <section className="py-24 md:py-32 bg-white dark:bg-gray-950">
       <div className="max-w-[1400px] mx-auto px-6 md:px-10 lg:px-20">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -42,10 +42,10 @@ export default function Testimonials() {
           transition={{ duration: 0.6 }}
           className="text-center mb-16"
         >
-          <h2 className="font-display text-3xl md:text-4xl lg:text-5xl text-af-text font-semibold mb-4">
+          <h2 className="font-display text-3xl md:text-4xl lg:text-5xl text-gray-900 dark:text-white font-semibold mb-4">
             What Our Clients Say
           </h2>
-          <p className="text-af-text-secondary text-lg max-w-xl mx-auto">
+          <p className="text-gray-600 dark:text-gray-400 text-lg max-w-xl mx-auto">
             Stories from homeowners and designers who chose AFhome
           </p>
         </motion.div>
@@ -63,7 +63,7 @@ export default function Testimonials() {
                 ease: [0.16, 1, 0.3, 1] as const,
               }}
               whileHover={{ y: -8 }}
-              className="relative bg-af-cream rounded-3xl p-8 shadow-soft hover:shadow-soft-lg transition-all duration-500"
+              className="relative bg-stone-50 dark:bg-gray-800 rounded-3xl p-8 shadow-soft hover:shadow-soft-lg transition-all duration-500"
             >
               {/* Quote Icon */}
               <div className="absolute -top-4 right-8 w-12 h-12 bg-af-brass rounded-full flex items-center justify-center shadow-soft">
@@ -82,7 +82,7 @@ export default function Testimonials() {
               </div>
 
               {/* Content */}
-              <p className="text-af-text leading-relaxed mb-6">
+              <p className="text-gray-900 dark:text-gray-200 leading-relaxed mb-6">
                 &ldquo;{testimonial.content}&rdquo;
               </p>
 
@@ -94,10 +94,10 @@ export default function Testimonials() {
                   className="w-12 h-12 rounded-full object-cover"
                 />
                 <div>
-                  <h4 className="font-display font-semibold text-af-text">
+                  <h4 className="font-display font-semibold text-gray-900 dark:text-white">
                     {testimonial.name}
                   </h4>
-                  <span className="text-af-text-secondary text-sm">
+                  <span className="text-gray-600 dark:text-gray-400 text-sm">
                     {testimonial.role}
                   </span>
                 </div>
@@ -130,7 +130,7 @@ export default function Testimonials() {
               <span className="font-display text-4xl md:text-5xl font-bold text-orange-500">
                 {stat.value}
               </span>
-              <p className="text-af-text-secondary mt-2">{stat.label}</p>
+              <p className="text-gray-600 dark:text-gray-400 mt-2">{stat.label}</p>
             </motion.div>
           ))}
         </motion.div>

@@ -1,7 +1,8 @@
 'use client'
 
 import type { ReactNode } from 'react'
-import { useMemo, useState } from 'react'
+import { type ChangeEvent, useEffect, useMemo, useRef, useState } from 'react'
+import { useSession } from 'next-auth/react'
 import { showErrorToast, showSuccessToast } from '@/libs/toast'
 import { getPartnerStorefrontConfig, parseIdList } from '@/libs/partnerStorefront'
 import { useGetCategoriesQuery } from '@/store/api/categoriesApi'
@@ -71,28 +72,43 @@ const toDraft = (item?: WebPageItem): DraftState => {
 export default function PartnerStorefrontStudio() {
   const [selectedId, setSelectedId] = useState<number | 'new'>('new')
   const [draft, setDraft] = useState<DraftState>(emptyDraft)
+  const { data: session } = useSession()
+  const sessionRole = String(session?.user?.role ?? '').toLowerCase()
+  const sessionUserLevelId = Number((session?.user as { userLevelId?: number } | undefined)?.userLevelId ?? 0)
+  const storefrontIds = (session?.user as { storefrontIds?: number[] } | undefined)?.storefrontIds ?? []
+  const isPartnerScoped = sessionUserLevelId === 4 || sessionRole === 'web_content'
+  const canManageAiSupport = sessionUserLevelId === 1 || sessionUserLevelId === 2 || sessionRole === 'super_admin' || sessionRole === 'admin'
+  const allowedStorefrontIds = useMemo(
+    () => (isPartnerScoped ? storefrontIds.filter((id) => Number.isInteger(id) && id > 0) : []),
+    [isPartnerScoped, storefrontIds],
+  )
   const { data, isLoading, isError } = useGetAdminWebPageItemsQuery({
     type: 'partner-storefront',
     page: 1,
     perPage: 100,
     status: 'all',
   })
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false)
+  const logoInputRef = useRef<HTMLInputElement | null>(null)
   const { data: categoriesData } = useGetCategoriesQuery({ per_page: 200 })
   const { data: productsData } = useGetProductsQuery({ perPage: 100, status: '1' })
   const [createItem, { isLoading: isCreating }] = useCreateAdminWebPageItemMutation()
   const [updateItem, { isLoading: isUpdating }] = useUpdateAdminWebPageItemMutation()
 
-  const storefronts = useMemo(
-    () =>
-      (data?.items ?? [])
-        .map((item) => ({
-          item,
-          config: getPartnerStorefrontConfig(item),
-        }))
-        .filter((entry): entry is { item: WebPageItem; config: NonNullable<ReturnType<typeof getPartnerStorefrontConfig>> } => Boolean(entry.config))
-        .sort((a, b) => a.config.displayName.localeCompare(b.config.displayName)),
-    [data?.items],
-  )
+  const storefronts = useMemo(() => {
+    const items = (data?.items ?? [])
+      .map((item) => ({
+        item,
+        config: getPartnerStorefrontConfig(item),
+      }))
+      .filter((entry): entry is { item: WebPageItem; config: NonNullable<ReturnType<typeof getPartnerStorefrontConfig>> } => Boolean(entry.config))
+
+    const scoped = isPartnerScoped
+      ? items.filter((entry) => allowedStorefrontIds.includes(entry.item.id))
+      : items
+
+    return scoped.sort((a, b) => a.config.displayName.localeCompare(b.config.displayName))
+  }, [data?.items, allowedStorefrontIds, isPartnerScoped])
 
   const categories = categoriesData?.categories ?? []
   const products = productsData?.products ?? []
@@ -101,11 +117,17 @@ export default function PartnerStorefrontStudio() {
     if (!item) {
       setSelectedId('new')
       setDraft(emptyDraft)
+      if (logoInputRef.current) {
+        logoInputRef.current.value = ''
+      }
       return
     }
 
     setSelectedId(item.id)
     setDraft(toDraft(item))
+    if (logoInputRef.current) {
+      logoInputRef.current.value = ''
+    }
   }
 
   const toggleCategory = (categoryId: number) => {
@@ -117,7 +139,100 @@ export default function PartnerStorefrontStudio() {
     }))
   }
 
+  const handleLogoUpload = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    const payload = new FormData()
+    payload.append('file', file)
+    payload.append('folder', 'partner-storefronts')
+
+    setIsUploadingLogo(true)
+
+    try {
+      const response = await fetch('/api/admin/upload', {
+        method: 'POST',
+        body: payload,
+      })
+
+      const result = (await response.json()) as { url?: string; error?: string }
+
+      if (!response.ok || !result.url) {
+        throw new Error(result.error || 'Failed to upload logo.')
+      }
+
+      const nextLogoUrl = result.url ?? ''
+      const nextDraft = { ...draft, logoUrl: nextLogoUrl }
+
+      setDraft((current) => ({ ...current, logoUrl: nextLogoUrl || current.logoUrl }))
+      showSuccessToast('Logo uploaded successfully.')
+
+      if (nextDraft.id) {
+        if (isPartnerScoped && !allowedStorefrontIds.includes(nextDraft.id)) {
+          showErrorToast('You do not have access to edit this storefront.')
+          return
+        }
+
+        const slug = toSlug(nextDraft.slug || nextDraft.displayName)
+        if (!slug) {
+          showErrorToast('Add a slug or display name first.')
+          return
+        }
+
+        const payload = {
+          key: slug,
+          title: nextDraft.displayName.trim() || slug,
+          subtitle: nextDraft.heroTitle.trim() || `${nextDraft.displayName.trim() || slug} Shop`,
+          body: nextDraft.heroSubtitle.trim(),
+          image_url: nextDraft.logoUrl.trim() || undefined,
+          is_active: true,
+          payload: {
+            fields: {
+              slug,
+              display_name: nextDraft.displayName.trim(),
+              hero_title: nextDraft.heroTitle.trim(),
+              hero_subtitle: nextDraft.heroSubtitle.trim(),
+              logo_url: nextDraft.logoUrl.trim(),
+              theme_color: nextDraft.themeColor.trim(),
+              accent_color: nextDraft.accentColor.trim(),
+              notification_email: nextDraft.notificationEmail.trim(),
+              allowed_category_ids: nextDraft.allowedCategoryIds.join(','),
+              featured_product_ids: nextDraft.featuredProductIds.join(','),
+              enable_ai_support: nextDraft.enableAiSupport ? '1' : '0',
+            },
+          },
+        }
+
+        try {
+          await updateItem({ type: 'partner-storefront', id: nextDraft.id, data: payload }).unwrap()
+          showSuccessToast('Logo saved to storefront.')
+        } catch (error) {
+          const apiErr = error as { data?: { message?: string } }
+          showErrorToast(apiErr?.data?.message || 'Failed to save logo.')
+        }
+      }
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to upload logo.'
+      showErrorToast(message)
+    } finally {
+      setIsUploadingLogo(false)
+      if (logoInputRef.current) {
+        logoInputRef.current.value = ''
+      }
+    }
+  }
+
   const saveStorefront = async () => {
+    if (isPartnerScoped && !draft.id) {
+      showErrorToast('You can only edit your assigned storefront.')
+      return
+    }
+
+    if (isPartnerScoped && draft.id && !allowedStorefrontIds.includes(draft.id)) {
+      showErrorToast('You do not have access to edit this storefront.')
+      return
+    }
+
     const slug = toSlug(draft.slug || draft.displayName)
     if (!slug) {
       showErrorToast('Add a slug or display name first.')
@@ -163,6 +278,23 @@ export default function PartnerStorefrontStudio() {
     }
   }
 
+  useEffect(() => {
+    if (!isPartnerScoped) return
+
+    if (storefronts.length === 0) {
+      setSelectedId('new')
+      setDraft(emptyDraft)
+      return
+    }
+
+    const currentAllowed = selectedId !== 'new' && storefronts.some((entry) => entry.item.id === selectedId)
+    if (!currentAllowed) {
+      const first = storefronts[0].item
+      setSelectedId(first.id)
+      setDraft(toDraft(first))
+    }
+  }, [isPartnerScoped, storefronts, selectedId])
+
   if (isLoading) {
     return <div className="rounded-3xl border border-slate-200 bg-white p-12 text-center text-sm text-slate-500 shadow-sm">Loading partner storefronts...</div>
   }
@@ -183,13 +315,15 @@ export default function PartnerStorefrontStudio() {
               <h1 className="mt-2 text-xl font-bold text-slate-900">Control Panel</h1>
               <p className="mt-1 text-sm text-slate-500">Create branded partner shop pages like `synergy-shop` and control their visible categories.</p>
             </div>
-            <button
-              type="button"
-              onClick={() => selectStorefront()}
-              className="rounded-xl border border-cyan-200 bg-cyan-50 px-3 py-2 text-xs font-semibold text-cyan-700"
-            >
-              New
-            </button>
+            {!isPartnerScoped ? (
+              <button
+                type="button"
+                onClick={() => selectStorefront()}
+                className="rounded-xl border border-cyan-200 bg-cyan-50 px-3 py-2 text-xs font-semibold text-cyan-700"
+              >
+                New
+              </button>
+            ) : null}
           </div>
         </div>
 
@@ -213,7 +347,11 @@ export default function PartnerStorefrontStudio() {
               )
             })}
 
-            {storefronts.length === 0 ? <p className="p-3 text-sm text-slate-500">No partner storefronts yet.</p> : null}
+            {storefronts.length === 0 ? (
+              <p className="p-3 text-sm text-slate-500">
+                {isPartnerScoped ? 'No storefront assigned to this account yet.' : 'No partner storefronts yet.'}
+              </p>
+            ) : null}
           </div>
         </div>
       </aside>
@@ -254,13 +392,40 @@ export default function PartnerStorefrontStudio() {
                 className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-cyan-300 focus:bg-white"
               />
             </Field>
-            <Field label="Logo URL" className="md:col-span-2">
-              <input
-                value={draft.logoUrl}
-                onChange={(event) => setDraft((current) => ({ ...current, logoUrl: event.target.value }))}
-                placeholder="https://..."
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-cyan-300 focus:bg-white"
-              />
+            <Field label="Logo" className="md:col-span-2">
+              <div className="space-y-3">
+                <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-800">Upload storefront logo</p>
+                    <p className="mt-1 text-xs text-slate-500">PNG, JPG, or WebP. Upload directly from your device.</p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <input
+                      ref={logoInputRef}
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,image/gif"
+                      onChange={handleLogoUpload}
+                      className="hidden"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => logoInputRef.current?.click()}
+                      disabled={isUploadingLogo}
+                      className="rounded-2xl border border-cyan-200 bg-white px-4 py-2.5 text-sm font-semibold text-cyan-700 transition hover:bg-cyan-50 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {isUploadingLogo ? 'Uploading...' : 'Upload Logo'}
+                    </button>
+                  </div>
+                </div>
+                {draft.logoUrl ? (
+                  <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3">
+                    <div className="h-12 w-12 overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
+                      <img src={draft.logoUrl} alt="Uploaded logo preview" className="h-full w-full object-contain p-1" />
+                    </div>
+                    <p className="text-xs text-slate-500">Logo uploaded.</p>
+                  </div>
+                ) : null}
+              </div>
             </Field>
             <Field label="Hero Subtitle" className="md:col-span-2">
               <textarea
@@ -287,18 +452,20 @@ export default function PartnerStorefrontStudio() {
                 className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-2 py-2"
               />
             </Field>
-            <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 md:col-span-2">
-              <input
-                type="checkbox"
-                checked={draft.enableAiSupport}
-                onChange={(event) => setDraft((current) => ({ ...current, enableAiSupport: event.target.checked }))}
-                className="h-4 w-4 rounded border-slate-300 text-cyan-600 focus:ring-cyan-500"
-              />
-              <div>
-                <p className="text-sm font-semibold text-slate-900">Enable AI Support</p>
-                <p className="text-xs text-slate-500">Show the floating AI chat widget on this partner storefront.</p>
-              </div>
-            </label>
+            {canManageAiSupport ? (
+              <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 md:col-span-2">
+                <input
+                  type="checkbox"
+                  checked={draft.enableAiSupport}
+                  onChange={(event) => setDraft((current) => ({ ...current, enableAiSupport: event.target.checked }))}
+                  className="h-4 w-4 rounded border-slate-300 text-cyan-600 focus:ring-cyan-500"
+                />
+                <div>
+                  <p className="text-sm font-semibold text-slate-900">Enable AI Support</p>
+                  <p className="text-xs text-slate-500">Show the floating AI chat widget on this partner storefront.</p>
+                </div>
+              </label>
+            ) : null}
           </div>
 
           <div className="mt-5 flex flex-wrap items-center gap-3">

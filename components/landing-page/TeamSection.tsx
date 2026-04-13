@@ -29,7 +29,7 @@ export default function TeamSection() {
   ];
 
   return (
-    <section id="team" className="py-24 bg-gray-50 overflow-hidden relative">
+    <section id="team" className="py-24 bg-gray-50 dark:bg-gray-900 overflow-hidden relative">
       {/* Background Elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/2 right-0 w-96 h-96 bg-blue-100 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob" />
@@ -69,7 +69,7 @@ export default function TeamSection() {
                 transition={{ type: "spring", stiffness: 260, damping: 20 }}
                 className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 flex flex-col items-center"
               >
-                <div className="w-24 h-24 bg-white rounded-full shadow-xl flex items-center justify-center border-4 border-green-100 relative">
+                <div className="w-24 h-24 bg-white dark:bg-gray-800 rounded-full shadow-xl flex items-center justify-center border-4 border-green-100 dark:border-green-900 relative">
                    <div className="absolute inset-0 rounded-full bg-green-50 animate-ping opacity-20" />
                    <img 
                      src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=100" 
@@ -95,7 +95,7 @@ export default function TeamSection() {
                   <div className={`w-16 h-16 rounded-full shadow-lg flex items-center justify-center ${node.color} bg-white mb-2`}>
                     <node.icon size={24} />
                   </div>
-                  <span className="text-sm font-semibold text-gray-600 bg-white/80 backdrop-blur-sm px-2 py-0.5 rounded-md shadow-sm">
+                  <span className="text-sm font-semibold text-gray-600 dark:text-gray-300 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm px-2 py-0.5 rounded-md shadow-sm">
                     {node.label}
                   </span>
                 </motion.div>
@@ -105,7 +105,7 @@ export default function TeamSection() {
               <motion.div
                 animate={{ y: [0, -10, 0] }}
                 transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-                className="absolute top-1/4 right-1/4 bg-white p-2 rounded-lg shadow-md flex items-center gap-2 z-0 opacity-80"
+                className="absolute top-1/4 right-1/4 bg-white dark:bg-gray-800 p-2 rounded-lg shadow-md flex items-center gap-2 z-0 opacity-80"
               >
                 <Share2 size={14} className="text-blue-500" />
                 <span className="text-xs font-bold text-gray-500">Share</span>
@@ -114,7 +114,7 @@ export default function TeamSection() {
               <motion.div
                 animate={{ y: [0, 10, 0] }}
                 transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-                className="absolute bottom-1/4 left-1/4 bg-white p-2 rounded-lg shadow-md flex items-center gap-2 z-0 opacity-80"
+                className="absolute bottom-1/4 left-1/4 bg-white dark:bg-gray-800 p-2 rounded-lg shadow-md flex items-center gap-2 z-0 opacity-80"
               >
                 <TrendingUp size={14} className="text-green-500" />
                 <span className="text-xs font-bold text-gray-500">Grow</span>
@@ -140,7 +140,7 @@ export default function TeamSection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: 0.1 }}
-              className="text-4xl md:text-5xl font-bold text-gray-900 mb-6 leading-tight"
+              className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-6 leading-tight"
             >
               Build a Team. <br />
               <span className="text-blue-600">Grow Together.</span>
@@ -151,7 +151,7 @@ export default function TeamSection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: 0.2 }}
-              className="text-xl text-gray-600 mb-8 leading-relaxed"
+              className="text-xl text-gray-600 dark:text-gray-400 mb-8 leading-relaxed"
             >
               Invite others to become affiliates and build your own network. 
               The more your community grows, the more opportunities you unlock.
@@ -165,13 +165,13 @@ export default function TeamSection() {
               className="space-y-4"
             >
               {keyPoints.map((point, index) => (
-                <div key={index} className="flex items-start gap-4 p-4 bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                <div key={index} className="flex items-start gap-4 p-4 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
                   <div className="flex-shrink-0 w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600">
                     <point.icon size={20} />
                   </div>
                   <div className="text-left">
-                    <h4 className="font-bold text-gray-900">{point.text}</h4>
-                    <p className="text-sm text-gray-500">{point.desc}</p>
+                    <h4 className="font-bold text-gray-900 dark:text-white">{point.text}</h4>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{point.desc}</p>
                   </div>
                 </div>
               ))}

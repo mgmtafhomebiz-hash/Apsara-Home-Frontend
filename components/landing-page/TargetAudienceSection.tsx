@@ -54,7 +54,7 @@ export default function TargetAudienceSection() {
   ];
 
   return (
-    <section className="py-24 bg-gray-50 relative overflow-hidden">
+    <section className="py-24 bg-gray-50 dark:bg-gray-900 relative overflow-hidden">
       <div className="max-w-[1400px] mx-auto px-6 md:px-10 lg:px-20 relative z-10">
         <div className="grid lg:grid-cols-2 gap-16 items-center">
 
@@ -101,7 +101,7 @@ export default function TargetAudienceSection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: 0.1 }}
-              className="text-4xl md:text-5xl font-bold text-gray-900 mb-8 leading-tight"
+              className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-8 leading-tight"
             >
               This Is for You If...
             </motion.h2>
@@ -120,7 +120,7 @@ export default function TargetAudienceSection() {
                   <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-colors ${item.color} group-hover:scale-110 duration-300`}>
                     <item.icon size={20} />
                   </div>
-                  <span className="text-lg text-gray-700 font-medium group-hover:text-gray-900 transition-colors">
+                  <span className="text-lg text-gray-700 dark:text-gray-200 font-medium group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
                     {item.text}
                   </span>
                 </motion.div>
@@ -131,9 +131,9 @@ export default function TargetAudienceSection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: 0.8 }}
-              className="mt-10 p-6 bg-white rounded-2xl border border-gray-100 shadow-lg"
+              className="mt-10 p-6 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-lg"
             >
-              <p className="text-gray-600 italic">
+              <p className="text-gray-600 dark:text-gray-300 italic">
                 &quot;Whether you&apos;re looking for a side hustle or a full-time career, AF Home gives you the platform to succeed on your own terms.&quot;
               </p>
             </motion.div>

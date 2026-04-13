@@ -26,7 +26,7 @@ const indicators = [
 
 export default function TrustIndicators() {
   return (
-    <section className="py-16 md:py-24 bg-white">
+    <section className="py-16 md:py-24 bg-white dark:bg-gray-950">
       <div className="max-w-[1400px] mx-auto px-6 md:px-10 lg:px-20">
         <motion.div
           initial={{ opacity: 0 }}
@@ -47,7 +47,7 @@ export default function TrustIndicators() {
                 ease: [0.16, 1, 0.3, 1] as const,
               }}
               whileHover={{ y: -4 }}
-              className="text-center p-6 rounded-2xl bg-af-cream/50"
+              className="text-center p-6 rounded-2xl bg-af-cream/50 dark:bg-gray-800/70 dark:border dark:border-gray-700"
             >
               <motion.div
                 animate={{ scale: [1, 1.05, 1] }}
@@ -57,14 +57,14 @@ export default function TrustIndicators() {
                   delay: index * 0.5,
                   ease: 'easeInOut',
                 }}
-                className="w-16 h-16 mx-auto mb-4 bg-af-forest/10 rounded-2xl flex items-center justify-center"
+                className="w-16 h-16 mx-auto mb-4 bg-af-forest/10 dark:bg-orange-500/10 rounded-2xl flex items-center justify-center"
               >
                 <item.icon size={28} className="text-orange-500" />
               </motion.div>
-              <h3 className="font-display text-lg font-semibold text-af-text mb-1">
+              <h3 className="font-display text-lg font-semibold text-af-text dark:text-white mb-1">
                 {item.title}
               </h3>
-              <p className="text-af-text-secondary text-sm">
+              <p className="text-af-text-secondary dark:text-gray-400 text-sm">
                 {item.description}
               </p>
             </motion.div>

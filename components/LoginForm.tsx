@@ -9,7 +9,7 @@ import { getSession, signIn, signOut } from "next-auth/react";
 import Loading from '@/components/Loading'
 import { showErrorToast, showInfoToast, showSuccessToast } from '@/libs/toast'
 import { clearAccessTokenCache } from "@/store/api/baseApi";
-import { Button } from "@heroui/react";
+import PrimaryButton from '@/components/ui/buttons/PrimaryButton';
 
 const REMEMBER_USER_EMAIL_KEY = 'afhome_user_login'
 const BLOCKED_KEYWORDS = ['banned', 'blocked', 'contact support']
@@ -50,20 +50,20 @@ function FloatingInput({ id, type = 'text', label, value, onChange, endContent }
                 value={value}
                 onChange={onChange}
                 placeholder=" "
-                className="peer h-14 w-full rounded-[22px] border border-white/18 bg-white/12 px-4 pb-3 pt-6 text-sm text-white outline-none transition-all duration-200 placeholder:text-transparent focus:border-orange-400/60 focus:bg-white/18"
+                className="peer h-14 w-full rounded-[22px] border border-gray-300 dark:border-white/18 bg-white dark:bg-white/12 px-4 pb-3 pt-6 text-sm text-gray-900 dark:text-white outline-none transition-all duration-200 placeholder:text-transparent focus:border-orange-400 dark:focus:border-orange-400/60 focus:bg-white dark:focus:bg-white/18"
             />
             <label
                 htmlFor={id}
-                className={`pointer-events-none absolute left-4 origin-left bg-transparent px-1 text-white/55 transition-all duration-200 ${
+                className={`pointer-events-none absolute left-4 origin-left bg-transparent px-1 text-gray-500 dark:text-white/55 transition-all duration-200 ${
                     hasValue
-                        ? 'top-2 text-[11px] text-orange-300'
+                        ? 'top-2 text-[11px] text-orange-500 dark:text-orange-300'
                         : 'top-1/2 -translate-y-1/2 text-sm'
-                } peer-focus:top-2 peer-focus:translate-y-0 peer-focus:text-[11px] peer-focus:text-orange-300`}
+                } peer-focus:top-2 peer-focus:translate-y-0 peer-focus:text-[11px] peer-focus:text-orange-500 dark:peer-focus:text-orange-300`}
             >
                 {label}
             </label>
             {endContent ? (
-                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-white/60">
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-white/60">
                     {endContent}
                 </div>
             ) : null}
@@ -152,8 +152,8 @@ const LoginForm = ({ onSwitchToSignUp, onRequirePasswordChange }: LoginFormProps
             exit={{ opacity: 0, x: 24 }}
             transition={{ duration: 0.25 }}
         >
-            <h2 className="text-2xl font-bold text-white mb-1">Welcome back!</h2>
-            <p className="text-white/70 text-sm mb-7">Sign in to your AF Home account</p>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">Welcome back!</h2>
+            <p className="text-gray-500 dark:text-white/70 text-sm mb-7">Sign in to your AF Home account</p>
 
             <form className="space-y-4" onSubmit={handleSignIn}>
                 {error && (
@@ -193,11 +193,11 @@ const LoginForm = ({ onSwitchToSignUp, onRequirePasswordChange }: LoginFormProps
                             </button>
                         )}
                     />
-                    <p className="mt-1.5 text-[11px] text-white/55">Passwords are case-sensitive.</p>
+                    <p className="mt-1.5 text-[11px] text-gray-400 dark:text-white/55">Passwords are case-sensitive.</p>
                 </div>
 
                 <div className="flex items-center justify-between text-xs">
-                    <label className="flex items-center gap-2 text-white/70 cursor-pointer">
+                    <label className="flex items-center gap-2 text-gray-500 dark:text-white/70 cursor-pointer">
                         <input
                             type="checkbox"
                             checked={form.rememberMe}
@@ -214,10 +214,10 @@ const LoginForm = ({ onSwitchToSignUp, onRequirePasswordChange }: LoginFormProps
                     </Link>
                 </div>
 
-                <Button
+                <PrimaryButton
                     type="submit"
-                    isDisabled={isLoading}
-                    className="mt-2 h-12 w-full rounded-full bg-orange-500 text-sm font-bold text-white shadow-lg shadow-orange-500/30 transition hover:bg-orange-600 data-[pressed=true]:scale-[0.99]"
+                    disabled={isLoading}
+                    className="w-full"
                 >
                     {isLoading ? (
                         <>
@@ -225,20 +225,9 @@ const LoginForm = ({ onSwitchToSignUp, onRequirePasswordChange }: LoginFormProps
                             <span>Signing in...</span>
                         </>
                     ) : (
-                        <span>SIGN IN</span>
+                        <span>Sign in</span>
                     )}
-                </Button>
-
-                <p className="text-center text-xs text-white/60">
-                    Don&apos;t have an account?{' '}
-                    <button
-                        type="button"
-                        onClick={onSwitchToSignUp}
-                        className="text-orange-400 hover:text-orange-400 font-semibold transition-colors"
-                    >
-                        Sign Up
-                    </button>
-                </p>
+                </PrimaryButton>
             </form>
         </motion.div>
     )

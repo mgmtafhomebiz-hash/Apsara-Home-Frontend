@@ -8,7 +8,7 @@ export default function CommissionSection() {
       icon: User,
       title: "You",
       description: "Join as an affiliate",
-      color: "bg-blue-100 text-blue-600",
+      color: "bg-blue-100 dark:bg-blue-500/10 text-blue-600 dark:text-blue-300",
       arrow: ArrowRight,
       arrowPos: "right"
     },
@@ -16,7 +16,7 @@ export default function CommissionSection() {
       icon: Share2,
       title: "Share Link",
       description: "Post on social media",
-      color: "bg-purple-100 text-purple-600",
+      color: "bg-purple-100 dark:bg-purple-500/10 text-purple-600 dark:text-purple-300",
       arrow: ArrowDown,
       arrowPos: "bottom"
     },
@@ -24,7 +24,7 @@ export default function CommissionSection() {
       icon: User,
       title: "Customer",
       description: "Buys from your link",
-      color: "bg-green-100 text-green-600",
+      color: "bg-green-100 dark:bg-green-500/10 text-green-600 dark:text-green-300",
       arrow: ArrowLeft,
       arrowPos: "left"
     },
@@ -32,7 +32,7 @@ export default function CommissionSection() {
       icon: Wallet,
       title: "Commission",
       description: "You get paid!",
-      color: "bg-orange-100 text-orange-600",
+      color: "bg-orange-100 dark:bg-orange-500/10 text-orange-600 dark:text-orange-300",
       arrow: null,
       arrowPos: null
     }
@@ -46,7 +46,7 @@ export default function CommissionSection() {
   ];
 
   return (
-    <section id="earnings" className="py-24 bg-gray-50 overflow-hidden relative">
+    <section id="earnings" className="py-24 bg-gray-50 dark:bg-gray-900 overflow-hidden relative">
       {/* Background Elements */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
         <div className="absolute top-10 left-10 w-64 h-64 bg-orange-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob" />
@@ -63,7 +63,7 @@ export default function CommissionSection() {
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="inline-block px-4 py-1.5 rounded-full bg-green-100 text-green-700 font-semibold text-sm mb-6"
+              className="inline-block px-4 py-1.5 rounded-full bg-green-100 dark:bg-green-500/10 text-green-700 dark:text-green-300 font-semibold text-sm mb-6"
             >
               HOW YOU EARN
             </motion.div>
@@ -73,7 +73,7 @@ export default function CommissionSection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: 0.1 }}
-              className="text-4xl md:text-5xl font-bold text-gray-900 mb-6 leading-tight"
+              className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-6 leading-tight"
             >
               Earn Every Time <br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-600 to-emerald-500">
@@ -86,7 +86,7 @@ export default function CommissionSection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: 0.2 }}
-              className="text-xl text-gray-600 mb-8 leading-relaxed"
+              className="text-xl text-gray-600 dark:text-gray-400 mb-8 leading-relaxed"
             >
               When someone buys using your affiliate link, you earn commissions—simple as that.
             </motion.p>
@@ -99,11 +99,11 @@ export default function CommissionSection() {
               className="grid gap-4 mb-10"
             >
               {benefits.map((benefit, index) => (
-                <div key={index} className="flex items-center gap-3 p-3 bg-white rounded-xl shadow-sm border border-gray-100">
-                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-600">
+                <div key={index} className="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-green-100 dark:bg-green-500/10 flex items-center justify-center text-green-600 dark:text-green-300">
                     <TrendingUp size={16} />
                   </div>
-                  <span className="font-medium text-gray-700">{benefit}</span>
+                  <span className="font-medium text-gray-700 dark:text-gray-200">{benefit}</span>
                 </div>
               ))}
             </motion.div>
@@ -149,8 +149,8 @@ export default function CommissionSection() {
                           <div className={`w-14 h-14 rounded-2xl ${step.color} flex items-center justify-center mb-4`}>
                             <step.icon size={28} />
                           </div>
-                          <h3 className="font-bold text-gray-900 mb-1">{step.title}</h3>
-                          <p className="text-sm text-gray-500">{step.description}</p>
+                          <h3 className="font-bold text-gray-900 dark:text-white mb-1">{step.title}</h3>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">{step.description}</p>
                         </CardContent>
                       </Card>
 
@@ -182,15 +182,15 @@ export default function CommissionSection() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.6 }}
-                className="bg-white rounded-2xl shadow-xl border border-gray-100 relative overflow-hidden mt-6"
+                className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 relative overflow-hidden mt-6"
               >
                  <div className="p-6">
                    <div className="flex justify-between items-center mb-6">
                       <div>
-                        <p className="text-sm text-gray-500 mb-1">Total Earnings</p>
-                        <h3 className="text-3xl font-bold text-gray-900">₱15,450.00</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Total Earnings</p>
+                        <h3 className="text-3xl font-bold text-gray-900 dark:text-white">₱15,450.00</h3>
                       </div>
-                      <div className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold flex items-center gap-1">
+                      <div className="px-3 py-1 bg-green-100 dark:bg-green-500/10 text-green-700 dark:text-green-300 rounded-full text-xs font-bold flex items-center gap-1">
                         <TrendingUp size={12} />
                         +12%
                       </div>
@@ -210,18 +210,18 @@ export default function CommissionSection() {
                       </svg>
                    </div>
                    
-                   <div className="grid grid-cols-3 gap-4 mt-4 pt-4 border-t border-gray-50">
+                   <div className="grid grid-cols-3 gap-4 mt-4 pt-4 border-t border-gray-50 dark:border-gray-700">
                       <div>
                         <p className="text-[10px] text-gray-400 uppercase">Clicks</p>
-                        <p className="font-semibold text-gray-700">1,240</p>
+                        <p className="font-semibold text-gray-700 dark:text-gray-200">1,240</p>
                       </div>
                       <div>
                         <p className="text-[10px] text-gray-400 uppercase">Orders</p>
-                        <p className="font-semibold text-gray-700">85</p>
+                        <p className="font-semibold text-gray-700 dark:text-gray-200">85</p>
                       </div>
                       <div>
                         <p className="text-[10px] text-gray-400 uppercase">Conversion</p>
-                        <p className="font-semibold text-gray-700">6.8%</p>
+                        <p className="font-semibold text-gray-700 dark:text-gray-200">6.8%</p>
                       </div>
                    </div>
                  </div>

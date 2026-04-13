@@ -27,6 +27,9 @@ const ADMIN_ALLOWED_PREFIXES = [
   "/admin/webpages",
   "/admin/settings/users",
 ];
+const PARTNER_ALLOWED_PREFIXES = [
+  "/partner/webpages",
+];
 const ADMIN_PERMISSION_PREFIXES: Record<string, string[]> = {
   members: ["/admin/members"],
   orders: ["/admin/orders"],
@@ -104,11 +107,13 @@ export async function proxy(req: NextRequest) {
   const passwordChangeRequired = Boolean((token as { passwordChangeRequired?: boolean } | null)?.passwordChangeRequired);
 
   const isAdminLoginPage = pathname === "/admin/login";
+  const isPartnerLoginPage = pathname === "/partner/login";
   const isSupplierPublicPage =
     pathname === "/supplier/login" ||
     pathname === "/supplier/forgot-password" ||
     pathname === "/supplier/reset-password";
   const isAdminRoute = pathname.startsWith("/admin");
+  const isPartnerRoute = pathname.startsWith("/partner");
   const isSupplierRoute = pathname.startsWith("/supplier");
   const isAuthRequiredRoute = AUTH_REQUIRED_PREFIXES.some((prefix) => pathname.startsWith(prefix));
   const isLoginPage = pathname === "/login";
@@ -137,6 +142,22 @@ export async function proxy(req: NextRequest) {
     return NextResponse.next();
   }
 
+  if (isPartnerLoginPage) {
+    const role = String((adminToken as { role?: string } | null)?.role ?? "").toLowerCase();
+    const userLevelId = Number((adminToken as { userLevelId?: number } | null)?.userLevelId ?? 0);
+    const isWebContent = role === "web_content" || userLevelId === 4;
+
+    if (adminToken && isWebContent) {
+      return NextResponse.redirect(new URL("/partner/webpages/partner-storefronts", req.url));
+    }
+
+    if (adminToken && !isWebContent) {
+      return NextResponse.redirect(new URL(getAdminRedirectPath(role), req.url));
+    }
+
+    return NextResponse.next();
+  }
+
   if (isSupplierPublicPage) {
     const role = String((supplierToken as { role?: string } | null)?.role ?? "").toLowerCase();
     if (supplierToken && role === "supplier") {
@@ -154,6 +175,7 @@ export async function proxy(req: NextRequest) {
 
     const role = String((adminToken as { role?: string } | null)?.role ?? "").toLowerCase();
     const userLevelId = Number((adminToken as { userLevelId?: number } | null)?.userLevelId ?? 0);
+    const isWebContent = role === "web_content" || userLevelId === 4;
     const adminPermissions = normalizeAdminPermissions((adminToken as { adminPermissions?: string[] } | null)?.adminPermissions ?? []);
     const hasCustomAdminPermissions = (role === "admin" || userLevelId === 2) && adminPermissions.length > 0;
     const adminAllowedPrefixes = hasCustomAdminPermissions
@@ -167,6 +189,10 @@ export async function proxy(req: NextRequest) {
 
     if (!hasAdminAccess) {
       return NextResponse.redirect(new URL("/", req.url));
+    }
+
+    if (isWebContent) {
+      return NextResponse.redirect(new URL("/partner/webpages/partner-storefronts", req.url));
     }
 
     if (isAccounting) {
@@ -211,6 +237,25 @@ export async function proxy(req: NextRequest) {
     }
   }
 
+  if (isPartnerRoute) {
+    if (!adminToken) {
+      const loginUrl = new URL("/partner/login", req.url);
+      loginUrl.searchParams.set("callback", pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+
+    const role = String((adminToken as { role?: string } | null)?.role ?? "").toLowerCase();
+    const userLevelId = Number((adminToken as { userLevelId?: number } | null)?.userLevelId ?? 0);
+    const isWebContent = role === "web_content" || userLevelId === 4;
+
+    const allowed =
+      pathname === "/partner" ||
+      PARTNER_ALLOWED_PREFIXES.some((prefix) => pathname.startsWith(prefix));
+    if (!allowed) {
+      return NextResponse.redirect(new URL("/partner/webpages/partner-storefronts", req.url));
+    }
+  }
+
   if (isSupplierRoute) {
     if (!supplierToken) {
       const loginUrl = new URL("/supplier/login", req.url);
@@ -249,5 +294,5 @@ export async function proxy(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/supplier/:path*", "/profile/:path*", "/orders/:path*", "/shop/:path*"],
+  matcher: ["/admin/:path*", "/partner/:path*", "/supplier/:path*", "/profile/:path*", "/orders/:path*", "/shop/:path*"],
 };
