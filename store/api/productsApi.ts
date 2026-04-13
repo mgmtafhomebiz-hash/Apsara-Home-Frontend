@@ -183,6 +183,25 @@ export interface BulkPriceRow {
   price_member?: number | string | null
 }
 
+export interface BulkUpdateRow {
+  id?: number
+  sku?: string
+  pd_name?: string | null
+  pd_catid?: number | string | null
+  pd_room_type?: number | string | null
+  pd_brand_type?: number | string | null
+  pd_material?: string | null
+  pd_price_srp?: number | string | null
+  pd_price_member?: number | string | null
+  pd_price_dp?: number | string | null
+  pd_qty?: number | string | null
+  pd_weight?: number | string | null
+  pd_pswidth?: number | string | null
+  pd_pslenght?: number | string | null
+  pd_psheight?: number | string | null
+  pd_psweight?: number | string | null
+}
+
 export interface BulkPricePreviewResponse {
   message: string
   summary: {
@@ -210,7 +229,43 @@ export interface BulkPricePreviewResponse {
   }>
 }
 
+export interface BulkUpdatePreviewResponse {
+  message: string
+  summary: {
+    total: number
+    ready: number
+    failed: number
+  }
+  results: Array<{
+    row: number
+    status: 'ready' | 'failed'
+    product_id?: number | null
+    sku?: string | null
+    name?: string | null
+    current?: Record<string, unknown> | null
+    next?: Record<string, unknown> | null
+    message: string
+  }>
+}
+
 export interface BulkPriceApplyResponse {
+  message: string
+  summary: {
+    total: number
+    updated: number
+    failed: number
+  }
+  results: Array<{
+    row: number
+    status: 'updated' | 'failed'
+    product_id?: number | null
+    sku?: string | null
+    name?: string | null
+    message: string
+  }>
+}
+
+export interface BulkUpdateApplyResponse {
   message: string
   summary: {
     total: number
@@ -642,6 +697,21 @@ export const productsApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['Products'],
     }),
+    bulkUpdatePreview: builder.mutation<BulkUpdatePreviewResponse, { rows: BulkUpdateRow[] }>({
+      query: (body) => ({
+        url: '/api/admin/products/bulk-update/preview',
+        method: 'POST',
+        body,
+      }),
+    }),
+    bulkUpdateApply: builder.mutation<BulkUpdateApplyResponse, { rows: BulkUpdateRow[] }>({
+      query: (body) => ({
+        url: '/api/admin/products/bulk-update/apply',
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: ['Products'],
+    }),
     updateProduct: builder.mutation<{ message: string; product?: Product }, { id: number; data: Partial<CreateProductPayload> }>({
       query: ({ id, data }) => ({
         url: `/api/admin/products/${id}`,
@@ -674,6 +744,8 @@ export const {
   useBulkImportProductsMutation,
   useBulkPricePreviewMutation,
   useBulkPriceApplyMutation,
+  useBulkUpdatePreviewMutation,
+  useBulkUpdateApplyMutation,
   useUpdateProductMutation,
   useDeleteProductMutation,
 } = productsApi

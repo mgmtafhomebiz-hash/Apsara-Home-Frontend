@@ -169,7 +169,7 @@ const navItems: NavItem[] = [
       { label: 'Partner Users', path: '/admin/webpages/partner-users' },
       { label: 'Assembly Guides', path: '/admin/webpages/assembly-guides' },
       { label: 'Bulk Edit', path: '/admin/webpages/bulk-edit' },
-      { label: 'Adds Content', path: '/admin/webpages/adds-content' },
+      { label: 'Ads Content', path: '/admin/webpages/adds-content' },
     ],
   },
   {

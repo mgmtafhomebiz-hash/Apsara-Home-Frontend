@@ -1,5 +1,5 @@
 import { buildPageMetadata } from '@/app/seo'
-import UnderMaintenancePage from '@/components/superAdmin/UnderMaintenancePage'
+import AdminNotificationsSettingsPageMain from '@/components/superAdmin/settings/AdminNotificationsSettingsPageMain'
 
 export const metadata = buildPageMetadata({
   title: 'Admin Settings Notifications',
@@ -10,9 +10,6 @@ export const metadata = buildPageMetadata({
 
 export default function AdminSettingsNotificationsPage() {
   return (
-    <UnderMaintenancePage
-      title="Notification Settings"
-      description="Admin notification preferences are still under construction."
-    />
+    <AdminNotificationsSettingsPageMain />
   )
 }

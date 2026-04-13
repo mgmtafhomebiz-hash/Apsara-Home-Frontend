@@ -1177,6 +1177,7 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
   const [newColorInputs,     setNewColorInputs]     = useState<Record<number, { name: string; hex: string }>>({})
   const [newStyleInputs,     setNewStyleInputs]     = useState<Record<number, string>>({})
   const [roomTouched,        setRoomTouched]        = useState(false)
+  const [brandText,          setBrandText]          = useState('')
   const [draftRestored,      setDraftRestored]      = useState(false)
   const [activeNewImageAdjustIndex, setActiveNewImageAdjustIndex] = useState<number | null>(null)
   const activeExistingImagePointerIndexRef = useRef<number | null>(null)
@@ -1218,6 +1219,23 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
     () => brands.find((brand) => String(brand.id) === form.pd_brand_type),
     [brands, form.pd_brand_type],
   )
+
+  useEffect(() => {
+    if (selectedBrand?.name) {
+      setBrandText(selectedBrand.name)
+      return
+    }
+    if (!form.pd_brand_type) {
+      setBrandText('')
+    }
+  }, [selectedBrand?.name, form.pd_brand_type])
+
+  const resolveBrandIdByName = (value: string) => {
+    const normalized = value.trim().toLowerCase()
+    if (!normalized) return null
+    const match = brands.find((brand) => brand.name.trim().toLowerCase() === normalized)
+    return match ? String(match.id) : null
+  }
   const selectedRoom = useMemo(
     () => ROOM_OPTIONS.find((room) => String(room.id) === form.pd_room_type),
     [form.pd_room_type],
@@ -1690,6 +1708,7 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
     if (form.pd_pswidth  && isNaN(Number(form.pd_pswidth)))            e.pd_pswidth   = 'Must be a valid number'
     if (form.pd_pslenght && isNaN(Number(form.pd_pslenght)))           e.pd_pslenght  = 'Must be a valid number'
     if (form.pd_psheight && isNaN(Number(form.pd_psheight)))           e.pd_psheight  = 'Must be a valid number'
+    if (brandText.trim() && !form.pd_brand_type.trim())                e.pd_brand_type = 'Brand not found. Add it in Brands first.'
     return e
   }
 
@@ -2265,18 +2284,55 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
                       </div>
                     </Field>
 
-                    <Field label="Brand">
+                    <Field label="Brand" error={errors.pd_brand_type}>
                       <ModalSelectField
                         ariaLabel="Select brand"
                         value={form.pd_brand_type}
                         searchable
                         searchPlaceholder="Search brands..."
-                        onChange={(value) => set('pd_brand_type', value)}
+                        onChange={(value) => {
+                          set('pd_brand_type', value)
+                          setErrors((prev) => ({ ...prev, pd_brand_type: undefined }))
+                        }}
                         options={[
                           { value: '', label: 'Not assigned' },
                           ...brands.map((brand) => ({ value: String(brand.id), label: brand.name })),
                         ]}
                       />
+                      <div className="mt-2">
+                        <input
+                          type="text"
+                          list="brand-options-edit"
+                          value={brandText}
+                          onChange={(event) => {
+                            const next = event.target.value
+                            setBrandText(next)
+                            const matchId = resolveBrandIdByName(next)
+                            if (matchId) {
+                              set('pd_brand_type', matchId)
+                              setErrors((prev) => ({ ...prev, pd_brand_type: undefined }))
+                            } else if (!next.trim()) {
+                              set('pd_brand_type', '')
+                              setErrors((prev) => ({ ...prev, pd_brand_type: undefined }))
+                            }
+                          }}
+                          onBlur={() => {
+                            if (!brandText.trim()) return
+                            const matchId = resolveBrandIdByName(brandText)
+                            if (!matchId) {
+                              setErrors((prev) => ({ ...prev, pd_brand_type: 'Brand not found. Add it in Brands first.' }))
+                            }
+                          }}
+                          placeholder="Type brand name"
+                          className={inputCls(!!errors.pd_brand_type)}
+                        />
+                        <datalist id="brand-options-edit">
+                          {brands.map((brand) => (
+                            <option key={brand.id} value={brand.name} />
+                          ))}
+                        </datalist>
+                        <p className="mt-1 text-[11px] text-slate-500">You can type a brand name to auto-match.</p>
+                      </div>
                     </Field>
 
                     <Field label="SKU">
