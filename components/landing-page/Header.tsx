@@ -4,6 +4,7 @@ import { ShoppingBag, Menu, X, User } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
+import ThemeToggle from '@/components/ui/buttons/ThemeToggle';
 
 interface HeaderProps {
   cartCount: number;
@@ -81,7 +82,7 @@ export default function Header({ cartCount }: HeaderProps) {
       animate={{ y: 0 }}
       transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] as const }}
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${isScrolled
-        ? 'bg-white/90 backdrop-blur-md shadow-soft'
+        ? 'bg-white/90 dark:bg-gray-900/90 backdrop-blur-md shadow-soft'
         : 'bg-transparent'
         }`}
     >
@@ -117,7 +118,7 @@ export default function Header({ cartCount }: HeaderProps) {
                     ${isActive
                       ? 'text-amber-500'
                       : isScrolled
-                        ? 'text-black hover:text-amber-500'
+                        ? 'text-black dark:text-white hover:text-amber-500'
                         : 'text-white hover:text-amber-400'
                     }`}
                   initial={{ opacity: 0, y: -10 }}
@@ -177,6 +178,12 @@ export default function Header({ cartCount }: HeaderProps) {
                 Browse Shop
               </span>
             </div>
+
+            {/* Divider */}
+            <span className={`h-5 w-px ${isScrolled ? 'bg-gray-300' : 'bg-white/30'}`} />
+
+            {/* Dark mode toggle */}
+            <ThemeToggle isScrolled={isScrolled} />
 
             {/* Hamburger Menu - Visible only on mobile */}
             <motion.button
