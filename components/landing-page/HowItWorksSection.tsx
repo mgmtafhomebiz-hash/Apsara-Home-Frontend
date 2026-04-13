@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { UserPlus, Share2, Wallet } from "lucide-react";
+import PrimaryButton from "@/components/ui/buttons/PrimaryButton";
 
 const steps = [
   {
@@ -41,7 +42,7 @@ export default function HowItWorksSection() {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <span className="inline-block px-4 py-1.5 rounded-full bg-orange-100 text-orange-600 font-semibold text-sm mb-4">
+          <span className="inline-block px-4 py-1.5 rounded-full bg-orange-100 dark:bg-orange-500/10 text-orange-600 dark:text-orange-300 font-semibold text-sm mb-4">
             SIMPLE PROCESS
           </span>
           <h2 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white leading-tight mb-4">
@@ -68,7 +69,7 @@ export default function HowItWorksSection() {
                 className={`w-28 h-28 rounded-full ${step.color} border-4 ${step.border} flex flex-col items-center justify-center mb-6 shadow-md bg-white dark:bg-gray-800`}
               >
                 <step.icon size={36} className={step.color.split(" ")[1]} />
-                <span className="text-xs font-bold text-gray-400 mt-1">
+                <span className="text-xs font-bold text-gray-400 dark:text-gray-500 mt-1">
                   {step.step}
                 </span>
               </div>
@@ -90,12 +91,9 @@ export default function HowItWorksSection() {
           transition={{ delay: 0.5 }}
           className="text-center mt-16"
         >
-          <a
-            href="/login"
-            className="inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white font-bold px-10 py-4 rounded-full text-lg transition-all duration-300 shadow-lg hover:shadow-orange-200 hover:shadow-xl"
-          >
+          <PrimaryButton href="/login">
             Get Started - It&apos;s Free
-          </a>
+          </PrimaryButton>
         </motion.div>
       </div>
     </section>
