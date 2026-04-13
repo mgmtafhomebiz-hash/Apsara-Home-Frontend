@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Send, Check, Sparkles } from 'lucide-react';
+import PrimaryButton from '@/components/ui/buttons/PrimaryButton';
 
 export default function Newsletter() {
   const [email, setEmail] = useState('');
@@ -19,7 +20,7 @@ export default function Newsletter() {
   };
 
   return (
-    <section className="py-24 md:py-32 bg-af-cream relative overflow-hidden">
+    <section className="py-24 md:py-32 bg-stone-50 dark:bg-gray-900 relative overflow-hidden">
       {/* Background Pattern */}
       <div className="absolute inset-0 opacity-5">
         <div
@@ -54,10 +55,10 @@ export default function Newsletter() {
               <Sparkles size={28} className="text-orange-500" />
             </motion.div>
 
-            <h2 className="font-display text-3xl md:text-4xl lg:text-5xl text-af-text font-semibold mb-4">
+            <h2 className="font-display text-3xl md:text-4xl lg:text-5xl text-gray-900 dark:text-white font-semibold mb-4">
               Join Our Community
             </h2>
-            <p className="text-af-text-secondary text-lg mb-8">
+            <p className="text-gray-600 dark:text-gray-400 text-lg mb-8">
               Subscribe for exclusive offers, design inspiration, and first
               access to new collections.
             </p>
@@ -81,7 +82,7 @@ export default function Newsletter() {
                   className="relative"
                 >
                   <div
-                    className={`relative bg-white rounded-full p-2 shadow-soft transition-all duration-500 ${
+                    className={`relative bg-white dark:bg-gray-800 rounded-full p-2 shadow-soft transition-all duration-500 dark:border dark:border-gray-700 ${
                       isFocused ? 'shadow-soft-lg ring-2 ring-af-forest/20' : ''
                     }`}
                   >
@@ -92,18 +93,16 @@ export default function Newsletter() {
                       onFocus={() => setIsFocused(true)}
                       onBlur={() => setIsFocused(false)}
                       placeholder="Enter your email address"
-                      className="w-full bg-transparent px-6 py-4 text-af-text placeholder-af-text-secondary focus:outline-none font-body pr-36"
+                      className="w-full bg-transparent px-6 py-4 text-af-text dark:text-white placeholder-af-text-secondary dark:placeholder-gray-500 focus:outline-none font-body pr-36"
                       required
                     />
-                    <motion.button
+                    <PrimaryButton
                       type="submit"
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 bg-orange-500 text-white px-6 py-3 rounded-full font-semibold flex items-center gap-2 hover:bg-[#c4955f] transition-colors"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 !px-6 !py-3 !text-sm"
                     >
                       Subscribe
                       <Send size={16} />
-                    </motion.button>
+                    </PrimaryButton>
                   </div>
                 </motion.div>
               ) : (
@@ -134,7 +133,7 @@ export default function Newsletter() {
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: 0.4 }}
-            className="text-af-text-secondary text-sm mt-4"
+            className="text-gray-600 dark:text-gray-500 text-sm mt-4"
           >
             By subscribing, you agree to our Privacy Policy. Unsubscribe
             anytime.

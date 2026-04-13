@@ -35,7 +35,7 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-af-cream">
+    <div className="min-h-screen bg-af-cream dark:bg-gray-950">
       <div className="fixed inset-0 noise-overlay pointer-events-none z-[100]" />
 
       <Header cartCount={cartCount} />

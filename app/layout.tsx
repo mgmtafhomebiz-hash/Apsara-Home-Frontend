@@ -28,7 +28,7 @@ export default function RootLayout({
   } as React.CSSProperties;
 
   return (
-    <html lang="en" style={fontVars}>
+    <html lang="en" style={fontVars} suppressHydrationWarning>
       <head>
         {/* Preload AI support images so they're ready when the component hydrates */}
         <link rel="preload" as="image" href={`${apiBase}/Image/sir.png`} />

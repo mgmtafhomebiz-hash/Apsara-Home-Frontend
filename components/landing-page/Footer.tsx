@@ -65,7 +65,7 @@ export default function Footer() {
   };
 
   return (
-    <footer id="contact" className="bg-af-text text-white">
+    <footer id="contact" className="bg-gray-100 dark:bg-gray-950 text-gray-900 dark:text-white">
       <div className="max-w-[1400px] mx-auto px-6 md:px-10 lg:px-20 py-16 md:py-20">
         <motion.div
           variants={containerVariants}
@@ -84,7 +84,7 @@ export default function Footer() {
                 className="w-32 h-auto" // Adjust the width/height as needed
               />
             </Link>
-            <p className="text-white/70 text-sm leading-relaxed mb-6">
+            <p className="text-gray-600 dark:text-white/70 text-sm leading-relaxed mb-6">
               AF Home is not just a store. It’s a home ecosystem built to grow with you.
             </p>
             <div className="flex gap-3">
@@ -94,7 +94,7 @@ export default function Footer() {
                   href={social.href}
                   whileHover={{ scale: 1.1, y: -2 }}
                   whileTap={{ scale: 0.95 }}
-                  className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-af-brass transition-colors"
+                  className="w-10 h-10 bg-gray-300/60 dark:bg-white/10 rounded-full flex items-center justify-center hover:bg-orange-500 hover:text-white transition-colors"
                   aria-label={social.label}
                 >
                   <social.icon size={18} />
@@ -111,7 +111,7 @@ export default function Footer() {
                 <li key={link.name}>
                   <a
                     href={link.href}
-                    className="text-white/70 hover:text-af-brass transition-colors text-sm"
+                    className="text-gray-600 dark:text-white/70 hover:text-orange-500 dark:hover:text-orange-400 transition-colors text-sm"
                   >
                     {link.name}
                   </a>
@@ -128,7 +128,7 @@ export default function Footer() {
                 <li key={link.name}>
                   <a
                     href={link.href}
-                    className="text-white/70 hover:text-af-brass transition-colors text-sm"
+                    className="text-gray-600 dark:text-white/70 hover:text-orange-500 dark:hover:text-orange-400 transition-colors text-sm"
                   >
                     {link.name}
                   </a>
@@ -145,7 +145,7 @@ export default function Footer() {
                 <li key={link.name}>
                   <a
                     href={link.href}
-                    className="text-white/70 hover:text-af-brass transition-colors text-sm"
+                    className="text-gray-600 dark:text-white/70 hover:text-orange-500 dark:hover:text-orange-400 transition-colors text-sm"
                   >
                     {link.name}
                   </a>
@@ -162,7 +162,7 @@ export default function Footer() {
             <ul className="space-y-4">
               <li className="flex items-start gap-3">
                 <MapPin size={18} className="text-orange-500 flex-shrink-0 mt-1" />
-                <span className="text-white/70 text-sm">
+                <span className="text-gray-600 dark:text-white/70 text-sm">
                   Quezon City Philippines
                 </span>
               </li>
@@ -170,7 +170,7 @@ export default function Footer() {
                 <Phone size={18} className="text-orange-500 flex-shrink-0" />
                 <a
                   href="tel:+02-840 0290"
-                  className="text-white/70 hover:text-af-brass transition-colors text-sm"
+                  className="text-gray-600 dark:text-white/70 hover:text-orange-500 dark:hover:text-orange-400 transition-colors text-sm"
                 >
 
                   02-840 0290
@@ -182,7 +182,7 @@ export default function Footer() {
                 <Mail size={18} className="text-orange-500 flex-shrink-0" />
                 <a
                   href="mailto:info@afhome.biz"
-                  className="text-white/70 hover:text-af-brass transition-colors text-sm"
+                  className="text-gray-600 dark:text-white/70 hover:text-orange-500 dark:hover:text-orange-400 transition-colors text-sm"
                 >
 
                   info@afhome.biz
@@ -198,27 +198,27 @@ export default function Footer() {
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6, delay: 0.5 }}
-          className="mt-16 pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-4"
+          className="mt-16 pt-8 border-t border-gray-300 dark:border-white/10 flex flex-col md:flex-row justify-between items-center gap-4"
         >
-          <p className="text-white/50 text-sm">
+          <p className="text-gray-500 dark:text-white/50 text-sm">
             © {new Date().getFullYear()} AFhome. All rights reserved.
           </p>
           <div className="flex gap-6">
             <a
               href="#"
-              className="text-white/50 hover:text-white text-sm transition-colors"
+              className="text-gray-500 dark:text-white/50 hover:text-gray-900 dark:hover:text-white text-sm transition-colors"
             >
               Privacy Policy
             </a>
             <a
               href="#"
-              className="text-white/50 hover:text-white text-sm transition-colors"
+              className="text-gray-500 dark:text-white/50 hover:text-gray-900 dark:hover:text-white text-sm transition-colors"
             >
               Terms of Service
             </a>
             <a
               href="#"
-              className="text-white/50 hover:text-white text-sm transition-colors"
+              className="text-gray-500 dark:text-white/50 hover:text-gray-900 dark:hover:text-white text-sm transition-colors"
             >
               Cookies
             </a>
