@@ -54,7 +54,7 @@ export default function LoginPageClient() {
         <Header cartCount={0} />
       </div>
 
-      <div className={`relative z-10 flex justify-center w-full px-4 ${mode === 'signup' ? 'py-10 items-start' : 'flex-1 items-center'}`}>
+      <div className={`relative z-10 flex justify-center w-full px-4 ${mode === 'signup' ? 'items-start pt-28 pb-10 sm:pt-32' : 'flex-1 items-center'}`}>
         <motion.div
           initial={{ opacity: 0, y: 32, scale: 0.95 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
