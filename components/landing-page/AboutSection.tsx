@@ -2,7 +2,7 @@ import { motion } from 'framer-motion';
 
 export default function AboutSection() {
   return (
-    <section id="about" className="py-24 md:py-32 bg-white overflow-hidden">
+    <section id="about" className="py-24 md:py-32 bg-white dark:bg-gray-950 overflow-hidden">
       <div className="max-w-[1400px] mx-auto px-6 md:px-10 lg:px-20">
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
           {/* Image Grid */}
@@ -71,11 +71,11 @@ export default function AboutSection() {
             <span className="font-mono text-orange-500 text-sm tracking-widest uppercase mb-4 block">
               Our Story
             </span>
-            <h2 className="font-display text-3xl md:text-4xl lg:text-5xl text-af-text font-semibold mb-6 leading-tight">
+            <h2 className="font-display text-3xl md:text-4xl lg:text-5xl text-af-text dark:text-white font-semibold mb-6 leading-tight">
               Crafting Spaces,{' '}
               <span className="text-orange-500 italic">Creating Memories</span>
             </h2>
-            <div className="space-y-4 text-af-text-secondary leading-relaxed">
+            <div className="space-y-4 text-af-text-secondary dark:text-gray-400 leading-relaxed">
               <p>
                 AFhome was born from a simple belief: everyone deserves a home
                 that reflects their personality and inspires their daily life.
@@ -113,7 +113,7 @@ export default function AboutSection() {
                   <h4 className="font-display text-xl font-semibold text-orange-400 mb-1">
                     {item.value}
                   </h4>
-                  <p className="text-af-text-secondary text-sm">{item.desc}</p>
+                  <p className="text-af-text-secondary dark:text-gray-400 text-sm">{item.desc}</p>
                 </motion.div>
               ))}
             </div>
