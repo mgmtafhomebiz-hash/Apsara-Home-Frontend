@@ -2,6 +2,7 @@
 
 import { AnimatePresence, motion } from 'framer-motion'
 import { Suspense } from 'react'
+import { ThemeProvider } from 'next-themes'
 import { CartProvider } from '@/context/CartContext'
 import CartDrawer from '@/components/ui/CartDrawer'
 import { Provider as ReduxProvider } from 'react-redux'
@@ -78,7 +79,8 @@ function CustomerBannedOverlay() {
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <SessionProvider> 
+    <ThemeProvider attribute="class" defaultTheme="light" disableTransitionOnChange>
+    <SessionProvider>
         <ReduxProvider store={store}>
           <CartProvider>
           <Suspense fallback={null}>
@@ -105,5 +107,6 @@ export default function Providers({ children }: { children: React.ReactNode }) {
           </CartProvider>
         </ReduxProvider>
     </SessionProvider>
+    </ThemeProvider>
   )
 }
