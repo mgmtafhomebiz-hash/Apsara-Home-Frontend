@@ -67,6 +67,21 @@ type SizeChoice = {
     variant?: VariantOption;
     groupVariants?: VariantOption[];
 };
+type ShareOption =
+    | {
+        id: string;
+        label: string;
+        action: () => void;
+        iconSrc: string;
+    }
+    | {
+        id: string;
+        label: string;
+        action: () => void;
+        icon: typeof Link2;
+    };
+
+const hasShareIconSrc = (item: ShareOption): item is Extract<ShareOption, { iconSrc: string }> => 'iconSrc' in item;
 
 const buildVariantGroupKey = (variant: VariantOption, index: number) => {
     const sku = (variant.sku ?? '').trim();
@@ -1023,14 +1038,14 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, 
                         </div>
 
                         <div className="mt-5 grid grid-cols-3 sm:grid-cols-6 gap-4">
-                            {[
+                            {(([
                                 { id: 'messenger', label: 'Messenger', iconSrc: '/Images/icon_apps/messenger.png', action: () => handleShareExternal('messenger') },
                                 { id: 'whatsapp', label: 'WhatsApp', iconSrc: '/Images/icon_apps/whatapps.avif', action: () => handleShareExternal('whatsapp') },
                                 { id: 'x', label: 'X', iconSrc: '/Images/icon_apps/x.jpg', action: () => handleShareExternal('x') },
                                 { id: 'telegram', label: 'Telegram', iconSrc: '/Images/icon_apps/telegram.png', action: () => handleShareExternal('telegram') },
                                 { id: 'viber', label: 'Viber', iconSrc: '/Images/icon_apps/viber.png', action: () => handleShareExternal('viber') },
                                 { id: 'copy', label: shareCopied ? 'Copied' : 'Copy link', icon: Link2, action: handleCopyShareLink },
-                            ].map((item) => (
+                            ]) as ShareOption[]).map((item) => (
                                 <button
                                     key={item.id}
                                     onClick={item.action}
@@ -1038,7 +1053,7 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, 
                                     type="button"
                                 >
                                     <span className="flex h-14 w-14 items-center justify-center rounded-full bg-gray-100 text-slate-600 shadow-sm">
-                                        {'iconSrc' in item ? (
+                                        {hasShareIconSrc(item) ? (
                                             <Image
                                                 src={item.iconSrc}
                                                 alt={item.label}
