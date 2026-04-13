@@ -32,7 +32,7 @@ const highlights = [
 
 export default function ExperienceSection() {
   return (
-    <section className="py-20 bg-white overflow-hidden">
+    <section className="py-20 bg-white dark:bg-gray-950 overflow-hidden">
       <div className="max-w-[1400px] mx-auto px-6 md:px-10 lg:px-20">
         <div className="flex flex-col lg:flex-row gap-16 items-center">
           {/* Text Content */}
@@ -46,13 +46,13 @@ export default function ExperienceSection() {
             <span className="text-orange-500 font-mono tracking-widest text-sm uppercase mb-4 block">
               Experience
             </span>
-            <h2 className="font-display text-3xl md:text-5xl font-medium text-af-black mb-6 leading-tight">
+            <h2 className="font-display text-3xl md:text-5xl font-medium text-af-black dark:text-white mb-6 leading-tight">
               More Than Products.{' '}
               <span className="text-blue-600 italic">
                 A Better Home Experience.
               </span>
             </h2>
-            <p className="text-lg text-gray-600 mb-8 leading-relaxed">
+            <p className="text-lg text-gray-600 dark:text-gray-400 mb-8 leading-relaxed">
               As an AF Home Affiliate, you don’t just promote furniture. 
               You help people create better living spaces—homes that feel comfortable, functional, and inspiring.
             </p>
@@ -65,7 +65,7 @@ export default function ExperienceSection() {
                   whileInView={{ opacity: 1, x: 0 }}
                   viewport={{ once: true }}
                   transition={{ duration: 0.5, delay: index * 0.1 }}
-                  className="flex items-center gap-3 text-af-black font-medium"
+                  className="flex items-center gap-3 text-af-black dark:text-gray-200 font-medium"
                 >
                   <span className="w-2 h-2 rounded-full bg-orange-500" />
                   {highlight}
