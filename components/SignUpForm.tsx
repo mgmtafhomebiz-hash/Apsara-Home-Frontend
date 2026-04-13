@@ -17,7 +17,7 @@ const EyeIcon = ({ open }: { open: boolean }) => open
     ? <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" /><line x1="1" y1="1" x2="23" y2="23" /></svg>
     : <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
 
-const labelClass = "block text-xs font-semibold text-white/80 mb-1.5"
+const labelClass = "block text-xs font-semibold text-gray-600 dark:text-white/80 mb-1.5"
 
 type FloatingInputProps = {
     id: string;
@@ -55,20 +55,20 @@ function FloatingInput({
                 required={required}
                 disabled={disabled}
                 maxLength={maxLength}
-                className="peer h-14 w-full rounded-[22px] border border-white/18 bg-white/12 px-4 pb-3 pt-6 text-sm text-white outline-none transition-all duration-200 placeholder:text-transparent focus:border-orange-400/60 focus:bg-white/18 disabled:cursor-not-allowed disabled:opacity-60"
+                className="peer h-14 w-full rounded-[22px] border border-gray-300 dark:border-white/18 bg-white dark:bg-white/12 px-4 pb-3 pt-6 text-sm text-gray-900 dark:text-white outline-none transition-all duration-200 placeholder:text-transparent focus:border-orange-400 dark:focus:border-orange-400/60 focus:bg-white dark:focus:bg-white/18 disabled:cursor-not-allowed disabled:opacity-60"
             />
             <label
                 htmlFor={id}
-                className={`pointer-events-none absolute left-4 origin-left px-1 text-white/55 transition-all duration-200 ${
+                className={`pointer-events-none absolute left-4 origin-left px-1 text-gray-500 dark:text-white/55 transition-all duration-200 ${
                     hasValue
-                        ? 'top-2 text-[11px] text-orange-300'
+                        ? 'top-2 text-[11px] text-orange-500 dark:text-orange-300'
                         : 'top-1/2 -translate-y-1/2 text-sm'
-                } peer-focus:top-2 peer-focus:translate-y-0 peer-focus:text-[11px] peer-focus:text-orange-300`}
+                } peer-focus:top-2 peer-focus:translate-y-0 peer-focus:text-[11px] peer-focus:text-orange-500 dark:peer-focus:text-orange-300`}
             >
                 {label}
             </label>
             {endContent ? (
-                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-white/60">
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-white/60">
                     {endContent}
                 </div>
             ) : null}
@@ -105,11 +105,11 @@ function HeroSelectField({
                 isDisabled={isDisabled}
                 className="w-full"
             >
-                <Select.Trigger className="flex h-14 w-full items-center justify-between rounded-[22px] border border-white/18 bg-white/12 px-4 text-left text-sm text-white transition-all duration-200 hover:bg-white/16 focus:border-orange-400/60 focus:bg-white/18 disabled:cursor-not-allowed disabled:opacity-60">
-                    <span className={selectedKey ? 'text-white' : 'text-white/45'}>
+                <Select.Trigger className="flex h-14 w-full items-center justify-between rounded-[22px] border border-gray-300 dark:border-white/18 bg-white dark:bg-white/12 px-4 text-left text-sm text-gray-900 dark:text-white transition-all duration-200 hover:bg-gray-50 dark:hover:bg-white/16 focus:border-orange-400 dark:focus:border-orange-400/60 focus:bg-white dark:focus:bg-white/18 disabled:cursor-not-allowed disabled:opacity-60">
+                    <span className={selectedKey ? 'text-gray-900 dark:text-white' : 'text-gray-400 dark:text-white/45'}>
                         {selectedLabel || placeholder}
                     </span>
-                    <Select.Indicator className="h-4 w-4 text-white/55" />
+                    <Select.Indicator className="h-4 w-4 text-gray-400 dark:text-white/55" />
                 </Select.Trigger>
                 <Select.Popover className="min-w-[var(--trigger-width)]">
                     <ListBox className="p-1">
@@ -322,8 +322,8 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
             exit={{ opacity: 0, x: -24 }}
             transition={{ duration: 0.25 }}
         >
-            <h2 className="text-2xl font-bold text-white mb-1">Let&apos;s Get Started!</h2>
-            <p className="text-white/70 text-sm mb-6">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">Let&apos;s Get Started!</h2>
+            <p className="text-gray-500 dark:text-white/70 text-sm mb-6">
                 {step === 'otp'
                     ? 'Enter the 4-digit code we sent to your email to finish your registration.'
                     : 'Please enter your details to start your online application'}
@@ -350,8 +350,8 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
 
                 {/* â”€â”€ Personal Information â”€â”€ */}
                 <div className="space-y-1 pb-1">
-                    <p className="text-xs font-bold text-orange-400 uppercase tracking-widest">Personal Information</p>
-                    <div className="h-px bg-white/10" />
+                    <p className="text-xs font-bold text-orange-500 dark:text-orange-400 uppercase tracking-widest">Personal Information</p>
+                    <div className="h-px bg-gray-200 dark:bg-white/10" />
                 </div>
 
                 {/* First + Last Name */}
@@ -497,7 +497,7 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
                 {/* Phone Number */}
                 <div>
                     <div className="flex gap-2">
-                        <div className="flex items-center justify-center rounded-[22px] border border-white/18 bg-white/12 px-4 text-sm font-semibold text-white/80 shrink-0">
+                        <div className="flex items-center justify-center rounded-[22px] border border-gray-300 dark:border-white/18 bg-white dark:bg-white/12 px-4 text-sm font-semibold text-gray-600 dark:text-white/80 shrink-0">
                             +63
                         </div>
                         <FloatingInput id="signup-phone" type="tel" label="Phone Number" required
@@ -521,8 +521,8 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
 
                 {/* â”€â”€ Address â”€â”€ */}
                 <div className="space-y-1 pb-1 pt-2">
-                    <p className="text-xs font-bold text-orange-400 uppercase tracking-widest">Address</p>
-                    <div className="h-px bg-white/10" />
+                    <p className="text-xs font-bold text-orange-500 dark:text-orange-400 uppercase tracking-widest">Address</p>
+                    <div className="h-px bg-gray-200 dark:bg-white/10" />
                 </div>
 
                 {/* Street */}
@@ -623,8 +623,8 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
 
                 {/* â”€â”€ Account Security â”€â”€ */}
                 <div className="space-y-1 pb-1 pt-2">
-                    <p className="text-xs font-bold text-orange-400 uppercase tracking-widest">Account Security</p>
-                    <div className="h-px bg-white/10" />
+                    <p className="text-xs font-bold text-orange-500 dark:text-orange-400 uppercase tracking-widest">Account Security</p>
+                    <div className="h-px bg-gray-200 dark:bg-white/10" />
                 </div>
 
                 {/* Password + Confirm */}
@@ -653,7 +653,7 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
                                     <p
                                         key={item.label}
                                         className={`text-[11px] flex items-center gap-2 ${
-                                            item.passed ? 'text-emerald-300' : 'text-white/55'
+                                            item.passed ? 'text-emerald-600 dark:text-emerald-300' : 'text-gray-400 dark:text-white/55'
                                         }`}
                                     >
                                         <span className={`inline-block h-1.5 w-1.5 rounded-full ${
@@ -676,12 +676,12 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
                             )} />
                     </div>
                 </div>
-                <p className="text-[11px] text-white/60 -mt-1">
+                <p className="text-[11px] text-gray-400 dark:text-white/60 -mt-1">
                     Use at least 8 characters with uppercase, lowercase, number, and special character.
                 </p>
 
                 {/* Sign In link */}
-                <p className="text-xs text-white/60">
+                <p className="text-xs text-gray-500 dark:text-white/60">
                     Have an account?{' '}
                     <button type="button" onClick={onSwitchToLogin}
                         className="text-orange-400 hover:text-orange-300 font-semibold transition-colors">
@@ -697,7 +697,7 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
                         onChange={(e) => setForm((prev) => ({ ...prev, agreeTerms: e.target.checked }))}
                         className="mt-0.5 h-4 w-4 shrink-0 rounded border-white/30 bg-white/10 accent-orange-500"
                     />
-                    <span className="text-xs text-white/60">
+                    <span className="text-xs text-gray-500 dark:text-white/60">
                         I agree to{' '}
                         <span className="text-orange-400 font-semibold hover:underline cursor-pointer">Terms &amp; Condition</span>
                         {' '}&amp;{' '}
