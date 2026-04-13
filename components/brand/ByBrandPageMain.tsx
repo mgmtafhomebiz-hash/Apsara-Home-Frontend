@@ -368,7 +368,6 @@ export default function ByBrandPageMain() {
                         </button>
                       )
                     )}
-
                   {/* Next */}
                   <button
                     onClick={() => setProductPage((p) => Math.min(totalPages, p + 1))}
