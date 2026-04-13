@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ShoppingBag, Menu, X, User } from 'lucide-react';
 import { useSession } from 'next-auth/react';
+import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 
 interface HeaderProps {
@@ -12,6 +13,8 @@ export default function Header({ cartCount }: HeaderProps) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { status } = useSession();
+  const pathname = usePathname();
+  const isHome = pathname === '/';
   const userHref = status === 'authenticated' ? '/shop' : '/login';
 
   useEffect(() => {
@@ -22,7 +25,7 @@ export default function Header({ cartCount }: HeaderProps) {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const navLinks = [
+  const rawNavLinks = [
     { name: 'Home', href: '/' },
     { name: 'Ecosystem', href: '#ecosystem' },
     { name: 'Earnings', href: '#earnings' },
@@ -30,6 +33,11 @@ export default function Header({ cartCount }: HeaderProps) {
     { name: 'Team', href: '#team' },
     { name: 'Training', href: '#training' },
   ];
+
+  const navLinks = rawNavLinks.map((link) => ({
+    ...link,
+    href: !isHome && link.href.startsWith('#') ? `/${link.href}` : link.href,
+  }));
 
   return (
     <motion.header
