@@ -1,8 +1,6 @@
 'use client';
 
 import VideoBackground from "@/components/VideoBackground";
-import Image from "next/image";
-import Link from "next/link";
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import AuthTabs from "@/components/AuthTabs";
@@ -11,6 +9,7 @@ import SignUpForm from "@/components/SignUpForm";
 import ForcedPasswordChangeForm from "@/components/auth/ForcedPasswordChangeForm";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
+import Header from "@/components/landing-page/Header";
 
 type Mode = 'login' | 'signup' | 'force-password-change'
 
@@ -51,27 +50,11 @@ export default function LoginPageClient() {
       <VideoBackground />
       <div className="absolute inset-0 bg-black/55 backdrop-blur-[2px]" />
 
-      <Link
-        href={"/"}
-        className="absolute top-6 left-6 z-20 flex items-center gap-2 text-white/80 hover:text-white text-sm font-medium transition-colors"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-          <polyline points="15 18 9 12 15 6" />
-        </svg>
-          Back to Home
-      </Link>
-
-      <div className="absolute top-5 left-1/2 -translate-x-1/2 z-20">
-        <Image
-          src={"/Images/af_home_logo.png"}
-          alt="AF Home"
-          width={110}
-          height={36}
-          className="h-9 w-auto object-contain brightness-0 invert"
-        />
+      <div className="relative z-20">
+        <Header cartCount={0} />
       </div>
 
-      <div className={`relative z-10 flex justify-center w-full px-4 ${mode === 'signup' ? 'py-20 items-start' : 'min-h-screen items-center'}`}>
+      <div className={`relative z-10 flex justify-center w-full px-4 ${mode === 'signup' ? 'py-10 items-start' : 'flex-1 items-center'}`}>
         <motion.div
           initial={{ opacity: 0, y: 32, scale: 0.95 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
