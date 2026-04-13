@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { useTheme } from 'next-themes';
 import { Sun, Moon } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -10,7 +11,18 @@ interface ThemeToggleProps {
 
 export default function ThemeToggle({ isScrolled = false }: ThemeToggleProps) {
   const { resolvedTheme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => setMounted(true));
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
+
   const isDark = resolvedTheme === 'dark';
+
+  if (!mounted) {
+    return <div className="w-8 h-8" />;
+  }
 
   return (
     <div className="relative group">
@@ -21,7 +33,7 @@ export default function ThemeToggle({ isScrolled = false }: ThemeToggleProps) {
         aria-label="Toggle dark mode"
         className={`cursor-pointer p-2 rounded-lg transition-colors ${
           isScrolled
-            ? 'text-gray-500 hover:text-amber-500 hover:bg-amber-50'
+            ? 'text-gray-500 dark:text-gray-300 hover:text-amber-500 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-white/10'
             : 'text-white/70 hover:text-amber-400 hover:bg-white/10'
         }`}
       >
