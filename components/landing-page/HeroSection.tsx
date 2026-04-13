@@ -111,7 +111,7 @@ export default function HeroSection() {
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.3, ease: [0.16, 1, 0.3, 1] as const }}
-              className="font-display text-4xl sm:text-5xl md:text-7xl lg:text-8xl text-white font-medium leading-tight mb-6 md:mb-8 tracking-tight"
+              className="font-display text-3xl sm:text-4xl md:text-7xl lg:text-8xl text-white font-medium leading-tight mb-6 md:mb-8 tracking-tight"
             >
               Earn From Home.{' '}
               <span className="block md:inline">Build a Team.</span>{' '}
