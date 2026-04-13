@@ -73,7 +73,7 @@ export default function CategoryNav({
   };
 
   return (
-    <section className="py-16 md:py-24 bg-af-cream">
+    <section className="py-16 md:py-24 bg-af-cream dark:bg-gray-900">
       <div className="max-w-[1400px] mx-auto px-6 md:px-10 lg:px-20">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -82,10 +82,10 @@ export default function CategoryNav({
           transition={{ duration: 0.6 }}
           className="text-center mb-12"
         >
-          <h2 className="font-display text-3xl md:text-4xl lg:text-5xl text-af-text font-semibold mb-4">
+          <h2 className="font-display text-3xl md:text-4xl lg:text-5xl text-af-text dark:text-white font-semibold mb-4">
             Shop by Category
           </h2>
-          <p className="text-af-text-secondary text-lg max-w-xl mx-auto">
+          <p className="text-af-text-secondary dark:text-gray-400 text-lg max-w-xl mx-auto">
             Find the perfect pieces for every room in your home
           </p>
         </motion.div>
@@ -106,7 +106,7 @@ export default function CategoryNav({
             className={`relative px-6 py-3 rounded-full font-semibold text-sm md:text-base transition-all duration-300 ${
               selectedCategory === null
                 ? 'bg-orange-500 text-white shadow-soft-lg'
-                : 'bg-white text-af-text shadow-soft hover:shadow-soft-lg'
+                : 'bg-white dark:bg-gray-800 text-af-text dark:text-gray-100 shadow-soft hover:shadow-soft-lg dark:shadow-none dark:border dark:border-gray-700'
             }`}
             style={{
               boxShadow:
@@ -130,7 +130,7 @@ export default function CategoryNav({
               className={`relative flex items-center gap-3 px-4 py-2 rounded-full font-semibold text-sm md:text-base transition-all duration-300 overflow-hidden ${
                 selectedCategory === category.id
                   ? 'bg-orange-500 text-white shadow-soft-lg'
-                  : 'bg-white text-af-text shadow-soft hover:shadow-soft-lg'
+                  : 'bg-white dark:bg-gray-800 text-af-text dark:text-gray-100 shadow-soft hover:shadow-soft-lg dark:shadow-none dark:border dark:border-gray-700'
               }`}
               style={{
                 boxShadow:
