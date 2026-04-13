@@ -136,14 +136,6 @@ export default function ByBrandPageMain() {
           <p className="mt-3 max-w-xl text-gray-400">
             Browse featured product brands from the catalog. Pick a brand below to continue exploring.
           </p>
-          {selectedBrand && (
-            <Link
-              href="/by-brand"
-              className="mt-6 inline-flex items-center gap-2 rounded-xl bg-white/10 px-5 py-2.5 text-sm font-semibold text-white ring-1 ring-white/20 backdrop-blur-sm transition hover:bg-white/20"
-            >
-              ← Back to All Brands
-            </Link>
-          )}
         </div>
       </div>
 
