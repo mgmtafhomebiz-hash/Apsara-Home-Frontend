@@ -35,7 +35,12 @@ export default function Header({ cartCount }: HeaderProps) {
       const el = document.getElementById(id);
       if (!el) return;
       const observer = new IntersectionObserver(
-        ([entry]) => { if (entry.isIntersecting) setActiveSection(id); },
+        ([entry]) => {
+          if (entry.isIntersecting) {
+            setActiveSection(id);
+            history.replaceState(null, '', `#${id}`);
+          }
+        },
         { threshold: 0.3 }
       );
       observer.observe(el);
@@ -43,7 +48,10 @@ export default function Header({ cartCount }: HeaderProps) {
     });
 
     const handleScroll = () => {
-      if (window.scrollY < 100) setActiveSection('');
+      if (window.scrollY < 100) {
+        setActiveSection('');
+        history.replaceState(null, '', '/');
+      }
     };
     window.addEventListener('scroll', handleScroll);
 
