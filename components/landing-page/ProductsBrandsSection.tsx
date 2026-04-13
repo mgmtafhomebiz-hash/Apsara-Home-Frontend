@@ -52,7 +52,7 @@ const brands = [
 
 export default function ProductsBrandsSection() {
   return (
-    <section id="ecosystem" className="py-24 bg-white overflow-hidden">
+    <section id="ecosystem" className="py-24 bg-white dark:bg-gray-950 overflow-hidden">
       <div className="max-w-[1400px] mx-auto px-6 md:px-10 lg:px-20">
         <div className="text-center max-w-3xl mx-auto mb-16">
           <motion.div
@@ -68,7 +68,7 @@ export default function ProductsBrandsSection() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.1 }}
-            className="text-4xl md:text-5xl font-bold text-gray-900 mb-6"
+            className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-6"
           >
             One Ecosystem. <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-red-600">
@@ -80,7 +80,7 @@ export default function ProductsBrandsSection() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.2 }}
-            className="text-xl text-gray-600 leading-relaxed"
+            className="text-xl text-gray-600 dark:text-gray-400 leading-relaxed"
           >
             AF Home brings together furniture, home essentials, and interior
             solutions under one affiliate-friendly platform, giving you more
@@ -92,7 +92,7 @@ export default function ProductsBrandsSection() {
           <motion.p
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
-            className="text-center text-sm font-semibold text-gray-400 uppercase tracking-wider mb-8"
+            className="text-center text-sm font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-8"
           >
             Trusted by Top Brands
           </motion.p>
@@ -124,15 +124,15 @@ export default function ProductsBrandsSection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: index * 0.1 }}
-              className="h-full rounded-2xl bg-gray-50/50 p-6 flex flex-col items-center text-center justify-center shadow-lg hover:shadow-xl transition-shadow duration-300"
+              className="h-full rounded-2xl bg-gray-50/50 dark:bg-gray-800 p-6 flex flex-col items-center text-center justify-center shadow-lg hover:shadow-xl transition-shadow duration-300"
             >
               <div
                 className={`p-4 rounded-2xl mb-4 ${cat.color} group-hover:scale-110 transition-transform duration-300`}
               >
                 <cat.icon size={32} />
               </div>
-              <h3 className="font-bold text-gray-900 mb-1">{cat.title}</h3>
-              <p className="text-sm text-gray-500">{cat.description}</p>
+              <h3 className="font-bold text-gray-900 dark:text-white mb-1">{cat.title}</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{cat.description}</p>
             </motion.div>
           ))}
         </div>
