@@ -12,6 +12,7 @@ interface HeaderProps {
 export default function Header({ cartCount }: HeaderProps) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState<string>('');
   const { status } = useSession();
   const pathname = usePathname();
   const isHome = pathname === '/';
@@ -24,6 +25,33 @@ export default function Header({ cartCount }: HeaderProps) {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  useEffect(() => {
+    if (!isHome) return;
+    const sectionIds = ['ecosystem', 'earnings', 'benefits', 'team', 'training'];
+    const observers: IntersectionObserver[] = [];
+
+    sectionIds.forEach((id) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const observer = new IntersectionObserver(
+        ([entry]) => { if (entry.isIntersecting) setActiveSection(id); },
+        { threshold: 0.3 }
+      );
+      observer.observe(el);
+      observers.push(observer);
+    });
+
+    const handleScroll = () => {
+      if (window.scrollY < 100) setActiveSection('');
+    };
+    window.addEventListener('scroll', handleScroll);
+
+    return () => {
+      observers.forEach((o) => o.disconnect());
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, [isHome]);
 
   const rawNavLinks = [
     { name: 'Home', href: '/' },
@@ -67,58 +95,80 @@ export default function Header({ cartCount }: HeaderProps) {
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-8">
-            {navLinks.map((link, index) => (
-              <motion.a
-                key={link.name}
-                href={link.href}
-                className={`font-medium text-[15px] relative group transition-all duration-300 ${isScrolled ? 'text-black' : 'text-white'
-                  }`} // text-white before scroll, text-black after scroll
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 + 0.2 }}
-                whileHover={{ y: -2 }}
-              >
-                {link.name}
-                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-af-brass group-hover:w-full transition-all duration-300" />
-              </motion.a>
-            ))}
+            {navLinks.map((link, index) => {
+              const sectionId = link.href.replace(/^\/?#/, '');
+              const isActive = link.href === '/'
+                ? isHome && activeSection === ''
+                : isHome && activeSection === sectionId;
+
+              return (
+                <motion.a
+                  key={link.name}
+                  href={link.href}
+                  className={`font-medium text-[15px] relative group transition-all duration-300
+                    ${isActive
+                      ? 'text-amber-500'
+                      : isScrolled
+                        ? 'text-black hover:text-amber-500'
+                        : 'text-white hover:text-amber-400'
+                    }`}
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 + 0.2 }}
+                  whileHover={{ y: -2 }}
+                >
+                  {link.name}
+                  <span className={`absolute -bottom-1 left-0 h-0.5 bg-amber-500 transition-all duration-300 ${isActive ? 'w-full' : 'w-0 group-hover:w-full'}`} />
+                </motion.a>
+              );
+            })}
           </nav>
 
           {/* Right Icons */}
           <div className="flex items-center gap-4">
             {/* User Icon with href */}
-            <motion.div
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.95 }}
-              className={`p-2 transition-colors ${isScrolled ? 'text-black' : 'text-white'}`}
-            >
-              <Link href="/login" aria-label="User account">
-                <User size={20} />
-              </Link>
-            </motion.div>
+            <div className="relative group">
+              <motion.div
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
+                className={`p-2 transition-colors ${isScrolled ? 'text-black' : 'text-white'}`}
+              >
+                <Link href="/login" aria-label="User account">
+                  <User size={20} />
+                </Link>
+              </motion.div>
+              <span className="pointer-events-none absolute top-full left-1/2 -translate-x-1/2 mt-2 whitespace-nowrap rounded-lg bg-gray-900/90 px-2.5 py-1 text-xs font-medium text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200 shadow-lg">
+                {status === 'authenticated' ? 'My Account' : 'Login'}
+              </span>
+            </div>
 
             {/* Shopping Bag Icon with href */}
-            <motion.div
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.95 }}
-              className={`relative p-2 transition-colors ${isScrolled ? 'text-black' : 'text-white'}`}
-            >
-              <Link href="/shop" aria-label="Browse shop" className="block">
-                <ShoppingBag size={20} />
-                <AnimatePresence>
-                  {cartCount > 0 && (
-                    <motion.span
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      exit={{ scale: 0 }}
-                      className="absolute -top-1 -right-1 w-5 h-5 bg-af-brass text-white text-xs font-bold rounded-full flex items-center justify-center"
-                    >
-                      {cartCount}
-                    </motion.span>
-                  )}
-                </AnimatePresence>
-              </Link>
-            </motion.div>
+            <div className="relative group">
+              <motion.div
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
+                className={`relative p-2 transition-colors ${isScrolled ? 'text-black' : 'text-white'}`}
+              >
+                <Link href="/shop" aria-label="Browse shop" className="block">
+                  <ShoppingBag size={20} />
+                  <AnimatePresence>
+                    {cartCount > 0 && (
+                      <motion.span
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        exit={{ scale: 0 }}
+                        className="absolute -top-1 -right-1 w-5 h-5 bg-af-brass text-white text-xs font-bold rounded-full flex items-center justify-center"
+                      >
+                        {cartCount}
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
+                </Link>
+              </motion.div>
+              <span className="pointer-events-none absolute top-full left-1/2 -translate-x-1/2 mt-2 whitespace-nowrap rounded-lg bg-gray-900/90 px-2.5 py-1 text-xs font-medium text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200 shadow-lg">
+                Browse Shop
+              </span>
+            </div>
 
             {/* Hamburger Menu - Visible only on mobile */}
             <motion.button
@@ -144,19 +194,26 @@ export default function Header({ cartCount }: HeaderProps) {
             className="md:hidden bg-white/95 backdrop-blur-md border-t border-af-cream"
           >
             <nav className="flex flex-col p-6 gap-4">
-              {navLinks.map((link, index) => (
-                <motion.a
-                  key={link.name}
-                  href={link.href}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                  className="text-af-text font-medium text-lg py-2"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  {link.name}
-                </motion.a>
-              ))}
+              {navLinks.map((link, index) => {
+                const sectionId = link.href.replace(/^\/?#/, '');
+                const isActive = link.href === '/'
+                  ? isHome && activeSection === ''
+                  : isHome && activeSection === sectionId;
+
+                return (
+                  <motion.a
+                    key={link.name}
+                    href={link.href}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                    className={`font-medium text-lg py-2 transition-colors duration-200 ${isActive ? 'text-amber-500' : 'text-af-text hover:text-amber-500'}`}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    {link.name}
+                  </motion.a>
+                );
+              })}
             </nav>
           </motion.div>
         )}
