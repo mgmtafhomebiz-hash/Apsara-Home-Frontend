@@ -1,6 +1,8 @@
 import { useRef } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
-import { ArrowRight, Home, Coins, Users, Armchair, Award } from 'lucide-react';
+import { ArrowRight, ChevronDown, Home, Coins, Users, Armchair, Award } from 'lucide-react';
+import PrimaryButton from '@/components/ui/buttons/PrimaryButton';
+import TransparentButton from '@/components/ui/buttons/TransparentButton';
 
 const FloatingIcon = ({ children, delay, x, y, className = "" }: { children: React.ReactNode; delay: number; x: string; y: string; className?: string }) => (
   <motion.div
@@ -139,26 +141,14 @@ export default function HeroSection() {
               transition={{ duration: 0.8, delay: 0.5, ease: [0.16, 1, 0.3, 1] as const }}
               className="flex flex-col sm:flex-row gap-4 w-auto justify-start items-start"
             >
-              <motion.a
-                href="/login"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="inline-flex items-center justify-center gap-2 bg-orange-500 text-white px-6 py-3 md:px-10 md:py-5 rounded-full font-bold text-base md:text-lg transition-all duration-300 hover:bg-orange-600 shadow-[0_0_20px_rgba(249,115,22,0.4)] group min-w-[160px] md:min-w-[200px]"
-              >
+              <PrimaryButton href="/login">
                 Join as an Affiliate — It’s Free
-                <ArrowRight
-                  size={20}
-                  className="group-hover:translate-x-1 transition-transform"
-                />
-              </motion.a>
-              <motion.a
-                href="#how-it-works"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="inline-flex items-center justify-center gap-2 bg-white/10 backdrop-blur-md text-white px-6 py-3 md:px-10 md:py-5 rounded-full font-bold text-base md:text-lg border border-white/30 hover:bg-white/20 transition-all duration-300 min-w-[160px] md:min-w-[200px]"
-              >
+                <ArrowRight size={20} />
+              </PrimaryButton>
+              <TransparentButton href="#how-it-works">
                 See How It Works
-              </motion.a>
+                <ChevronDown size={18} className="hidden group-hover:inline-block" />
+              </TransparentButton>
             </motion.div>
           </div>
         </div>
