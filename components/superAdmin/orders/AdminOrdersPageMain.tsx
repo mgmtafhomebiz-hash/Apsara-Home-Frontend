@@ -115,6 +115,14 @@ const formatDuration = (minutes: number | null | undefined) => {
   return hrs <= 0 ? `${mins}m` : `${hrs}h ${mins}m`
 }
 
+const getOrderSortTimestamp = (value?: string | null) => {
+  if (!value) return 0
+  const normalized = value.includes('T') ? value.trim() : value.trim().replace(' ', 'T')
+  const hasTimeZone = /([zZ]|[+-]\d{2}:\d{2})$/.test(normalized)
+  const parsed = new Date(hasTimeZone ? normalized : `${normalized}Z`).getTime()
+  return Number.isNaN(parsed) ? 0 : parsed
+}
+
 const getPaginationPages = (currentPage: number, totalPages: number) => {
   if (totalPages <= 7) {
     return Array.from({ length: totalPages }, (_, index) => index + 1)
@@ -274,7 +282,7 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
   const [busyId,      setBusyId]      = useState<number | null>(null)
   const [courierByOrder, setCourierByOrder] = useState<Record<number, AdminCourier>>({})
   const [fulfillmentModeByOrder, setFulfillmentModeByOrder] = useState<Record<number, FulfillmentMode>>({})
-  const [overdueFirst, setOverdueFirst] = useState(true)
+  const [overdueFirst, setOverdueFirst] = useState(false)
   const [sortBy,      setSortBy]      = useState<'default' | 'customer_az' | 'amount_low_high'>('default')
   const [highlightedOrderId, setHighlightedOrderId] = useState<number | null>(null)
   const [payloadPreview, setPayloadPreview] = useState<{ checkoutId: string; payload: Record<string, unknown> | Array<unknown> | null } | null>(null)
@@ -328,7 +336,9 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
           .localeCompare((b.customer_name ?? '').trim().toLowerCase(), 'en', { sensitivity: 'base' })
       }
       if (sortBy === 'amount_low_high') return (a.amount ?? 0) - (b.amount ?? 0)
-      return 0
+      const timeDiff = getOrderSortTimestamp(b.paid_at ?? b.created_at) - getOrderSortTimestamp(a.paid_at ?? a.created_at)
+      if (timeDiff !== 0) return timeDiff
+      return (b.id ?? 0) - (a.id ?? 0)
     })
   }, [data?.orders, overdueFirst, sortBy])
 
