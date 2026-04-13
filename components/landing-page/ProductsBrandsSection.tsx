@@ -59,7 +59,7 @@ export default function ProductsBrandsSection() {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="inline-block px-4 py-1.5 rounded-full bg-orange-100 text-orange-600 font-semibold text-sm mb-4"
+            className="inline-block px-4 py-1.5 rounded-full bg-orange-100 dark:bg-orange-500/10 text-orange-600 dark:text-orange-300 font-semibold text-sm mb-4"
           >
             PRODUCTS & BRANDS ECOSYSTEM
           </motion.div>
@@ -124,7 +124,7 @@ export default function ProductsBrandsSection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: index * 0.1 }}
-              className="h-full rounded-2xl bg-gray-50/50 dark:bg-gray-800 p-6 flex flex-col items-center text-center justify-center shadow-lg hover:shadow-xl transition-shadow duration-300"
+                className="h-full rounded-2xl bg-gray-50/50 dark:bg-gray-800 p-6 flex flex-col items-center text-center justify-center shadow-lg hover:shadow-xl transition-shadow duration-300 dark:border dark:border-gray-700"
             >
               <div
                 className={`p-4 rounded-2xl mb-4 ${cat.color} group-hover:scale-110 transition-transform duration-300`}
