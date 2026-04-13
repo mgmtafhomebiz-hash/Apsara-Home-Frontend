@@ -14,6 +14,7 @@ interface UsePhAddressReturn {
     provinceCode: string
     cityCode: string
     noProvince: boolean
+    loadingRegions: boolean
     loadingProvinces: boolean
     loadingCities: boolean
     loadingBarangays: boolean
@@ -116,6 +117,7 @@ export function usePhAddress(options?: UsePhAddressOptions): UsePhAddressReturn 
     const [cityCode, setCityCode] = useState('')
     const [noProvince, setNoProvince] = useState(false)
 
+    const [loadingRegions, setLoadingRegions] = useState(false)
     const [loadingProvinces, setLoadingProvinces] = useState(false)
     const [loadingCities, setLoadingCities] = useState(false)
     const [loadingBarangays, setLoadingBarangays] = useState(false)
@@ -131,12 +133,18 @@ export function usePhAddress(options?: UsePhAddressOptions): UsePhAddressReturn 
     useEffect(() => {
         let active = true
 
+        void Promise.resolve().then(() => {
+            if (active) setLoadingRegions(true)
+        })
+
         const loader = source === 'psgc'
             ? fetchPsgcList('/regions/')
             : fetchAddressList('regions')
 
         loader.then((data) => {
             if (active) setRegions(data)
+        }).finally(() => {
+            if (active) setLoadingRegions(false)
         })
 
         return () => {
@@ -317,6 +325,7 @@ export function usePhAddress(options?: UsePhAddressOptions): UsePhAddressReturn 
         provinceCode,
         cityCode,
         noProvince,
+        loadingRegions,
         loadingProvinces,
         loadingCities,
         loadingBarangays,
