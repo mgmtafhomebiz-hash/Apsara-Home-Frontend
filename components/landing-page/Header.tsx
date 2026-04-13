@@ -140,9 +140,9 @@ export default function Header({ cartCount }: HeaderProps) {
               <motion.div
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.95 }}
-                className={`p-2 transition-colors ${isScrolled ? 'text-black' : 'text-white'}`}
+                className={`p-2 transition-colors ${isScrolled ? 'text-black dark:text-white' : 'text-white'}`}
               >
-                <Link href="/login" aria-label="User account">
+                <Link href={userHref} aria-label="User account">
                   <User size={20} />
                 </Link>
               </motion.div>
@@ -156,7 +156,7 @@ export default function Header({ cartCount }: HeaderProps) {
               <motion.div
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.95 }}
-                className={`relative p-2 transition-colors ${isScrolled ? 'text-black' : 'text-white'}`}
+                className={`relative p-2 transition-colors ${isScrolled ? 'text-black dark:text-white' : 'text-white'}`}
               >
                 <Link href="/shop" aria-label="Browse shop" className="block">
                   <ShoppingBag size={20} />
@@ -180,7 +180,7 @@ export default function Header({ cartCount }: HeaderProps) {
             </div>
 
             {/* Divider */}
-            <span className={`h-5 w-px ${isScrolled ? 'bg-gray-300' : 'bg-white/30'}`} />
+            <span className={`h-5 w-px ${isScrolled ? 'bg-gray-300 dark:bg-gray-600' : 'bg-white/30'}`} />
 
             {/* Dark mode toggle */}
             <ThemeToggle isScrolled={isScrolled} />
@@ -190,7 +190,7 @@ export default function Header({ cartCount }: HeaderProps) {
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className={`md:hidden p-2 transition-colors ${isScrolled ? 'text-black' : 'text-white'}`}
+              className={`md:hidden p-2 transition-colors ${isScrolled ? 'text-black dark:text-white' : 'text-white'}`}
             >
               {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
             </motion.button>
@@ -206,7 +206,7 @@ export default function Header({ cartCount }: HeaderProps) {
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.3 }}
-            className="md:hidden bg-white/95 backdrop-blur-md border-t border-af-cream"
+            className="md:hidden bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border-t border-af-cream dark:border-gray-700"
           >
             <nav className="flex flex-col p-6 gap-4">
               {navLinks.map((link, index) => {
@@ -222,7 +222,7 @@ export default function Header({ cartCount }: HeaderProps) {
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: index * 0.1 }}
-                    className={`font-medium text-lg py-2 transition-colors duration-200 ${isActive ? 'text-amber-500' : 'text-af-text hover:text-amber-500'}`}
+                    className={`font-medium text-lg py-2 transition-colors duration-200 ${isActive ? 'text-amber-500' : 'text-af-text dark:text-gray-100 hover:text-amber-500'}`}
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
                     {link.name}
