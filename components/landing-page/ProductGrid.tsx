@@ -114,7 +114,7 @@ export default function ProductGrid({
     : products;
 
   return (
-    <section id="shop" className="py-16 md:py-24 bg-af-cream">
+    <section id="shop" className="py-16 md:py-24 bg-af-cream dark:bg-gray-900">
       <div className="max-w-[1400px] mx-auto px-6 md:px-10 lg:px-20">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -123,10 +123,10 @@ export default function ProductGrid({
           transition={{ duration: 0.6 }}
           className="text-center mb-12"
         >
-          <h2 className="font-display text-3xl md:text-4xl lg:text-5xl text-af-text font-semibold mb-4">
+          <h2 className="font-display text-3xl md:text-4xl lg:text-5xl text-af-text dark:text-white font-semibold mb-4">
             Featured Collection
           </h2>
-          <p className="text-af-text-secondary text-lg max-w-xl mx-auto">
+          <p className="text-af-text-secondary dark:text-gray-400 text-lg max-w-xl mx-auto">
             Handpicked pieces that define modern elegance
           </p>
         </motion.div>
@@ -149,7 +149,7 @@ export default function ProductGrid({
             animate={{ opacity: 1 }}
             className="text-center py-20"
           >
-            <p className="text-af-text-secondary text-lg">
+            <p className="text-af-text-secondary dark:text-gray-400 text-lg">
               No products found in this category.
             </p>
           </motion.div>
@@ -167,7 +167,7 @@ export default function ProductGrid({
             <motion.button
               whileHover={{ scale: 1.02, y: -2 }}
               whileTap={{ scale: 0.98 }}
-              className="inline-flex items-center gap-2 border-2 border-orange-500 text-orange-500 px-8 py-4 rounded-full font-semibold text-base hover:bg-orange-500 hover:text-white transition-all duration-300"
+              className="inline-flex items-center gap-2 border-2 border-orange-500 text-orange-500 px-8 py-4 rounded-full font-semibold text-base hover:bg-orange-500 hover:text-white transition-all duration-300 dark:border-orange-400 dark:text-orange-300 dark:hover:bg-orange-500 dark:hover:text-white"
             >
               View All Products
             </motion.button>
