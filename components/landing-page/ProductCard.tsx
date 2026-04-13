@@ -38,10 +38,10 @@ export default function ProductCard({
       <motion.div
         whileHover={{ y: -8 }}
         transition={{ duration: 0.4, ease: [0.34, 1.56, 0.64, 1] as const }}
-        className="bg-white rounded-2xl overflow-hidden shadow-soft hover:shadow-soft-lg transition-shadow duration-500"
+        className="bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-soft hover:shadow-soft-lg transition-shadow duration-500 dark:shadow-none dark:border dark:border-gray-700"
       >
         {/* Image Container */}
-        <div className="relative aspect-[4/5] overflow-hidden bg-[#f5f5f3]">
+        <div className="relative aspect-[4/5] overflow-hidden bg-[#f5f5f3] dark:bg-gray-900">
           <motion.img
             src={product.image}
             alt={product.name}
@@ -75,7 +75,7 @@ export default function ProductCard({
             <motion.button
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.95 }}
-              className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-soft-lg text-af-text hover:text-af-forest transition-colors"
+              className="w-12 h-12 bg-white dark:bg-gray-900 rounded-full flex items-center justify-center shadow-soft-lg dark:shadow-none text-af-text dark:text-gray-200 hover:text-af-forest dark:hover:text-orange-400 transition-colors"
             >
               <Heart size={20} />
             </motion.button>
@@ -83,7 +83,7 @@ export default function ProductCard({
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => onQuickView(product)}
-              className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-soft-lg text-af-text hover:text-af-forest transition-colors"
+              className="w-12 h-12 bg-white dark:bg-gray-900 rounded-full flex items-center justify-center shadow-soft-lg dark:shadow-none text-af-text dark:text-gray-200 hover:text-af-forest dark:hover:text-orange-400 transition-colors"
             >
               <Eye size={20} />
             </motion.button>
@@ -92,10 +92,10 @@ export default function ProductCard({
 
         {/* Content */}
         <div className="p-5">
-          <span className="font-mono text-xs text-af-text-secondary uppercase tracking-wider">
+          <span className="font-mono text-xs text-af-text-secondary dark:text-gray-400 uppercase tracking-wider">
             {product.category}
           </span>
-          <h3 className="font-display text-lg font-semibold text-af-text mt-1 mb-2 line-clamp-1">
+          <h3 className="font-display text-lg font-semibold text-af-text dark:text-white mt-1 mb-2 line-clamp-1">
             {product.name}
           </h3>
           <div className="flex items-center gap-2">
@@ -103,7 +103,7 @@ export default function ProductCard({
               ₱{product.price.toLocaleString()}
             </span>
             {product.originalPrice && (
-              <span className="font-mono text-sm text-af-text-secondary line-through">
+              <span className="font-mono text-sm text-af-text-secondary dark:text-gray-400 line-through">
                 ₱{product.originalPrice.toLocaleString()}
               </span>
             )}
