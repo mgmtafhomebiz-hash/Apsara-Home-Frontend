@@ -1,5 +1,5 @@
 import { buildPageMetadata } from '@/app/seo'
-import UnderMaintenancePage from '@/components/superAdmin/UnderMaintenancePage'
+import AdminGeneralSettingsPageMain from '@/components/superAdmin/settings/AdminGeneralSettingsPageMain'
 
 export const metadata = buildPageMetadata({
   title: 'Admin Settings General',
@@ -9,10 +9,5 @@ export const metadata = buildPageMetadata({
 })
 
 export default function AdminSettingsGeneralPage() {
-  return (
-    <UnderMaintenancePage
-      title="General Settings"
-      description="General admin configuration is still under maintenance."
-    />
-  )
+  return <AdminGeneralSettingsPageMain />
 }

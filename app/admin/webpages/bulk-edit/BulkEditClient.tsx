@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react'
 import * as XLSX from 'xlsx'
 import { showErrorToast, showSuccessToast } from '@/libs/toast'
-import { useBulkPriceApplyMutation, useBulkPricePreviewMutation } from '@/store/api/productsApi'
+import { useBulkUpdateApplyMutation, useBulkUpdatePreviewMutation } from '@/store/api/productsApi'
 
 export default function BulkEditClient() {
   const [fileName, setFileName] = useState<string | null>(null)
@@ -13,8 +13,8 @@ export default function BulkEditClient() {
   const [applySummary, setApplySummary] = useState<{ total: number; updated: number; failed: number } | null>(null)
   const [isParsing, setIsParsing] = useState(false)
 
-  const [previewBulkPrice, { isLoading: isPreviewLoading }] = useBulkPricePreviewMutation()
-  const [applyBulkPrice, { isLoading: isApplyLoading }] = useBulkPriceApplyMutation()
+  const [previewBulkUpdate, { isLoading: isPreviewLoading }] = useBulkUpdatePreviewMutation()
+  const [applyBulkUpdate, { isLoading: isApplyLoading }] = useBulkUpdateApplyMutation()
 
   const isBusy = isParsing || isPreviewLoading || isApplyLoading
 
@@ -83,33 +83,79 @@ export default function BulkEditClient() {
         ).trim()
         const idRaw = pickValue(row, ['id', 'pd_id', 'product_id'])
         const id = idRaw ? Number(idRaw) : null
-        const priceSrp = parseNumber(pickValue(row, ['price_srp', 'pd_price_srp', 'srp', 'price']))
-        const priceDp = parseNumber(pickValue(row, ['price_dp', 'pd_price_dp', 'dp', 'dealer_price']))
-        const priceMember = parseNumber(pickValue(row, ['price_member', 'pd_price_member', 'member_price']))
+        const name = pickValue(row, ['product_name', 'name', 'pd_name'])
+        const categoryRaw = pickValue(row, ['category_id', 'catid', 'pd_catid', 'category'])
+        const roomRaw = pickValue(row, ['room_type', 'shop_by_room', 'pd_room_type', 'shop_by_room_id'])
+        const categoryId = parseNumber(categoryRaw)
+        const roomType = parseNumber(roomRaw)
+        const material = pickValue(row, ['material', 'pd_material'])
+        const priceSrp = parseNumber(pickValue(row, ['srp_price', 'price_srp', 'pd_price_srp', 'srp', 'price']))
+        const priceDp = parseNumber(pickValue(row, ['dealer_price', 'price_dp', 'pd_price_dp', 'dp']))
+        const priceMember = parseNumber(pickValue(row, ['member_price', 'price_member', 'pd_price_member']))
+        const qtyRaw = pickValue(row, [
+          'qty',
+          'quantity',
+          'quanatatity',
+          'quanity',
+          'quantaty',
+          'quantitiy',
+          'pd_qty',
+        ])
+        const qty = parseNumber(qtyRaw)
+        const weight = parseNumber(pickValue(row, ['weight', 'net_weight', 'pd_weight']))
+        const width = parseNumber(pickValue(row, ['width', 'pd_pswidth']))
+        const length = parseNumber(pickValue(row, ['length', 'pd_pslenght']))
+        const height = parseNumber(pickValue(row, ['height', 'pd_psheight']))
+        const packageWeight = parseNumber(pickValue(row, ['package_weight', 'psweight', 'pd_psweight']))
 
         if (!sku && !id) return null
-        if (priceSrp === null && priceDp === null && priceMember === null) return null
+        if (
+          name === null &&
+          categoryRaw === null &&
+          roomRaw === null &&
+          material === null &&
+          priceSrp === null &&
+          priceDp === null &&
+          priceMember === null &&
+          qtyRaw === null &&
+          weight === null &&
+          width === null &&
+          length === null &&
+          height === null &&
+          packageWeight === null
+        ) return null
 
         return {
           id: id ?? undefined,
           sku: sku || undefined,
-          price_srp: priceSrp ?? undefined,
-          price_dp: priceDp ?? undefined,
-          price_member: priceMember ?? undefined,
+          pd_name: typeof name === 'string' ? name : undefined,
+          pd_catid: categoryId ?? (typeof categoryRaw === 'string' ? categoryRaw : undefined),
+          pd_room_type: roomType ?? (typeof roomRaw === 'string' ? roomRaw : undefined),
+          // brand updates are intentionally ignored for bulk edit
+          pd_material: typeof material === 'string' ? material : undefined,
+          pd_price_srp: priceSrp ?? undefined,
+          pd_price_dp: priceDp ?? undefined,
+          pd_price_member: priceMember ?? undefined,
+          pd_qty: qtyRaw !== null ? (qty ?? undefined) : undefined,
+          pd_weight: weight ?? undefined,
+          pd_pswidth: width ?? undefined,
+          pd_pslenght: length ?? undefined,
+          pd_psheight: height ?? undefined,
+          pd_psweight: packageWeight ?? undefined,
         }
       })
-      .filter(Boolean) as Array<{ id?: number; sku?: string; price_srp?: number; price_dp?: number; price_member?: number }>
+      .filter(Boolean) as Array<Record<string, unknown>>
   }
 
   const handlePreview = async () => {
     const payloadRows = buildPayloadRows()
     if (payloadRows.length === 0) {
-      showErrorToast('No valid rows found. Make sure SKU/ID and at least one price column exist.')
+      showErrorToast('No valid rows found. Make sure SKU/ID and at least one editable column exist.')
       return
     }
 
     try {
-      const response = await previewBulkPrice({ rows: payloadRows }).unwrap()
+      const response = await previewBulkUpdate({ rows: payloadRows }).unwrap()
       setPreviewRows(response.results ?? [])
       setPreviewSummary(response.summary ?? null)
       showSuccessToast(response.message || 'Preview generated.')
@@ -126,7 +172,7 @@ export default function BulkEditClient() {
     }
 
     try {
-      const response = await applyBulkPrice({ rows: payloadRows }).unwrap()
+      const response = await applyBulkUpdate({ rows: payloadRows }).unwrap()
       setApplySummary(response.summary ?? null)
       showSuccessToast(response.message || 'Bulk update applied.')
     } catch (error: any) {
@@ -140,8 +186,8 @@ export default function BulkEditClient() {
         <p className="text-xs font-bold uppercase tracking-[0.22em] text-cyan-700">Web Content</p>
         <h1 className="mt-2 text-2xl font-bold text-slate-900">Bulk Edit</h1>
         <p className="mt-2 max-w-3xl text-sm leading-relaxed text-slate-500">
-          This workspace enables administrators to perform bulk updates on item pricing efficiently.
-          It can be integrated with existing product data once the target items or categories are defined.
+          Upload a spreadsheet to update product details in bulk (name, category, room, material, prices,
+          quantity, and dimensions).
         </p>
       </div>
 
@@ -155,8 +201,12 @@ export default function BulkEditClient() {
               <p className="text-xs font-bold uppercase tracking-[0.24em] text-cyan-700">Bulk Workspace</p>
               <h2 className="mt-2 text-xl font-bold text-slate-900">Bulk Edit Interface</h2>
               <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-500">
-                Upload a CSV or XLSX file to apply pricing changes across multiple items in one streamlined pass.
-                This UI is the staging area for batch updates before pushing to the live catalog.
+                Upload a CSV or XLSX file to apply product updates across multiple items in one streamlined pass.
+                Use SKU or Product ID plus any fields you want to change. Suggested headers:
+                <span className="block mt-2 text-xs text-slate-500">
+                  Product Name, Category, Shop By Room, Material, SRP Price, Member Price, Dealer Price,
+                  Quantity (or Qty), Weight, Width, Length, Height, Package Weight.
+                </span>
               </p>
             </div>
             <div className="rounded-2xl border border-cyan-100 bg-cyan-50 px-4 py-3">
@@ -213,7 +263,7 @@ export default function BulkEditClient() {
               </div>
               <div className="mt-4 rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-3">
                 <p className="text-xs text-slate-500">
-                  Preview mode will show affected SKUs, old price, and new price before applying changes.
+                  Preview shows current values and the fields that will be updated.
                 </p>
               </div>
             </div>
@@ -249,29 +299,49 @@ export default function BulkEditClient() {
           </div>
 
           <div className="mt-5 overflow-hidden rounded-2xl border border-slate-200">
-            <div className="grid grid-cols-[80px_140px_1.2fr_1fr_1fr_120px] gap-0 bg-slate-50 px-4 py-2 text-xs font-semibold uppercase text-slate-500">
+            <div className="grid grid-cols-[80px_140px_1.2fr_1.6fr_120px] gap-0 bg-slate-50 px-4 py-2 text-xs font-semibold uppercase text-slate-500">
               <span>Row</span>
               <span>SKU</span>
               <span>Product</span>
-              <span>Current</span>
-              <span>New</span>
+              <span>Changes</span>
               <span>Status</span>
             </div>
             <div className="max-h-[360px] overflow-y-auto">
               {previewRows.map((row: any) => (
                 <div
                   key={`${row.row}-${row.sku}-${row.status}`}
-                  className="grid grid-cols-[80px_140px_1.2fr_1fr_1fr_120px] items-center gap-0 border-t border-slate-100 px-4 py-3 text-sm"
+                  className="grid grid-cols-[80px_140px_1.2fr_1.6fr_120px] items-center gap-0 border-t border-slate-100 px-4 py-3 text-sm"
                 >
                   <span className="text-xs text-slate-500">#{row.row}</span>
                   <span className="font-mono text-xs text-slate-600">{row.sku || '—'}</span>
                   <span className="text-slate-800">{row.name || row.message}</span>
-                  <span className="text-xs text-slate-600">
-                    SRP {row.current?.price_srp ?? '—'} · DP {row.current?.price_dp ?? '—'}
-                  </span>
-                  <span className="text-xs text-slate-600">
-                    SRP {row.next?.price_srp ?? '—'} · DP {row.next?.price_dp ?? '—'}
-                  </span>
+                  <div className="text-xs text-slate-600">
+                    {row.current && row.next
+                      ? Object.keys(row.next).map((key: string) => {
+                        const labelMap: Record<string, string> = {
+                          pd_name: 'Product Name',
+                          pd_catid: 'Category',
+                          pd_room_type: 'Shop By Room',
+                          pd_material: 'Material',
+                          pd_price_srp: 'SRP Price',
+                          pd_price_member: 'Member Price',
+                          pd_price_dp: 'Dealer Price',
+                          pd_qty: 'Quantity',
+                          pd_weight: 'Weight',
+                          pd_pswidth: 'Width',
+                          pd_pslenght: 'Length',
+                          pd_psheight: 'Height',
+                          pd_psweight: 'Package Weight',
+                        }
+                        const label = labelMap[key] ?? key
+                        return (
+                          <div key={`${row.row}-${key}`}>
+                            <span className="font-semibold">{label}</span>: {row.current?.[key] ?? '—'} → {row.next?.[key] ?? '—'}
+                          </div>
+                        )
+                      })
+                      : row.message}
+                  </div>
                   <span
                     className={`inline-flex w-fit items-center rounded-full px-2.5 py-1 text-[11px] font-semibold ${
                       row.status === 'ready'

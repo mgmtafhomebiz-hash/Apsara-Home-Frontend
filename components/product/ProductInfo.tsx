@@ -7,7 +7,7 @@ import { displayColorName } from "@/libs/colorUtils";
 import { extractVariantOptionLabels } from "@/libs/productVariantOptions";
 import { motion } from "framer-motion"
 import { useEffect, useMemo, useState } from "react";
-import { Link2, MessageCircle, Users, User, X as XIcon, PhoneCall } from "lucide-react";
+import { Link2, X as XIcon } from "lucide-react";
 import StarRating from "../ui/StarRating";
 import BuyNowOptionsModal from "./BuyNowOptionsModal";
 import { useSession } from "next-auth/react";
@@ -513,22 +513,9 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, 
 
     const referralCode = (me?.username ?? '').trim();
     const shareUrl = useMemo(() => {
-        if (typeof window === 'undefined') return '';
-
-        try {
-            const url = new URL(window.location.href);
-            if (referralCode) {
-                url.searchParams.set('username', referralCode);
-                const preferredLink = `${window.location.origin}/ref/${encodeURIComponent(referralCode)}`;
-                url.searchParams.set('preffered_by', preferredLink);
-            } else {
-                url.searchParams.delete('username');
-                url.searchParams.delete('preffered_by');
-            }
-            return url.toString();
-        } catch {
-            return window.location.href;
-        }
+        const baseUrl = 'https://www.afhome.ph/shop';
+        if (!referralCode) return baseUrl;
+        return `${baseUrl}?ref=${encodeURIComponent(referralCode)}`;
     }, [referralCode]);
 
     useEffect(() => {
@@ -568,15 +555,10 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, 
         }
     };
 
-    const handleShareExternal = (type: 'messenger' | 'whatsapp' | 'x' | 'more') => {
+    const handleShareExternal = (type: 'messenger' | 'whatsapp' | 'x' | 'telegram' | 'viber') => {
         const url = shareUrl || (typeof window !== 'undefined' ? window.location.href : '');
         const title = displayTitle || product.name;
         if (!url) return;
-
-        if (type === 'more' && navigator?.share) {
-            navigator.share({ title, url }).catch(() => undefined);
-            return;
-        }
 
         const encodedUrl = encodeURIComponent(url);
         const encodedText = encodeURIComponent(`${title} - ${url}`);
@@ -584,6 +566,8 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, 
             messenger: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`,
             whatsapp: `https://wa.me/?text=${encodedText}`,
             x: `https://twitter.com/intent/tweet?text=${encodedText}`,
+            telegram: `https://t.me/share/url?url=${encodedUrl}&text=${encodedText}`,
+            viber: `viber://forward?text=${encodedText}`,
         };
         const targetUrl = shareTargets[type];
         if (targetUrl) window.open(targetUrl, '_blank', 'noopener,noreferrer');
@@ -1040,12 +1024,12 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, 
 
                         <div className="mt-5 grid grid-cols-3 sm:grid-cols-6 gap-4">
                             {[
-                                { id: 'messenger', label: 'Messenger', icon: MessageCircle, action: () => handleShareExternal('messenger') },
-                                { id: 'whatsapp', label: 'WhatsApp', icon: PhoneCall, action: () => handleShareExternal('whatsapp') },
+                                { id: 'messenger', label: 'Messenger', iconSrc: '/Images/icon_apps/messenger.png', action: () => handleShareExternal('messenger') },
+                                { id: 'whatsapp', label: 'WhatsApp', iconSrc: '/Images/icon_apps/whatapps.avif', action: () => handleShareExternal('whatsapp') },
+                                { id: 'x', label: 'X', iconSrc: '/Images/icon_apps/x.jpg', action: () => handleShareExternal('x') },
+                                { id: 'telegram', label: 'Telegram', iconSrc: '/Images/icon_apps/telegram.png', action: () => handleShareExternal('telegram') },
+                                { id: 'viber', label: 'Viber', iconSrc: '/Images/icon_apps/viber.png', action: () => handleShareExternal('viber') },
                                 { id: 'copy', label: shareCopied ? 'Copied' : 'Copy link', icon: Link2, action: handleCopyShareLink },
-                                { id: 'group', label: 'Group', icon: Users, action: () => handleShareExternal('more') },
-                                { id: 'friend', label: "Friend's profile", icon: User, action: () => handleShareExternal('more') },
-                                { id: 'x', label: 'X', icon: XIcon, action: () => handleShareExternal('x') },
                             ].map((item) => (
                                 <button
                                     key={item.id}
@@ -1054,7 +1038,17 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, 
                                     type="button"
                                 >
                                     <span className="flex h-14 w-14 items-center justify-center rounded-full bg-gray-100 text-slate-600 shadow-sm">
-                                        <item.icon size={22} />
+                                        {'iconSrc' in item ? (
+                                            <Image
+                                                src={item.iconSrc}
+                                                alt={item.label}
+                                                width={28}
+                                                height={28}
+                                                className="h-7 w-7 object-contain"
+                                            />
+                                        ) : (
+                                            <item.icon size={22} />
+                                        )}
                                     </span>
                                     <span className="leading-tight">{item.label}</span>
                                 </button>

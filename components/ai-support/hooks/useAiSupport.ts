@@ -22,6 +22,29 @@ const STARTER_QUESTIONS = [
   'Do you have items on sale right now?',
 ];
 
+const NXT_ONLY_KEYWORDS = [
+  'electric bike',
+  'e-bike',
+  'e bike',
+  'e-cycle',
+  'ecycle',
+  'battery-powered bike',
+  'battery powered bike',
+  'motorcyle bike',
+  'motorcycle bike',
+]
+
+const normalizeQuery = (value: string) =>
+  value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+
+const shouldRestrictToNxt = (value: string) => {
+  const normalized = normalizeQuery(value);
+  return NXT_ONLY_KEYWORDS.some((keyword) => normalized.includes(normalizeQuery(keyword)));
+};
+
 function apiEndpoint(path: string) {
   const base = (
     (typeof window !== 'undefined'
@@ -127,18 +150,28 @@ export function useAiSupport() {
           }),
         });
         const data = (await res.json()) as ApiResponse;
+        const restrictToNxt = shouldRestrictToNxt(msg);
+        const filteredProducts = restrictToNxt
+          ? (data.product_cards ?? []).filter((card) => {
+            const haystack = `${card.name} ${card.description}`.toLowerCase();
+            return haystack.includes('nxt');
+          })
+          : (data.product_cards ?? []);
+        const filteredBrands = restrictToNxt
+          ? (data.brand_cards ?? []).filter((card) => card.name.toLowerCase().includes('nxt'))
+          : (data.brand_cards ?? []);
         const newQRs = data.quick_replies?.slice(0, 14) ?? [];
 
         setMessages(prev => {
           const next: ChatMessage[] = [...prev];
           if (data.status === 'ok') {
             if (data.reply) next.push({ kind: 'text', role: 'bot', text: data.reply });
-            if (data.product_cards?.length)
-              next.push({ kind: 'cards', cards: data.product_cards });
-            if (data.brand_cards?.length)
+            if (filteredProducts.length)
+              next.push({ kind: 'cards', cards: filteredProducts });
+            if (filteredBrands.length)
               next.push({
                 kind: 'brand_cards',
-                cards: data.brand_cards.slice(0, 10),
+                cards: filteredBrands.slice(0, 10),
                 viewAllUrl: data.brand_view_all_url ?? '',
               });
             if (data.category_cards?.length)

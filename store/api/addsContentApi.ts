@@ -6,11 +6,20 @@ export interface AddsContentItem {
   video_url?: string | null
   date_created?: string | null
   status?: number
+  page?: string | null
   created_at?: string | null
 }
 
 export const addsContentApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
+    getAddsContentPublic: builder.query<{ items: AddsContentItem[] }, { page?: string } | void>({
+      query: (params) => ({
+        url: '/api/web-pages/adds-content',
+        method: 'GET',
+        params: params?.page ? { page: params.page } : undefined,
+      }),
+      providesTags: ['WebPages'],
+    }),
     getAddsContent: builder.query<{ items: AddsContentItem[] }, void>({
       query: () => ({
         url: '/api/admin/webpages/adds-content',
@@ -42,7 +51,21 @@ export const addsContentApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['WebPages'],
     }),
+    deleteAddsContent: builder.mutation<{ message: string; id: number }, { id: number }>({
+      query: ({ id }) => ({
+        url: `/api/admin/webpages/adds-content/${id}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['WebPages'],
+    }),
   }),
 })
 
-export const { useGetAddsContentQuery, useCreateAddsContentMutation, useUpdateAddsContentStatusMutation, useUpdateAddsContentMutation } = addsContentApi
+export const {
+  useGetAddsContentPublicQuery,
+  useGetAddsContentQuery,
+  useCreateAddsContentMutation,
+  useUpdateAddsContentStatusMutation,
+  useUpdateAddsContentMutation,
+  useDeleteAddsContentMutation,
+} = addsContentApi

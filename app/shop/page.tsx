@@ -6,6 +6,7 @@ import Footer from "@/components/layout/Footer"
 import Navbar from "@/components/layout/Navbar"
 import TopBar from "@/components/layout/TopBar"
 import TrustBar from "@/components/layout/TrustBar"
+import AdsPopup from "@/components/shop/AdsPopup"
 import ShopBuilderSections, { type ShopBuilderApiResponse } from "@/components/sections/ShopBuilderSections"
 import { getNavbarCategories } from '@/libs/serverStorefront'
 
@@ -69,6 +70,7 @@ const ShopPage = async () => {
       <TopBar />
       <Navbar initialCategories={navbarCategories} />
       <TrustBar />
+      <AdsPopup />
       <ShopBuilderSections data={shopBuilderData} />
       <Footer />
     </div>

@@ -1,5 +1,5 @@
 import { buildPageMetadata } from '@/app/seo'
-import UnderMaintenancePage from '@/components/superAdmin/UnderMaintenancePage'
+import AdminSecuritySettingsPageMain from '@/components/superAdmin/settings/AdminSecuritySettingsPageMain'
 
 export const metadata = buildPageMetadata({
   title: 'Admin Settings Security',
@@ -9,10 +9,5 @@ export const metadata = buildPageMetadata({
 })
 
 export default function AdminSettingsSecurityPage() {
-  return (
-    <UnderMaintenancePage
-      title="Security Settings"
-      description="Security controls and audit preferences are still being built."
-    />
-  )
+  return <AdminSecuritySettingsPageMain />
 }
