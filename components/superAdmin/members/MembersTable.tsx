@@ -15,8 +15,22 @@ const avatarColors = [
   'bg-teal-500', 'bg-blue-500', 'bg-purple-500', 'bg-pink-500',
   'bg-orange-500', 'bg-green-500', 'bg-indigo-500', 'bg-rose-500',
 ]
-const getAvatarColor = (name: string) => avatarColors[name.charCodeAt(0) % avatarColors.length]
-const getInitials = (name: string) => name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+const getAvatarColor = (name: string) => {
+  const safeName = name.trim()
+  const index = safeName ? safeName.charCodeAt(0) % avatarColors.length : 0
+  return avatarColors[index]
+}
+const getInitials = (name: string) => {
+  const initials = name
+    .split(' ')
+    .filter(Boolean)
+    .map((n) => n[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2)
+
+  return initials || 'MB'
+}
 const RECENT_MEMBER_DAYS = 7
 
 function getRecentMemberMeta(joinedAt?: string) {
