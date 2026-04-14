@@ -10,8 +10,12 @@ interface MembersToolbarProps {
   onStatus: (v: 'all' | MemberStatus) => void
   tier: 'all' | MemberTier
   onTier: (v: 'all' | MemberTier) => void
-  sort: 'default' | 'earnings_low_high' | 'earnings_high_low' | 'referrals_high_low'
-  onSort: (v: 'default' | 'earnings_low_high' | 'earnings_high_low' | 'referrals_high_low') => void
+  registration: 'all' | 'new' | 'referred' | 'direct'
+  onRegistration: (v: 'all' | 'new' | 'referred' | 'direct') => void
+  profilePhoto: 'all' | 'with_photo' | 'no_photo'
+  onProfilePhoto: (v: 'all' | 'with_photo' | 'no_photo') => void
+  sort: 'default' | 'newest_registered' | 'oldest_registered' | 'earnings_low_high' | 'earnings_high_low' | 'referrals_high_low'
+  onSort: (v: 'default' | 'newest_registered' | 'oldest_registered' | 'earnings_low_high' | 'earnings_high_low' | 'referrals_high_low') => void
   resultCount: number
   onExport: () => void
   isExporting?: boolean
@@ -34,11 +38,26 @@ const tierOptions: Array<{ value: 'all' | MemberTier; label: string }> = [
   { value: 'Lifestyle Elite', label: 'Lifestyle Elite' },
 ]
 
+const registrationOptions: Array<{ value: 'all' | 'new' | 'referred' | 'direct'; label: string }> = [
+  { value: 'all', label: 'All Members' },
+  { value: 'new', label: 'New Members' },
+  { value: 'referred', label: 'Referred Members' },
+  { value: 'direct', label: 'Direct Signups' },
+]
+
+const profilePhotoOptions: Array<{ value: 'all' | 'with_photo' | 'no_photo'; label: string }> = [
+  { value: 'all', label: 'All Avatars' },
+  { value: 'with_photo', label: 'With Avatar URL' },
+  { value: 'no_photo', label: 'No Avatar URL' },
+]
+
 const sortOptions: Array<{
-  value: 'default' | 'earnings_low_high' | 'earnings_high_low' | 'referrals_high_low'
+  value: 'default' | 'newest_registered' | 'oldest_registered' | 'earnings_low_high' | 'earnings_high_low' | 'referrals_high_low'
   label: string
 }> = [
   { value: 'default', label: 'Default Sort' },
+  { value: 'newest_registered', label: 'Newest Registered' },
+  { value: 'oldest_registered', label: 'Oldest Registered' },
   { value: 'earnings_low_high', label: 'Earnings: Low to High' },
   { value: 'earnings_high_low', label: 'Earnings: High to Low' },
   { value: 'referrals_high_low', label: 'Highest Referrals' },
@@ -90,13 +109,17 @@ const MembersToolbar = ({
   onStatus,
   tier,
   onTier,
+  registration,
+  onRegistration,
+  profilePhoto,
+  onProfilePhoto,
   sort,
   onSort,
   resultCount,
   onExport,
   isExporting = false,
 }: MembersToolbarProps) => {
-  const hasFilter = search !== '' || status !== 'all' || tier !== 'all' || sort !== 'default'
+  const hasFilter = search !== '' || status !== 'all' || tier !== 'all' || registration !== 'all' || profilePhoto !== 'all' || sort !== 'default'
 
   return (
     <Card className="border border-slate-200 bg-white shadow-none">
@@ -128,6 +151,8 @@ const MembersToolbar = ({
                 onSearch('')
                 onStatus('all')
                 onTier('all')
+                onRegistration('all')
+                onProfilePhoto('all')
                 onSort('default')
               }}
               isDisabled={!hasFilter}
@@ -140,12 +165,17 @@ const MembersToolbar = ({
               isDisabled={isExporting}
               className="rounded-xl bg-teal-600 text-white transition hover:bg-teal-700 disabled:bg-teal-300"
             >
-              {isExporting ? 'Exporting...' : 'Export CSV'}
+              {isExporting ? (
+                <span className="inline-flex items-center gap-2">
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/35 border-t-white" />
+                  <span>Export CSV</span>
+                </span>
+              ) : 'Export CSV'}
             </Button>
           </div>
         </div>
 
-        <div className="grid gap-3 md:grid-cols-3">
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
           <ToolbarSelect
             ariaLabel="Filter members by status"
             value={status}
@@ -159,10 +189,22 @@ const MembersToolbar = ({
             onChange={(value) => onTier(value as 'all' | MemberTier)}
           />
           <ToolbarSelect
+            ariaLabel="Filter members by registration source"
+            value={registration}
+            options={registrationOptions}
+            onChange={(value) => onRegistration(value as 'all' | 'new' | 'referred' | 'direct')}
+          />
+          <ToolbarSelect
+            ariaLabel="Filter members by profile photo"
+            value={profilePhoto}
+            options={profilePhotoOptions}
+            onChange={(value) => onProfilePhoto(value as 'all' | 'with_photo' | 'no_photo')}
+          />
+          <ToolbarSelect
             ariaLabel="Sort members"
             value={sort}
             options={sortOptions}
-            onChange={(value) => onSort(value as 'default' | 'earnings_low_high' | 'earnings_high_low' | 'referrals_high_low')}
+            onChange={(value) => onSort(value as 'default' | 'newest_registered' | 'oldest_registered' | 'earnings_low_high' | 'earnings_high_low' | 'referrals_high_low')}
           />
         </div>
 

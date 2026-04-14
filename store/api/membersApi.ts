@@ -21,6 +21,7 @@ export interface MembersStatsResponse {
   active: number
   pending: number
   blocked: number
+  newMembers: number
   totalSpent: number
   totalEarnings: number
   totalReferrals: number
@@ -61,7 +62,9 @@ interface MembersQueryParams {
   search?: string
   status?: MemberStatus
   tier?: MemberTier
-  sort?: 'default' | 'earnings_low_high' | 'earnings_high_low' | 'referrals_high_low'
+  registration?: 'new' | 'referred' | 'direct'
+  profilePhoto?: 'with_photo' | 'no_photo'
+  sort?: 'default' | 'newest_registered' | 'oldest_registered' | 'earnings_low_high' | 'earnings_high_low' | 'referrals_high_low'
 }
 
 export interface UpdateMemberPayload {
@@ -154,6 +157,8 @@ export const membersApi = baseApi.injectEndpoints({
           q: params?.search,
           status: params?.status,
           tier: params?.tier,
+          registration: params?.registration,
+          profile_photo: params?.profilePhoto,
           sort: params?.sort,
         },
       }),

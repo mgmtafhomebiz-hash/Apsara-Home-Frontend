@@ -38,6 +38,49 @@ const parseIdList = (value: string) =>
     .map((item) => Number.parseInt(item.trim(), 10))
     .filter((item) => Number.isFinite(item) && item > 0)
 
+const slugifyProductName = (value: string) =>
+  value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+
+const buildProductLink = (product: Pick<Product, 'id' | 'name'>) =>
+  `/product/${slugifyProductName(product.name)}-i${product.id}`
+
+const getFeaturedProducts = (featuredCollection: WebPageItem | undefined, products: Product[]) => {
+  const sourceCategoryId = Number.parseInt(getField(featuredCollection, 'source_category_id'), 10)
+  const categoryProducts = Number.isFinite(sourceCategoryId) && sourceCategoryId > 0
+    ? products.filter((item) => item.catid === sourceCategoryId)
+    : []
+
+  if (categoryProducts.length > 0) {
+    return categoryProducts.slice(0, 4)
+  }
+
+  return parseIdList(getField(featuredCollection, 'product_ids'))
+    .map((id) => products.find((item) => item.id === id))
+    .filter((item): item is Product => Boolean(item))
+    .slice(0, 4)
+}
+
+const resolveCategoryCardImage = ({
+  section,
+  categoryId,
+  slotIndex,
+  categoryImage,
+}: {
+  section: WebPageItem | undefined
+  categoryId: number
+  slotIndex?: number
+  categoryImage?: string | null
+}) =>
+  getField(section, `category_image_${categoryId}`) ||
+  (typeof slotIndex === 'number' ? getField(section, `card_${slotIndex + 1}_image`) : '') ||
+  categoryImage ||
+  fallbackImage
+
 export type ShopBuilderSectionsData = {
   items: WebPageItem[]
   categories: Category[]
@@ -94,7 +137,12 @@ export default function ShopBuilderSections({ data = null, partnerSlug, allowedC
         name: category.name,
         url: buildPartnerCategoryLink(partnerSlug, category),
         count: category.product_count ?? 0,
-        image: getField(categoryGrid, `card_${index + 1}_image`) || category.image || fallbackImage,
+        image: resolveCategoryCardImage({
+          section: categoryGrid,
+          categoryId: category.id,
+          slotIndex: index,
+          categoryImage: category.image,
+        }),
       }
     })
     .filter((item): item is NonNullable<typeof item> => Boolean(item))
@@ -104,29 +152,28 @@ export default function ShopBuilderSections({ data = null, partnerSlug, allowedC
   const partnerCategoryCards = partnerSlug
     ? categories
       .filter((category) => partnerAllowedSet.has(category.id))
-      .map((category) => ({
+      .map((category, index) => ({
         id: category.id,
         name: category.name,
         url: buildPartnerCategoryLink(partnerSlug, category),
         count: category.product_count ?? 0,
-        image: category.image || fallbackImage,
+        image: resolveCategoryCardImage({
+          section: categoryGrid,
+          categoryId: category.id,
+          slotIndex: index,
+          categoryImage: category.image,
+        }),
       }))
     : []
 
   const allCategoryCards = partnerSlug ? partnerCategoryCards : selectedCategoryCards
 
-  const featuredProducts = parseIdList(getField(featuredCollection, 'product_ids'))
-    .map((id) => products.find((item) => item.id === id))
-    .filter((item): item is Product => Boolean(item))
-    .slice(0, 4)
-  const fallbackFeaturedProducts = featuredProducts.length > 0
-    ? featuredProducts
-    : products.slice(0, 4)
+  const featuredProducts = getFeaturedProducts(featuredCollection, products)
 
   return (
     <>
       {announcements ? <AnnouncementsSection section={announcements} /> : null}
-      {campaignBanners ? <CampaignBannersSection section={campaignBanners} partnerSlug={partnerSlug} /> : null}
+      {campaignBanners ? <CampaignBannersSection section={campaignBanners} categories={categories} products={products} partnerSlug={partnerSlug} /> : null}
 
       {categoryGrid && allCategoryCards.length > 0 && (!partnerSlug || partnerAllowedIds.length > 0) ? (
         <CategoryGridSection
@@ -141,7 +188,8 @@ export default function ShopBuilderSections({ data = null, partnerSlug, allowedC
       {featuredCollection ? (
         <FeaturedCollectionSection
           section={featuredCollection}
-          featuredProducts={fallbackFeaturedProducts}
+          featuredProducts={featuredProducts}
+          categories={categories}
           partnerSlug={partnerSlug}
         />
       ) : (
@@ -188,21 +236,37 @@ function AnnouncementsSection({ section }: { section: WebPageItem }) {
   )
 }
 
-function CampaignBannersSection({ section, partnerSlug }: { section: WebPageItem; partnerSlug?: string }) {
-  const banners = [
-    {
-      title: getField(section, 'left_title') || 'Weekend Furniture Drop',
-      subtitle: getField(section, 'left_subtitle') || 'Refresh your living room this week',
-      image: getField(section, 'left_image') || fallbackImage,
-      link: buildPartnerShopLink(getField(section, 'left_link') || '/shop', partnerSlug),
-    },
-    {
-      title: getField(section, 'right_title') || 'Appliance Upgrade Days',
-      subtitle: getField(section, 'right_subtitle') || 'Choose your best appliance today',
-      image: getField(section, 'right_image') || '/Images/PromoBanners/ct2-img2-large.jpg',
-      link: buildPartnerShopLink(getField(section, 'right_link') || '/shop', partnerSlug),
-    },
-  ]
+function CampaignBannersSection({
+  section,
+  categories,
+  products,
+  partnerSlug,
+}: {
+  section: WebPageItem
+  categories: Category[]
+  products: Product[]
+  partnerSlug?: string
+}) {
+  const videoUrl = getField(section, 'video_url')
+  const posterUrl = getField(section, 'video_poster') || fallbackImage
+  const eyebrow = getField(section, 'video_eyebrow') || 'Top Promos'
+  const title = getField(section, 'video_title') || 'Weekend Furniture Drop'
+  const subtitle = getField(section, 'video_subtitle') || 'Refresh your living room this week'
+  const buttonText = getField(section, 'video_button') || 'Explore Now'
+  const linkType = getField(section, 'link_type') || 'category'
+  const linkCategoryId = Number.parseInt(getField(section, 'link_category_id'), 10)
+  const linkProductId = Number.parseInt(getField(section, 'link_product_id'), 10)
+  const linkCategory = Number.isFinite(linkCategoryId) && linkCategoryId > 0
+    ? categories.find((category) => category.id === linkCategoryId)
+    : undefined
+  const linkProduct = Number.isFinite(linkProductId) && linkProductId > 0
+    ? products.find((product) => product.id === linkProductId)
+    : undefined
+  const link = linkType === 'product' && linkProduct
+    ? buildProductLink(linkProduct)
+    : linkType === 'category' && linkCategory
+      ? buildPartnerCategoryLink(partnerSlug, linkCategory)
+      : buildPartnerShopLink(getField(section, 'video_link') || '/shop', partnerSlug)
 
   return (
     <motion.section
@@ -210,28 +274,53 @@ function CampaignBannersSection({ section, partnerSlug }: { section: WebPageItem
       transition={{ duration: 0.5, delay: 0.04 }}
       className="container mx-auto px-4 py-6"
     >
-      <div className="grid gap-3 md:grid-cols-2">
-        <AnimatePresence initial={false}>
-          {banners.map((banner, index) => (
-            <motion.div
-              key={`${banner.title}-${banner.image}`}
-              initial={{ opacity: 0, y: 26, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -18, scale: 0.98 }}
-              transition={{ duration: 0.42, delay: index * 0.08 }}
-            >
-              <Link href={banner.link} className="group relative block overflow-hidden rounded-3xl border border-slate-200 bg-slate-200 p-5">
-            <Image src={banner.image} alt={banner.title} fill className="object-cover transition-transform duration-700 group-hover:scale-105" unoptimized />
-            <div className="absolute inset-0 bg-gradient-to-r from-slate-950/75 to-slate-900/20" />
-            <div className="relative flex min-h-[170px] flex-col justify-end text-white">
-              <p className="text-xl font-bold">{banner.title}</p>
-              <p className="mt-1 max-w-[240px] text-sm text-white/80">{banner.subtitle}</p>
+      <motion.div
+        initial={{ opacity: 0, y: 26, scale: 0.985 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.45 }}
+      >
+        <Link href={link} className="group relative block overflow-hidden rounded-[32px] border border-slate-200 bg-slate-950 shadow-[0_24px_60px_rgba(15,23,42,0.14)]">
+          <div className="relative aspect-[21/8] min-h-[240px] w-full md:min-h-[300px]">
+            {videoUrl ? (
+              <video
+                src={videoUrl}
+                poster={posterUrl}
+                className="absolute inset-0 h-full w-full scale-[1.06] object-cover object-center transition-transform duration-700 group-hover:scale-[1.1]"
+                autoPlay
+                muted
+                loop
+                playsInline
+              />
+            ) : (
+              <Image
+                src={posterUrl}
+                alt={title}
+                fill
+                className="object-cover transition-transform duration-700 group-hover:scale-[1.02]"
+                unoptimized
+              />
+            )}
+            <div className="absolute inset-0 bg-gradient-to-r from-slate-950/80 via-slate-950/45 to-slate-950/10" />
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/40 via-transparent to-transparent" />
+            <div className="relative flex h-full items-end p-6 md:p-8">
+              <div className="max-w-xl text-white">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-cyan-300">
+                  {eyebrow}
+                </p>
+                <h2 className="mt-3 text-2xl font-bold leading-tight md:text-4xl">
+                  {title}
+                </h2>
+                <p className="mt-3 max-w-lg text-sm text-white/80 md:text-base">
+                  {subtitle}
+                </p>
+                <span className="mt-5 inline-flex rounded-xl bg-white/12 px-5 py-3 text-sm font-semibold text-white ring-1 ring-inset ring-white/20 backdrop-blur-sm transition group-hover:bg-white/18">
+                  {buttonText}
+                </span>
+              </div>
             </div>
-              </Link>
-            </motion.div>
-          ))}
-        </AnimatePresence>
-      </div>
+          </div>
+        </Link>
+      </motion.div>
     </motion.section>
   )
 }
@@ -288,13 +377,21 @@ function CategoryGridSection({
 function FeaturedCollectionSection({
   section,
   featuredProducts,
+  categories,
   partnerSlug,
 }: {
   section: WebPageItem
   featuredProducts: Product[]
+  categories: Category[]
   partnerSlug?: string
 }) {
-  const buttonLink = buildPartnerShopLink(getField(section, 'lead_link') || '/shop', partnerSlug)
+  const sourceCategoryId = Number.parseInt(getField(section, 'source_category_id'), 10)
+  const sourceCategory = Number.isFinite(sourceCategoryId) && sourceCategoryId > 0
+    ? categories.find((category) => category.id === sourceCategoryId)
+    : undefined
+  const buttonLink = sourceCategory
+    ? buildPartnerCategoryLink(partnerSlug, sourceCategory)
+    : buildPartnerShopLink(getField(section, 'lead_link') || '/shop', partnerSlug)
   const buttonText = section.button_text || 'Shop Collection'
 
   return (

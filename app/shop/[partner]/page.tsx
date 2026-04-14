@@ -91,7 +91,7 @@ async function getPartnerStorefrontData(partnerSlug: string, selectedCategoryId?
         headers: { Accept: 'application/json' },
         cache: 'no-store',
       }),
-      fetch(`${apiUrl}/api/products?page=1&per_page=100&status=1`, {
+      fetch(`${apiUrl}/api/products?page=1&per_page=200&status=1`, {
         method: 'GET',
         headers: { Accept: 'application/json' },
         cache: 'no-store',

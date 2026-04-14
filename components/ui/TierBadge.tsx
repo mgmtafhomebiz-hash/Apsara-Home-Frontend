@@ -1,56 +1,69 @@
+import Image from 'next/image'
 import { MemberTier } from '@/types/members/types'
 
 type TierBadgeProps = {
-  tier: MemberTier
+  tier: MemberTier | string
   className?: string
 }
 
-const tierBadgeConfig: Record<MemberTier, { label: string; icon: string; className: string; dot: string }> = {
+const tierBadgeConfig: Record<MemberTier, { label: string; imageSrc: string; imageAlt: string }> = {
   'Home Starter': {
     label: 'Home Starter',
-    icon: 'HS',
-    className: 'bg-slate-100 text-slate-700 border-slate-200',
-    dot: 'bg-slate-400',
+    imageSrc: '/Badge/homeStarter.png',
+    imageAlt: 'Home Starter badge',
   },
   'Home Builder': {
     label: 'Home Builder',
-    icon: 'HB',
-    className: 'bg-emerald-100 text-emerald-700 border-emerald-200',
-    dot: 'bg-emerald-400',
+    imageSrc: '/Badge/homeBuilder.png',
+    imageAlt: 'Home Builder badge',
   },
   'Home Stylist': {
     label: 'Home Stylist',
-    icon: 'HY',
-    className: 'bg-sky-100 text-sky-700 border-sky-200',
-    dot: 'bg-sky-400',
+    imageSrc: '/Badge/homeStylist.png',
+    imageAlt: 'Home Stylist badge',
   },
   'Lifestyle Consultant': {
     label: 'Lifestyle Consultant',
-    icon: 'LC',
-    className: 'bg-violet-100 text-violet-700 border-violet-200',
-    dot: 'bg-violet-400',
+    imageSrc: '/Badge/lifestyleConsultant.png',
+    imageAlt: 'Lifestyle Consultant badge',
   },
   'Lifestyle Elite': {
     label: 'Lifestyle Elite',
-    icon: 'LE',
-    className: 'bg-amber-100 text-amber-700 border-amber-200',
-    dot: 'bg-amber-400',
+    imageSrc: '/Badge/lifestyleElite.png',
+    imageAlt: 'Lifestyle Elite badge',
   },
 }
 
 export default function TierBadge({ tier, className = '' }: TierBadgeProps) {
-  const cfg = tierBadgeConfig[tier]
+  const cfg = tierBadgeConfig[tier as MemberTier]
+
+  if (!cfg) {
+    return (
+      <span
+        className={`inline-flex items-center justify-center ${className}`.trim()}
+        title={String(tier || 'Unknown tier')}
+      >
+        <span className="inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-slate-100 text-[10px] font-bold uppercase text-slate-500">
+          N/A
+        </span>
+      </span>
+    )
+  }
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold ${cfg.className} ${className}`.trim()}
-      title={`${cfg.label} tier`}
+      className={`inline-flex items-center justify-center ${className}`.trim()}
+      title={cfg.label}
     >
-      <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${cfg.dot}`} />
-      <span className="inline-flex h-4 min-w-4 items-center justify-center rounded-md bg-white/70 px-1 text-[10px] font-bold">
-        {cfg.icon}
+      <span className="relative h-14 w-14 shrink-0 overflow-hidden">
+        <Image
+          src={cfg.imageSrc}
+          alt={cfg.imageAlt}
+          fill
+          sizes="56px"
+          className="object-contain"
+        />
       </span>
-      <span>{cfg.label}</span>
     </span>
   )
 }

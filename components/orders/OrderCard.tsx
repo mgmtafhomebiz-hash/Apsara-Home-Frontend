@@ -49,6 +49,15 @@ const copyText = async (value: string) => {
     await navigator.clipboard.writeText(value);
 };
 
+const formatCourierLabel = (courier?: string | null) => {
+    const normalized = String(courier ?? '').trim().toLowerCase();
+    if (normalized === 'afhome') return 'AF Home';
+    if (normalized === 'jnt') return 'J&T';
+    if (normalized === 'xde') return 'XDE';
+    if (normalized === 'zq') return 'ZQ';
+    return courier ?? '';
+};
+
 const slugify = (value: string) =>
     value
       .toLowerCase()
@@ -398,7 +407,7 @@ const OrderCard = ({ order }: OrderCardProps) => {
                   <p className="text-xs font-bold uppercase tracking-widest text-teal-700">Shipment Details</p>
                   {order.courier && (
                     <p className="text-xs text-gray-700">
-                      Courier: <span className="font-semibold uppercase">{order.courier}</span>
+                      Courier: <span className="font-semibold">{formatCourierLabel(order.courier)}</span>
                     </p>
                   )}
                   {order.shipment_status && (
