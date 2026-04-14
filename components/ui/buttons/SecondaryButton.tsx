@@ -22,7 +22,7 @@ export default function SecondaryButton({
 
   if (href) {
     return (
-      <Link href={href} className={base}>
+      <Link href={href} onClick={onClick} className={base}>
         {children}
       </Link>
     );
