@@ -73,6 +73,7 @@ export const webPagesApi = baseApi.injectEndpoints({
       query: (type) => ({
         url: `/api/web-pages/${type}`,
         method: 'GET',
+        cache: 'no-store',
       }),
       providesTags: ['WebPages'],
     }),
@@ -80,6 +81,7 @@ export const webPagesApi = baseApi.injectEndpoints({
       query: ({ type, page = 1, perPage = 20, search, status = 'all' }) => ({
         url: `/api/admin/web-pages/${type}`,
         method: 'GET',
+        cache: 'no-store',
         params: {
           page,
           per_page: perPage,

@@ -1,21 +1,58 @@
 'use client'
 
-import { useState } from 'react'
-import { showSuccessToast } from '@/libs/toast'
+import { useEffect, useRef, useState } from 'react'
+import { showErrorToast, showSuccessToast } from '@/libs/toast'
+import {
+  useGetAdminGeneralSettingsQuery,
+  useUpdateAdminGeneralSettingsMutation,
+} from '@/store/api/adminSettingsApi'
 
 export default function AdminGeneralSettingsPageMain() {
+  const { data, isFetching } = useGetAdminGeneralSettingsQuery()
+  const [saveSettings, { isLoading: isSaving }] = useUpdateAdminGeneralSettingsMutation()
+  const hasHydrated = useRef(false)
+
   const [systemName, setSystemName] = useState('Apsara Home')
   const [companyName, setCompanyName] = useState('')
   const [supportEmail, setSupportEmail] = useState('')
   const [contactNumber, setContactNumber] = useState('')
   const [address, setAddress] = useState('')
+  const [branches, setBranches] = useState<{ name: string; address: string }[]>([])
+  const [isBranchesModalOpen, setIsBranchesModalOpen] = useState(false)
+  const [branchDraftName, setBranchDraftName] = useState('')
+  const [branchDraftAddress, setBranchDraftAddress] = useState('')
   const [logoFile, setLogoFile] = useState<File | null>(null)
   const [faviconFile, setFaviconFile] = useState<File | null>(null)
+  const [logoUrl, setLogoUrl] = useState<string | null>(null)
+  const [faviconUrl, setFaviconUrl] = useState<string | null>(null)
 
   const [timezone, setTimezone] = useState('Asia/Manila')
   const [currency, setCurrency] = useState('PHP')
   const [dateFormat, setDateFormat] = useState('MM/DD/YYYY')
   const [language, setLanguage] = useState('English')
+
+  useEffect(() => {
+    if (!data?.settings || hasHydrated.current) return
+    const settings = data.settings
+    setSystemName(settings.system_name || 'Apsara Home')
+    setCompanyName(settings.company_name || '')
+    setSupportEmail(settings.support_email || '')
+    setContactNumber(settings.contact_number || '')
+    setAddress(settings.address || '')
+    try {
+      const parsed = settings.branches ? JSON.parse(settings.branches) : []
+      setBranches(Array.isArray(parsed) ? parsed : [])
+    } catch {
+      setBranches([])
+    }
+    setLogoUrl(settings.logo_url ?? null)
+    setFaviconUrl(settings.favicon_url ?? null)
+    setTimezone(settings.timezone || 'Asia/Manila')
+    setCurrency(settings.currency || 'PHP')
+    setDateFormat(settings.date_format || 'MM/DD/YYYY')
+    setLanguage(settings.language || 'English')
+    hasHydrated.current = true
+  }, [data])
 
   return (
     <div className="space-y-8">
@@ -90,6 +127,34 @@ export default function AdminGeneralSettingsPageMain() {
             />
           </label>
 
+          <div className="space-y-3 rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-4 md:col-span-2">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Company Branches</p>
+                <p className="text-sm text-slate-600">Add office name and address entries.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsBranchesModalOpen(true)}
+                className="rounded-full bg-white px-4 py-2 text-xs font-semibold text-cyan-700 shadow-sm ring-1 ring-cyan-100 transition hover:shadow-md"
+              >
+                Manage Branches
+              </button>
+            </div>
+            {branches.length === 0 ? (
+              <p className="text-sm text-slate-500">No branches added yet.</p>
+            ) : (
+              <ul className="space-y-2 text-sm text-slate-700">
+                {branches.map((branch, index) => (
+                  <li key={`${branch.name}-${index}`} className="rounded-xl border border-slate-200 bg-white px-3 py-2">
+                    <p className="font-semibold text-slate-800">{branch.name}</p>
+                    <p className="text-xs text-slate-500">{branch.address}</p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
           <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-4">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Upload Logo</p>
             <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
@@ -109,6 +174,12 @@ export default function AdminGeneralSettingsPageMain() {
               </label>
               <span className="text-xs text-slate-500">{logoFile ? logoFile.name : 'No file selected'}</span>
             </div>
+            {logoUrl ? (
+              <div className="mt-3 flex items-center gap-3 rounded-2xl border border-dashed border-slate-200 bg-white/80 px-3 py-2 text-xs text-slate-500">
+                <img src={logoUrl} alt="Current logo" className="h-8 w-8 rounded-md object-contain" />
+                <span>Current logo uploaded.</span>
+              </div>
+            ) : null}
           </div>
 
           <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-4">
@@ -130,6 +201,12 @@ export default function AdminGeneralSettingsPageMain() {
               </label>
               <span className="text-xs text-slate-500">{faviconFile ? faviconFile.name : 'No file selected'}</span>
             </div>
+            {faviconUrl ? (
+              <div className="mt-3 flex items-center gap-3 rounded-2xl border border-dashed border-slate-200 bg-white/80 px-3 py-2 text-xs text-slate-500">
+                <img src={faviconUrl} alt="Current favicon" className="h-8 w-8 rounded-md object-contain" />
+                <span>Current favicon uploaded.</span>
+              </div>
+            ) : null}
           </div>
         </div>
       </div>
@@ -197,14 +274,136 @@ export default function AdminGeneralSettingsPageMain() {
       <div className="flex flex-wrap items-center justify-end gap-3">
         <button
           type="button"
-          onClick={() => {
-            showSuccessToast('Settings saved (MVP).')
+          onClick={async () => {
+            const payload = new FormData()
+            payload.append('system_name', systemName)
+            payload.append('company_name', companyName)
+            payload.append('support_email', supportEmail)
+            payload.append('contact_number', contactNumber)
+            payload.append('address', address)
+            payload.append('branches', JSON.stringify(branches))
+            payload.append('timezone', timezone)
+            payload.append('currency', currency)
+            payload.append('date_format', dateFormat)
+            payload.append('language', language)
+
+            if (logoFile) {
+              payload.append('logo', logoFile)
+            }
+            if (faviconFile) {
+              payload.append('favicon', faviconFile)
+            }
+
+            try {
+              const response = await saveSettings(payload).unwrap()
+              setLogoUrl(response.settings.logo_url ?? null)
+              setFaviconUrl(response.settings.favicon_url ?? null)
+              setLogoFile(null)
+              setFaviconFile(null)
+              showSuccessToast(response.message || 'Settings saved.')
+            } catch (error) {
+              console.error(error)
+              showErrorToast('Failed to save settings. Please try again.')
+            }
           }}
-          className="rounded-full bg-gradient-to-r from-cyan-600 to-sky-500 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:shadow-md"
+          disabled={isSaving || isFetching}
+          className="rounded-full bg-gradient-to-r from-cyan-600 to-sky-500 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60"
         >
-          Save Settings
+          {isSaving ? 'Saving...' : 'Save Settings'}
         </button>
       </div>
+
+      {isBranchesModalOpen ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 py-10">
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setIsBranchesModalOpen(false)} />
+          <div className="relative w-full max-w-2xl rounded-3xl border border-slate-200 bg-white p-6 shadow-xl">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Branches</p>
+                <h3 className="mt-2 text-lg font-bold text-slate-900">Company Offices</h3>
+                <p className="mt-1 text-sm text-slate-500">Add office name and address details.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsBranchesModalOpen(false)}
+                className="rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-600"
+              >
+                Close
+              </button>
+            </div>
+
+            <div className="mt-6 space-y-4">
+              <div className="grid gap-4 md:grid-cols-2">
+                <label className="space-y-2 text-sm font-semibold text-slate-700">
+                  Office Name
+                  <input
+                    value={branchDraftName}
+                    onChange={(event) => setBranchDraftName(event.target.value)}
+                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-800 shadow-sm focus:border-cyan-300 focus:outline-none focus:ring-2 focus:ring-cyan-100"
+                    placeholder="Main Office"
+                  />
+                </label>
+                <label className="space-y-2 text-sm font-semibold text-slate-700">
+                  Office Address
+                  <input
+                    value={branchDraftAddress}
+                    onChange={(event) => setBranchDraftAddress(event.target.value)}
+                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-800 shadow-sm focus:border-cyan-300 focus:outline-none focus:ring-2 focus:ring-cyan-100"
+                    placeholder="123 Makati Ave, Metro Manila"
+                  />
+                </label>
+              </div>
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!branchDraftName.trim() || !branchDraftAddress.trim()) {
+                      showErrorToast('Please add both office name and address.')
+                      return
+                    }
+                    setBranches((prev) => [
+                      ...prev,
+                      { name: branchDraftName.trim(), address: branchDraftAddress.trim() },
+                    ])
+                    setBranchDraftName('')
+                    setBranchDraftAddress('')
+                  }}
+                  className="rounded-full bg-gradient-to-r from-cyan-600 to-sky-500 px-5 py-2 text-xs font-semibold text-white shadow-sm transition hover:shadow-md"
+                >
+                  Add Branch
+                </button>
+              </div>
+            </div>
+
+            <div className="mt-6 space-y-3">
+              {branches.length === 0 ? (
+                <p className="text-sm text-slate-500">No branches added yet.</p>
+              ) : (
+                branches.map((branch, index) => (
+                  <div
+                    key={`${branch.name}-${index}`}
+                    className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3"
+                  >
+                    <div>
+                      <p className="text-sm font-semibold text-slate-800">{branch.name}</p>
+                      <p className="text-xs text-slate-500">{branch.address}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setBranches((prev) => prev.filter((_, idx) => idx !== index))
+                      }}
+                      className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-rose-600 shadow-sm ring-1 ring-rose-100"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   )
 }

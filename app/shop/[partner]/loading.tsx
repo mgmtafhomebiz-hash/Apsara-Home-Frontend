@@ -43,7 +43,7 @@ export default function PartnerShopLoading() {
             width={110}
             height={110}
             priority
-            className="object-contain drop-shadow-xl"
+            className="object-contain drop-shadow-xl mix-blend-multiply"
           />
         </div>
       </div>
