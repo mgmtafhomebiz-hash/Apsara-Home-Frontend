@@ -2,7 +2,8 @@ import { buildPageMetadata } from '@/app/seo';
 
 export const metadata = buildPageMetadata({ title: 'Shop', description: 'Browse the Shop page on AF Home.', path: '/shop' });
 
-import Footer from "@/components/layout/Footer"
+import Footer from "@/components/landing-page/Footer"
+import ScrollToTop from "@/components/landing-page/ScrollToTop"
 import Navbar from "@/components/layout/Navbar"
 import TopBar from "@/components/layout/TopBar"
 import TrustBar from "@/components/layout/TrustBar"
@@ -71,6 +72,7 @@ const ShopPage = async () => {
       <TrustBar />
       <ShopBuilderSections data={shopBuilderData} />
       <Footer />
+      <ScrollToTop />
     </div>
   )
 }
