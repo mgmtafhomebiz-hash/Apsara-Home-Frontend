@@ -120,13 +120,6 @@ export default function ByBrandPageMain() {
       {/* Page Header */}
       <div className="border-b border-gray-200 bg-white">
         <div className="container mx-auto px-4 py-6">
-          <button
-            onClick={() => router.back()}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-gray-100 px-3 py-2 text-xs font-semibold text-gray-600 ring-1 ring-gray-200 transition hover:bg-gray-200"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="15 18 9 12 15 6" /><line x1="15" y1="6" x2="9" y2="6" /></svg>
-            Back
-          </button>
           <div className="mt-4">
             <p className="text-xs font-bold uppercase tracking-[0.35em] text-orange-500">Shop by Brand</p>
             <h1 className="mt-2 text-3xl font-bold text-gray-900 sm:text-4xl">
