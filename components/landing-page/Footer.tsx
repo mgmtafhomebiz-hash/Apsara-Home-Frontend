@@ -45,7 +45,7 @@ const footerLinks = {
 
 const socialLinks = [
   { icon: Facebook, href: 'https://www.facebook.com/AFHomePH/', label: 'Facebook' },
-  { icon: Instagram, href: '#', label: 'Instagram' },
+  { icon: Instagram, href: 'https://www.instagram.com/afhome.ph/', label: 'Instagram' },
   { icon: TikTokIcon, href: 'https://www.tiktok.com/@afhomeph', label: 'TikTok' },
 ];
 
