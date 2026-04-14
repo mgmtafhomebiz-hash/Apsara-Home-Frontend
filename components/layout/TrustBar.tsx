@@ -29,7 +29,7 @@ export default function TrustBar() {
   return (
     <div className="bg-white border-b border-gray-100">
       <div className="container mx-auto px-4 py-4">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="flex flex-wrap items-center gap-1 -ml-3">
           {items.map((item, i) => (
             <motion.div
               key={item.title}
