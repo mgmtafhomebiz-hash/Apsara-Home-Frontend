@@ -117,29 +117,29 @@ export default function ByBrandPageMain() {
 
   return (
     <main className="min-h-screen bg-gray-50">
-      {/* Hero Header */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 px-4 py-20">
-        <button
-          onClick={() => router.back()}
-          className="absolute left-4 top-4 z-10 inline-flex items-center gap-1.5 rounded-xl bg-white/10 px-3 py-2 text-xs font-semibold text-white ring-1 ring-white/20 backdrop-blur-sm transition hover:bg-white/20 sm:left-6 sm:top-6"
-        >
-          ← Back
-        </button>
-        <div className="pointer-events-none absolute inset-0 opacity-10"
-          style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, #f97316 0%, transparent 50%), radial-gradient(circle at 80% 20%, #fb923c 0%, transparent 40%)' }}
-        />
-        <div className="relative container mx-auto">
-          <p className="text-xs font-bold uppercase tracking-[0.35em] text-orange-400">Shop by Brand</p>
-          <h1 className="mt-3 text-4xl font-bold text-white sm:text-5xl">
-            {selectedBrand && selectedBrandItem ? selectedBrandItem.name : 'All Brands'}
-          </h1>
-          <p className="mt-3 max-w-xl text-gray-400">
-            Browse featured product brands from the catalog. Pick a brand below to continue exploring.
-          </p>
+      {/* Page Header */}
+      <div className="border-b border-gray-200 bg-white">
+        <div className="container mx-auto px-4 py-6">
+          <button
+            onClick={() => router.back()}
+            className="inline-flex items-center gap-1.5 rounded-xl bg-gray-100 px-3 py-2 text-xs font-semibold text-gray-600 ring-1 ring-gray-200 transition hover:bg-gray-200"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="15 18 9 12 15 6" /><line x1="15" y1="6" x2="9" y2="6" /></svg>
+            Back
+          </button>
+          <div className="mt-4">
+            <p className="text-xs font-bold uppercase tracking-[0.35em] text-orange-500">Shop by Brand</p>
+            <h1 className="mt-2 text-3xl font-bold text-gray-900 sm:text-4xl">
+              {selectedBrand && selectedBrandItem ? selectedBrandItem.name : 'All Brands'}
+            </h1>
+            <p className="mt-2 text-gray-600">
+              Browse featured product brands from the catalog. Pick a brand below to continue exploring.
+            </p>
+          </div>
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-10 space-y-8">
+      <div className="container mx-auto px-4 py-8 space-y-8">
         {/* Search + Letter Filter — only when no brand selected */}
         {!selectedBrand && (
           <div className="flex flex-col gap-3">
