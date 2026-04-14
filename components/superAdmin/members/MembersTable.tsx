@@ -17,6 +17,26 @@ const avatarColors = [
 ]
 const getAvatarColor = (name: string) => avatarColors[name.charCodeAt(0) % avatarColors.length]
 const getInitials = (name: string) => name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+const RECENT_MEMBER_DAYS = 7
+
+function getRecentMemberMeta(joinedAt?: string) {
+  if (!joinedAt) {
+    return { isRecent: false, daysAgo: null as number | null }
+  }
+
+  const joinedTime = new Date(`${joinedAt}T00:00:00`).getTime()
+  if (Number.isNaN(joinedTime)) {
+    return { isRecent: false, daysAgo: null as number | null }
+  }
+
+  const diffMs = Date.now() - joinedTime
+  const daysAgo = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)))
+
+  return {
+    isRecent: daysAgo <= RECENT_MEMBER_DAYS,
+    daysAgo,
+  }
+}
 
 interface EditMemberForm {
   id: number
@@ -291,7 +311,7 @@ function MemberDetailsModal({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 bg-slate-900/45 backdrop-blur-sm p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-900/45 p-4 backdrop-blur-sm"
       onClick={onClose}
     >
       <motion.div
@@ -299,10 +319,10 @@ function MemberDetailsModal({
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 10, scale: 0.98 }}
         transition={{ duration: 0.2 }}
-        className="mx-auto mt-10 w-full max-w-xl rounded-2xl border border-slate-200 bg-white p-5 shadow-2xl"
+        className="my-auto flex max-h-[88vh] w-full max-w-xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="mb-5 flex items-start justify-between">
+        <div className="flex items-start justify-between border-b border-slate-100 px-5 py-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-teal-600">Member Details</p>
             <h3 className="mt-1 text-xl font-bold text-slate-900">{member.name}</h3>
@@ -312,6 +332,7 @@ function MemberDetailsModal({
           </Button>
         </div>
 
+        <div className="overflow-y-auto px-5 py-5">
         <div className="mb-5 flex items-center gap-4 rounded-xl border border-slate-100 bg-slate-50 p-4">
           <MemberAvatar
             member={member}
@@ -423,6 +444,7 @@ function MemberDetailsModal({
             <p className="text-xs text-slate-500">Joined</p>
             <p className="mt-1 font-semibold text-slate-800">{member.joinedAt}</p>
           </div>
+        </div>
         </div>
       </motion.div>
     </motion.div>
@@ -750,6 +772,8 @@ const MembersTable = ({
               exit="exit"
             >
               {rows.map((member) => {
+                const recentMeta = getRecentMemberMeta(member.joinedAt)
+
                 return (
                   <motion.tr
                     key={member.id}
@@ -765,8 +789,20 @@ const MembersTable = ({
                           initialsClassName="text-white font-bold text-xs"
                         />
                         <div className="min-w-0">
-                          <p className="font-semibold text-slate-800 text-sm truncate">{member.name}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="font-semibold text-slate-800 text-sm truncate">{member.name}</p>
+                            {recentMeta.isRecent && (
+                              <Chip size="sm" variant="soft" className="h-5 border border-blue-100 bg-blue-50 px-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-blue-700">
+                                New
+                              </Chip>
+                            )}
+                          </div>
                           <p className="text-xs text-slate-400 truncate">{member.email}</p>
+                          {member.referredByName && (
+                            <p className="text-[11px] text-teal-600 truncate">
+                              Referred by {member.referredByName}{member.referredByUsername ? ` (@${member.referredByUsername})` : ''}
+                            </p>
+                          )}
                           {member.contactNumber && member.contactNumber !== '0' && (
                             <p className="text-[11px] text-slate-400 truncate">{member.contactNumber}</p>
                           )}
@@ -832,7 +868,14 @@ const MembersTable = ({
 
                     {/* Joined */}
                     <td className="px-5 py-3.5 hidden xl:table-cell">
-                      <span className="text-slate-400 text-xs">{member.joinedAt}</span>
+                      <div className="flex flex-col">
+                        <span className="text-slate-400 text-xs">{member.joinedAt}</span>
+                        {recentMeta.isRecent && recentMeta.daysAgo !== null && (
+                          <span className="text-[11px] font-medium text-blue-600">
+                            {recentMeta.daysAgo === 0 ? 'Registered today' : `${recentMeta.daysAgo} day${recentMeta.daysAgo === 1 ? '' : 's'} ago`}
+                          </span>
+                        )}
+                      </div>
                     </td>
 
                     {/* Actions */}
