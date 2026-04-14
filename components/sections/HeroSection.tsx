@@ -12,7 +12,7 @@ const categories = [
 
 const HeroSection = () => {
     return (
-        <section className="container mx-auto px-4 py-10">
+        <section className="!bg-white dark:!bg-gray-900 container mx-auto px-4 py-10">
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -20,7 +20,7 @@ const HeroSection = () => {
                 className="text-center mb-8"
             >
                 <p className="text-orange-500 text-sm font-semibold uppercase tracking-widest mb-2">Shop by Category</p>
-                <h2 className="text-3xl md:text-4xl font-bold text-slate-900">
+                <h2 className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-gray-100">
                     Find Your Perfect <span>Furniture</span>
                 </h2>
             </motion.div>

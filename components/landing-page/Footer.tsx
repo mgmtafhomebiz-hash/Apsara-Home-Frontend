@@ -74,8 +74,8 @@ export default function Footer() {
   };
 
   return (
-    <footer id="contact" className="bg-gray-100 dark:bg-gray-950 text-gray-900 dark:text-white">
-      <div className="max-w-[1400px] mx-auto px-6 md:px-10 lg:px-20 pt-16 md:pt-20 pb-8">
+    <footer id="contact" className="!bg-gray-100 dark:!bg-gray-950 text-gray-900 dark:text-white">
+      <div className="container mx-auto px-4 pt-16 md:pt-20 pb-8">
         <motion.div
           variants={containerVariants}
           initial="hidden"

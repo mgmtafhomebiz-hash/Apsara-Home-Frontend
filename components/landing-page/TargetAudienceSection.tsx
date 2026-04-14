@@ -55,7 +55,7 @@ export default function TargetAudienceSection() {
 
   return (
     <section className="py-24 bg-gray-50 dark:bg-gray-900 relative overflow-hidden">
-      <div className="max-w-[1400px] mx-auto px-6 md:px-10 lg:px-20 relative z-10">
+      <div className="container mx-auto px-4 relative z-10">
         <div className="grid lg:grid-cols-2 gap-16 items-center">
 
           {/* Visual Content - Persona Grid */}

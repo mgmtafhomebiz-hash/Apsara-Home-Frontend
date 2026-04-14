@@ -28,7 +28,7 @@ export default function FeaturedBanner() {
       </motion.div>
 
       {/* Content */}
-      <div className="relative z-10 max-w-[1400px] mx-auto px-6 md:px-10 lg:px-20">
+      <div className="relative z-10 container mx-auto px-4">
         <div className="grid md:grid-cols-2 gap-12 items-center">
           {/* Text Content */}
           <motion.div

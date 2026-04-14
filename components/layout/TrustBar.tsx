@@ -27,7 +27,7 @@ const items = [
 
 export default function TrustBar() {
   return (
-    <div className="bg-white border-b border-gray-100">
+    <div className="!bg-white dark:!bg-gray-900 border-b border-gray-100 dark:border-gray-800">
       <div className="container mx-auto px-4 py-4">
         <div className="flex flex-wrap items-center gap-1 -ml-3">
           {items.map((item, i) => (
@@ -36,14 +36,14 @@ export default function TrustBar() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.1, duration: 0.4 }}
-              className="flex items-center gap-3 p-3 rounded-xl hover:bg-orange-50 transition-colors duration-300 group cursor-default"
+              className="flex items-center gap-3 p-3 rounded-xl hover:bg-orange-50 dark:hover:bg-orange-950/20 transition-colors duration-300 group cursor-default"
             >
               <div className="text-orange-500 shrink-0 group-hover:scale-110 transition-transform duration-300">
                 {item.icon}
               </div>
               <div>
-                <p className="text-sm font-semibold text-gray-800">{item.title}</p>
-                <p className="text-xs text-gray-500">{item.desc}</p>
+                <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">{item.title}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{item.desc}</p>
               </div>
             </motion.div>
           ))}

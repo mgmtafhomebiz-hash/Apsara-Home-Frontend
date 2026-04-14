@@ -28,7 +28,7 @@ function TikTokIcon() {
 
 const socialLinks = [
     { icon: FacebookIcon,  href: 'https://www.facebook.com/AFHomePH/', label: 'Facebook'  },
-    { icon: InstagramIcon, href: '#',                                   label: 'Instagram' },
+    { icon: InstagramIcon, href: 'https://www.instagram.com/afhome.ph/',                                   label: 'Instagram' },
     { icon: TikTokIcon,    href: 'https://www.tiktok.com/@afhomeph',    label: 'TikTok'   },
 ];
 

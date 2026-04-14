@@ -492,7 +492,7 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
       initial={{ y: -80 }}
       animate={{ y: 0 }}
       transition={{ duration: 0.5, ease: 'easeOut' }}
-      className={`sticky top-8 z-50 bg-white transition-all duration-300 ${scrolled ? 'shadow-lg shadow-black/5' : 'shadow-sm'}`}
+      className={`sticky top-8 z-50 !bg-white dark:!bg-gray-900 transition-all duration-300 ${scrolled ? 'shadow-lg shadow-black/5 dark:shadow-black/20' : 'shadow-sm'}`}
     >
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16 gap-4">
@@ -513,7 +513,7 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
             <SearchField aria-label="Open product search" className="w-full">
               <Label className="sr-only">Search</Label>
               <SearchField.Group
-                className="flex h-10 cursor-pointer items-center gap-2.5 rounded-full border border-slate-200 bg-white px-4 shadow-sm transition-all duration-200 hover:border-slate-300 hover:shadow-md"
+                className="flex h-10 cursor-pointer items-center gap-2.5 rounded-full border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 shadow-sm transition-all duration-200 hover:border-slate-300 dark:hover:border-gray-600 hover:shadow-md"
                 onClick={() => setSearchModalOpen(true)}
               >
                 <SearchField.SearchIcon className="h-4 w-4 text-slate-400 shrink-0" />
@@ -521,9 +521,9 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
                   readOnly
                   placeholder="Search products..."
                   onFocus={() => setSearchModalOpen(true)}
-                  className="flex-1 cursor-pointer border-none bg-transparent p-0 text-sm text-slate-500 outline-none placeholder:text-slate-400"
+                  className="flex-1 cursor-pointer border-none bg-transparent p-0 text-sm text-slate-500 dark:text-gray-300 outline-none placeholder:text-slate-400 dark:placeholder:text-gray-500"
                 />
-                <kbd className="hidden lg:inline-flex items-center gap-0.5 rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-medium text-slate-400 shadow-sm">
+                <kbd className="hidden lg:inline-flex items-center gap-0.5 rounded border border-slate-200 dark:border-gray-600 bg-slate-50 dark:bg-gray-700 px-1.5 py-0.5 text-[10px] font-medium text-slate-400 dark:text-gray-400 shadow-sm">
                   Ctrl K
                 </kbd>
               </SearchField.Group>
@@ -537,7 +537,7 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
               <>
                 <Link
                   href="/wishlist"
-                  className="p-2 rounded-xl hover:bg-gray-100 transition-colors"
+                  className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                   title="Wishlist"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -574,12 +574,12 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 6, scale: 0.98 }}
                         transition={{ duration: 0.15 }}
-                        className="fixed left-2 right-2 top-16 mt-0 w-auto rounded-2xl border border-gray-100 bg-white shadow-xl shadow-black/10 overflow-hidden z-50 sm:absolute sm:right-0 sm:left-auto sm:top-auto sm:mt-2 sm:w-[360px] sm:max-w-[calc(100vw-1rem)]"
+                        className="fixed left-2 right-2 top-16 mt-0 w-auto rounded-2xl border border-gray-100 !bg-white dark:!bg-gray-900 shadow-xl shadow-black/10 overflow-hidden z-50 sm:absolute sm:right-0 sm:left-auto sm:top-auto sm:mt-2 sm:w-[360px] sm:max-w-[calc(100vw-1rem)]"
                       >
                         {/* Header */}
-                        <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-orange-50 to-white border-b border-orange-100/80">
+                        <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-orange-50 to-white dark:from-orange-950/20 dark:to-gray-900 border-b border-orange-100/80 dark:border-orange-800/50">
                           <div className="flex items-center gap-2">
-                            <p className="text-sm font-bold text-gray-900">Notifications</p>
+                            <p className="text-sm font-bold text-gray-900 dark:text-gray-100">Notifications</p>
                             {unreadNotificationCount > 0 && (
                               <span className="bg-orange-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] px-1 flex items-center justify-center leading-none">
                                 {unreadNotificationCount > 99 ? '99+' : unreadNotificationCount}
@@ -595,16 +595,16 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
                         </div>
 
                         {/* List */}
-                        <div className="max-h-[60vh] overflow-y-auto sm:max-h-[52vh] divide-y divide-gray-50">
+                        <div className="max-h-[60vh] overflow-y-auto sm:max-h-[52vh] divide-y divide-gray-50 dark:divide-gray-800">
                           {isNotificationsLoading ? (
                             <div className="flex flex-col items-center justify-center py-10 gap-3">
                               <div className="h-7 w-7 rounded-full border-2 border-orange-200 border-t-orange-500 animate-spin" />
-                              <p className="text-xs text-gray-400">Loading...</p>
+                              <p className="text-xs text-gray-400 dark:text-gray-500">Loading...</p>
                             </div>
                           ) : isNotificationsError ? (
                             <div className="px-4 py-8 text-center">
                               <p className="text-sm text-red-500 font-medium">Failed to load notifications</p>
-                              <p className="text-xs text-gray-400 mt-1">Please try again later.</p>
+                              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Please try again later.</p>
                             </div>
                           ) : visibleCustomerNotifications.length ? (
                             visibleCustomerNotifications.map((item) => {
@@ -620,19 +620,19 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
                                   className={`flex items-start gap-3 px-4 py-3.5 transition-colors hover:bg-orange-50/60 ${!isRead ? 'bg-orange-50/30' : ''}`}
                                 >
                                   <div className={`shrink-0 h-9 w-9 rounded-full flex items-center justify-center text-sm font-bold ${
-                                    !isRead ? 'bg-orange-100 text-orange-600' : 'bg-gray-100 text-gray-400'
+                                    !isRead ? 'bg-orange-100 text-orange-600' : 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500'
                                   }`}>
                                     {item.title.charAt(0).toUpperCase()}
                                   </div>
                                   <div className="flex-1 min-w-0">
                                     <div className="flex items-start justify-between gap-1.5">
-                                      <p className={`text-sm leading-snug ${!isRead ? 'font-semibold text-gray-900' : 'font-medium text-gray-600'}`}>{item.title}</p>
+                                      <p className={`text-sm leading-snug ${!isRead ? 'font-semibold text-gray-900 dark:text-gray-100' : 'font-medium text-gray-600 dark:text-gray-300'}`}>{item.title}</p>
                                       {!isRead && <span className="shrink-0 mt-1 h-2 w-2 bg-orange-500 rounded-full" />}
                                     </div>
-                                    <p className="text-xs text-gray-500 mt-0.5 leading-relaxed line-clamp-2">{item.description}</p>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-relaxed line-clamp-2">{item.description}</p>
                                     <div className="flex items-center gap-2 mt-1.5">
                                       {formatCustomerNotificationTime(item.latest_at) && (
-                                        <span className="text-[11px] text-gray-400">{formatCustomerNotificationTime(item.latest_at)} PHT</span>
+                                        <span className="text-[11px] text-gray-400 dark:text-gray-500">{formatCustomerNotificationTime(item.latest_at)} PHT</span>
                                       )}
                                       {item.count > 1 && (
                                         <span className="text-[11px] bg-orange-100 text-orange-600 font-semibold rounded-full px-1.5 py-0.5 leading-none">×{item.count}</span>
@@ -651,17 +651,17 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
                                 </svg>
                               </div>
                               <div className="text-center">
-                                <p className="text-sm font-medium text-gray-500">You&apos;re all caught up!</p>
-                                <p className="text-xs text-gray-400 mt-0.5">No new notifications</p>
+                                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">You&apos;re all caught up!</p>
+                                <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">No new notifications</p>
                               </div>
                             </div>
                           )}
                         </div>
 
                         {/* Footer */}
-                        <div className="px-4 py-2.5 border-t border-gray-100 bg-gray-50/50 flex items-center gap-1.5">
+                        <div className="px-4 py-2.5 border-t border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/50 flex items-center gap-1.5">
                           <div className="h-1.5 w-1.5 rounded-full bg-green-400" />
-                          <p className="text-[11px] text-gray-400">Auto-refresh every 30 seconds</p>
+                          <p className="text-[11px] text-gray-400 dark:text-gray-500">Auto-refresh every 30 seconds</p>
                         </div>
                       </motion.div>
                     )}
@@ -728,10 +728,10 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 8, scale: 0.97 }}
                         transition={{ duration: 0.15 }}
-                        className="absolute right-0 mt-2 w-64 rounded-2xl border border-gray-100 bg-white shadow-xl shadow-black/10 overflow-hidden z-50"
+                        className="absolute right-0 mt-2 w-64 rounded-2xl border border-gray-100 !bg-white dark:!bg-gray-900 shadow-xl shadow-black/10 overflow-hidden z-50"
                       >
                         {/* User info header */}
-                        <div className="px-4 py-4 bg-linear-to-br from-orange-50 to-amber-50 border-b border-orange-100">
+                        <div className="px-4 py-4 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-gray-900 border-b border-orange-100 dark:border-orange-800/50">
                           <div className="flex items-center gap-3">
                             {avatarUrl ? (
                               <img
@@ -745,11 +745,11 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
                               </span>
                             )}
                             <div className="min-w-0 flex-1">
-                              <p className="text-sm font-semibold text-gray-900 truncate">
+                              <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
                                 {user?.name ?? 'User'}
                               </p>
                               {user?.email && (
-                                <p className="text-xs text-gray-500 truncate mt-0.5">
+                                <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">
                                   {user.email}
                                 </p>
                               )}
@@ -766,27 +766,27 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
                           <Link
                             href="/profile"
                             onClick={() => setProfileMenuOpen(false)}
-                            className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors group"
+                            className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group"
                           >
                             <span className="flex items-center justify-center h-7 w-7 rounded-lg bg-gray-100 group-hover:bg-orange-100 transition-colors shrink-0">
-                              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-500 group-hover:text-orange-600 transition-colors">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-500 dark:text-gray-400 group-hover:text-orange-600 transition-colors">
                                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                                 <circle cx="12" cy="7" r="4" />
                               </svg>
                             </span>
                             <div>
                               <p className="font-medium">My Profile</p>
-                              <p className="text-xs text-gray-400">View & edit your info</p>
+                              <p className="text-xs text-gray-400 dark:text-gray-500">View & edit your info</p>
                             </div>
                           </Link>
 
                           <Link
                             href="/orders"
                             onClick={() => setProfileMenuOpen(false)}
-                            className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors group"
+                            className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group"
                           >
                             <span className="flex items-center justify-center h-7 w-7 rounded-lg bg-gray-100 group-hover:bg-orange-100 transition-colors shrink-0">
-                              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-500 group-hover:text-orange-600 transition-colors">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-500 dark:text-gray-400 group-hover:text-orange-600 transition-colors">
                                 <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
                                 <line x1="3" y1="6" x2="21" y2="6" />
                                 <path d="M16 10a4 4 0 0 1-8 0" />
@@ -794,29 +794,29 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
                             </span>
                             <div>
                               <p className="font-medium">My Orders</p>
-                              <p className="text-xs text-gray-400">Track your purchases</p>
+                              <p className="text-xs text-gray-400 dark:text-gray-500">Track your purchases</p>
                             </div>
                           </Link>
 
                           <Link
                             href="/wishlist"
                             onClick={() => setProfileMenuOpen(false)}
-                            className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors group"
+                            className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group"
                           >
                             <span className="flex items-center justify-center h-7 w-7 rounded-lg bg-gray-100 group-hover:bg-orange-100 transition-colors shrink-0">
-                              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-500 group-hover:text-orange-600 transition-colors">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-500 dark:text-gray-400 group-hover:text-orange-600 transition-colors">
                                 <path d="m12 21-1.45-1.32C5.4 15.36 2 12.28 2 8.5A4.5 4.5 0 0 1 6.5 4 5 5 0 0 1 12 6.09 5 5 0 0 1 17.5 4 4.5 4.5 0 0 1 22 8.5c0 3.78-3.4 6.86-8.55 11.18z" />
                               </svg>
                             </span>
                             <div>
                               <p className="font-medium">Wishlist</p>
-                              <p className="text-xs text-gray-400">Your saved items</p>
+                              <p className="text-xs text-gray-400 dark:text-gray-500">Your saved items</p>
                             </div>
                           </Link>
                         </div>
 
                         {/* Logout */}
-                        <div className="border-t border-gray-100 py-1.5">
+                        <div className="border-t border-gray-100 dark:border-gray-800 py-1.5">
                           <button
                             onClick={() => handleCustomerLogout('/shop')}
                             disabled={isLoggingOut}
@@ -891,7 +891,7 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
           <SearchField aria-label="Open product search" className="w-full">
             <Label className="sr-only">Search</Label>
             <SearchField.Group
-              className="flex h-10 cursor-pointer items-center gap-2.5 rounded-full border border-slate-200 bg-white px-4 shadow-sm transition-all duration-200 hover:border-slate-300"
+              className="flex h-10 cursor-pointer items-center gap-2.5 rounded-full border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 shadow-sm transition-all duration-200 hover:border-slate-300 dark:hover:border-gray-600"
               onClick={() => setSearchModalOpen(true)}
             >
               <SearchField.SearchIcon className="h-4 w-4 text-slate-400 shrink-0" />
@@ -907,7 +907,7 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
       </div>
 
       {/* Desktop nav links */}
-      <div className="hidden md:block border-t border-gray-100">
+      <div className="hidden md:block border-t border-gray-100 dark:border-gray-800">
         <div className="container mx-auto px-4">
           <nav className="flex items-center h-11">
             {navLinks.map((link) => {
@@ -926,7 +926,7 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
                       className={`relative px-4 h-full flex items-center text-sm font-medium transition-colors duration-200 group ${
                         pathname.startsWith(link.href) || activeDropdown === link.label
                           ? 'text-orange-500'
-                          : 'text-gray-600 hover:text-orange-500'
+                          : 'text-gray-600 dark:text-gray-300 hover:text-orange-500'
                       }`}
                     >
                       {link.label}
@@ -954,7 +954,7 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
                       className={`relative px-4 h-full flex items-center text-sm font-medium transition-colors duration-200 group ${
                         pathname === link.href
                           ? 'text-orange-500'
-                          : 'text-gray-600 hover:text-orange-500'
+                          : 'text-gray-600 dark:text-gray-300 hover:text-orange-500'
                       }`}
                     >
                       {link.label}
@@ -978,66 +978,43 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -4 }}
             transition={{ duration: 0.2, ease: 'easeOut' }}
-            className="absolute left-0 right-0 bg-white border-t border-gray-100 shadow-xl shadow-black/5 hidden md:block"
+            className="absolute left-0 right-0 !bg-white dark:!bg-gray-900 border-t border-gray-100 dark:border-gray-800 shadow-xl shadow-black/5 dark:shadow-black/30 hidden md:block"
             onMouseEnter={() => open(activeLink.label)}
             onMouseLeave={close}
+            style={{ backgroundColor: 'white' }}
           >
-            <div className="container mx-auto px-4 py-4">
+            <div className="!bg-white dark:!bg-gray-900 container mx-auto px-4 py-4"
+                 style={{ backgroundColor: 'white' }}>
               {activeLink.label === 'Shop By Brand' ? (
                 <div className="flex flex-col gap-3">
-                  {/* Brand search */}
-                  <div className="relative max-w-xs">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
-                      <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
-                    </svg>
-                    <input
-                      type="text"
-                      value={brandSearch}
-                      onChange={(e) => setBrandSearch(e.target.value)}
-                      placeholder="Search brands..."
-                      className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-400/50 focus:bg-white transition-all"
-                    />
-                    {brandSearch && (
-                      <button onClick={() => setBrandSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
-                      </button>
-                    )}
-                  </div>
-                  {/* Brand grid with logos */}
-                  <div className="grid grid-cols-4 gap-2">
-                    {(brandSearch
-                      ? shopBrandItems.filter((b) => b.label.toLowerCase().includes(brandSearch.toLowerCase()))
-                      : navbarBrandItems
-                    ).map((item) => (
+                  <div className="grid grid-cols-4 lg:grid-cols-8 gap-1">
+                    {navbarBrandItems.length > 0 ? navbarBrandItems.map((item) => (
                       <Link
                         key={item.id}
                         href={item.href}
-                        className="flex items-center gap-2.5 rounded-xl border border-gray-100 px-3 py-2.5 text-sm text-gray-600 hover:border-orange-200 hover:bg-orange-50 hover:text-orange-600 transition-all duration-200 group"
+                        className="group flex flex-col items-center gap-2 rounded-2xl px-2 py-3 text-center text-gray-600 dark:text-gray-400 transition-all duration-200 hover:bg-orange-50 dark:hover:bg-orange-950/20 hover:text-orange-500"
                       >
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-gray-100">
+                        <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gray-100 dark:bg-gray-800 transition-colors group-hover:bg-orange-100 dark:group-hover:bg-orange-950/30">
                           {item.image ? (
-                            <Image src={item.image} alt={item.label} width={32} height={32} className="h-full w-full object-cover" unoptimized />
+                            <Image src={item.image} alt={item.label} width={44} height={44} className="h-full w-full object-contain p-1" unoptimized />
                           ) : (
-                            <span className="text-[10px] font-bold text-gray-400">
+                            <span className="text-sm font-bold text-gray-500 dark:text-gray-400 group-hover:text-orange-500 transition-colors">
                               {item.label.split(/\s+/).slice(0, 2).map((p) => p[0]?.toUpperCase()).join('')}
                             </span>
                           )}
                         </div>
-                        <span className="truncate text-xs font-medium">{item.label}</span>
+                        <span className="text-xs font-medium leading-tight truncate w-full text-gray-700 dark:text-gray-300">{item.label}</span>
                       </Link>
-                    ))}
-                    {(brandSearch
-                      ? shopBrandItems.filter((b) => b.label.toLowerCase().includes(brandSearch.toLowerCase()))
-                      : navbarBrandItems
-                    ).length === 0 && (
-                      <p className="col-span-full py-4 text-center text-sm text-gray-400">No brands found</p>
+                    )) : (
+                      <p className="col-span-full py-4 text-center text-sm text-gray-400 dark:text-gray-500">No brands available</p>
                     )}
                   </div>
                   <Link
                     href="/by-brand"
-                    className="inline-flex items-center justify-center rounded-xl border border-orange-200 bg-orange-50 px-4 py-2.5 text-sm font-semibold text-orange-600 transition-colors hover:bg-orange-100"
+                    className="self-start inline-flex items-center gap-1.5 rounded-xl border border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-950/20 px-4 py-2 text-sm font-semibold text-orange-600 dark:text-orange-400 transition-colors hover:bg-orange-100 dark:hover:bg-orange-950/30"
                   >
                     View All Brands
+                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
                   </Link>
                 </div>
               ) : (
@@ -1057,12 +1034,12 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
                           href={item.href}
                           className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-all duration-200 group ${
                             isActive
-                              ? 'bg-orange-50 text-orange-600 font-medium'
-                              : 'text-gray-600 hover:bg-orange-50 hover:text-orange-600'
+                              ? 'bg-orange-50 dark:bg-orange-950/30 text-orange-600 font-medium'
+                              : 'text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-orange-950/20 hover:text-orange-600'
                           }`}
                         >
                           <span className={`w-1.5 h-1.5 rounded-full transition-colors ${
-                            isActive ? 'bg-orange-400' : 'bg-gray-300 group-hover:bg-orange-400'
+                            isActive ? 'bg-orange-400' : 'bg-gray-300 dark:bg-gray-600 group-hover:bg-orange-400'
                           }`} />
                           {item.label}
                         </Link>
@@ -1083,11 +1060,13 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -4 }}
             transition={{ duration: 0.2, ease: 'easeOut' }}
-            className="absolute left-0 right-0 bg-white border-t border-gray-100 shadow-xl shadow-black/5 hidden md:block"
+            className="absolute left-0 right-0 !bg-white dark:!bg-gray-900 border-t border-gray-100 dark:border-gray-800 shadow-xl shadow-black/5 dark:shadow-black/30 hidden md:block"
             onMouseEnter={() => open(activeLink.label)}
             onMouseLeave={close}
+            style={{ backgroundColor: 'white' }}
           >
-            <div className="container mx-auto px-4 py-5">
+            <div className="!bg-white dark:!bg-gray-900 container mx-auto px-4 py-5"
+                 style={{ backgroundColor: 'white' }}>
               <div className="grid grid-cols-4 lg:grid-cols-8 gap-1">
                 {Object.keys(activeLink.mega!).map((room) => {
                   const roomSlug = room.toLowerCase().replace(/\s+/g, '-');
@@ -1098,18 +1077,18 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
                       href={`/by-room/${roomSlug}`}
                       className={`group flex flex-col items-center gap-2 rounded-2xl px-2 py-3 text-center transition-all duration-200 ${
                         isActive
-                          ? 'bg-orange-50 text-orange-600'
-                          : 'text-gray-500 hover:bg-orange-50 hover:text-orange-500'
+                          ? 'bg-orange-50 dark:bg-orange-950/30 text-orange-600'
+                          : 'text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-orange-950/20 hover:text-orange-500'
                       }`}
                     >
                       <div className={`flex h-11 w-11 items-center justify-center rounded-xl transition-colors duration-200 ${
                         isActive
-                          ? 'bg-orange-100 text-orange-500'
-                          : 'bg-gray-100 text-gray-400 group-hover:bg-orange-100 group-hover:text-orange-500'
+                          ? 'bg-orange-100 dark:bg-orange-950/40 text-orange-500'
+                          : 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 group-hover:bg-orange-100 dark:group-hover:bg-orange-950/30 group-hover:text-orange-500'
                       }`}>
                         {roomIcons[room] ?? roomIcons.BEDROOM}
                       </div>
-                      <span className="text-xs font-medium leading-tight">{room.charAt(0) + room.slice(1).toLowerCase()}</span>
+                      <span className="text-xs font-medium leading-tight text-gray-700 dark:text-gray-300">{room.charAt(0) + room.slice(1).toLowerCase()}</span>
                     </Link>
                   );
                 })}
@@ -1127,7 +1106,7 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.25, ease: 'easeOut' }}
-            className="md:hidden border-t border-gray-100 bg-white max-h-[70vh] overflow-y-auto"
+            className="md:hidden border-t border-gray-100 dark:border-gray-800 !bg-white dark:!bg-gray-900 max-h-[70vh] overflow-y-auto"
           >
             <nav className="container mx-auto px-4 py-3 flex flex-col gap-0.5">
               {isLoggedIn ? (
@@ -1412,14 +1391,14 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
                               <Link
                                 key={item.id}
                                 href={item.href}
-                                className="flex items-center gap-2.5 rounded-xl border border-gray-100 px-3 py-2 text-sm text-gray-500 hover:border-orange-200 hover:bg-orange-50 hover:text-orange-500 transition-colors"
+                                className="flex items-center gap-2.5 rounded-xl border border-gray-100 px-3 py-2 text-sm text-gray-600 hover:border-orange-200 hover:bg-orange-50 hover:text-orange-500 transition-colors"
                                 onClick={() => setMobileOpen(false)}
                               >
                                 <div className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-gray-100">
                                   {item.image ? (
                                     <Image src={item.image} alt={item.label} width={28} height={28} className="h-full w-full object-cover" unoptimized />
                                   ) : (
-                                    <span className="text-[9px] font-bold text-gray-400">
+                                    <span className="text-[9px] font-bold text-gray-500">
                                       {item.label.split(/\s+/).slice(0, 2).map((p) => p[0]?.toUpperCase()).join('')}
                                     </span>
                                   )}
@@ -1442,7 +1421,7 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
                               <Link
                                 key={item.label}
                                 href={item.href}
-                                className="block px-3 py-1.5 text-sm text-gray-500 hover:text-orange-500 rounded-lg transition-colors"
+                                className="block px-3 py-1.5 text-sm text-gray-600 hover:text-orange-500 rounded-lg transition-colors"
                                 onClick={() => setMobileOpen(false)}
                               >
                                 {item.label}

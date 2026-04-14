@@ -54,7 +54,7 @@ export default function CommissionSection() {
         <div className="absolute -bottom-32 left-20 w-64 h-64 bg-pink-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-4000" />
       </div>
 
-      <div className="max-w-[1400px] mx-auto px-6 md:px-10 lg:px-20 relative z-10">
+      <div className="container mx-auto px-4 relative z-10">
         <div className="grid lg:grid-cols-2 gap-16 items-center">
           
           {/* Text Content */}
