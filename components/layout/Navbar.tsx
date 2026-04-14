@@ -15,10 +15,13 @@ import { useGetPublicProductsQuery } from '@/store/api/productsApi'
 import formatPrice from '@/helpers/FormatPrice'
 import { useMeQuery } from '@/store/api/userApi'
 import { useGetCustomerNotificationsQuery } from '@/store/api/customerNotificationsApi'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { useAppDispatch } from '@/store/hooks'
 import { ROOM_OPTIONS } from '@/libs/roomConfig'
 import { useGetPublicProductBrandsQuery } from '@/store/api/productBrandsApi'
+import PrimaryButton from '@/components/ui/buttons/PrimaryButton'
+import OutlineButton from '@/components/ui/buttons/OutlineButton'
+import ThemeToggle from '@/components/ui/buttons/ThemeToggle'
 
 type NavLink = {
   label: string;
@@ -96,6 +99,7 @@ const roomIcons: Record<string, React.ReactNode> = {
 
 export default function Navbar({ initialCategories = [] }: { initialCategories?: Category[] }) {
   const router = useRouter()
+  const pathname = usePathname()
   const [scrolled, setScrolled] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [mobileExpanded, setMobileExpanded] = useState<string | null>(null)
@@ -291,6 +295,10 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
         setSearchModalOpen(false)
         setSearchModalQuery('')
       }
+      if ((event.ctrlKey || event.metaKey) && event.key === 'k') {
+        event.preventDefault()
+        setSearchModalOpen(true)
+      }
     }
 
     document.addEventListener('mousedown', onPointerDown)
@@ -484,7 +492,7 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
       initial={{ y: -80 }}
       animate={{ y: 0 }}
       transition={{ duration: 0.5, ease: 'easeOut' }}
-      className={`sticky top-0 z-50 bg-white transition-all duration-300 ${scrolled ? 'shadow-lg shadow-black/5' : 'shadow-sm'}`}
+      className={`sticky top-8 z-50 bg-white transition-all duration-300 ${scrolled ? 'shadow-lg shadow-black/5' : 'shadow-sm'}`}
     >
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16 gap-4">
@@ -501,24 +509,23 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
           </Link>
 
           {/* Search */}
-          <div className="flex-1 max-w-xl hidden md:block">
+          <div className="flex-1 max-w-lg hidden md:block">
             <SearchField aria-label="Open product search" className="w-full">
               <Label className="sr-only">Search</Label>
               <SearchField.Group
-                className="flex h-13 cursor-pointer items-center gap-3 rounded-[26px] border border-slate-200 bg-white px-5 shadow-sm shadow-slate-200/50 transition-all duration-200 hover:border-slate-300 hover:shadow-md"
+                className="flex h-10 cursor-pointer items-center gap-2.5 rounded-full border border-slate-200 bg-white px-4 shadow-sm transition-all duration-200 hover:border-slate-300 hover:shadow-md"
                 onClick={() => setSearchModalOpen(true)}
               >
-                <SearchField.SearchIcon className="h-[18px] w-[18px] text-slate-400" />
+                <SearchField.SearchIcon className="h-4 w-4 text-slate-400 shrink-0" />
                 <SearchField.Input
                   readOnly
-                  placeholder="Search"
+                  placeholder="Search products..."
                   onFocus={() => setSearchModalOpen(true)}
-                  className="flex-1 cursor-pointer border-none bg-transparent p-0 text-sm text-slate-700 outline-none placeholder:text-slate-500"
+                  className="flex-1 cursor-pointer border-none bg-transparent p-0 text-sm text-slate-500 outline-none placeholder:text-slate-400"
                 />
-                <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-100 px-2.5 py-1 text-[12px] font-medium leading-none text-slate-500">
-                  <span>Ctrl</span>
-                  <span>K</span>
-                </span>
+                <kbd className="hidden lg:inline-flex items-center gap-0.5 rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-medium text-slate-400 shadow-sm">
+                  Ctrl K
+                </kbd>
               </SearchField.Group>
             </SearchField>
           </div>
@@ -839,35 +846,32 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
               </>
             ) : (
               <>
-                <Link
-                  href="/track-order"
-                  className="hidden md:flex items-center gap-2 px-3 py-2 rounded-xl border border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-100 transition-colors"
-                  title="Track Order"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M10 17h4V5H2v12h3" />
-                    <path d="M14 8h4l4 4v5h-4" />
-                    <circle cx="7" cy="17" r="2" />
-                    <circle cx="17" cy="17" r="2" />
-                  </svg>
-                  <span className="text-sm font-medium">Track Order</span>
-                </Link>
+                <div className="hidden md:flex">
+                  <OutlineButton href="/track-order" className="!px-4 !py-2 !text-sm h-10">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M10 17h4V5H2v12h3" />
+                      <path d="M14 8h4l4 4v5h-4" />
+                      <circle cx="7" cy="17" r="2" />
+                      <circle cx="17" cy="17" r="2" />
+                    </svg>
+                    Track Order
+                  </OutlineButton>
+                </div>
 
                 <motion.div whileTap={{ scale: 0.96 }} transition={{ duration: 0.12 }}>
-                  <Link
-                    href="/login"
-                    className="flex h-11 min-w-0 items-center gap-2 rounded-[18px] bg-slate-800 px-5 font-semibold text-white shadow-sm transition hover:bg-slate-700"
-                    title="Sign in"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0">
+                  <PrimaryButton href="/login" className="!px-5 !py-2 !text-sm !rounded-full h-10">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0">
                       <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                       <circle cx="12" cy="7" r="4" />
                     </svg>
-                    <span className="text-sm font-medium">Sign in</span>
-                  </Link>
+                    Sign in
+                  </PrimaryButton>
                 </motion.div>
               </>
             )}
+
+            <div className="hidden md:block w-px h-5 bg-gray-200 mx-1" />
+            <ThemeToggle isScrolled={true} />
 
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
@@ -887,20 +891,16 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
           <SearchField aria-label="Open product search" className="w-full">
             <Label className="sr-only">Search</Label>
             <SearchField.Group
-              className="flex h-13 cursor-pointer items-center gap-3 rounded-[26px] border border-slate-200 bg-white px-5 shadow-sm shadow-slate-200/50 transition-all duration-200 hover:border-slate-300 hover:shadow-md"
+              className="flex h-10 cursor-pointer items-center gap-2.5 rounded-full border border-slate-200 bg-white px-4 shadow-sm transition-all duration-200 hover:border-slate-300"
               onClick={() => setSearchModalOpen(true)}
             >
-              <SearchField.SearchIcon className="h-[18px] w-[18px] text-slate-400" />
+              <SearchField.SearchIcon className="h-4 w-4 text-slate-400 shrink-0" />
               <SearchField.Input
                 readOnly
-                placeholder="Search"
+                placeholder="Search products..."
                 onFocus={() => setSearchModalOpen(true)}
-                className="flex-1 cursor-pointer border-none bg-transparent p-0 text-sm text-slate-700 outline-none placeholder:text-slate-500"
+                className="flex-1 cursor-pointer border-none bg-transparent p-0 text-sm text-slate-500 outline-none placeholder:text-slate-400"
               />
-              <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-100 px-2.5 py-1 text-[12px] font-medium leading-none text-slate-500">
-                <span>Ctrl</span>
-                <span>K</span>
-              </span>
             </SearchField.Group>
           </SearchField>
         </div>
@@ -923,10 +923,11 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
                     <button
                       type="button"
                       onClick={() => open(link.label)}
-                      className={`relative px-4 h-full flex items-center text-sm font-medium transition-colors duration-200 group ${activeDropdown === link.label
-                        ? 'text-orange-500'
-                        : 'text-gray-600 hover:text-orange-500'
-                        }`}
+                      className={`relative px-4 h-full flex items-center text-sm font-medium transition-colors duration-200 group ${
+                        pathname.startsWith(link.href) || activeDropdown === link.label
+                          ? 'text-orange-500'
+                          : 'text-gray-600 hover:text-orange-500'
+                      }`}
                     >
                       {link.label}
                       <motion.svg
@@ -943,18 +944,23 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
                       >
                         <polyline points="6 9 12 15 18 9" />
                       </motion.svg>
-                      <span className="absolute bottom-0 left-4 right-4 h-0.5 bg-orange-500 scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
+                      <span className={`absolute bottom-0 left-4 right-4 h-0.5 bg-orange-500 transition-transform duration-300 origin-left ${
+                        pathname.startsWith(link.href) ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'
+                      }`} />
                     </button>
                   ) : (
                     <Link
                       href={link.href}
-                      className={`relative px-4 h-full flex items-center text-sm font-medium transition-colors duration-200 group ${activeDropdown === link.label
-                        ? 'text-orange-500'
-                        : 'text-gray-600 hover:text-orange-500'
-                        }`}
+                      className={`relative px-4 h-full flex items-center text-sm font-medium transition-colors duration-200 group ${
+                        pathname === link.href
+                          ? 'text-orange-500'
+                          : 'text-gray-600 hover:text-orange-500'
+                      }`}
                     >
                       {link.label}
-                      <span className="absolute bottom-0 left-4 right-4 h-0.5 bg-orange-500 scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
+                      <span className={`absolute bottom-0 left-4 right-4 h-0.5 bg-orange-500 transition-transform duration-300 origin-left ${
+                        pathname === link.href ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'
+                      }`} />
                     </Link>
                   )}
                 </div>
@@ -1043,16 +1049,25 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
                           label: item,
                           href: `${activeLink.href}/${item.toLowerCase().replace(/\s+/g, '-')}`,
                         }))
-                    return items.map((item) => (
-                      <Link
-                        key={`${activeLink.label}-${item.label}`}
-                        href={item.href}
-                        className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-gray-600 hover:bg-orange-50 hover:text-orange-600 transition-all duration-200 group"
-                      >
-                        <span className="w-1.5 h-1.5 rounded-full bg-gray-300 group-hover:bg-orange-400 transition-colors" />
-                        {item.label}
-                      </Link>
-                    ))
+                    return items.map((item) => {
+                      const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
+                      return (
+                        <Link
+                          key={`${activeLink.label}-${item.label}`}
+                          href={item.href}
+                          className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-all duration-200 group ${
+                            isActive
+                              ? 'bg-orange-50 text-orange-600 font-medium'
+                              : 'text-gray-600 hover:bg-orange-50 hover:text-orange-600'
+                          }`}
+                        >
+                          <span className={`w-1.5 h-1.5 rounded-full transition-colors ${
+                            isActive ? 'bg-orange-400' : 'bg-gray-300 group-hover:bg-orange-400'
+                          }`} />
+                          {item.label}
+                        </Link>
+                      )
+                    })
                   })()}
                 </div>
               )}
@@ -1262,17 +1277,17 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
                   </div>
                   <div className="bg-white px-4 py-3 flex gap-2">
                     <motion.div whileTap={{ scale: 0.97 }} transition={{ duration: 0.12 }} className="flex-1">
-                      <Link
+                      <PrimaryButton
                         href="/login"
                         onClick={() => setMobileOpen(false)}
-                        className="flex h-11 w-full items-center justify-center gap-2 rounded-[18px] bg-slate-800 px-4 text-sm font-semibold text-white transition hover:bg-slate-700"
+                        className="!w-full !px-4 !py-2.5 !text-sm !rounded-[18px]"
                       >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0">
                           <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                           <circle cx="12" cy="7" r="4" />
                         </svg>
-                        <span>Sign In</span>
-                      </Link>
+                        Sign In
+                      </PrimaryButton>
                     </motion.div>
                     <Link
                       href="/track-order"
