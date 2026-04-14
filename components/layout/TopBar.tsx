@@ -1,18 +1,50 @@
 'use client';
 
+function FacebookIcon() {
+    return (
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" />
+        </svg>
+    );
+}
+
+function InstagramIcon() {
+    return (
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
+            <circle cx="12" cy="12" r="4" />
+            <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none" />
+        </svg>
+    );
+}
+
+function TikTokIcon() {
+    return (
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.32 6.32 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.18 8.18 0 0 0 4.78 1.52V6.75a4.85 4.85 0 0 1-1.01-.06z" />
+        </svg>
+    );
+}
+
+const socialLinks = [
+    { icon: FacebookIcon,  href: 'https://www.facebook.com/AFHomePH/', label: 'Facebook'  },
+    { icon: InstagramIcon, href: '#',                                   label: 'Instagram' },
+    { icon: TikTokIcon,    href: 'https://www.tiktok.com/@afhomeph',    label: 'TikTok'   },
+];
+
 const messages = [
     '🚚  Free Shipping on orders over ₱5,000',
     '🎉  Summer Sale — Up to 50% off selected items',
     '✨  New arrivals every week',
     '🏠  Nationwide delivery to all major cities',
     '💳  Installment available via GCash & Maya',
-]
+];
 
 const TopBar = () => {
     return (
-        <div className="bg-slate-900 text-white text-xs py-2 overflow-hidden">
-            <div className="flex items-center">
-                <div className="hidden md:flex items-center gap-5 px-6 shrink-0 text-white/60">
+        <div className="sticky top-0 z-[51] bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-white text-xs py-2 overflow-hidden">
+            <div className="container mx-auto px-4 flex items-center">
+                <div className="hidden md:flex items-center gap-5 shrink-0 text-slate-500 dark:text-white/60">
                     <a href="tel:+639123456789" className="flex items-center gap-1.5 hover:text-orange-400 transition-colors">
                         <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z" /></svg>
                         +63 912 345 6789
@@ -24,26 +56,30 @@ const TopBar = () => {
                 </div>
 
                 <div className="flex-1 overflow-hidden mx-4">
-                    <div className="flex animate-marquee whitespace-nowrap">
+                    <div className="flex w-max animate-marquee whitespace-nowrap">
                         {[...messages, ...messages].map((message, index) => (
-                            <span
-                                key={index}
-                                className="mx-10 text-white/70"
-                            >{message}</span>
+                            <span key={index} className="mx-10 text-slate-500 dark:text-white/70">{message}</span>
                         ))}
                     </div>
                 </div>
 
-                <div className="hidden md:flex items-center gap-3 px-6 shrink-0 text-white/50">
-                    <a href="#" className="hover:text-orange-400 transition-colors">FB</a>
-                    <span className="text-white/20">|</span>
-                    <a href="#" className="hover:text-orange-400 transition-colors">IG</a>
-                    <span className="text-white/20">|</span>
-                    <a href="#" className="hover:text-orange-400 transition-colors">TikTok</a>
+                <div className="hidden md:flex items-center gap-3 shrink-0 text-slate-400 dark:text-white/50">
+                    {socialLinks.map((s) => (
+                        <a
+                            key={s.label}
+                            href={s.href}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            aria-label={s.label}
+                            className="hover:text-orange-400 transition-colors"
+                        >
+                            <s.icon />
+                        </a>
+                    ))}
                 </div>
             </div>
         </div>
-    )
-}
+    );
+};
 
-export default TopBar
+export default TopBar;
