@@ -33,22 +33,28 @@ export async function POST(req: NextRequest) {
     }
 
     const isPdf = assetType === 'pdf'
+    const isVideo = assetType === 'video'
     const allowedImageTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
     const allowedPdfTypes = ['application/pdf']
-    const allowedTypes = isPdf ? allowedPdfTypes : allowedImageTypes
+    const allowedVideoTypes = ['video/mp4', 'video/quicktime', 'video/webm', 'video/x-msvideo', 'video/x-ms-wmv']
+    const allowedTypes = isPdf ? allowedPdfTypes : isVideo ? allowedVideoTypes : allowedImageTypes
     if (!allowedTypes.includes(file.type)) {
       return NextResponse.json({
         error: isPdf
           ? 'Invalid file type. Only PDF files are allowed.'
+          : isVideo
+            ? 'Invalid file type. Only MP4, MOV, WEBM, AVI, and WMV are allowed.'
           : 'Invalid file type. Only JPEG, PNG, WEBP, and GIF are allowed.',
       }, { status: 400 })
     }
 
-    const maxSizeBytes = isPdf ? 20 * 1024 * 1024 : 5 * 1024 * 1024
+    const maxSizeBytes = isPdf ? 20 * 1024 * 1024 : isVideo ? 150 * 1024 * 1024 : 5 * 1024 * 1024
     if (file.size > maxSizeBytes) {
       return NextResponse.json({
         error: isPdf
           ? 'File too large. Maximum size is 20MB for PDF files.'
+          : isVideo
+            ? 'File too large. Maximum size is 150MB for video files.'
           : 'File too large. Maximum size is 5MB.',
       }, { status: 400 })
     }
@@ -74,6 +80,13 @@ export async function POST(req: NextRequest) {
           use_filename: true,
           unique_filename: true,
         })
+      : isVideo
+        ? await cloudinary.uploader.upload(base64, {
+            folder,
+            resource_type: 'video',
+            use_filename: true,
+            unique_filename: true,
+          })
       : await cloudinary.uploader.upload(base64, {
           folder,
           transformation: [
