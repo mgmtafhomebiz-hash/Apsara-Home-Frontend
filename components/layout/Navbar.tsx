@@ -22,6 +22,8 @@ import { useGetPublicProductBrandsQuery } from '@/store/api/productBrandsApi'
 import PrimaryButton from '@/components/ui/buttons/PrimaryButton'
 import OutlineButton from '@/components/ui/buttons/OutlineButton'
 import ThemeToggle from '@/components/ui/buttons/ThemeToggle'
+import Chat from '@/components/chat/Chat'
+import ConversationList from '@/components/chat/ConversationList'
 
 type NavLink = {
   label: string;
@@ -106,6 +108,9 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null)
   const [profileMenuOpen, setProfileMenuOpen] = useState(false)
   const [notifMenuOpen, setNotifMenuOpen] = useState(false)
+  const [isChatOpen, setIsChatOpen] = useState(false)
+  const [chatMode, setChatMode] = useState<'list' | 'chat'>('list')
+  const [selectedConversation, setSelectedConversation] = useState<{ name: string; avatar?: string } | null>(null)
   const [searchModalQuery, setSearchModalQuery] = useState('')
   const [megaSearch, setMegaSearch] = useState('')
   const [mobileSearch, setMobileSearch] = useState('')
@@ -138,6 +143,9 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const profileMenuRef = useRef<HTMLDivElement | null>(null)
   const notifMenuRef = useRef<HTMLDivElement | null>(null)
+  const chatMenuRef = useRef<HTMLDivElement | null>(null)
+  const chatModeRef = useRef<'list' | 'chat'>('list')
+  chatModeRef.current = chatMode
   const searchInputRef = useRef<HTMLInputElement | null>(null)
   const [searchModalOpen, setSearchModalOpen] = useState(false)
 
@@ -279,6 +287,7 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
       const target = event.target as Node
       const clickedOutsideProfile = !profileMenuRef.current || !profileMenuRef.current.contains(target)
       const clickedOutsideNotifications = !notifMenuRef.current || !notifMenuRef.current.contains(target)
+      const clickedOutsideChat = !chatMenuRef.current || !chatMenuRef.current.contains(target)
 
       if (clickedOutsideProfile) {
         setProfileMenuOpen(false)
@@ -286,11 +295,15 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
       if (clickedOutsideNotifications) {
         setNotifMenuOpen(false)
       }
+      if (clickedOutsideChat && chatModeRef.current !== 'chat') {
+        setIsChatOpen(false)
+      }
     }
 
     const onEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') setProfileMenuOpen(false)
       if (event.key === 'Escape') setNotifMenuOpen(false)
+      if (event.key === 'Escape' && chatModeRef.current !== 'chat') setIsChatOpen(false)
       if (event.key === 'Escape') {
         setSearchModalOpen(false)
         setSearchModalQuery('')
@@ -374,7 +387,8 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
     if (!notifMenuOpen) return
     if (!visibleCustomerNotifications.length) return
     markAllCustomerNotificationsAsRead()
-  }, [notifMenuOpen, visibleCustomerNotifications])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [notifMenuOpen])
 
   const markCustomerNotificationAsRead = (item: { id: string; title: string; description: string; count: number }) => {
     const readKey = getCustomerNotificationReadKey(item)
@@ -667,9 +681,34 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
                     )}
                   </AnimatePresence>
                 </div>
+                <div className="relative" ref={chatMenuRef}>
+                  <button
+                    onClick={() => {
+                      if (chatMode === 'chat' && isChatOpen) return
+                      setIsChatOpen((prev) => !prev)
+                      setChatMode('list')
+                    }}
+                    className={`relative p-2 rounded-xl transition-colors cursor-pointer ${isChatOpen ? 'bg-orange-100 text-orange-600' : 'hover:bg-gray-100'}`}
+                    title="Messages"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                    </svg>
+                  </button>
+                  {chatMode === 'list' && (
+                    <ConversationList
+                      isOpen={isChatOpen}
+                      onClose={() => setIsChatOpen(false)}
+                      onSelectConversation={(conv) => {
+                        setSelectedConversation(conv)
+                        setChatMode('chat')
+                      }}
+                    />
+                  )}
+                </div>
                 <button
                   onClick={() => setIsOpen(true)}
-                  className="relative p-2 rounded-xl hover:bg-gray-100 transition-colors"
+                  className="relative p-2 rounded-xl hover:bg-gray-100 active:bg-gray-200 transition-colors cursor-pointer"
                   title="Cart"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -685,19 +724,17 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
                   )}
                 </button>
 
-                <Link
-                  href="/track-order"
-                  className="hidden lg:flex items-center gap-2 rounded-xl border border-orange-200 bg-orange-50 px-3 py-2 text-sm font-semibold text-orange-700 transition-colors hover:border-orange-300 hover:bg-orange-100"
-                  title="Track Order"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M10 17h4V5H2v12h3" />
-                    <path d="M14 8h4l4 4v5h-4" />
-                    <circle cx="7" cy="17" r="2" />
-                    <circle cx="17" cy="17" r="2" />
-                  </svg>
-                  <span>Track Order</span>
-                </Link>
+                <div className="hidden lg:flex">
+                  <OutlineButton href="/track-order" className="!px-4 !py-2 !text-sm h-10">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M10 17h4V5H2v12h3" />
+                      <path d="M14 8h4l4 4v5h-4" />
+                      <circle cx="7" cy="17" r="2" />
+                      <circle cx="17" cy="17" r="2" />
+                    </svg>
+                    Track Order
+                  </OutlineButton>
+                </div>
 
                 <div className="relative hidden md:block" ref={profileMenuRef}>
                   <button
@@ -1584,6 +1621,20 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
         )}
       </AnimatePresence>,
       document.body,
+    )}
+    {chatMode === 'chat' && (
+      <Chat
+        isOpen={isChatOpen}
+        onClose={() => {
+          setIsChatOpen(false)
+          setChatMode('list')
+          setSelectedConversation(null)
+        }}
+        brandName={selectedConversation?.name}
+        brandImage={selectedConversation?.avatar}
+        mode="chat"
+        onBackToList={() => setChatMode('list')}
+      />
     )}
     </>
   )
