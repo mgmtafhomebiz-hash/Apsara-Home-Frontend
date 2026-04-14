@@ -57,6 +57,12 @@ body {
   font-family: "Fraunces", serif;
 }
 
+@utility container {
+  width: 100%;
+  max-width: 87.5rem; /* 1400px — matches landing page max-w-[1400px] */
+  margin-inline: auto;
+}
+
 @keyframes marquee {
   from { transform: translateX(0); }
   to { transform: translateX(-50%); }
