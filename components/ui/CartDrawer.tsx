@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation'
 import type { CustomerCheckoutLineItem } from '@/types/CustomerCheckout/types'
 import { useLazyGetPublicProductQuery } from '@/store/api/productsApi'
 import { useEffect, useMemo, useState } from 'react'
+import PrimaryButton from '@/components/ui/buttons/PrimaryButton'
 
 type ProductSearchBrand = {
   pb_name?: string | null
@@ -201,7 +202,7 @@ export default function CartDrawer() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setIsOpen(false)}
-            className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm"
+            className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm"
           />
 
           <motion.div
@@ -209,7 +210,7 @@ export default function CartDrawer() {
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 28, stiffness: 300 }}
-            className="fixed right-0 top-0 bottom-0 z-50 flex w-full max-w-md flex-col bg-white shadow-2xl"
+            className="fixed right-0 top-0 bottom-0 z-[60] flex w-full max-w-md flex-col bg-white shadow-2xl"
           >
             <div className="flex items-center justify-between border-b border-gray-100 p-5">
               <div className="flex items-center gap-3">
@@ -222,7 +223,7 @@ export default function CartDrawer() {
               </div>
               <button
                 onClick={() => setIsOpen(false)}
-                className="rounded-xl p-2 transition-colors hover:bg-gray-100"
+                className="rounded-xl p-2 transition-colors hover:bg-gray-100 active:bg-gray-200 cursor-pointer"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <line x1="18" y1="6" x2="6" y2="18" />
@@ -245,12 +246,9 @@ export default function CartDrawer() {
                     <p className="font-semibold text-gray-800">Your cart is empty</p>
                     <p className="mt-1 text-sm text-gray-400">Add some items to get started</p>
                   </div>
-                  <button
-                    onClick={() => setIsOpen(false)}
-                    className="rounded-xl bg-orange-500 px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
-                  >
+                  <PrimaryButton onClick={() => setIsOpen(false)} className="!px-6 !py-2.5 !text-sm">
                     Continue Shopping
-                  </button>
+                  </PrimaryButton>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -389,12 +387,9 @@ export default function CartDrawer() {
                     <polyline points="9 18 15 12 9 6" />
                   </svg>
                 </motion.button>
-                <button
-                  onClick={() => setIsOpen(false)}
-                  className="w-full rounded-xl border border-gray-200 py-3 text-sm font-medium text-gray-600 transition-colors hover:border-gray-300"
-                >
+                <PrimaryButton onClick={() => setIsOpen(false)} className="w-full !py-3 !text-sm">
                   Continue Shopping
-                </button>
+                </PrimaryButton>
               </div>
             )}
           </motion.div>
