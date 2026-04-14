@@ -12,6 +12,29 @@ type Props = {
 
 export default function PartnerStorefrontPage({ partner, data }: Props) {
   const titleColor = partner.slug === 'synergy-shop' ? '#0b77b7' : partner.themeColor
+  const displayName = partner.displayName.trim()
+  const pageTitle = displayName.toLowerCase().endsWith('shop') ? displayName : `${displayName} Shop`
+  const allowedSet = new Set(partner.allowedCategoryIds ?? [])
+  const sanitizedItems = partner.allowedCategoryIds.length === 0
+    ? (data?.items ?? []).filter((item) => String(item.key ?? '').trim() !== 'category-grid')
+    : (data?.items ?? [])
+  const sanitizedCategories = partner.allowedCategoryIds.length === 0
+    ? []
+    : (data?.categories ?? []).filter((category) => allowedSet.has(category.id))
+  const sanitizedProducts = partner.allowedCategoryIds.length === 0
+    ? []
+    : (data?.products ?? []).filter((product) => allowedSet.has(product.catid))
+  const sanitizedData = data
+    ? {
+      items: sanitizedItems,
+      categories: sanitizedCategories,
+      products: sanitizedProducts,
+    }
+    : data
+
+  const logoUrlWithVersion = partner.logoUrl
+    ? `${partner.logoUrl}${partner.logoUrl.includes('?') ? '&' : '?'}v=${partner.logoVersion || '1'}`
+    : ''
 
   useEffect(() => {
     if (!partner.logoUrl) return
@@ -26,13 +49,15 @@ export default function PartnerStorefrontPage({ partner, data }: Props) {
       link.href = href
     }
 
-    setIcon('icon', partner.logoUrl)
-    setIcon('apple-touch-icon', partner.logoUrl)
-
-    if (partner.displayName) {
-      document.title = `${partner.displayName} Shop`
+    if (logoUrlWithVersion) {
+      setIcon('icon', logoUrlWithVersion)
+      setIcon('apple-touch-icon', logoUrlWithVersion)
     }
-  }, [partner.displayName, partner.logoUrl])
+
+    if (displayName) {
+      document.title = pageTitle
+    }
+  }, [displayName, pageTitle, partner.logoUrl, logoUrlWithVersion])
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
@@ -45,10 +70,10 @@ export default function PartnerStorefrontPage({ partner, data }: Props) {
         <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 lg:px-8">
           <div className="flex flex-col gap-5 rounded-[28px] bg-white/92 p-5 shadow-sm backdrop-blur md:flex-row md:items-center md:justify-between md:p-6">
             <div className="flex items-center gap-5">
-              <div className="flex h-20 w-24 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm sm:h-24 sm:w-28">
+              <div className="flex h-20 w-24 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-transparent shadow-sm sm:h-24 sm:w-28">
                 {partner.logoUrl ? (
                   <img
-                    src={partner.logoUrl}
+                    src={logoUrlWithVersion}
                     alt={partner.displayName}
                     className="h-full w-full object-contain p-2.5 sm:p-3"
                   />
@@ -87,7 +112,11 @@ export default function PartnerStorefrontPage({ partner, data }: Props) {
         </div>
       </section>
 
-      <ShopBuilderSections data={data} partnerSlug={partner.slug} />
+      <ShopBuilderSections
+        data={sanitizedData ?? data}
+        partnerSlug={partner.slug}
+        allowedCategoryIds={partner.allowedCategoryIds}
+      />
 
       <footer className="border-t border-slate-200 bg-white">
         <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-6 text-sm text-slate-500 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">

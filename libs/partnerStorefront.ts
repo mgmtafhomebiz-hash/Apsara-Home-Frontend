@@ -10,6 +10,7 @@ export type PartnerStorefrontConfig = {
   slug: string
   displayName: string
   logoUrl: string | null
+  logoVersion: string
   heroTitle: string
   heroSubtitle: string
   themeColor: string
@@ -17,6 +18,7 @@ export type PartnerStorefrontConfig = {
   allowedCategoryIds: number[]
   featuredProductIds: number[]
   notificationEmail: string
+  domainLink: string
   enableAiSupport: boolean
 }
 
@@ -72,6 +74,7 @@ export const getPartnerStorefrontConfig = (item: WebPageItem | undefined): Partn
     slug,
     displayName: String(fields.display_name ?? item.title ?? slug).trim() || slug,
     logoUrl: String(fields.logo_url ?? item.image_url ?? '').trim() || null,
+    logoVersion: String(fields.logo_version ?? '').trim(),
     heroTitle: String(fields.hero_title ?? item.subtitle ?? '').trim() || `Shop ${slug}`,
     heroSubtitle: String(fields.hero_subtitle ?? item.body ?? '').trim() || 'Curated products for your partner storefront.',
     themeColor: String(fields.theme_color ?? defaultThemeColor).trim() || defaultThemeColor,
@@ -79,18 +82,21 @@ export const getPartnerStorefrontConfig = (item: WebPageItem | undefined): Partn
     allowedCategoryIds: parseIdList(String(fields.allowed_category_ids ?? '')),
     featuredProductIds: parseIdList(String(fields.featured_product_ids ?? '')),
     notificationEmail: String(fields.notification_email ?? '').trim(),
+    domainLink: String(fields.domain_link ?? '').trim(),
     enableAiSupport: toBoolean(fields.enable_ai_support),
   }
 }
 
 export const filterPartnerCategories = (categories: Category[], config: PartnerStorefrontConfig | null) => {
-  if (!config || config.allowedCategoryIds.length === 0) return categories
+  if (!config) return categories
+  if (config.allowedCategoryIds.length === 0) return []
   const allowed = new Set(config.allowedCategoryIds)
   return categories.filter((category) => allowed.has(category.id))
 }
 
 export const filterPartnerProducts = (products: Product[], config: PartnerStorefrontConfig | null) => {
-  if (!config || config.allowedCategoryIds.length === 0) return products
+  if (!config) return products
+  if (config.allowedCategoryIds.length === 0) return []
   const allowed = new Set(config.allowedCategoryIds)
   return products.filter((product) => allowed.has(product.catid))
 }

@@ -47,6 +47,7 @@ export type ShopBuilderSectionsData = {
 export type ShopBuilderSectionsProps = {
   data?: ShopBuilderSectionsData
   partnerSlug?: string
+  allowedCategoryIds?: number[]
 }
 
 export type ShopBuilderApiResponse = {
@@ -63,7 +64,7 @@ export function normalizeShopBuilderApiResponse(data: ShopBuilderApiResponse | n
   }
 }
 
-export default function ShopBuilderSections({ data = null, partnerSlug }: ShopBuilderSectionsProps) {
+export default function ShopBuilderSections({ data = null, partnerSlug, allowedCategoryIds }: ShopBuilderSectionsProps) {
   const { items, categories, products } = normalizeShopBuilderApiResponse(data)
 
   if (!data || items.length === 0) {
@@ -98,44 +99,49 @@ export default function ShopBuilderSections({ data = null, partnerSlug }: ShopBu
     })
     .filter((item): item is NonNullable<typeof item> => Boolean(item))
 
-  const remainingCategoryCards = categories
-    .filter((category) => !selectedCategoryCards.some((card) => card.id === category.id))
-    .map((category) => ({
-      id: category.id,
-      name: category.name,
-      url: buildPartnerCategoryLink(partnerSlug, category),
-      count: category.product_count ?? 0,
-      image: category.image || fallbackImage,
-    }))
+  const partnerAllowedIds = partnerSlug ? (allowedCategoryIds ?? []) : []
+  const partnerAllowedSet = new Set(partnerAllowedIds)
+  const partnerCategoryCards = partnerSlug
+    ? categories
+      .filter((category) => partnerAllowedSet.has(category.id))
+      .map((category) => ({
+        id: category.id,
+        name: category.name,
+        url: buildPartnerCategoryLink(partnerSlug, category),
+        count: category.product_count ?? 0,
+        image: category.image || fallbackImage,
+      }))
+    : []
 
-  const allCategoryCards = selectedCategoryCards.length > 0
-    ? [...selectedCategoryCards, ...remainingCategoryCards]
-    : remainingCategoryCards
+  const allCategoryCards = partnerSlug ? partnerCategoryCards : selectedCategoryCards
 
   const featuredProducts = parseIdList(getField(featuredCollection, 'product_ids'))
     .map((id) => products.find((item) => item.id === id))
     .filter((item): item is Product => Boolean(item))
     .slice(0, 4)
+  const fallbackFeaturedProducts = featuredProducts.length > 0
+    ? featuredProducts
+    : products.slice(0, 4)
 
   return (
     <>
       {announcements ? <AnnouncementsSection section={announcements} /> : null}
       {campaignBanners ? <CampaignBannersSection section={campaignBanners} partnerSlug={partnerSlug} /> : null}
 
-      {categoryGrid ? (
+      {categoryGrid && allCategoryCards.length > 0 && (!partnerSlug || partnerAllowedIds.length > 0) ? (
         <CategoryGridSection
           section={categoryGrid}
           categoryCards={allCategoryCards}
           partnerSlug={partnerSlug}
         />
-      ) : (
+      ) : partnerSlug ? null : (
         <HeroSection />
       )}
 
       {featuredCollection ? (
         <FeaturedCollectionSection
           section={featuredCollection}
-          featuredProducts={featuredProducts}
+          featuredProducts={fallbackFeaturedProducts}
           partnerSlug={partnerSlug}
         />
       ) : (
@@ -239,14 +245,7 @@ function CategoryGridSection({
   categoryCards: Array<{ id: number; name: string; url: string; count: number; image: string }>
   partnerSlug?: string
 }) {
-  const fallbackCards = [1, 2, 3, 4].map((index) => ({
-    id: index,
-    name: `Category ${index}`,
-    url: buildPartnerShopLink('/shop', partnerSlug),
-    count: 0,
-    image: getField(section, `card_${index}_image`) || fallbackImage,
-  }))
-  const cards = categoryCards.length > 0 ? categoryCards : fallbackCards
+  const cards = categoryCards
 
   return (
     <motion.section

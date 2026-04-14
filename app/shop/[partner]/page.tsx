@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import PartnerStorefrontPage from '@/components/partner/PartnerStorefrontPage'
 import { filterPartnerCategories, filterPartnerProducts, getPartnerStorefrontConfig } from '@/libs/partnerStorefront'
 import type { Category } from '@/store/api/categoriesApi'
@@ -31,7 +31,12 @@ export async function generateMetadata({ params }: PageProps) {
   const resolved = await params
   const RAW_SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://afhome.ph'
   const SITE_URL = RAW_SITE_URL.startsWith('http') ? RAW_SITE_URL : `https://${RAW_SITE_URL}`
-  const title = `${resolved.partner} Shop`
+  const partnerName = resolved.partner
+    .split(/[\s-]+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ')
+  const title = partnerName.toLowerCase().endsWith('shop') ? partnerName : `${partnerName} Shop`
   const description = `Browse the curated storefront for ${resolved.partner}.`
   const path = `/shop/${resolved.partner}`
   const canonicalUrl = `${SITE_URL}${path}`
@@ -81,7 +86,7 @@ async function getPartnerStorefrontData(partnerSlug: string, selectedCategoryId?
         headers: { Accept: 'application/json' },
         cache: 'no-store',
       }),
-      fetch(`${apiUrl}/api/categories?used_only=1`, {
+      fetch(`${apiUrl}/api/categories?per_page=300`, {
         method: 'GET',
         headers: { Accept: 'application/json' },
         cache: 'no-store',
@@ -104,8 +109,26 @@ async function getPartnerStorefrontData(partnerSlug: string, selectedCategoryId?
       const config = getPartnerStorefrontConfig(item)
       return config?.slug === partnerSlug
     })
-    const partner = getPartnerStorefrontConfig(storefrontItem)
-    if (!partner) return null
+  const partner = getPartnerStorefrontConfig(storefrontItem)
+  if (!partner) return null
+
+    if (selectedCategoryId && !partner.allowedCategoryIds.includes(selectedCategoryId)) {
+      redirect(`/shop/${partner.slug}`)
+    }
+
+    if (partner.allowedCategoryIds.length === 0) {
+      const itemsWithoutCategoryGrid = (webPagesJson.items ?? []).filter(
+        (item) => String(item.key ?? '').trim() !== 'category-grid',
+      )
+      return {
+        partner,
+        data: {
+          items: itemsWithoutCategoryGrid,
+          categories: [],
+          products: [],
+        },
+      }
+    }
 
     const categories = filterPartnerCategories(categoriesJson.categories ?? [], partner)
     const products = filterPartnerProducts(productsJson.products ?? [], partner)

@@ -30,7 +30,7 @@ const toPayload = (form: FormState) => ({
   title: form.title.trim() || undefined,
   image_url: form.image_url.trim() || undefined,
   link_url: form.pdf_url.trim() || undefined,
-  button_text: 'Open PDF',
+  button_text: 'Open Assembly Guide',
   sort_order: Number(form.sort_order || 0),
   is_active: form.is_active,
 })
@@ -51,6 +51,7 @@ export default function AssemblyGuidesManager() {
   const [editTarget, setEditTarget] = useState<WebPageItem | null>(null)
   const [isUploadingPdf, setIsUploadingPdf] = useState(false)
   const [isUploadingCover, setIsUploadingCover] = useState(false)
+  const [useManualPdfLink, setUseManualPdfLink] = useState(false)
   const pdfInputRef = useRef<HTMLInputElement | null>(null)
   const coverInputRef = useRef<HTMLInputElement | null>(null)
 
@@ -67,11 +68,22 @@ export default function AssemblyGuidesManager() {
   const [deleteItem] = useDeleteAdminWebPageItemMutation()
 
   const rows = useMemo(() => data?.items ?? [], [data?.items])
+  const latestItems = useMemo(() => {
+    return rows
+      .filter((row) => row.created_at)
+      .sort((a, b) => {
+        const left = new Date(a.created_at ?? 0).getTime()
+        const right = new Date(b.created_at ?? 0).getTime()
+        return right - left
+      })
+      .slice(0, 3)
+  }, [rows])
   const isBusy = isCreating || isUpdating
 
   const resetForm = () => {
     setForm(emptyForm)
     setEditTarget(null)
+    setUseManualPdfLink(false)
     if (pdfInputRef.current) {
       pdfInputRef.current.value = ''
     }
@@ -107,6 +119,7 @@ export default function AssemblyGuidesManager() {
         ...prev,
         pdf_url: result.url ?? prev.pdf_url,
       }))
+      setUseManualPdfLink(false)
       showSuccessToast('PDF uploaded successfully.')
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to upload PDF.'
@@ -222,7 +235,7 @@ export default function AssemblyGuidesManager() {
                 {editTarget ? 'Edit Mode' : 'Create'}
               </p>
               <h2 className="mt-2 text-xl font-bold text-slate-900">
-                {editTarget ? 'Update PDF Guide' : 'Add PDF Guide'}
+                {editTarget ? 'Update PDF Guide' : 'Add Assembly Guide'}
               </h2>
             </div>
 
@@ -249,6 +262,28 @@ export default function AssemblyGuidesManager() {
 
             <Field label="PDF URL">
               <div className="space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                    {useManualPdfLink ? 'Google Drive Link' : 'Upload PDF'}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setUseManualPdfLink((prev) => !prev)}
+                    className="rounded-full border border-cyan-200 bg-white px-3 py-1 text-[11px] font-semibold text-cyan-700 transition hover:bg-cyan-50"
+                  >
+                    {useManualPdfLink ? 'Use PDF Upload' : 'Use Google Drive Link'}
+                  </button>
+                </div>
+
+                {useManualPdfLink ? (
+                  <input
+                    value={form.pdf_url}
+                    onChange={(e) => setForm((prev) => ({ ...prev, pdf_url: e.target.value }))}
+                    placeholder="Paste Google Drive share link here"
+                    className={inputClassName}
+                  />
+                ) : null}
+
                 <div className="flex flex-col gap-3 rounded-[1.5rem] border border-slate-200 bg-slate-50/70 p-4 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <p className="text-sm font-semibold text-slate-800">Attach PDF file</p>
@@ -267,10 +302,10 @@ export default function AssemblyGuidesManager() {
                     <button
                       type="button"
                       onClick={() => pdfInputRef.current?.click()}
-                      disabled={isUploadingPdf}
+                      disabled={isUploadingPdf || useManualPdfLink}
                       className="rounded-2xl border border-cyan-200 bg-white px-4 py-2.5 text-sm font-semibold text-cyan-700 transition hover:bg-cyan-50 disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      {isUploadingPdf ? 'Uploading PDF...' : 'Attach PDF'}
+                      {useManualPdfLink ? 'Upload Disabled' : isUploadingPdf ? 'Uploading PDF...' : 'Attach PDF'}
                     </button>
                   </div>
                 </div>
@@ -278,8 +313,8 @@ export default function AssemblyGuidesManager() {
                 <input
                   value={form.pdf_url}
                   readOnly
-                  disabled
-                  placeholder="Upload a PDF to generate the link"
+                  disabled={!form.pdf_url || useManualPdfLink}
+                  placeholder={useManualPdfLink ? 'Google Drive link will appear here' : 'Upload a PDF to generate the link'}
                   className={`${inputClassName} cursor-not-allowed bg-slate-100 text-slate-500 disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-500`}
                 />
               </div>
@@ -348,7 +383,7 @@ export default function AssemblyGuidesManager() {
             </div>
 
             <div className="rounded-2xl border border-cyan-100 bg-cyan-50/70 px-4 py-3 text-sm text-cyan-800">
-              Tip: the PDF URL is auto-generated from the attached file and stays locked to avoid accidental edits. If you need a different file, just attach a new PDF.
+              Tip: the PDF URL is auto-generated from the attached file and stays locked to avoid accidental edits. If you need a different file, just attach a new PDF or switch to a Google Drive link.
             </div>
           </div>
 
@@ -364,183 +399,74 @@ export default function AssemblyGuidesManager() {
         </form>
 
         <div className="rounded-[1.75rem] border border-slate-100 bg-white p-6 shadow-sm">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-[0.22em] text-cyan-700">Preview</p>
-              <h2 className="mt-2 text-xl font-bold text-slate-900">Guide Card Preview</h2>
-            </div>
-            <span className="rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-cyan-700">
-              PDF
-            </span>
-          </div>
-
-          <div className="mt-5 overflow-hidden rounded-[1.75rem] border border-orange-100 bg-white shadow-[0_18px_50px_rgba(15,23,42,0.06)]">
-            <div className="rounded-t-[1.75rem] border-b border-orange-100 bg-[linear-gradient(135deg,_#fff7ed,_#fffbf5_45%,_#ffedd5)] p-6">
-              <div className="flex items-start justify-between gap-4">
-                <div className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-orange-500 shadow-sm ring-1 ring-orange-100">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                    <path d="M14 2v6h6" />
-                    <path d="M9 15h6" />
-                    <path d="M9 11h2" />
-                  </svg>
-                </div>
-                <span className="rounded-full border border-orange-200 bg-white px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-orange-500">
-                  PDF
-                </span>
+          <div className="mt-2 rounded-[1.5rem] border border-slate-100 bg-slate-50/70 p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Recently Added</p>
+                <p className="mt-1 text-sm font-semibold text-slate-900">Recently Assembly Guides Uploaded</p>
               </div>
             </div>
 
-            <div className="p-6">
-              <p className="text-xs font-bold uppercase tracking-[0.2em] text-orange-500">
-                PDF Guide
-              </p>
-              <h3 className="mt-3 text-xl font-bold leading-tight text-slate-900">
-                {form.title.trim() || 'Your guide title will appear here'}
-              </h3>
-              <p className="mt-3 text-sm leading-7 text-slate-600">
-                Click to open this PDF assembly guide.
-              </p>
-
-              <div className="mt-6 flex items-center justify-between border-t border-slate-100 pt-4">
-                <span className="text-sm font-semibold text-orange-600">Open PDF</span>
-                <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-orange-100 text-orange-600">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-                    <path d="M7 17 17 7" />
-                    <path d="M8 7h9v9" />
-                  </svg>
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="rounded-[1.75rem] border border-slate-100 bg-white p-6 shadow-sm">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[0.22em] text-cyan-700">Library</p>
-            <h2 className="mt-2 text-xl font-bold text-slate-900">Existing PDF Guides</h2>
-          </div>
-
-          <div className="flex flex-col gap-3 md:flex-row md:items-center">
-            <input
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value)
-                setPage(1)
-              }}
-              placeholder="Search guide title..."
-              className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100 md:w-80"
-            />
-            <select
-              value={status}
-              onChange={(e) => {
-                setStatus(e.target.value as 'active' | 'inactive' | 'all')
-                setPage(1)
-              }}
-              className="rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
-            >
-              <option value="all">All status</option>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-            </select>
-          </div>
-        </div>
-
-        <div className="mt-5">
-          {isError ? (
-            <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-              Failed to load assembly guides.
-            </div>
-          ) : isLoading ? (
-            <div className="space-y-3 animate-pulse">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="h-16 rounded-2xl bg-slate-100" />
-              ))}
-            </div>
-          ) : rows.length ? (
-            <div className="space-y-3">
-              {rows.map((row) => (
-                <div
-                  key={row.id}
-                  className="flex flex-col gap-4 rounded-[1.5rem] border border-slate-100 bg-slate-50/80 p-4 md:flex-row md:items-center md:justify-between"
-                >
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-3">
-                      <div className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-cyan-600 shadow-sm ring-1 ring-slate-100">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9">
-                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                          <path d="M14 2v6h6" />
-                          <path d="M9 15h6" />
-                          <path d="M9 11h2" />
-                        </svg>
+            {latestItems.length === 0 ? (
+              <p className="mt-3 text-sm text-slate-500">No guides added yet.</p>
+            ) : (
+              <div className="mt-4 grid gap-3">
+                {latestItems.map((item) => {
+                  const card = (
+                    <div className="overflow-hidden rounded-[1.25rem] border border-orange-100 bg-white shadow-sm">
+                      <div className="rounded-t-[1.25rem] border-b border-orange-100 bg-[linear-gradient(135deg,_#fff7ed,_#fffbf5_45%,_#ffedd5)] p-4">
+                        <div className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-orange-500 shadow-sm ring-1 ring-orange-100">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                            <path d="M14 2v6h6" />
+                            <path d="M9 15h6" />
+                            <path d="M9 11h2" />
+                          </svg>
+                        </div>
                       </div>
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold text-slate-900">{row.title || '(Untitled)'}</p>
-                        <p className="mt-1 truncate text-xs text-slate-500">{row.link_url || 'No PDF URL'}</p>
+
+                      <div className="p-4">
+                        <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-orange-500">
+                          Assembly Guide
+                        </p>
+                        <p className="mt-2 text-sm font-semibold text-slate-900">
+                          {item.title || '(Untitled guide)'}
+                        </p>
+                        <p className="mt-2 text-xs leading-6 text-slate-600">
+                          Click to open the assembly guide.
+                        </p>
+
+                        <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-3">
+                          <span className="text-xs font-semibold text-orange-600">Open Assembly Guide</span>
+                          <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-orange-100 text-orange-600">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                              <path d="M7 17 17 7" />
+                              <path d="M8 7h9v9" />
+                            </svg>
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  )
 
-                  <div className="flex flex-wrap items-center gap-3 md:justify-end">
-                    <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600">
-                      Sort {row.sort_order}
-                    </span>
-                    <span className={`rounded-full px-3 py-1 text-xs font-semibold ${row.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-700'}`}>
-                      {row.is_active ? 'Active' : 'Inactive'}
-                    </span>
-                    <button
-                      onClick={() => {
-                        setEditTarget(row)
-                        setForm(toForm(row))
-                        window.scrollTo({ top: 0, behavior: 'smooth' })
-                      }}
-                      className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-white"
+                  return item.link_url ? (
+                    <a
+                      key={`latest-${item.id}`}
+                      href={item.link_url}
+                      target={item.link_url.startsWith('http') ? '_blank' : undefined}
+                      rel={item.link_url.startsWith('http') ? 'noreferrer' : undefined}
+                      className="block"
                     >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleDelete(row.id)}
-                      className="rounded-xl border border-red-200 px-3 py-2 text-xs font-semibold text-red-600 transition hover:bg-red-50"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="rounded-2xl border border-dashed border-slate-200 px-4 py-10 text-center text-sm text-slate-500">
-              No PDF guides found.
-            </div>
-          )}
-        </div>
-
-        {isFetching ? <div className="mt-4 text-xs text-slate-500">Refreshing...</div> : null}
-
-        <div className="mt-5 flex flex-col gap-3 border-t border-slate-100 pt-4 text-xs text-slate-500 md:flex-row md:items-center md:justify-between">
-          <p>
-            Showing {data?.meta?.from ?? 0} - {data?.meta?.to ?? 0} of {data?.meta?.total ?? 0}
-          </p>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={(data?.meta?.current_page ?? 1) <= 1}
-              className="rounded-xl border border-slate-200 px-3 py-2 disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              Prev
-            </button>
-            <span>
-              Page {data?.meta?.current_page ?? 1} / {data?.meta?.last_page ?? 1}
-            </span>
-            <button
-              onClick={() => setPage((p) => p + 1)}
-              disabled={(data?.meta?.current_page ?? 1) >= (data?.meta?.last_page ?? 1)}
-              className="rounded-xl border border-slate-200 px-3 py-2 disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              Next
-            </button>
+                      {card}
+                    </a>
+                  ) : (
+                    <div key={`latest-${item.id}`} className="block">
+                      {card}
+                    </div>
+                  )
+                })}
+              </div>
+            )}
           </div>
         </div>
       </section>
