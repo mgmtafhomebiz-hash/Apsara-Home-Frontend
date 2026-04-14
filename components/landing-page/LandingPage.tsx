@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useTheme } from "next-themes";
+import { useState } from "react";
 import { AnimatePresence } from "framer-motion";
 import Header from "@/components/landing-page/Header";
 import HeroSection from "@/components/landing-page/HeroSection";
@@ -22,17 +21,10 @@ import ScrollToTop from "@/components/landing-page/ScrollToTop";
 import type { Product } from "@/components/landing-page/ProductCard";
 
 export default function LandingPage() {
-  const { setTheme } = useTheme();
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isQuickViewOpen, setIsQuickViewOpen] = useState(false);
   const [cartCount, setCartCount] = useState(0);
 
-  useEffect(() => {
-    setTheme('light');
-    const forceLight = () => setTheme('light');
-    window.addEventListener('storage', forceLight);
-    return () => window.removeEventListener('storage', forceLight);
-  }, []);
 
   const handleCloseQuickView = () => {
     setIsQuickViewOpen(false);
