@@ -33,6 +33,7 @@ export interface AdminOrder {
   approved_by?: number | null
   approved_at?: string | null
   fulfillment_status: AdminFulfillmentStatus
+  fulfillment_mode?: 'manual' | 'local_courier' | 'zq' | null
   courier?: string | null
   tracking_no?: string | null
   shipment_status?: string | null
@@ -131,14 +132,25 @@ export const adminOrdersApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['Orders', 'AdminNotifications'],
     }),
+    updateAdminOrderFulfillmentMode: builder.mutation<
+      { message: string; fulfillment_mode: 'manual' | 'local_courier' | 'zq' },
+      { id: number; mode: 'manual' | 'local_courier' | 'zq' }
+    >({
+      query: ({ id, mode }) => ({
+        url: `/api/admin/orders/${id}/fulfillment-mode`,
+        method: 'PATCH',
+        body: { mode },
+      }),
+      invalidatesTags: ['Orders', 'AdminNotifications'],
+    }),
     updateAdminOrderShipmentStatus: builder.mutation<
       { message: string },
-      { id: number; shipment_status: AdminShipmentStatus; courier?: AdminCourier }
+      { id: number; shipment_status: AdminShipmentStatus; courier?: AdminCourier; clear_courier?: boolean }
     >({
-      query: ({ id, shipment_status, courier }) => ({
+      query: ({ id, shipment_status, courier, clear_courier }) => ({
         url: `/api/admin/orders/${id}/shipment-status`,
         method: 'PATCH',
-        body: { shipment_status, courier },
+        body: { shipment_status, courier, clear_courier },
       }),
       invalidatesTags: ['Orders', 'AdminNotifications'],
     }),
@@ -232,6 +244,7 @@ export const {
   useApproveAdminOrderMutation,
   useRejectAdminOrderMutation,
   useUpdateAdminOrderStatusMutation,
+  useUpdateAdminOrderFulfillmentModeMutation,
   useUpdateAdminOrderShipmentStatusMutation,
   useBookAdminOrderCourierMutation,
   useTrackAdminOrderCourierMutation,

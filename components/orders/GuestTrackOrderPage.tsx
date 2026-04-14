@@ -15,6 +15,15 @@ import formatPrice from '@/helpers/FormatPrice';
 import { useLazyTrackGuestOrderQuery } from '@/store/api/paymentApi';
 import type { Category } from '@/store/api/categoriesApi';
 
+const formatCourierLabel = (courier?: string | null) => {
+  const normalized = String(courier ?? '').trim().toLowerCase();
+  if (normalized === 'afhome') return 'AF Home';
+  if (normalized === 'jnt') return 'J&T';
+  if (normalized === 'xde') return 'XDE';
+  if (normalized === 'zq') return 'ZQ';
+  return courier ?? 'To be assigned';
+};
+
 const STATUS_CONFIG: Record<string, { label: string; badge: string; dot: string; step: number }> = {
   pending: { label: 'Pending', badge: 'bg-amber-50 text-amber-700 border-amber-200', dot: 'bg-amber-400', step: 1 },
   processing: { label: 'Processing', badge: 'bg-blue-50 text-blue-700 border-blue-200', dot: 'bg-blue-500', step: 2 },
@@ -345,7 +354,7 @@ export default function GuestTrackOrderPage({ initialCategories = [] }: { initia
                       </div>
                       <div>
                         <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">Courier</p>
-                        <p className="mt-1 font-semibold text-slate-800">{order.courier || 'To be assigned'}</p>
+                        <p className="mt-1 font-semibold text-slate-800">{formatCourierLabel(order.courier)}</p>
                       </div>
                       <div>
                         <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">Tracking Number</p>
