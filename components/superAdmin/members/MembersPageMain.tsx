@@ -55,7 +55,9 @@ const MembersPageMain = ({ initialData = null, initialStats = null }: MembersPag
     const [debouncedSearch, setDebouncedSearch] = useState('')
     const [status, setStatus] = useState<'all' | MemberStatus>('all')
     const [tier, setTier] = useState<'all' | MemberTier>('all');
-    const [sort, setSort] = useState<'default' | 'earnings_low_high' | 'earnings_high_low' | 'referrals_high_low'>('default')
+    const [registration, setRegistration] = useState<'all' | 'new' | 'referred' | 'direct'>('all')
+    const [profilePhoto, setProfilePhoto] = useState<'all' | 'with_photo' | 'no_photo'>('all')
+    const [sort, setSort] = useState<'default' | 'newest_registered' | 'oldest_registered' | 'earnings_low_high' | 'earnings_high_low' | 'referrals_high_low'>('default')
     const [showModal, setShowModal] = useState(false);
     const [showEarningsModal, setShowEarningsModal] = useState(false);
     const [isExporting, setIsExporting] = useState(false)
@@ -89,7 +91,9 @@ const MembersPageMain = ({ initialData = null, initialStats = null }: MembersPag
         page === 1 &&
         debouncedSearch === '' &&
         status === 'all' &&
-        tier === 'all'
+        tier === 'all' &&
+        registration === 'all' &&
+        profilePhoto === 'all'
 
     const shouldSkipInitialMembersRefetch = Boolean(initialData && isUsingDefaultView)
 
@@ -105,6 +109,8 @@ const MembersPageMain = ({ initialData = null, initialStats = null }: MembersPag
             search: debouncedSearch !== '' ? debouncedSearch : undefined,
             status: status === 'all' ? undefined : status,
             tier: tier === 'all' ? undefined : tier,
+            registration: registration === 'all' ? undefined : registration,
+            profilePhoto: profilePhoto === 'all' ? undefined : profilePhoto,
             sort,
         },
         {
@@ -126,7 +132,7 @@ const MembersPageMain = ({ initialData = null, initialStats = null }: MembersPag
 
     const effectiveData = data ?? stableData ?? initialData ?? null
     const effectiveStats = statsData ?? stableStats ?? initialStats ?? null
-    const members = effectiveData?.members ?? []
+    const members = useMemo(() => effectiveData?.members ?? [], [effectiveData])
     const sortedMembers = useMemo(() => {
         const list = [...members]
         if (sort === 'earnings_low_high') {
@@ -137,6 +143,12 @@ const MembersPageMain = ({ initialData = null, initialStats = null }: MembersPag
         }
         if (sort === 'referrals_high_low') {
             return list.sort((a, b) => (b.referrals ?? 0) - (a.referrals ?? 0))
+        }
+        if (sort === 'newest_registered') {
+            return list.sort((a, b) => (Date.parse(b.joinedAt || '') || 0) - (Date.parse(a.joinedAt || '') || 0))
+        }
+        if (sort === 'oldest_registered') {
+            return list.sort((a, b) => (Date.parse(a.joinedAt || '') || 0) - (Date.parse(b.joinedAt || '') || 0))
         }
         return list
     }, [members, sort])
@@ -164,7 +176,17 @@ const MembersPageMain = ({ initialData = null, initialStats = null }: MembersPag
         setPage(1)
     }
 
-    const handleSort = (value: 'default' | 'earnings_low_high' | 'earnings_high_low' | 'referrals_high_low') => {
+    const handleRegistration = (value: 'all' | 'new' | 'referred' | 'direct') => {
+        setRegistration(value)
+        setPage(1)
+    }
+
+    const handleProfilePhoto = (value: 'all' | 'with_photo' | 'no_photo') => {
+        setProfilePhoto(value)
+        setPage(1)
+    }
+
+    const handleSort = (value: 'default' | 'newest_registered' | 'oldest_registered' | 'earnings_low_high' | 'earnings_high_low' | 'referrals_high_low') => {
         setSort(value)
         setPage(1)
     }
@@ -181,6 +203,8 @@ const MembersPageMain = ({ initialData = null, initialStats = null }: MembersPag
                 search: debouncedSearch !== '' ? debouncedSearch : undefined,
                 status: status === 'all' ? undefined : status,
                 tier: tier === 'all' ? undefined : tier,
+                registration: registration === 'all' ? undefined : registration,
+                profilePhoto: profilePhoto === 'all' ? undefined : profilePhoto,
                 sort,
             }).unwrap()
 
@@ -194,6 +218,8 @@ const MembersPageMain = ({ initialData = null, initialStats = null }: MembersPag
                     search: debouncedSearch !== '' ? debouncedSearch : undefined,
                     status: status === 'all' ? undefined : status,
                     tier: tier === 'all' ? undefined : tier,
+                    registration: registration === 'all' ? undefined : registration,
+                    profilePhoto: profilePhoto === 'all' ? undefined : profilePhoto,
                     sort,
                 }).unwrap()
 
@@ -206,6 +232,10 @@ const MembersPageMain = ({ initialData = null, initialStats = null }: MembersPag
                 exportRows.sort((a, b) => (b.earnings ?? 0) - (a.earnings ?? 0))
             } else if (sort === 'referrals_high_low') {
                 exportRows.sort((a, b) => (b.referrals ?? 0) - (a.referrals ?? 0))
+            } else if (sort === 'newest_registered') {
+                exportRows.sort((a, b) => (Date.parse(b.joinedAt || '') || 0) - (Date.parse(a.joinedAt || '') || 0))
+            } else if (sort === 'oldest_registered') {
+                exportRows.sort((a, b) => (Date.parse(a.joinedAt || '') || 0) - (Date.parse(b.joinedAt || '') || 0))
             }
 
             const headers = [
@@ -309,6 +339,10 @@ const MembersPageMain = ({ initialData = null, initialStats = null }: MembersPag
                 onStatus={handleStatus}
                 tier={tier}
                 onTier={handleTier}
+                registration={registration}
+                onRegistration={handleRegistration}
+                profilePhoto={profilePhoto}
+                onProfilePhoto={handleProfilePhoto}
                 sort={sort}
                 onSort={handleSort}
                 resultCount={meta?.total ?? members.length}
