@@ -58,22 +58,22 @@ const highlightText = (text: string, query: string) => {
 
 function BrandCardSkeleton() {
   return (
-    <div className="flex flex-col items-center animate-pulse rounded-lg border border-gray-200 p-4">
-      <div className="h-20 w-20 shrink-0 rounded bg-gray-200" />
-      <div className="mt-3 h-4 w-3/4 rounded bg-gray-200" />
+    <div className="flex flex-col items-center animate-pulse rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+      <div className="h-20 w-20 shrink-0 rounded bg-gray-200 dark:bg-gray-700" />
+      <div className="mt-3 h-4 w-3/4 rounded bg-gray-200 dark:bg-gray-700" />
     </div>
   )
 }
 
 function ProductCardSkeleton() {
   return (
-    <div className="animate-pulse overflow-hidden rounded-2xl border border-gray-100 bg-white">
-      <div className="aspect-[4/3] bg-gray-200" />
+    <div className="animate-pulse overflow-hidden rounded-2xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800">
+      <div className="aspect-[4/3] bg-gray-200 dark:bg-gray-700" />
       <div className="space-y-2 p-4">
-        <div className="h-3 w-1/3 rounded-full bg-gray-200" />
-        <div className="h-4 w-full rounded-full bg-gray-200" />
-        <div className="h-4 w-4/5 rounded-full bg-gray-200" />
-        <div className="h-5 w-1/2 rounded-full bg-gray-200" />
+        <div className="h-3 w-1/3 rounded-full bg-gray-200 dark:bg-gray-700" />
+        <div className="h-4 w-full rounded-full bg-gray-200 dark:bg-gray-700" />
+        <div className="h-4 w-4/5 rounded-full bg-gray-200 dark:bg-gray-700" />
+        <div className="h-5 w-1/2 rounded-full bg-gray-200 dark:bg-gray-700" />
       </div>
     </div>
   )
@@ -152,16 +152,16 @@ export default function ByBrandPageMain() {
   const totalPages = productsMeta?.last_page ?? 1
 
   return (
-    <main className="min-h-screen bg-gray-50">
+    <main className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Page Header */}
-      <div className="border-b border-gray-200 bg-white">
+      <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
         <div className="container mx-auto px-4 py-6">
           <div className="mt-4">
-            <p className="text-xs font-bold uppercase tracking-[0.35em] text-orange-500">Shop by Brand</p>
-            <h1 className="mt-2 text-3xl font-bold text-gray-900 sm:text-4xl">
+            <p className="text-xs font-bold uppercase tracking-[0.35em] text-orange-500 dark:text-orange-400">Shop by Brand</p>
+            <h1 className="mt-2 text-3xl font-bold text-gray-900 dark:text-white sm:text-4xl">
               {selectedBrand && selectedBrandItem ? selectedBrandItem.name : 'All Brands'}
             </h1>
-            <p className="mt-2 text-gray-600">
+            <p className="mt-2 text-gray-600 dark:text-gray-400">
               Browse featured product brands from the catalog. Pick a brand below to continue exploring.
             </p>
           </div>
@@ -172,36 +172,36 @@ export default function ByBrandPageMain() {
         {/* Brand Profile Card — only when brand selected */}
         {selectedBrandItem && (
           <>
-            <div className="rounded-lg bg-white p-6 border border-gray-200">
+            <div className="rounded-lg bg-white dark:bg-gray-800 p-6 border border-gray-200 dark:border-gray-700">
               <div className="flex items-center gap-6">
-                <div className={`relative flex h-32 w-32 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-white border border-gray-200`}>
+                <div className={`relative flex h-32 w-32 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600`}>
                   {selectedBrandItem.image ? (
                     <Image src={selectedBrandItem.image} alt={selectedBrandItem.name} fill className="object-contain p-2" unoptimized />
                   ) : (
-                    <span className="text-3xl font-extrabold tracking-wider text-gray-400">
+                    <span className="text-3xl font-extrabold tracking-wider text-gray-400 dark:text-gray-500">
                       {getBrandInitials(selectedBrandItem.name)}
                     </span>
                   )}
                 </div>
                 <div className="flex-1">
-                  <h1 className="text-2xl font-bold text-gray-900">{selectedBrandItem.name}</h1>
-                  <p className="mt-2 text-sm text-gray-500">
+                  <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{selectedBrandItem.name}</h1>
+                  <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
                     Browse all products from this brand
                   </p>
                   <div className="mt-3 flex items-center gap-4 text-sm">
-                    <div className="flex items-center gap-1 text-gray-600">
+                    <div className="flex items-center gap-1 text-gray-600 dark:text-gray-400">
                       <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                       </svg>
                       <span>Chat Performance: 95%</span>
                     </div>
-                    <div className="flex items-center gap-1 text-gray-600">
+                    <div className="flex items-center gap-1 text-gray-600 dark:text-gray-400">
                       <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <path d="M12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
                       </svg>
                       <span>Overall Rating: 4.8</span>
                     </div>
-                    <div className="flex items-center gap-1 text-gray-600">
+                    <div className="flex items-center gap-1 text-gray-600 dark:text-gray-400">
                       <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
                         <line x1="3" y1="6" x2="21" y2="6" />
@@ -209,7 +209,7 @@ export default function ByBrandPageMain() {
                       </svg>
                       <span>Total Products: {productsMeta?.total ?? brandProducts.length}</span>
                     </div>
-                    <div className="flex items-center gap-1 text-gray-600">
+                    <div className="flex items-center gap-1 text-gray-600 dark:text-gray-400">
                       <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
                         <line x1="16" y1="2" x2="16" y2="6" />
@@ -235,7 +235,7 @@ export default function ByBrandPageMain() {
             </div>
 
             {/* Promotional Banner */}
-            <div className="relative rounded-lg overflow-hidden border border-gray-200 bg-gradient-to-r from-orange-500 to-orange-600">
+            <div className="relative rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 bg-gradient-to-r from-orange-500 to-orange-600 dark:from-orange-600 dark:to-orange-700">
               <div className="px-6 py-8">
                 <p className="text-xs font-bold uppercase tracking-[0.3em] text-orange-100">Special Offer</p>
                 <h2 className="mt-2 text-2xl font-bold text-white">
@@ -251,11 +251,11 @@ export default function ByBrandPageMain() {
 
         {/* Search + Filters — only when no brand selected */}
         {!selectedBrand && (
-          <div className="rounded-xl bg-white p-6 border border-gray-200">
+          <div className="rounded-xl bg-white dark:bg-gray-800 p-6 border border-gray-200 dark:border-gray-700">
             <div className="flex flex-col gap-6">
               {/* Search bar */}
               <div className="relative">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 pointer-events-none">
                   <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
                 </svg>
                 <input
@@ -263,12 +263,12 @@ export default function ByBrandPageMain() {
                   value={searchQuery}
                   onChange={(e) => { setSearchQuery(e.target.value); setLetterFilter('ALL') }}
                   placeholder="Search brands..."
-                  className="w-full rounded-xl border border-gray-200 bg-gray-50 py-3 pl-12 pr-12 text-base text-gray-700 placeholder:text-gray-400 focus:border-orange-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-400/30 transition-all"
+                  className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 py-3 pl-12 pr-12 text-base text-gray-700 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-orange-400 focus:bg-white dark:focus:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-orange-400/30 transition-all"
                 />
                 {searchQuery && (
                   <button
                     onClick={() => setSearchQuery('')}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400 transition-colors"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
                   </button>
@@ -280,7 +280,7 @@ export default function ByBrandPageMain() {
                 {/* Letter filter — hidden when searching */}
                 {!searchQuery && (
                   <div className="flex flex-wrap gap-2">
-                    <span className="px-3 py-2 text-sm font-semibold text-gray-500">Filter:</span>
+                    <span className="px-3 py-2 text-sm font-semibold text-gray-500 dark:text-gray-400">Filter:</span>
                     {availableLetters.map((letter) => (
                       <button
                         key={letter}
@@ -288,7 +288,7 @@ export default function ByBrandPageMain() {
                         className={`rounded-lg px-4 py-2 text-sm font-semibold cursor-pointer transition-all ${
                           letterFilter === letter
                             ? 'bg-orange-500 text-white'
-                            : 'bg-gray-100 text-gray-600 hover:bg-orange-100 hover:text-orange-600'
+                            : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-orange-100 dark:hover:bg-orange-500/20 hover:text-orange-600 dark:hover:text-orange-400'
                         }`}
                       >
                         {letter}
@@ -299,11 +299,11 @@ export default function ByBrandPageMain() {
 
                 {/* Sort dropdown */}
                 <div className="flex items-center gap-2">
-                  <span className="px-3 py-2 text-sm font-semibold text-gray-500">Sort:</span>
+                  <span className="px-3 py-2 text-sm font-semibold text-gray-500 dark:text-gray-400">Sort:</span>
                   <select
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value as 'name-asc' | 'name-desc' | 'default')}
-                    className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-400/30 transition-all"
+                    className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-700 px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-200 focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-400/30 transition-all"
                   >
                     <option value="default">Default</option>
                     <option value="name-asc">Name: A to Z</option>
@@ -323,14 +323,14 @@ export default function ByBrandPageMain() {
                 {Array.from({ length: 12 }).map((_, i) => <BrandCardSkeleton key={i} />)}
               </div>
             ) : brands.length === 0 ? (
-              <div className="flex flex-col items-center justify-center rounded-lg py-16 text-center border border-gray-200">
-                <p className="text-lg font-medium text-gray-700">No brands found</p>
-                <p className="mt-1 text-sm text-gray-500">Try adjusting your filters</p>
+              <div className="flex flex-col items-center justify-center rounded-lg py-16 text-center border border-gray-200 dark:border-gray-700">
+                <p className="text-lg font-medium text-gray-700 dark:text-gray-300">No brands found</p>
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Try adjusting your filters</p>
               </div>
             ) : (
               <>
-                <p className="text-sm text-gray-500 mb-4">
-                  Showing <span className="font-semibold text-gray-700">{brands.length}</span> brand{brands.length !== 1 ? 's' : ''}
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                  Showing <span className="font-semibold text-gray-700 dark:text-gray-300">{brands.length}</span> brand{brands.length !== 1 ? 's' : ''}
                   {letterFilter !== 'ALL' && ` starting with "${letterFilter}"`}
                   {searchQuery && ` matching "${searchQuery}"`}
                 </p>
@@ -342,18 +342,18 @@ export default function ByBrandPageMain() {
                       <Link
                         key={brand.id}
                         href={`/by-brand?brand=${encodeURIComponent(brandSlug)}`}
-                        className="group flex flex-col items-center rounded-lg border border-gray-200 p-4 text-center hover:border-orange-500 transition-colors"
+                        className="group flex flex-col items-center rounded-lg border border-gray-200 dark:border-gray-700 p-4 text-center hover:border-orange-500 dark:hover:border-orange-400 transition-colors"
                       >
                         <div className="relative flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded">
                           {brand.image ? (
                             <Image src={brand.image} alt={brand.name} fill className="object-contain p-1" unoptimized />
                           ) : (
-                            <span className="text-lg font-semibold text-gray-400">
+                            <span className="text-lg font-semibold text-gray-400 dark:text-gray-600">
                               {getBrandInitials(brand.name)}
                             </span>
                           )}
                         </div>
-                        <h3 className="mt-3 truncate text-sm font-medium text-gray-900">
+                        <h3 className="mt-3 truncate text-sm font-medium text-gray-900 dark:text-gray-100">
                           {highlightText(brand.name, searchQuery)}
                         </h3>
                       </Link>
@@ -367,10 +367,10 @@ export default function ByBrandPageMain() {
 
         {/* Featured Products Section */}
         {selectedBrandItem && !isFetchingProducts && brandProducts.length > 0 && (
-          <div className="rounded-lg bg-white p-6 border border-gray-200">
+          <div className="rounded-lg bg-white dark:bg-gray-800 p-6 border border-gray-200 dark:border-gray-700">
             <div className="mb-4">
-              <p className="text-xs font-bold uppercase tracking-[0.3em] text-orange-500">Featured</p>
-              <h3 className="mt-1 text-xl font-bold text-gray-900">Featured Products</h3>
+              <p className="text-xs font-bold uppercase tracking-[0.3em] text-orange-500 dark:text-orange-400">Featured</p>
+              <h3 className="mt-1 text-xl font-bold text-gray-900 dark:text-white">Featured Products</h3>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {brandProducts.slice(0, 4).map((product) => (
@@ -382,9 +382,9 @@ export default function ByBrandPageMain() {
 
         {/* Hero Banner */}
         {selectedBrandItem && !isFetchingProducts && brandProducts.length > 0 && (
-          <div className="relative rounded-lg overflow-hidden border border-gray-200 h-64 md:h-80 bg-white">
+          <div className="relative rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 h-64 md:h-80 bg-white dark:bg-gray-800">
             {/* Subtle Pattern Background */}
-            <div className="absolute inset-0 opacity-5" style={{
+            <div className="absolute inset-0 opacity-5 dark:opacity-10" style={{
               backgroundImage: 'radial-gradient(circle at 2px 2px, #000 1px, transparent 0)',
               backgroundSize: '24px 24px'
             }} />
@@ -437,8 +437,8 @@ export default function ByBrandPageMain() {
                 <button
                   key={index}
                   onClick={() => setCurrentSlide(index)}
-                  className={`w-3 h-3 rounded-full transition-colors border-2 border-gray-300 cursor-pointer ${
-                    currentSlide === index ? 'bg-orange-500 border-orange-500' : 'bg-white'
+                  className={`w-3 h-3 rounded-full transition-colors border-2 cursor-pointer ${
+                    currentSlide === index ? 'bg-orange-500 border-orange-500' : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700'
                   }`}
                 />
               ))}
@@ -447,7 +447,7 @@ export default function ByBrandPageMain() {
             {/* Navigation Arrows */}
             <button
               onClick={() => setCurrentSlide((prev: number) => (prev === 0 ? Math.min(4, brandProducts.length - 1) : prev - 1))}
-              className="absolute left-48 md:left-64 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 rounded-full shadow-md transition-colors cursor-pointer z-20"
+              className="absolute left-48 md:left-64 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-full shadow-md transition-colors cursor-pointer z-20"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <polyline points="15 18 9 12 15 6" />
@@ -455,7 +455,7 @@ export default function ByBrandPageMain() {
             </button>
             <button
               onClick={() => setCurrentSlide((prev: number) => (prev === Math.min(4, brandProducts.length - 1) ? 0 : prev + 1))}
-              className="absolute right-48 md:right-64 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 rounded-full shadow-md transition-colors cursor-pointer z-20"
+              className="absolute right-48 md:right-64 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-full shadow-md transition-colors cursor-pointer z-20"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <polyline points="9 18 15 12 9 6" />
@@ -473,13 +473,13 @@ export default function ByBrandPageMain() {
             </div>
 
             {/* Right Side - Products */}
-            <div className="flex-1 rounded-lg bg-white p-6 border border-gray-200">
-              <div className="flex flex-col gap-2 border-b border-gray-100 pb-5 sm:flex-row sm:items-end sm:justify-between">
+            <div className="flex-1 rounded-lg bg-white dark:bg-gray-800 p-6 border border-gray-200 dark:border-gray-700">
+              <div className="flex flex-col gap-2 border-b border-gray-100 dark:border-gray-700 pb-5 sm:flex-row sm:items-end sm:justify-between">
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.3em] text-orange-500">Brand Products</p>
-                  <h2 className="mt-2 text-2xl font-bold text-gray-900">{selectedBrandItem.name}</h2>
+                  <p className="text-xs font-bold uppercase tracking-[0.3em] text-orange-500 dark:text-orange-400">Brand Products</p>
+                  <h2 className="mt-2 text-2xl font-bold text-gray-900 dark:text-white">{selectedBrandItem.name}</h2>
                 </div>
-                <span className="inline-flex items-center rounded-full bg-orange-50 px-3 py-1 text-xs font-semibold text-orange-600 ring-1 ring-orange-200">
+                <span className="inline-flex items-center rounded-full bg-orange-50 dark:bg-orange-500/10 px-3 py-1 text-xs font-semibold text-orange-600 dark:text-orange-400 ring-1 ring-orange-200 dark:ring-orange-500/30">
                   {isFetchingProducts ? 'Loading…' : `${productsMeta?.total ?? brandProducts.length} product${(productsMeta?.total ?? brandProducts.length) !== 1 ? 's' : ''}`}
                 </span>
               </div>
@@ -491,9 +491,9 @@ export default function ByBrandPageMain() {
                   </div>
                 ) : brandProducts.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-20 text-center">
-                    <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 text-2xl">📦</div>
-                    <p className="mt-4 font-semibold text-gray-700">No products yet</p>
-                    <p className="mt-1 text-sm text-gray-400">No products assigned to this brand yet.</p>
+                    <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700 text-2xl">📦</div>
+                    <p className="mt-4 font-semibold text-gray-700 dark:text-gray-300">No products yet</p>
+                    <p className="mt-1 text-sm text-gray-400 dark:text-gray-500">No products assigned to this brand yet.</p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -506,16 +506,16 @@ export default function ByBrandPageMain() {
 
               {/* Pagination */}
               {!isFetchingProducts && totalPages > 1 && (
-                <div className="-mx-6 -mb-6 flex flex-col items-center border-t border-gray-100 pt-6 gap-4 bg-white px-6 pb-6">
-                  <p className="text-sm text-gray-400">
-                    Page <span className="font-semibold text-gray-700">{productPage}</span> of <span className="font-semibold text-gray-700">{totalPages}</span>
+                <div className="-mx-6 -mb-6 flex flex-col items-center border-t border-gray-100 dark:border-gray-700 pt-6 gap-4 bg-white dark:bg-gray-800 px-6 pb-6">
+                  <p className="text-sm text-gray-400 dark:text-gray-500">
+                    Page <span className="font-semibold text-gray-700 dark:text-gray-300">{productPage}</span> of <span className="font-semibold text-gray-700 dark:text-gray-300">{totalPages}</span>
                   </p>
                   <div className="flex items-center gap-1.5">
                     {/* Prev */}
                     <button
                       onClick={() => setProductPage((p) => Math.max(1, p - 1))}
                       disabled={productPage === 1}
-                      className="flex h-9 w-9 items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-500 transition hover:border-orange-300 hover:text-orange-500 cursor-pointer disabled:cursor-not-allowed disabled:opacity-40"
+                      className="flex h-9 w-9 items-center justify-center rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-700 text-gray-500 dark:text-gray-400 transition hover:border-orange-300 dark:hover:border-orange-500 hover:text-orange-500 dark:hover:text-orange-400 cursor-pointer disabled:cursor-not-allowed disabled:opacity-40"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="15 18 9 12 15 6" /></svg>
                     </button>
@@ -530,15 +530,15 @@ export default function ByBrandPageMain() {
                       }, [])
                       .map((item, idx) =>
                         item === 'ellipsis' ? (
-                          <span key={`e-${idx}`} className="flex h-9 w-9 items-center justify-center text-sm text-gray-400">…</span>
+                          <span key={`e-${idx}`} className="flex h-9 w-9 items-center justify-center text-sm text-gray-400 dark:text-gray-500">…</span>
                         ) : (
                           <button
                             key={item}
                             onClick={() => setProductPage(item as number)}
                             className={`flex h-9 w-9 items-center justify-center rounded-xl text-sm font-semibold transition-all cursor-pointer ${
                               productPage === item
-                                ? 'bg-orange-500 text-white shadow-sm shadow-orange-200'
-                                : 'border border-gray-200 bg-white text-gray-600 hover:border-orange-300 hover:text-orange-500'
+                                ? 'bg-orange-500 text-white shadow-sm shadow-orange-200 dark:shadow-orange-900'
+                                : 'border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:border-orange-300 dark:hover:border-orange-500 hover:text-orange-500 dark:hover:text-orange-400'
                             }`}
                           >
                             {item}
@@ -550,7 +550,7 @@ export default function ByBrandPageMain() {
                     <button
                       onClick={() => setProductPage((p) => Math.min(totalPages, p + 1))}
                       disabled={productPage === totalPages}
-                      className="flex h-9 w-9 items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-500 transition hover:border-orange-300 hover:text-orange-500 cursor-pointer disabled:cursor-not-allowed disabled:opacity-40"
+                      className="flex h-9 w-9 items-center justify-center rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-700 text-gray-500 dark:text-gray-400 transition hover:border-orange-300 dark:hover:border-orange-500 hover:text-orange-500 dark:hover:text-orange-400 cursor-pointer disabled:cursor-not-allowed disabled:opacity-40"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6" /></svg>
                     </button>
@@ -563,10 +563,10 @@ export default function ByBrandPageMain() {
 
         {/* You May Also Like — only when brand selected */}
         {selectedBrandItem && (
-          <div className="rounded-lg bg-white p-6 border border-gray-200">
+          <div className="rounded-lg bg-white dark:bg-gray-800 p-6 border border-gray-200 dark:border-gray-700">
             <div className="mb-6">
-              <p className="text-xs font-bold uppercase tracking-[0.3em] text-orange-500">You May Also Like</p>
-              <h2 className="mt-2 text-2xl font-bold text-gray-900">Other Brands</h2>
+              <p className="text-xs font-bold uppercase tracking-[0.3em] text-orange-500 dark:text-orange-400">You May Also Like</p>
+              <h2 className="mt-2 text-2xl font-bold text-gray-900 dark:text-white">Other Brands</h2>
             </div>
             {isFetching ? (
               <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
@@ -574,7 +574,7 @@ export default function ByBrandPageMain() {
               </div>
             ) : allBrands.filter(b => b.id !== selectedBrandItem.id).length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-center">
-                <p className="text-sm text-gray-500">No other brands available</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">No other brands available</p>
               </div>
             ) : (
               <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
@@ -588,18 +588,18 @@ export default function ByBrandPageMain() {
                       <Link
                         key={brand.id}
                         href={`/by-brand?brand=${encodeURIComponent(brandSlug)}`}
-                        className="group flex flex-col items-center rounded-lg border border-gray-200 p-4 text-center hover:border-orange-500 transition-colors"
+                        className="group flex flex-col items-center rounded-lg border border-gray-200 dark:border-gray-700 p-4 text-center hover:border-orange-500 dark:hover:border-orange-400 transition-colors"
                       >
                         <div className="relative flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded">
                           {brand.image ? (
                             <Image src={brand.image} alt={brand.name} fill className="object-contain p-1" unoptimized />
                           ) : (
-                            <span className="text-lg font-semibold text-gray-400">
+                            <span className="text-lg font-semibold text-gray-400 dark:text-gray-600">
                               {getBrandInitials(brand.name)}
                             </span>
                           )}
                         </div>
-                        <h3 className="mt-3 truncate text-sm font-medium text-gray-900">
+                        <h3 className="mt-3 truncate text-sm font-medium text-gray-900 dark:text-gray-100">
                           {highlightText(brand.name, searchQuery)}
                         </h3>
                       </Link>

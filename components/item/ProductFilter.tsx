@@ -80,31 +80,31 @@ export default function ProductFilter({ onFilterChange, className = '' }: Produc
   }
 
   return (
-    <div className={`bg-white rounded-lg border border-gray-200 p-6 ${className}`}>
-      <h3 className="text-lg font-bold text-gray-900 mb-6">Filters</h3>
+    <div className={`bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 ${className}`}>
+      <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-6">Filters</h3>
 
       {/* Price Range Filter */}
       <div className="mb-6">
-        <h4 className="text-sm font-semibold text-gray-900 mb-3">Price Range</h4>
+        <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">Price Range</h4>
         <div className="flex items-center gap-3">
           <div className="flex-1">
-            <label className="text-xs text-gray-500 block mb-1">Min</label>
+            <label className="text-xs text-gray-500 dark:text-gray-400 block mb-1">Min</label>
             <input
               type="number"
               value={priceRange[0]}
               onChange={(e) => handlePriceChange(Number(e.target.value), priceRange[1])}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-orange-500"
               placeholder="0"
             />
           </div>
-          <span className="text-gray-400 mt-6">-</span>
+          <span className="text-gray-400 dark:text-gray-500 mt-6">-</span>
           <div className="flex-1">
-            <label className="text-xs text-gray-500 block mb-1">Max</label>
+            <label className="text-xs text-gray-500 dark:text-gray-400 block mb-1">Max</label>
             <input
               type="number"
               value={priceRange[1]}
               onChange={(e) => handlePriceChange(priceRange[0], Number(e.target.value))}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-orange-500"
               placeholder="10000"
             />
           </div>
@@ -113,7 +113,7 @@ export default function ProductFilter({ onFilterChange, className = '' }: Produc
 
       {/* Category Filter */}
       <div className="mb-6">
-        <h4 className="text-sm font-semibold text-gray-900 mb-3">Categories</h4>
+        <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">Categories</h4>
         <div className="space-y-2">
           {categories.map((category) => (
             <label key={category} className="flex items-center gap-2 cursor-pointer">
@@ -121,9 +121,9 @@ export default function ProductFilter({ onFilterChange, className = '' }: Produc
                 type="checkbox"
                 checked={selectedCategories.includes(category)}
                 onChange={() => handleCategoryToggle(category)}
-                className="w-4 h-4 rounded border-gray-300 text-orange-500 focus:ring-orange-500"
+                className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-orange-500 focus:ring-orange-500"
               />
-              <span className="text-sm text-gray-700">{category}</span>
+              <span className="text-sm text-gray-700 dark:text-gray-300">{category}</span>
             </label>
           ))}
         </div>
@@ -131,7 +131,7 @@ export default function ProductFilter({ onFilterChange, className = '' }: Produc
 
       {/* Rating Filter */}
       <div className="mb-6">
-        <h4 className="text-sm font-semibold text-gray-900 mb-3">Rating</h4>
+        <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">Rating</h4>
         <div className="space-y-2">
           {[4, 3, 2, 1].map((rating) => (
             <label key={rating} className="flex items-center gap-2 cursor-pointer">
@@ -139,7 +139,7 @@ export default function ProductFilter({ onFilterChange, className = '' }: Produc
                 type="checkbox"
                 checked={selectedRatings.includes(rating)}
                 onChange={() => handleRatingToggle(rating)}
-                className="w-4 h-4 rounded border-gray-300 text-orange-500 focus:ring-orange-500"
+                className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-orange-500 focus:ring-orange-500"
               />
               <div className="flex items-center gap-1">
                 {[1, 2, 3, 4, 5].map((star) => (
@@ -156,7 +156,7 @@ export default function ProductFilter({ onFilterChange, className = '' }: Produc
                     <path d="M12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
                   </svg>
                 ))}
-                <span className="text-sm text-gray-700">& Up</span>
+                <span className="text-sm text-gray-700 dark:text-gray-300">& Up</span>
               </div>
             </label>
           ))}
@@ -170,9 +170,9 @@ export default function ProductFilter({ onFilterChange, className = '' }: Produc
             type="checkbox"
             checked={inStockOnly}
             onChange={handleInStockToggle}
-            className="w-4 h-4 rounded border-gray-300 text-orange-500 focus:ring-orange-500"
+            className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-orange-500 focus:ring-orange-500"
           />
-          <span className="text-sm text-gray-700">In Stock Only</span>
+          <span className="text-sm text-gray-700 dark:text-gray-300">In Stock Only</span>
         </label>
       </div>
 
@@ -190,7 +190,7 @@ export default function ProductFilter({ onFilterChange, className = '' }: Produc
             inStock: false
           })
         }}
-        className="w-full rounded-lg border border-gray-300 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
+        className="w-full rounded-lg border border-gray-300 dark:border-gray-600 py-2 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer"
       >
         Clear All Filters
       </button>

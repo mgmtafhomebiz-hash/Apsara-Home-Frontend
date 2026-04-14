@@ -47,9 +47,9 @@ export default function ItemCard({ product, brandName }: ItemCardProps) {
   const displayPv = Number(product.prodpv ?? 0)
 
   return (
-    <Link href={href} className="flex flex-col group border border-gray-200 rounded-lg overflow-hidden hover:border-orange-500 transition-colors">
+    <Link href={href} className="flex flex-col group bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden hover:border-orange-500 dark:hover:border-orange-400 transition-colors">
       {/* Product Image */}
-      <div className="relative aspect-[3/4] w-full bg-gray-100 overflow-hidden border-b border-gray-200">
+      <div className="relative aspect-[3/4] w-full bg-gray-100 dark:bg-gray-700 overflow-hidden border-b border-gray-200 dark:border-gray-700">
         {product.image && !imageError ? (
           <Image
             src={product.image}
@@ -60,7 +60,7 @@ export default function ItemCard({ product, brandName }: ItemCardProps) {
             onError={() => setImageError(true)}
           />
         ) : (
-          <div className="flex h-full items-center justify-center text-gray-400">
+          <div className="flex h-full items-center justify-center text-gray-400 dark:text-gray-500">
             <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
               <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
               <circle cx="8.5" cy="8.5" r="1.5" />
@@ -90,24 +90,24 @@ export default function ItemCard({ product, brandName }: ItemCardProps) {
       {/* Product Info */}
       <div className="mt-1.5 flex flex-col gap-1 p-3">
         {/* Product Name */}
-        <h3 className="line-clamp-2 text-sm text-gray-800 leading-snug min-h-[2.5rem]">
+        <h3 className="line-clamp-2 text-sm text-gray-800 dark:text-gray-200 leading-snug min-h-[2.5rem]">
           {product.name}
         </h3>
 
         {/* Price */}
         <div className="flex items-baseline justify-between gap-2">
           <div className="flex items-baseline gap-2">
-            <span className="text-base font-bold text-orange-500">
+            <span className="text-base font-bold text-orange-500 dark:text-orange-400">
               ₱{displayPrice.toLocaleString()}
             </span>
             {strikePrice > displayPrice && (
-              <span className="text-sm text-gray-400 line-through">
+              <span className="text-sm text-gray-400 dark:text-gray-500 line-through">
                 ₱{strikePrice.toLocaleString()}
               </span>
             )}
           </div>
           {displayPv > 0 && (
-            <span className="rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-[11px] font-semibold text-blue-700 shrink-0">
+            <span className="rounded-full border border-blue-200 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 text-[11px] font-semibold text-blue-700 dark:text-blue-300 shrink-0">
               PV {displayPv.toLocaleString()}
             </span>
           )}
@@ -131,7 +131,7 @@ export default function ItemCard({ product, brandName }: ItemCardProps) {
               </svg>
             ))}
           </div>
-          <span className="text-xs text-gray-400">124 sold</span>
+          <span className="text-xs text-gray-400 dark:text-gray-500">124 sold</span>
         </div>
       </div>
     </Link>
