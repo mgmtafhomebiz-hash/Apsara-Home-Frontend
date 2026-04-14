@@ -19,6 +19,7 @@ import {
   useRejectAdminOrderMutation,
   useSyncAdminOrderZqTrackingMutation,
   useTrackAdminOrderCourierMutation,
+  useUpdateAdminOrderFulfillmentModeMutation,
   useUpdateAdminOrderShipmentStatusMutation,
 } from '@/store/api/adminOrdersApi'
 import { showErrorToast, showSuccessToast } from '@/libs/toast'
@@ -160,6 +161,20 @@ const extractApiError = (err: unknown, fallback: string) => {
   return data?.error || data?.message || fallback
 }
 
+const isLocalCourier = (courier?: string | null) => {
+  const normalized = String(courier ?? '').trim().toLowerCase()
+  return normalized === 'jnt' || normalized === 'xde'
+}
+
+const formatCourierLabel = (courier?: string | null) => {
+  const normalized = String(courier ?? '').trim().toLowerCase()
+  if (normalized === 'afhome') return 'AF Home'
+  if (normalized === 'jnt') return 'J&T'
+  if (normalized === 'xde') return 'XDE'
+  if (normalized === 'zq') return 'ZQ'
+  return courier ?? ''
+}
+
 const extractCourierStatus = (payload: Record<string, unknown> | Array<unknown> | null | undefined): string | null => {
   if (!payload) return null
 
@@ -235,40 +250,74 @@ function AdminOrderSelect({
   value,
   options,
   isDisabled,
+  selectedTone = 'default',
   onChange,
 }: {
   ariaLabel: string
   value: string
   options: Array<{ value: string; label: string }>
   isDisabled?: boolean
+  selectedTone?: 'default' | 'shipment'
   onChange: (value: string) => void
 }) {
   const selectedLabel = options.find((option) => option.value === value)?.label ?? options[0]?.label ?? 'Select'
+  const triggerClassName = selectedTone === 'shipment'
+    ? 'flex min-h-10 w-full items-center justify-between rounded-xl border border-teal-200 bg-teal-50 px-3 text-left text-xs font-semibold text-teal-700 transition-all duration-200 hover:bg-teal-100 focus:border-teal-300 focus:bg-white disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-50 disabled:text-slate-400 disabled:opacity-100'
+    : 'flex min-h-10 w-full items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 text-left text-xs text-slate-700 transition-all duration-200 hover:bg-white focus:border-teal-300 focus:bg-white disabled:cursor-not-allowed disabled:opacity-50'
 
   return (
     <Select
       aria-label={ariaLabel}
       selectedKey={value}
       onSelectionChange={(key) => {
-        if (key != null) onChange(String(key))
+        if (key == null) return
+        const nextValue = String(key)
+        if (nextValue === value) return
+        onChange(nextValue)
       }}
       isDisabled={isDisabled}
       className="w-full"
     >
-      <Select.Trigger className="flex min-h-10 w-full items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 text-left text-xs text-slate-700 transition-all duration-200 hover:bg-white focus:border-teal-300 focus:bg-white disabled:cursor-not-allowed disabled:opacity-50">
+      <Select.Trigger className={triggerClassName}>
         <span className="truncate">{selectedLabel}</span>
         <Select.Indicator className="h-4 w-4 text-slate-400" />
       </Select.Trigger>
       <Select.Popover className="min-w-[var(--trigger-width)]">
         <ListBox className="p-1">
           {options.map((option) => (
-            <ListBoxItem id={option.value} key={option.value}>
+            <ListBoxItem
+              id={option.value}
+              key={option.value}
+              className={option.value === value
+                ? 'rounded-lg border border-teal-200 bg-teal-50 text-teal-700 opacity-100'
+                : 'rounded-lg text-slate-700'
+              }
+            >
               {option.label}
             </ListBoxItem>
           ))}
         </ListBox>
       </Select.Popover>
     </Select>
+  )
+}
+
+function AdminOrderStaticValue({
+  label,
+  tone = 'default',
+}: {
+  label: string
+  tone?: 'default' | 'shipment'
+}) {
+  const className = tone === 'shipment'
+    ? 'flex min-h-10 w-full items-center justify-between rounded-xl border border-teal-200 bg-teal-50 px-3 text-left text-xs font-semibold text-teal-700'
+    : 'flex min-h-10 w-full items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 text-left text-xs font-semibold text-slate-700'
+
+  return (
+    <div className={className}>
+      <span className="truncate">{label}</span>
+      <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Locked</span>
+    </div>
   )
 }
 
@@ -313,6 +362,7 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
   const [getCourierWaybill] = useGetAdminOrderCourierWaybillMutation()
   const [cancelCourier] = useCancelAdminOrderCourierMutation()
   const [getCourierEpod] = useGetAdminOrderCourierEpodMutation()
+  const [updateFulfillmentMode] = useUpdateAdminOrderFulfillmentModeMutation()
   const [updateShipmentStatus] = useUpdateAdminOrderShipmentStatusMutation()
   const [pushToZq] = usePushAdminOrderToZqMutation()
   const [fetchZqDetail] = useFetchAdminOrderZqDetailMutation()
@@ -365,7 +415,8 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
       for (const order of data.orders) {
         const hasExistingZqFlow = Boolean(order.zq_platform_order_id || order.zq_order_id || order.zq_status)
         if (!next[order.id]) {
-          next[order.id] = hasExistingZqFlow ? 'zq' : (order.courier ? 'local_courier' : 'manual')
+          next[order.id] = (order.fulfillment_mode as FulfillmentMode | undefined)
+            ?? (hasExistingZqFlow ? 'zq' : (isLocalCourier(order.courier) ? 'local_courier' : 'manual'))
         }
       }
       return next
@@ -416,14 +467,36 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
     } finally { setBusyId(null) }
   }
 
-  const handleShipmentStatusChange = async (id: number, shipmentStatus: AdminShipmentStatus) => {
+  const handleShipmentStatusChange = async (
+    id: number,
+    shipmentStatus: AdminShipmentStatus,
+    options?: { courier?: AdminCourier; clearCourier?: boolean },
+  ) => {
     setBusyId(id)
     try {
-      await updateShipmentStatus({ id, shipment_status: shipmentStatus, courier: courierByOrder[id] ?? 'jnt' }).unwrap()
+      await updateShipmentStatus({
+        id,
+        shipment_status: shipmentStatus,
+        courier: options?.courier,
+        clear_courier: options?.clearCourier,
+      }).unwrap()
       showSuccessToast(`Shipment status updated to ${shipmentStatus.replace(/_/g, ' ')}.`)
     } catch (err: unknown) {
       showErrorToast((err as { data?: { message?: string } })?.data?.message || 'Failed to update shipment status.')
     } finally { setBusyId(null) }
+  }
+
+  const handleFulfillmentModeChange = async (id: number, mode: FulfillmentMode) => {
+    setBusyId(id)
+    try {
+      await updateFulfillmentMode({ id, mode }).unwrap()
+      setFulfillmentModeByOrder((prev) => ({ ...prev, [id]: mode }))
+      showSuccessToast(`Fulfillment mode locked to ${mode.replace(/_/g, ' ')}.`)
+    } catch (err: unknown) {
+      showErrorToast((err as { data?: { message?: string } })?.data?.message || 'Failed to update fulfillment mode.')
+    } finally {
+      setBusyId(null)
+    }
   }
 
   const handleBookCourier = async (id: number) => {
@@ -814,10 +887,18 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                       const zqStatusKey = String(order.zq_status ?? '').trim().toLowerCase()
                       const zqBadgeClass = ZQ_STATUS_STYLES[zqStatusKey] ?? 'bg-slate-50 text-slate-600 border-slate-200'
                       const hasZqOrder = Boolean(order.zq_platform_order_id || order.zq_order_id || zqStatusKey)
-                      const selectedFulfillmentMode = fulfillmentModeByOrder[order.id] ?? (hasZqOrder ? 'zq' : 'manual')
+                      const selectedFulfillmentMode = fulfillmentModeByOrder[order.id]
+                        ?? (order.fulfillment_mode as FulfillmentMode | undefined)
+                        ?? (hasZqOrder ? 'zq' : 'manual')
                       const isManualMode = selectedFulfillmentMode === 'manual'
                       const isLocalCourierMode = selectedFulfillmentMode === 'local_courier'
                       const isZqMode = selectedFulfillmentMode === 'zq'
+                      const fulfillmentModeLabel = FULFILLMENT_MODE_OPTIONS.find((option) => option.value === selectedFulfillmentMode)?.label ?? 'Manual'
+                      const isFulfillmentModeLocked =
+                        effectiveFilter === 'shipped'
+                        || order.fulfillment_status === 'shipped'
+                        || order.fulfillment_status === 'out_for_delivery'
+                        || order.fulfillment_status === 'delivered'
                       const canPushZq = canTrackThisOrder && isZqMode && !hasZqOrder
                       const canUseZqLookup = canTrackThisOrder && isZqMode && hasZqOrder
                       const canUseCourierFlow = canTrackThisOrder && isLocalCourierMode && !hasZqOrder
@@ -936,13 +1017,17 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                           {/* Tracking select */}
                           <Table.Cell className="px-4 py-3.5 align-top">
                             <div className="space-y-1.5">
-                              <AdminOrderSelect
-                                ariaLabel={`Fulfillment mode for order ${order.checkout_id}`}
-                                value={selectedFulfillmentMode}
-                                options={FULFILLMENT_MODE_OPTIONS}
-                                isDisabled={isBusy || order.approval_status !== 'approved' || hasZqOrder}
-                                onChange={(value) => setFulfillmentModeByOrder(prev => ({ ...prev, [order.id]: value as FulfillmentMode }))}
-                              />
+                              {isFulfillmentModeLocked ? (
+                                <AdminOrderStaticValue label={fulfillmentModeLabel} />
+                              ) : (
+                                <AdminOrderSelect
+                                  ariaLabel={`Fulfillment mode for order ${order.checkout_id}`}
+                                  value={selectedFulfillmentMode}
+                                  options={FULFILLMENT_MODE_OPTIONS}
+                                  isDisabled={isBusy || order.approval_status !== 'approved' || hasZqOrder}
+                                  onChange={(value) => handleFulfillmentModeChange(order.id, value as FulfillmentMode)}
+                                />
+                              )}
 
                               {isZqMode ? (
                                 <div className="rounded-2xl border border-violet-200 bg-violet-50 p-3">
@@ -985,8 +1070,9 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                                     ariaLabel={`Manual shipment status for order ${order.checkout_id}`}
                                     value={(order.shipment_status as AdminShipmentStatus | undefined) ?? 'for_pickup'}
                                     options={SHIPMENT_STATUS_OPTIONS}
+                                    selectedTone="shipment"
                                     isDisabled={isBusy || !canUseManualFlow}
-                                    onChange={(value) => handleShipmentStatusChange(order.id, value as AdminShipmentStatus)}
+                                    onChange={(value) => handleShipmentStatusChange(order.id, value as AdminShipmentStatus, { clearCourier: true })}
                                   />
                                 </div>
                               ) : (
@@ -1002,8 +1088,9 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                                     ariaLabel={`Shipment status for order ${order.checkout_id}`}
                                     value={(order.shipment_status as AdminShipmentStatus | undefined) ?? 'for_pickup'}
                                     options={SHIPMENT_STATUS_OPTIONS}
+                                    selectedTone="shipment"
                                     isDisabled={isBusy || !canUseCourierFlow || isCourierBooked}
-                                    onChange={(value) => handleShipmentStatusChange(order.id, value as AdminShipmentStatus)}
+                                    onChange={(value) => handleShipmentStatusChange(order.id, value as AdminShipmentStatus, { courier: courierByOrder[order.id] ?? 'jnt' })}
                                   />
                                   <div className="grid grid-cols-2 gap-1">
                                     <Button
@@ -1085,7 +1172,7 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                                       ) : null}
                                     </div>
                                   ) : null}
-                                  {order.courier ? <p className="uppercase">Courier: {order.courier}</p> : null}
+                                  {order.courier ? <p className="uppercase">Courier: {formatCourierLabel(order.courier)}</p> : null}
                                   {rawCourierStatus ? <p className="capitalize">Courier Status: {rawCourierStatus.replace(/_/g, ' ')}</p> : null}
                                   {order.tracking_no ? (
                                     <div className="rounded-xl border border-teal-200 bg-teal-50 p-2">
