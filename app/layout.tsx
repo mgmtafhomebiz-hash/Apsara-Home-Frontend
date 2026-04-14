@@ -34,7 +34,7 @@ export default function RootLayout({
         <link rel="preload" as="image" href={`${apiBase}/Image/sir.png`} />
         <link rel="preload" as="image" href={`${apiBase}/Image/af.png`} />
       </head>
-      <body className="antialiased bg-white">
+      <body className="antialiased bg-white dark:bg-gray-900">
         <Providers>{children}</Providers>
         <ShopAiSupportGate />
         {/* <Script
