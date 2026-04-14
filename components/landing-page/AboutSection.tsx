@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 export default function AboutSection() {
   return (
     <section id="about" className="py-24 md:py-32 bg-white dark:bg-gray-950 overflow-hidden">
-      <div className="max-w-[1400px] mx-auto px-6 md:px-10 lg:px-20">
+      <div className="container mx-auto px-4">
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
           {/* Image Grid */}
           <motion.div
