@@ -74,7 +74,7 @@ export default function Footer() {
   };
 
   return (
-    <footer id="contact" className="!bg-gray-100 dark:!bg-gray-950 text-gray-900 dark:text-white">
+    <footer id="contact" className="bg-gray-100 dark:bg-gray-950 text-gray-900 dark:text-white">
       <div className="container mx-auto px-4 pt-16 md:pt-20 pb-8">
         <motion.div
           variants={containerVariants}
@@ -200,7 +200,7 @@ export default function Footer() {
           </motion.div>
         </motion.div>
 
-        {/* Bottom Bar */}
+        {/* Bottom Bar */}  
         <motion.div
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
