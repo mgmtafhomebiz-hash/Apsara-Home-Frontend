@@ -6,7 +6,7 @@ import { useState, useMemo, useEffect, useRef } from 'react';
 import Footer from '@/components/layout/Footer';
 import TopBar from '@/components/layout/TopBar';
 import Navbar from '@/components/layout/Navbar';
-import ProductCard from '@/components/ui/ProductCard';
+import ItemCard from '@/components/item/ItemCard';
 import { CategoryProduct, categoryMeta, categoryProducts, CATEGORY_BRANDS } from '@/libs/CategoryData';
 import type { Category } from '@/store/api/categoriesApi';
 
@@ -588,7 +588,7 @@ export default function CategoryListProductMain({
                                             animate={{ opacity: 1, y: 0 }}
                                             transition={{ duration: 0.22, delay: i * 0.02, ease: 'easeOut' }}
                                         >
-                                            <ProductCard {...product} viewMode={viewMode} />
+                                            <ItemCard key={product.id} product={product} brandName={product.brand || ''} />
                                         </motion.div>
                                     ))}
                                 </motion.div>
