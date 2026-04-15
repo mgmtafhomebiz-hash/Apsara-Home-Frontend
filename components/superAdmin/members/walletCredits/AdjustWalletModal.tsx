@@ -47,7 +47,7 @@ export default function AdjustWalletModal({ member, onClose, onSubmit }: AdjustW
             className="relative bg-white rounded-2xl shadow-xl w-full max-w-md z-10 overflow-hidden"
           >
             {/* Header */}
-            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+            <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
               <div>
                 <h2 className="text-sm font-bold text-slate-800">Adjust Wallet</h2>
                 <p className="text-xs text-slate-400 mt-0.5">{member.name} · {member.email}</p>

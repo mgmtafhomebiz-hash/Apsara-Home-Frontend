@@ -85,12 +85,12 @@ function ToolbarSelect({
       }}
       className="w-full"
     >
-      <Select.Trigger className="flex min-h-11 w-full items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 text-left text-sm text-slate-700 transition-all duration-200 hover:bg-white focus:border-teal-300 focus:bg-white">
+      <Select.Trigger className="flex min-h-11 w-full items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 text-left text-sm text-slate-700 transition-all duration-200 hover:bg-white focus:border-teal-300 focus:bg-white dark:border-slate-800 dark:bg-slate-800/60 dark:text-white dark:hover:bg-white/12 dark:focus:bg-white/12">
         <span className="truncate">{selectedLabel}</span>
-        <Select.Indicator className="h-4 w-4 text-slate-400" />
+        <Select.Indicator className="h-4 w-4 text-slate-400 dark:text-slate-300" />
       </Select.Trigger>
-      <Select.Popover className="min-w-[var(--trigger-width)]">
-        <ListBox className="p-1">
+      <Select.Popover className="min-w-[var(--trigger-width)] rounded-xl border border-slate-200 bg-white shadow-xl dark:border-slate-800 dark:bg-slate-900">
+        <ListBox className="p-1 text-slate-700 dark:text-white">
           {options.map((option) => (
             <ListBoxItem id={option.value} key={option.value}>
               {option.label}
@@ -122,7 +122,7 @@ const MembersToolbar = ({
   const hasFilter = search !== '' || status !== 'all' || tier !== 'all' || registration !== 'all' || profilePhoto !== 'all' || sort !== 'default'
 
   return (
-    <Card className="border border-slate-200 bg-white shadow-none">
+    <Card className="border border-slate-200 bg-white shadow-none dark:border-slate-800 dark:bg-slate-900/95">
       <Card.Content className="space-y-4 p-4 sm:p-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="w-full max-w-2xl">
@@ -133,13 +133,13 @@ const MembersToolbar = ({
               className="w-full"
             >
               <Label className="sr-only">Search members</Label>
-              <SearchField.Group className="flex min-h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 transition-all duration-200 focus-within:border-teal-300 focus-within:bg-white">
-                <SearchField.SearchIcon className="h-4 w-4 text-slate-400" />
+              <SearchField.Group className="flex min-h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 transition-all duration-200 focus-within:border-teal-300 focus-within:bg-white dark:border-slate-800 dark:bg-slate-800/60 dark:focus-within:bg-white/12">
+                <SearchField.SearchIcon className="h-4 w-4 text-slate-400 dark:text-slate-300" />
                 <SearchField.Input
                   placeholder="Search name or email..."
-                  className="flex-1 border-none bg-transparent p-0 text-sm text-slate-700 outline-none placeholder:text-slate-400"
+                  className="flex-1 border-none bg-transparent p-0 text-sm text-slate-700 outline-none placeholder:text-slate-400 dark:text-white dark:placeholder:text-slate-300"
                 />
-                {search ? <SearchField.ClearButton className="text-slate-400 transition hover:text-slate-600" /> : null}
+                {search ? <SearchField.ClearButton className="text-slate-400 transition hover:text-slate-600 dark:text-slate-300 dark:hover:text-white" /> : null}
               </SearchField.Group>
             </SearchField>
           </div>
@@ -208,12 +208,12 @@ const MembersToolbar = ({
           />
         </div>
 
-        <div className="flex flex-col gap-2 border-t border-slate-100 pt-3 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-2 border-t border-slate-100 pt-3 text-xs text-slate-500 dark:border-slate-800 dark:text-slate-300 sm:flex-row sm:items-center sm:justify-between">
           <p>
-            <span className="font-semibold text-slate-700">{resultCount.toLocaleString()}</span> member{resultCount !== 1 ? 's' : ''}
+            <span className="font-semibold text-slate-700 dark:text-white">{resultCount.toLocaleString()}</span> member{resultCount !== 1 ? 's' : ''}
             {hasFilter ? <span className="ml-1 text-teal-600">filtered</span> : null}
           </p>
-          <p className="text-slate-400">Filters and export now follow the same Hero UI controls used in products.</p>
+          <p className="text-slate-400 dark:text-slate-300">Filters and export now follow the same Hero UI controls used in products.</p>
         </div>
       </Card.Content>
     </Card>

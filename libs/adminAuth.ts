@@ -12,6 +12,7 @@ type TokenUser = {
   image?: string | null;
   picture?: string | null;
   isBanned?: boolean;
+  sessionTimeoutMinutes?: number;
 };
 
 const isProd = process.env.NODE_ENV === 'production';
@@ -24,6 +25,9 @@ export const adminAuthOptions: NextAuthOptions = {
       credentials: {
         login: { label: 'Email or Username', type: 'text' },
         password: { label: 'Password', type: 'password' },
+        otp: { label: 'OTP', type: 'text' },
+        otp_challenge_token: { label: 'OTP Challenge Token', type: 'text' },
+        resend_otp: { label: 'Resend OTP', type: 'text' },
       },
       async authorize(credentials) {
         if (!credentials?.login || !credentials?.password) {
@@ -31,32 +35,47 @@ export const adminAuthOptions: NextAuthOptions = {
         }
 
         try {
-          const url = `${process.env.LARAVEL_API_URL}/api/admin/auth/login`;
+          const isResendOtp = credentials.resend_otp === '1';
+          const url = isResendOtp
+            ? `${process.env.LARAVEL_API_URL}/api/admin/auth/login/2fa/resend`
+            : `${process.env.LARAVEL_API_URL}/api/admin/auth/login`;
+          const body = isResendOtp
+            ? {
+                otp_challenge_token: credentials.otp_challenge_token,
+              }
+            : {
+                login: credentials.login,
+                password: credentials.password,
+                otp: credentials.otp?.trim() || undefined,
+                otp_challenge_token: credentials.otp_challenge_token || undefined,
+              };
           const res = await fetch(url, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
               'Accept': 'application/json',
             },
-            body: JSON.stringify({
-              login: credentials.login,
-              password: credentials.password,
-            }),
+            body: JSON.stringify(body),
           });
+          const data = await res.json();
+          if (data?.requires_otp) {
+            const token = String(data.otp_challenge_token ?? '');
+            const message = String(data.message ?? 'OTP required');
+            throw new Error(`2FA_REQUIRED|${token}|${message}`);
+          }
 
           if (!res.ok) {
-            try {
-              const errBody = await res.json() as { message?: string; errors?: Record<string, string[]> };
-              const firstValidation = errBody.errors ? Object.values(errBody.errors)[0]?.[0] : undefined;
-              const message = firstValidation || errBody.message || '';
-              if (message) throw new Error(message);
-            } catch (parseErr) {
-              if (parseErr instanceof Error && parseErr.message) throw parseErr;
-            }
+            const errBody = data as { message?: string; errors?: Record<string, string[]> };
+            const firstValidation = errBody.errors ? Object.values(errBody.errors)[0]?.[0] : undefined;
+            const message = firstValidation || errBody.message || '';
+            if (message) throw new Error(message);
             return null;
           }
 
-          const data = await res.json();
+          if (isResendOtp) {
+            return null;
+          }
+
           if (!data.user || !data.token) return null;
 
           return {
@@ -71,8 +90,12 @@ export const adminAuthOptions: NextAuthOptions = {
             supplierId: data.user.supplier_id ?? null,
             image: data.user.avatar_url ?? null,
             isBanned: data.user.is_banned ?? false,
+            sessionTimeoutMinutes: Number(data.user.session_timeout_minutes ?? 60),
           };
-        } catch {
+        } catch (error) {
+          if (error instanceof Error && error.message) {
+            throw error;
+          }
           return null;
         }
       }
@@ -130,6 +153,10 @@ export const adminAuthOptions: NextAuthOptions = {
         token.supplierId = authUser.supplierId;
         token.picture = authUser.image ?? null;
         token.isBanned = authUser.isBanned ?? false;
+        token.sessionTimeoutMinutes = authUser.sessionTimeoutMinutes;
+        if (typeof authUser.sessionTimeoutMinutes === 'number' && Number.isFinite(authUser.sessionTimeoutMinutes)) {
+          token.exp = Math.floor(Date.now() / 1000) + (Math.max(5, authUser.sessionTimeoutMinutes) * 60);
+        }
       }
       if (trigger === 'update' && session) {
         const nextSession = session as {
@@ -174,6 +201,7 @@ export const adminAuthOptions: NextAuthOptions = {
         sessionUser.supplierId = authToken.supplierId;
         sessionUser.image = typeof authToken.picture === 'string' ? authToken.picture : null;
         sessionUser.isBanned = typeof authToken.isBanned === 'boolean' ? authToken.isBanned : false;
+        sessionUser.sessionTimeoutMinutes = authToken.sessionTimeoutMinutes;
       }
       return session;
     }

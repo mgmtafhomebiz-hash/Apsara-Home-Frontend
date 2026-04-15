@@ -73,6 +73,9 @@ const cartSlice = createSlice({
     setCartSelection: (state, action: PayloadAction<{ ids: string[] }>) => {
       state.selectedIds = action.payload.ids;
     },
+    setCartItems: (state, action: PayloadAction<CartItem[]>) => {
+      state.items = action.payload;
+    },
   },
 });
 
@@ -83,5 +86,6 @@ export const {
   setCartOpen,
   toggleCartItemSelected,
   setCartSelection,
+  setCartItems,
 } = cartSlice.actions;
 export default cartSlice.reducer;

@@ -2,7 +2,7 @@
 
 import Image from 'next/image'
 import type { ReactNode } from 'react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useGetCategoriesQuery } from '@/store/api/categoriesApi'
 import { showErrorToast, showSuccessToast } from '@/libs/toast'
 import { useGetProductsQuery } from '@/store/api/productsApi'
@@ -43,6 +43,37 @@ type BuilderSection = {
   dbId?: number
 }
 
+const sectionFieldWhitelist: Partial<Record<BuilderSectionId, string[]>> = {
+  'shop-header': [
+    'contact_phone',
+    'contact_email',
+    'marquee_messages',
+    'facebook_label',
+    'facebook_url',
+    'instagram_label',
+    'instagram_url',
+    'tiktok_label',
+    'tiktok_url',
+    'trust_item_1_title',
+    'trust_item_1_desc',
+    'trust_item_2_title',
+    'trust_item_2_desc',
+    'trust_item_3_title',
+    'trust_item_3_desc',
+    'trust_item_4_title',
+    'trust_item_4_desc',
+  ],
+  'featured-collection': [
+    'left_eyebrow',
+    'left_heading',
+    'left_description',
+    'lead_image',
+    'right_eyebrow',
+    'right_heading',
+    'source_category_id',
+  ],
+}
+
 const defaultSections: BuilderSection[] = [
   {
     id: 'shop-header',
@@ -58,23 +89,23 @@ const defaultSections: BuilderSection[] = [
       {
         key: 'marquee_messages',
         label: 'Marquee messages (one per line)',
-        value: 'Free Shipping on orders over PHP 5,000\nSummer Sale - Up to 50% off selected items\nNew arrivals every week\nNationwide delivery to all major cities\nInstallment available via GCash & Maya',
+        value: '',
         kind: 'textarea',
       },
       { key: 'facebook_label', label: 'Facebook label', value: 'FB' },
-      { key: 'facebook_url', label: 'Facebook URL', value: '#' },
+      { key: 'facebook_url', label: 'Facebook URL', value: '' },
       { key: 'instagram_label', label: 'Instagram label', value: 'IG' },
-      { key: 'instagram_url', label: 'Instagram URL', value: '#' },
+      { key: 'instagram_url', label: 'Instagram URL', value: '' },
       { key: 'tiktok_label', label: 'TikTok label', value: 'TikTok' },
-      { key: 'tiktok_url', label: 'TikTok URL', value: '#' },
-      { key: 'trust_item_1_title', label: 'Trust item 1 title', value: 'Nationwide Shipping' },
-      { key: 'trust_item_1_desc', label: 'Trust item 1 description', value: 'Delivered to your door' },
-      { key: 'trust_item_2_title', label: 'Trust item 2 title', value: 'Authenticity Guaranteed' },
-      { key: 'trust_item_2_desc', label: 'Trust item 2 description', value: '100% legit and verified items' },
-      { key: 'trust_item_3_title', label: 'Trust item 3 title', value: 'Trusted Brands' },
-      { key: 'trust_item_3_desc', label: 'Trust item 3 description', value: '100+ premium brands' },
-      { key: 'trust_item_4_title', label: 'Trust item 4 title', value: 'Customer Care' },
-      { key: 'trust_item_4_desc', label: 'Trust item 4 description', value: '24/7 support available' },
+      { key: 'tiktok_url', label: 'TikTok URL', value: '' },
+      { key: 'trust_item_1_title', label: 'Trust item 1 title', value: '' },
+      { key: 'trust_item_1_desc', label: 'Trust item 1 description', value: '' },
+      { key: 'trust_item_2_title', label: 'Trust item 2 title', value: '' },
+      { key: 'trust_item_2_desc', label: 'Trust item 2 description', value: '' },
+      { key: 'trust_item_3_title', label: 'Trust item 3 title', value: '' },
+      { key: 'trust_item_3_desc', label: 'Trust item 3 description', value: '' },
+      { key: 'trust_item_4_title', label: 'Trust item 4 title', value: '' },
+      { key: 'trust_item_4_desc', label: 'Trust item 4 description', value: '' },
     ],
   },
   {
@@ -132,8 +163,8 @@ const defaultSections: BuilderSection[] = [
     id: 'featured-collection',
     label: 'Featured Collection',
     eyebrow: 'Featured Section',
-    title: 'Lead image + product picks',
-    description: 'This block can now pull real products by ID for the right-side cards, while the hero card stays editable.',
+    title: 'Lead image + category-driven top picks',
+    description: 'Select one category and the section will automatically show its products as Top Picks. The Shop Collection button will also navigate to that same category.',
     status: 'live',
     accent: 'from-emerald-500/20 to-lime-400/10',
     fields: [
@@ -141,11 +172,9 @@ const defaultSections: BuilderSection[] = [
       { key: 'left_heading', label: 'Lead heading', value: 'Minimal & Simple Design' },
       { key: 'left_description', label: 'Lead description', value: 'Crafted for the modern home with a lighter, calmer visual merchandising tone.', kind: 'textarea' },
       { key: 'lead_image', label: 'Lead image URL', value: '/Images/FeaturedSection/home_living.jpg' },
-      { key: 'lead_link', label: 'Lead button link', value: '/shop' },
       { key: 'right_eyebrow', label: 'Product eyebrow', value: 'Sale Items' },
       { key: 'right_heading', label: 'Product heading', value: 'Top Picks This Week' },
       { key: 'source_category_id', label: 'Source category ID', value: '' },
-      { key: 'product_ids', label: 'Manual product IDs (optional fallback)', value: '' },
     ],
   },
   {
@@ -208,6 +237,28 @@ const fallbackImage = '/Images/HeroSection/chairs_stools.jpg'
 
 const getFieldValue = (section: BuilderSection, key: string) =>
   section.fields.find((field) => field.key === key)?.value ?? ''
+
+const parseTrustItemsFromFields = (fields: BuilderField[]) => {
+  const grouped = new Map<number, { title: string; desc: string }>()
+
+  fields.forEach((field) => {
+    const match = field.key.match(/^trust_item_(\d+)_(title|desc)$/)
+    if (!match) return
+
+    const index = Number.parseInt(match[1], 10)
+    const kind = match[2]
+    const current = grouped.get(index) ?? { title: '', desc: '' }
+
+    if (kind === 'title') current.title = field.value
+    if (kind === 'desc') current.desc = field.value
+
+    grouped.set(index, current)
+  })
+
+  return Array.from(grouped.entries())
+    .sort((a, b) => a[0] - b[0])
+    .map(([index, item]) => ({ index, title: item.title, desc: item.desc }))
+}
 
 const parseIdList = (value: string) =>
   value
@@ -344,11 +395,18 @@ export default function ShopBuilderStudio() {
   const products = useMemo(() => productsData?.products ?? [], [productsData?.products])
 
   const sections = useMemo(() => {
-    const itemsByKey = new Map(
-      (data?.items ?? [])
-        .filter((item) => typeof item.key === 'string' && item.key.trim().length > 0)
-        .map((item) => [String(item.key), item]),
-    )
+    const itemsByKey = new Map<string, WebPageItem>()
+
+    ;(data?.items ?? [])
+      .filter((item) => typeof item.key === 'string' && item.key.trim().length > 0)
+      .forEach((item) => {
+        const key = String(item.key)
+        // Keep the first occurrence so admin editing matches the same
+        // newest record that the public /shop page reads.
+        if (!itemsByKey.has(key)) {
+          itemsByKey.set(key, item)
+        }
+      })
 
     return defaultSections.map((section) => {
       const base = mergeItemIntoSection(section, itemsByKey.get(section.id))
@@ -442,22 +500,16 @@ export default function ShopBuilderStudio() {
     const featuredSection = sections.find((section) => section.id === 'featured-collection')
     if (!featuredSection) return []
     const sourceCategoryId = Number.parseInt(getFieldValue(featuredSection, 'source_category_id'), 10)
-    const categoryProducts = Number.isFinite(sourceCategoryId) && sourceCategoryId > 0
-      ? products.filter((item) => item.catid === sourceCategoryId)
+    return Number.isFinite(sourceCategoryId) && sourceCategoryId > 0
+      ? products.filter((item) => item.catid === sourceCategoryId).slice(0, 4)
       : []
-
-    if (categoryProducts.length > 0) {
-      return categoryProducts.slice(0, 4)
-    }
-
-    const ids = parseIdList(getFieldValue(featuredSection, 'product_ids'))
-    return ids
-      .map((id) => products.find((item) => item.id === id))
-      .filter((item): item is NonNullable<typeof item> => Boolean(item))
-      .slice(0, 4)
   }, [products, sections])
 
   const visibleSelectedFields = useMemo(() => {
+    if (selectedSection.id === 'shop-header') {
+      const allowedFields = new Set(sectionFieldWhitelist['shop-header'] ?? [])
+      return selectedSection.fields.filter((field) => allowedFields.has(field.key) && !/^trust_item_\d+_(title|desc)$/.test(field.key))
+    }
     if (selectedSection.id === 'category-grid') {
       return selectedSection.fields.filter(
         (field) => !/^card_[1-4]_image$/.test(field.key) && !/^category_image_\d+$/.test(field.key),
@@ -471,6 +523,10 @@ export default function ShopBuilderStudio() {
         if (field.key === 'video_link') return linkType === 'custom'
         return true
       })
+    }
+    if (selectedSection.id === 'featured-collection') {
+      const allowedFields = new Set(sectionFieldWhitelist['featured-collection'] ?? [])
+      return selectedSection.fields.filter((field) => allowedFields.has(field.key))
     }
     return selectedSection.fields
   }, [selectedSection])
@@ -561,6 +617,13 @@ export default function ShopBuilderStudio() {
     const section = selectedSection
     if (!section) return
 
+    const allowedKeys = new Set(sectionFieldWhitelist[section.id] ?? section.fields.map((field) => field.key))
+    const sectionFields = Object.fromEntries(
+      section.fields
+        .filter((field) => allowedKeys.has(field.key))
+        .map((field) => [field.key, field.value]),
+    )
+
     const payload = {
       key: section.id,
       title: section.label,
@@ -572,7 +635,7 @@ export default function ShopBuilderStudio() {
         status: section.status,
         eyebrow: section.eyebrow,
         accent: section.accent,
-        fields: Object.fromEntries(section.fields.map((field) => [field.key, field.value])),
+        fields: sectionFields,
       },
     }
 
@@ -670,7 +733,7 @@ export default function ShopBuilderStudio() {
 
         {/* ── LEFT: Section nav ── */}
         <aside className="rounded-3xl border border-slate-200 bg-white shadow-sm">
-          <div className="border-b border-slate-100 px-4 py-4">
+          <div className="border-b border-slate-100 dark:border-slate-800 px-4 py-4">
             <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-400">Sections</p>
             <p className="mt-0.5 text-xs text-slate-400">{sections.length} blocks total</p>
           </div>
@@ -718,7 +781,7 @@ export default function ShopBuilderStudio() {
 
         {/* ── CENTER: Preview canvas ── */}
         <section className="rounded-3xl border border-slate-200 bg-white shadow-sm">
-          <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+          <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 px-5 py-4">
             <div>
               <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-400">Live Preview</p>
               <p className="mt-0.5 text-sm font-semibold text-slate-800">/shop Visual Canvas</p>
@@ -789,6 +852,18 @@ export default function ShopBuilderStudio() {
                     value={field.value}
                     onChange={(value) => updateField(selectedSection.id, field.key, value)}
                   />
+                ) : selectedSection.id === 'shop-header' && field.key === 'tiktok_url' ? (
+                  <>
+                    <input
+                      value={field.value}
+                      onChange={(event) => updateField(selectedSection.id, field.key, event.target.value)}
+                      className="mt-1.5 w-full rounded-2xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-800 outline-none transition focus:border-cyan-300 focus:bg-white focus:ring-2 focus:ring-cyan-100"
+                    />
+                    <TrustItemsEditor
+                      section={selectedSection}
+                      onChange={(fieldKey, value) => updateField(selectedSection.id, fieldKey, value)}
+                    />
+                  </>
                 ) : field.kind === 'textarea' ? (
                   <textarea
                     value={field.value}
@@ -920,13 +995,6 @@ export default function ShopBuilderStudio() {
               />
             ) : null}
 
-            {/* Product reference helper */}
-            {selectedSection.id === 'featured-collection' ? (
-              <HelperPanel
-                title="Available products"
-                items={products.map((product) => `${product.id} — ${product.name}`)}
-              />
-            ) : null}
             {selectedSection.id === 'featured-collection' ? (
               <FeaturedCategoryPickerPanel
                 categories={categories}
@@ -1013,7 +1081,7 @@ function ShopBuilderStudioSkeleton() {
 
       <div className="grid gap-4 xl:grid-cols-[256px_minmax(0,1fr)_348px]">
         <aside className="rounded-3xl border border-slate-200 bg-white p-3 shadow-sm">
-          <div className="mb-4 space-y-2 border-b border-slate-100 px-1 pb-4">
+          <div className="mb-4 space-y-2 border-b border-slate-100 dark:border-slate-800 px-1 pb-4">
             <div className="h-3 w-20 rounded-full bg-slate-200" />
             <div className="h-3 w-24 rounded-full bg-slate-100" />
           </div>
@@ -1031,7 +1099,7 @@ function ShopBuilderStudioSkeleton() {
         </aside>
 
         <section className="rounded-3xl border border-slate-200 bg-white shadow-sm">
-          <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+          <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 px-5 py-4">
             <div className="space-y-2">
               <div className="h-3 w-24 rounded-full bg-slate-200" />
               <div className="h-4 w-36 rounded-full bg-slate-100" />
@@ -1152,10 +1220,7 @@ function PreviewAnnouncements(props: { section: BuilderSection; selectedId: Buil
 
 function PreviewShopHeader(props: { section: BuilderSection; selectedId: BuilderSectionId; onSelect: (id: BuilderSectionId) => void }) {
   const messages = getFieldValue(props.section, 'marquee_messages').split('\n').map((item) => item.trim()).filter(Boolean)
-  const trustItems = [1, 2, 3, 4].map((index) => ({
-    title: getFieldValue(props.section, `trust_item_${index}_title`),
-    desc: getFieldValue(props.section, `trust_item_${index}_desc`),
-  }))
+  const trustItems = parseTrustItemsFromFields(props.section.fields).filter((item) => item.title || item.desc)
 
   return (
     <PreviewSection {...props}>
@@ -1167,9 +1232,13 @@ function PreviewShopHeader(props: { section: BuilderSection; selectedId: Builder
           </div>
           <div className="flex-1 overflow-hidden">
             <div className="flex gap-6 whitespace-nowrap text-white/70">
-              {(messages.length > 0 ? messages : ['Free Shipping on orders over PHP 5,000']).slice(0, 3).map((message) => (
-                <span key={message}>{message}</span>
-              ))}
+              {messages.length > 0 ? (
+                messages.slice(0, 3).map((message) => (
+                  <span key={message}>{message}</span>
+                ))
+              ) : (
+                <span className="text-white/35">No marquee messages set yet.</span>
+              )}
             </div>
           </div>
           <div className="hidden items-center gap-2 text-white/50 md:flex">
@@ -1181,14 +1250,19 @@ function PreviewShopHeader(props: { section: BuilderSection; selectedId: Builder
           </div>
         </div>
       </div>
-      <div className="border-b border-slate-100 bg-white px-4 py-4">
+      <div className="border-b border-slate-100 dark:border-slate-800 bg-white px-4 py-4">
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           {trustItems.map((item, index) => (
-            <div key={`${item.title}-${index}`} className="rounded-xl border border-slate-100 bg-slate-50 p-3">
+            <div key={`${item.index}-${item.title}-${index}`} className="rounded-xl border border-slate-100 bg-slate-50 p-3">
               <p className="text-xs font-semibold text-slate-800">{item.title || `Trust Item ${index + 1}`}</p>
               <p className="mt-1 text-[10px] text-slate-500">{item.desc || 'Description'}</p>
             </div>
           ))}
+          {trustItems.length === 0 ? (
+            <div className="col-span-full rounded-xl border border-dashed border-slate-200 bg-white px-3 py-4 text-center text-xs text-slate-400">
+              No trust items set yet.
+            </div>
+          ) : null}
         </div>
       </div>
     </PreviewSection>
@@ -1317,9 +1391,7 @@ function PreviewFeaturedCollection(props: {
   onSelect: (id: BuilderSectionId) => void
   featuredProducts: Array<{ id: number; name: string; image: string | null; priceSrp: number }>
 }) {
-  const products = props.featuredProducts.length > 0
-    ? props.featuredProducts
-    : [1, 2, 3, 4].map((index) => ({ id: index, name: `Product ${index}`, image: fallbackImage, priceSrp: 2600 }))
+  const products = props.featuredProducts
 
   return (
     <PreviewSection {...props}>
@@ -1359,19 +1431,25 @@ function PreviewFeaturedCollection(props: {
             <h2 className="mb-5 text-xl font-bold text-slate-900">
               {getFieldValue(props.section, 'right_heading') || 'Top Picks This Week'}
             </h2>
-            <div className="grid grid-cols-2 gap-3">
-              {products.map((product) => (
-                <div key={product.id} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-                  <div className="relative h-28 bg-slate-100">
-                    <Image src={product.image || fallbackImage} alt={product.name} fill className="object-cover" unoptimized />
+            {products.length > 0 ? (
+              <div className="grid grid-cols-2 gap-3">
+                {products.map((product) => (
+                  <div key={product.id} className="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+                    <div className="relative h-28 bg-slate-100">
+                      <Image src={product.image || fallbackImage} alt={product.name} fill className="object-cover" unoptimized />
+                    </div>
+                    <div className="p-3">
+                      <p className="line-clamp-2 text-xs font-semibold text-slate-800">{product.name}</p>
+                      <p className="mt-1 text-sm font-bold text-orange-500">PHP {product.priceSrp.toLocaleString()}</p>
+                    </div>
                   </div>
-                  <div className="p-3">
-                    <p className="line-clamp-2 text-xs font-semibold text-slate-800">{product.name}</p>
-                    <p className="mt-1 text-sm font-bold text-orange-500">PHP {product.priceSrp.toLocaleString()}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-dashed border-slate-200 bg-white px-4 py-8 text-center text-sm text-slate-400">
+                Select a category to preview Top Picks.
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -1468,10 +1546,15 @@ function MarqueeMessagesEditor({
   value: string
   onChange: (value: string) => void
 }) {
+  const [draftMessage, setDraftMessage] = useState('')
   const items = value
     .split('\n')
     .map((item) => item.trim())
     .filter(Boolean)
+
+  useEffect(() => {
+    setDraftMessage('')
+  }, [value])
 
   const updateItem = (index: number, nextValue: string) => {
     const nextItems = items.map((item, itemIndex) => (itemIndex === index ? nextValue : item))
@@ -1479,7 +1562,10 @@ function MarqueeMessagesEditor({
   }
 
   const addItem = () => {
-    onChange([...items, 'New marquee message'].join('\n'))
+    const nextMessage = draftMessage.trim()
+    if (!nextMessage) return
+    onChange([...items, nextMessage].join('\n'))
+    setDraftMessage('')
   }
 
   const removeItem = (index: number) => {
@@ -1490,12 +1576,28 @@ function MarqueeMessagesEditor({
     <div className="mt-1.5 rounded-2xl border border-slate-200 bg-slate-50 p-3">
       <div className="flex items-center justify-between gap-3">
         <p className="text-xs font-medium text-slate-500">Manage rotating top banner messages.</p>
+      </div>
+
+      <div className="mt-3 flex items-center gap-2">
+        <input
+          value={draftMessage}
+          onChange={(event) => setDraftMessage(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') {
+              event.preventDefault()
+              addItem()
+            }
+          }}
+          placeholder="Enter marquee message"
+          className="flex-1 rounded-2xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-800 outline-none transition focus:border-cyan-300 focus:ring-2 focus:ring-cyan-100"
+        />
         <button
           type="button"
           onClick={addItem}
-          className="inline-flex items-center gap-1.5 rounded-xl border border-cyan-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-cyan-700 transition hover:bg-cyan-50"
+          disabled={!draftMessage.trim()}
+          className="inline-flex h-11 flex-none items-center gap-1.5 rounded-2xl border border-cyan-200 bg-white px-4 text-sm font-semibold text-cyan-700 transition hover:bg-cyan-50 disabled:cursor-not-allowed disabled:opacity-45"
         >
-          <span className="text-sm leading-none">+</span>
+          <span className="text-base leading-none">+</span>
           Add
         </button>
       </div>
@@ -1519,13 +1621,91 @@ function MarqueeMessagesEditor({
                 className="mt-1 inline-flex h-8 w-8 flex-none items-center justify-center rounded-lg border border-red-200 bg-red-50 text-sm font-bold text-red-600 transition hover:bg-red-100"
                 aria-label={`Remove marquee message ${index + 1}`}
               >
-                x
+                ×
               </button>
             </div>
           </div>
         )) : (
           <div className="rounded-xl border border-dashed border-slate-200 bg-white px-3 py-4 text-center text-xs text-slate-400">
             No marquee messages yet. Click Add to create one.
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function TrustItemsEditor({
+  section,
+  onChange,
+}: {
+  section: BuilderSection
+  onChange: (fieldKey: string, value: string) => void
+}) {
+  const items = parseTrustItemsFromFields(section.fields)
+
+  const addItem = () => {
+    const nextIndex = items.length > 0 ? Math.max(...items.map((item) => item.index)) + 1 : 1
+    onChange(`trust_item_${nextIndex}_title`, '')
+    onChange(`trust_item_${nextIndex}_desc`, '')
+  }
+
+  const removeItem = (index: number) => {
+    onChange(`trust_item_${index}_title`, '')
+    onChange(`trust_item_${index}_desc`, '')
+  }
+
+  return (
+    <div className="mt-1.5 rounded-2xl border border-slate-200 bg-slate-50 p-3">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-xs font-medium text-slate-500">Manage trust highlights shown below the top bar.</p>
+        <button
+          type="button"
+          onClick={addItem}
+          className="inline-flex items-center gap-1.5 rounded-xl border border-cyan-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-cyan-700 transition hover:bg-cyan-50"
+        >
+          <span className="text-sm leading-none">+</span>
+          Add
+        </button>
+      </div>
+
+      <div className="mt-3 space-y-2">
+        {items.length > 0 ? items.map((item, index) => (
+          <div key={`trust-item-${item.index}`} className="rounded-xl border border-slate-200 bg-white p-3">
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-100 text-[11px] font-bold text-slate-500">
+                  {index + 1}
+                </div>
+                <p className="text-xs font-semibold text-slate-500">Trust item {index + 1}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => removeItem(item.index)}
+                className="inline-flex h-8 w-8 flex-none items-center justify-center rounded-lg border border-red-200 bg-red-50 text-sm font-bold text-red-600 transition hover:bg-red-100"
+                aria-label={`Remove trust item ${index + 1}`}
+              >
+                ×
+              </button>
+            </div>
+            <div className="space-y-2">
+              <input
+                value={item.title}
+                onChange={(event) => onChange(`trust_item_${item.index}_title`, event.target.value)}
+                placeholder="Trust item title"
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-800 outline-none transition focus:border-cyan-300 focus:bg-white focus:ring-2 focus:ring-cyan-100"
+              />
+              <input
+                value={item.desc}
+                onChange={(event) => onChange(`trust_item_${item.index}_desc`, event.target.value)}
+                placeholder="Trust item description"
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-800 outline-none transition focus:border-cyan-300 focus:bg-white focus:ring-2 focus:ring-cyan-100"
+              />
+            </div>
+          </div>
+        )) : (
+          <div className="rounded-xl border border-dashed border-slate-200 bg-white px-3 py-4 text-center text-xs text-slate-400">
+            No trust items yet. Click Add to create one.
           </div>
         )}
       </div>

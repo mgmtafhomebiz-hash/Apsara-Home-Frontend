@@ -51,18 +51,9 @@ const buildProductLink = (product: Pick<Product, 'id' | 'name'>) =>
 
 const getFeaturedProducts = (featuredCollection: WebPageItem | undefined, products: Product[]) => {
   const sourceCategoryId = Number.parseInt(getField(featuredCollection, 'source_category_id'), 10)
-  const categoryProducts = Number.isFinite(sourceCategoryId) && sourceCategoryId > 0
-    ? products.filter((item) => item.catid === sourceCategoryId)
+  return Number.isFinite(sourceCategoryId) && sourceCategoryId > 0
+    ? products.filter((item) => item.catid === sourceCategoryId).slice(0, 4)
     : []
-
-  if (categoryProducts.length > 0) {
-    return categoryProducts.slice(0, 4)
-  }
-
-  return parseIdList(getField(featuredCollection, 'product_ids'))
-    .map((id) => products.find((item) => item.id === id))
-    .filter((item): item is Product => Boolean(item))
-    .slice(0, 4)
 }
 
 const resolveCategoryCardImage = ({
@@ -247,20 +238,26 @@ function CampaignBannersSection({
   products: Product[]
   partnerSlug?: string
 }) {
-  const banners = [
-    {
-      title: getField(section, 'banner_1_title') || 'Special Offer',
-      subtitle: getField(section, 'banner_1_subtitle') || 'Limited time only',
-      image: getField(section, 'banner_1_image') || fallbackImage,
-      link: getField(section, 'banner_1_link') || '/shop',
-    },
-    {
-      title: getField(section, 'banner_2_title') || 'New Collection',
-      subtitle: getField(section, 'banner_2_subtitle') || 'Shop now',
-      image: getField(section, 'banner_2_image') || fallbackImage,
-      link: getField(section, 'banner_2_link') || '/shop',
-    },
-  ]
+  const videoUrl = getField(section, 'video_url')
+  const posterUrl = getField(section, 'video_poster') || fallbackImage
+  const eyebrow = getField(section, 'video_eyebrow') || 'Top Promos'
+  const title = getField(section, 'video_title') || 'Weekend Furniture Drop'
+  const subtitle = getField(section, 'video_subtitle') || 'Refresh your living room this week'
+  const buttonText = getField(section, 'video_button') || 'Explore Now'
+  const linkType = getField(section, 'link_type') || 'category'
+  const linkCategoryId = Number.parseInt(getField(section, 'link_category_id'), 10)
+  const linkProductId = Number.parseInt(getField(section, 'link_product_id'), 10)
+  const linkCategory = Number.isFinite(linkCategoryId) && linkCategoryId > 0
+    ? categories.find((category) => category.id === linkCategoryId)
+    : undefined
+  const linkProduct = Number.isFinite(linkProductId) && linkProductId > 0
+    ? products.find((product) => product.id === linkProductId)
+    : undefined
+  const link = linkType === 'product' && linkProduct
+    ? buildProductLink(linkProduct)
+    : linkType === 'category' && linkCategory
+      ? buildPartnerCategoryLink(partnerSlug, linkCategory)
+      : buildPartnerShopLink(getField(section, 'video_link') || '/shop', partnerSlug)
 
   return (
     <motion.section
@@ -268,28 +265,61 @@ function CampaignBannersSection({
       transition={{ duration: 0.5, delay: 0.04 }}
       className="!bg-white dark:!bg-gray-900 container mx-auto px-4 py-6"
     >
-      <div className="grid gap-3 md:grid-cols-2">
-        <AnimatePresence initial={false}>
-          {banners.map((banner, index) => (
-            <motion.div
-              key={`${banner.title}-${banner.image}`}
-              initial={{ opacity: 0, y: 26, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -18, scale: 0.98 }}
-              transition={{ duration: 0.42, delay: index * 0.08 }}
+      <AnimatePresence initial={false}>
+        <motion.div
+          key={`${title}-${posterUrl}-${videoUrl}`}
+          initial={{ opacity: 0, y: 26, scale: 0.98 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: -18, scale: 0.98 }}
+          transition={{ duration: 0.42 }}
+        >
+          <div className="rounded-[32px] border border-slate-200 bg-slate-950 dark:border-gray-700">
+            <Link
+              href={link}
+              className="group relative isolate block overflow-hidden rounded-[32px]"
             >
-              <Link href={banner.link} className="group relative block overflow-hidden rounded-3xl border border-slate-200 dark:border-gray-700 bg-slate-200 dark:bg-gray-800 p-5">
-                <Image src={banner.image} alt={banner.title} fill className="object-cover transition-transform duration-700 group-hover:scale-105" unoptimized />
-                <div className="absolute inset-0 bg-gradient-to-r from-slate-950/75 to-slate-900/20"></div>
-                <div className="relative flex min-h-[170px] flex-col justify-end text-white">
-                  <p className="text-xl font-bold">{banner.title}</p>
-                  <p className="mt-1 max-w-[240px] text-sm text-white/80">{banner.subtitle}</p>
+              <div className="relative min-h-[280px] overflow-hidden rounded-[32px] md:min-h-[380px]">
+                {videoUrl ? (
+                  <video
+                    className="absolute inset-0 h-full w-full rounded-[32px] object-cover"
+                    src={videoUrl}
+                    poster={posterUrl}
+                    autoPlay
+                    muted
+                    loop
+                    playsInline
+                  />
+                ) : (
+                  <Image
+                    src={posterUrl}
+                    alt={title}
+                    fill
+                    className="rounded-[32px] object-cover transition-transform duration-700 group-hover:scale-105"
+                    unoptimized
+                  />
+                )}
+
+                <div className="absolute inset-0 rounded-[32px] bg-gradient-to-r from-slate-950/85 via-slate-950/45 to-slate-950/10" />
+                <div className="absolute inset-0 rounded-[32px] bg-gradient-to-t from-slate-950/65 via-transparent to-transparent" />
+
+                <div className="relative flex min-h-[280px] flex-col justify-end p-6 text-white md:min-h-[380px] md:p-10">
+                  <p className="mb-3 text-xs font-semibold uppercase tracking-[0.28em] text-orange-300">
+                    {eyebrow}
+                  </p>
+                  <h2 className="max-w-xl text-3xl font-bold leading-tight md:text-5xl">
+                    {title}
+                  </h2>
+                  <p className="mt-3 max-w-lg text-sm text-white/80 md:text-base">
+                    {subtitle}
+                  </p>
+                  <span className="mt-6 inline-flex w-fit rounded-xl bg-orange-500 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-500/30 transition-colors group-hover:bg-orange-400">
+                    {buttonText}
+                  </span>
                 </div>
-              </Link>
-            </motion.div>
-          ))}
-        </AnimatePresence>
-      </div>
+              </div>
+            </Link>
+          </div>
+        </motion.div>
     </motion.section>
   )
 }
@@ -360,8 +390,8 @@ function FeaturedCollectionSection({
     : undefined
   const buttonLink = sourceCategory
     ? buildPartnerCategoryLink(partnerSlug, sourceCategory)
-    : buildPartnerShopLink(getField(section, 'lead_link') || '/shop', partnerSlug)
-  const buttonText = section.button_text || 'Shop Collection'
+    : buildPartnerShopLink('/shop', partnerSlug)
+  const buttonText = 'Shop Collection'
 
   return (
     <motion.section
@@ -439,20 +469,9 @@ function FeaturedCollectionSection({
                   ))}
                 </AnimatePresence>
               ) : (
-                [1, 2, 3, 4].map((index) => (
-                  <motion.div
-                    key={index}
-                    initial={{ opacity: 0, y: 18 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true, amount: 0.3 }}
-                    transition={{ duration: 0.3, delay: index * 0.05 }}
-                    className="rounded-2xl bg-white dark:bg-gray-800 p-3 shadow-sm"
-                  >
-                    <div className="aspect-square rounded-2xl bg-gradient-to-br from-slate-100 to-white dark:from-gray-700 dark:to-gray-800" />
-                    <p className="mt-3 text-sm font-medium text-gray-800 dark:text-gray-200">Select product IDs in Shop Builder</p>
-                    <p className="mt-1 text-base font-bold text-orange-500">PHP 0</p>
-                  </motion.div>
-                ))
+                <div className="col-span-2 rounded-2xl border border-dashed border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-10 text-center text-sm text-slate-400 dark:text-gray-500">
+                  Select a category in Shop Builder to display Top Picks.
+                </div>
               )}
             </div>
           </motion.div>

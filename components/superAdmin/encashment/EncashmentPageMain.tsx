@@ -97,7 +97,7 @@ function DetailModal({ item, onClose, onAction, canApprove, canRelease }: {
         className="relative bg-white rounded-2xl shadow-xl w-full max-w-2xl z-10 overflow-hidden"
       >
         {/* Header */}
-        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between gap-4">
+        <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-full bg-linear-to-br from-teal-400 to-teal-600 flex items-center justify-center text-white text-sm font-bold shrink-0">
               {getInitials(item.affiliate_name)}
@@ -271,7 +271,7 @@ function ActionModal({ action, busy, uploading, notes, proofUrl, proofFileName, 
         exit={{ opacity: 0, scale: 0.95, y: 12 }}
         className="relative bg-white rounded-2xl shadow-xl w-full max-w-md z-10 overflow-hidden"
       >
-        <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-3">
+        <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3">
           <div className={`h-9 w-9 rounded-xl flex items-center justify-center shrink-0 ${meta.icon}`}>
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               {action === 'approve' && <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />}
@@ -515,7 +515,7 @@ export default function EncashmentPageMain({ initialFilter = 'all' }: Props) {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="bg-white border border-slate-100 rounded-2xl shadow-sm p-4 flex flex-wrap items-center gap-3"
+        className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl shadow-sm p-4 flex flex-wrap items-center gap-3"
       >
         <div className="relative flex-1 min-w-50">
           <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -545,11 +545,11 @@ export default function EncashmentPageMain({ initialFilter = 'all' }: Props) {
 
       {/* ── Loading ── */}
       {isLoading ? (
-        <div className="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden animate-pulse">
-          <div className="px-5 py-4 border-b border-slate-100">
+        <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden animate-pulse">
+          <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800">
             <div className="h-4 w-32 bg-slate-100 rounded-lg" />
           </div>
-          <div className="divide-y divide-slate-50">
+          <div className="divide-y divide-slate-100 dark:divide-slate-800/70 dark:divide-slate-800/70">
             {Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="px-4 py-4 flex items-center gap-4">
                 <div className="h-9 w-9 rounded-full bg-slate-100 shrink-0" />
@@ -574,8 +574,8 @@ export default function EncashmentPageMain({ initialFilter = 'all' }: Props) {
             <div className="google-loading-bar" />
           )}
 
-          <div className="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden">
-            <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+          <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden">
+            <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
               <h2 className="text-sm font-bold text-slate-800">Encashment Requests</h2>
               <span className="text-xs text-slate-400 bg-slate-50 border border-slate-100 px-2.5 py-1 rounded-full font-medium">
                 {data?.requests?.length ?? 0} shown
@@ -585,13 +585,13 @@ export default function EncashmentPageMain({ initialFilter = 'all' }: Props) {
             <div className="overflow-x-auto">
               <table className="w-full text-left min-w-310">
                 <thead>
-                  <tr className="border-b border-slate-100 bg-slate-50">
+                  <tr className="border-b border-slate-100 dark:border-slate-800 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60">
                     {['Reference', 'Affiliate', 'Amount', 'Wallet', 'Dates', 'Status', 'Actions'].map(h => (
                       <th key={h} className="px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wide">{h}</th>
                     ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-50">
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/70 dark:divide-slate-800/70">
                   {data?.requests?.length ? (
                     data.requests.map(row => {
                       const isBusy        = busyId === row.id

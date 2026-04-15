@@ -125,6 +125,6 @@ const baseQueryWithBanCheck: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQ
 export const baseApi = createApi({
     reducerPath: 'api',
     baseQuery: baseQueryWithBanCheck,
-    tagTypes: ['User', 'Members', 'Products', 'Categories', 'Brands', 'Orders', 'Encashment', 'AdminUsers', 'AdminNotifications', 'CustomerNotifications', 'Wishlist', 'WebPages', 'Suppliers', 'InteriorRequests', 'AdminSettings'],
+    tagTypes: ['User', 'Members', 'Products', 'Categories', 'Brands', 'Orders', 'Encashment', 'AdminUsers', 'AdminNotifications', 'CustomerNotifications', 'Wishlist', 'WebPages', 'Suppliers', 'InteriorRequests', 'AdminSettings', 'ExpenseCategories', 'Expenses', 'Cart'],
     endpoints: () => ({}),
 })

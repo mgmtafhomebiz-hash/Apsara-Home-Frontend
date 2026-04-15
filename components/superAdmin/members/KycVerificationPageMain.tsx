@@ -144,7 +144,7 @@ function DetailModal({ item, onClose, onAction }: {
         className="relative bg-white rounded-2xl shadow-xl w-full max-w-2xl z-10 overflow-hidden"
       >
         {/* Header */}
-        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between gap-4">
+        <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-full bg-linear-to-br from-teal-400 to-teal-600 flex items-center justify-center text-white text-sm font-bold shrink-0">
               {getInitials(name)}
@@ -265,7 +265,7 @@ function ActionModal({ action, busy, notes, onNotes, onConfirm, onClose }: {
         exit={{ opacity: 0, scale: 0.95, y: 12 }}
         className="relative bg-white rounded-2xl shadow-xl w-full max-w-md z-60 overflow-hidden"
       >
-        <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-3">
+        <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3">
           <div className={`h-9 w-9 rounded-xl flex items-center justify-center shrink-0 ${
             isApprove ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-500'
           }`}>
@@ -542,7 +542,7 @@ export default function KycVerificationPageMain() {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="bg-white border border-slate-100 rounded-2xl shadow-sm p-4 space-y-3"
+        className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl shadow-sm p-4 space-y-3"
       >
         {/* Search */}
         <div className="relative">
@@ -597,11 +597,11 @@ export default function KycVerificationPageMain() {
 
       {/* ── Loading skeleton ── */}
       {isLoading ? (
-        <div className="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden animate-pulse">
-          <div className="px-5 py-4 border-b border-slate-100 flex gap-3">
+        <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden animate-pulse">
+          <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800 flex gap-3">
             <div className="h-4 w-32 bg-slate-100 rounded-lg" />
           </div>
-          <div className="divide-y divide-slate-50">
+          <div className="divide-y divide-slate-100 dark:divide-slate-800/70 dark:divide-slate-800/70">
             {Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="px-4 py-4 flex items-center gap-4">
                 <div className="h-9 w-9 rounded-full bg-slate-100 shrink-0" />
@@ -628,8 +628,8 @@ export default function KycVerificationPageMain() {
           )}
 
           {/* Table */}
-          <div className="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden">
-            <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+          <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden">
+            <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
               <h2 className="text-sm font-bold text-slate-800">Verification Requests</h2>
               <span className="text-xs text-slate-400 bg-slate-50 border border-slate-100 px-2.5 py-1 rounded-full font-medium">
                 {rows.length} shown
@@ -639,13 +639,13 @@ export default function KycVerificationPageMain() {
             <div className="overflow-x-auto">
               <table className="w-full text-left min-w-225">
                 <thead>
-                  <tr className="border-b border-slate-100 bg-slate-50">
+                  <tr className="border-b border-slate-100 dark:border-slate-800 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60">
                     {['Reference', 'Member', 'KYC Data', 'Submitted', 'Status', 'Actions'].map(h => (
                       <th key={h} className="px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wide">{h}</th>
                     ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-50">
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/70 dark:divide-slate-800/70">
                   {rows.length ? (
                     rows.map(row => (
                       <KycRow

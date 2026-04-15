@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -15,9 +15,32 @@ const EyeIcon = ({ open }: { open: boolean }) => open
     : <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
 
 const BAN_KEYWORDS = ['suspended', 'banned', 'restricted', 'contact a super admin']
+const TWO_FACTOR_PREFIX = '2FA_REQUIRED|'
+const LOCKOUT_PREFIX = 'LOCKOUT|'
 
 function isBanMessage(msg: string) {
     return BAN_KEYWORDS.some(k => msg.toLowerCase().includes(k))
+}
+
+function parseTwoFactorError(rawMessage: string): { token: string; message: string } | null {
+    if (!rawMessage.startsWith(TWO_FACTOR_PREFIX)) return null
+    const payload = rawMessage.slice(TWO_FACTOR_PREFIX.length)
+    const [token = '', ...rest] = payload.split('|')
+    return {
+        token: token.trim(),
+        message: (rest.join('|') || 'A verification code was sent to your email.').trim(),
+    }
+}
+
+function parseLockoutError(rawMessage: string): { seconds: number; message: string } | null {
+    if (!rawMessage.startsWith(LOCKOUT_PREFIX)) return null
+    const payload = rawMessage.slice(LOCKOUT_PREFIX.length)
+    const [secondsRaw = '0', ...rest] = payload.split('|')
+    const seconds = Number.parseInt(secondsRaw, 10)
+    return {
+        seconds: Number.isFinite(seconds) && seconds > 0 ? seconds : 1,
+        message: (rest.join('|') || 'Too many login attempts. Please try again later.').trim(),
+    }
 }
 
 const AdminLoginForm = () => {
@@ -33,35 +56,66 @@ const AdminLoginForm = () => {
     const [error, setError] = useState('');
     const [banMessage, setBanMessage] = useState('');
     const [form, setForm] = useState({ login: '', password: '' });
+    const [otpCode, setOtpCode] = useState('');
+    const [otpChallengeToken, setOtpChallengeToken] = useState('');
+    const [lockoutSeconds, setLockoutSeconds] = useState(0);
     const [isLoading, setIsLoading] = useState(false);
+
+    useEffect(() => {
+        if (lockoutSeconds <= 0) return
+        const timer = window.setInterval(() => {
+            setLockoutSeconds((prev) => (prev > 1 ? prev - 1 : 0))
+        }, 1000)
+        return () => window.clearInterval(timer)
+    }, [lockoutSeconds])
 
     const set = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) => setForm(f => ({ ...f, [field]: e.target.value }));
 
     const handleSign = async (e: React.SyntheticEvent) => {
         e.preventDefault();
+        if (lockoutSeconds > 0) {
+            return
+        }
         setError('');
         setBanMessage('');
         setIsLoading(true);
 
         try {
-            // Reset any previous admin session/token to prevent role carry-over.
-            dispatch(baseApi.util.resetApiState())
-            clearAccessTokenCache()
-            await clearAdminSession(loginPath)
-            await signOut({ redirect: false })
+            // Reset previous session only on first-step login, not during OTP verification.
+            if (!otpChallengeToken) {
+                dispatch(baseApi.util.resetApiState())
+                clearAccessTokenCache()
+                await clearAdminSession(loginPath)
+                await signOut({ redirect: false })
+            }
 
             const result = await signIn('admin-credentials', {
                 login: form.login,
                 password: form.password,
+                otp: otpChallengeToken ? otpCode : undefined,
+                otp_challenge_token: otpChallengeToken || undefined,
                 redirect: false,
             })
 
             if (!result?.ok) {
                 const msg = result?.error ?? ''
+                const twoFactor = parseTwoFactorError(msg)
+                if (twoFactor) {
+                    setOtpChallengeToken(twoFactor.token)
+                    setOtpCode('')
+                    setError(twoFactor.message)
+                    return
+                }
+                const lockout = parseLockoutError(msg)
+                if (lockout) {
+                    setLockoutSeconds(lockout.seconds)
+                    setError('')
+                    return
+                }
                 if (isBanMessage(msg)) {
                     setBanMessage(msg)
                 } else {
-                    setError('Invalid email/username or password')
+                    setError(msg || 'Invalid email/username or password')
                 }
                 return;
             }
@@ -69,10 +123,8 @@ const AdminLoginForm = () => {
             dispatch(baseApi.util.resetApiState())
             clearAccessTokenCache()
 
-            // Refresh the app shell using Next router navigation.
             // Let /admin decide the correct landing page per role.
             router.replace(portalRoot)
-            router.refresh()
         } catch {
             setError('Unable to sign in. Please try again');
         } finally {
@@ -151,6 +203,9 @@ const AdminLoginForm = () => {
                                 onClick={() => {
                                     setBanMessage('');
                                     setForm({ login: '', password: '' });
+                                    setOtpCode('');
+                                    setOtpChallengeToken('');
+                                    setLockoutSeconds(0);
                                     if (isSuspendedRedirect) {
                                         router.replace(loginPath);
                                     }
@@ -178,7 +233,7 @@ const AdminLoginForm = () => {
                     </div>
 
                     <form onSubmit={handleSign}>
-                        {error && (
+                        {(error || lockoutSeconds > 0) && (
                             <motion.div
                                 initial={{ opacity: 0, y: -6 }}
                                 animate={{ opacity: 1, y: 0 }}
@@ -187,7 +242,7 @@ const AdminLoginForm = () => {
                                 <svg className="shrink-0 w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                     <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
                                 </svg>
-                                {error}
+                                {lockoutSeconds > 0 ? `Too many login attempts. Try again in ${lockoutSeconds} seconds.` : error}
                             </motion.div>
                         )}
 
@@ -240,10 +295,61 @@ const AdminLoginForm = () => {
                             </div>
                         </div>
 
+                        {otpChallengeToken ? (
+                            <div className="mt-3">
+                                <label className="block text-xs font-semibold text-slate-300 mb-1.5">Email OTP Code</label>
+                                <input
+                                    type="text"
+                                    value={otpCode}
+                                    onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                                    required
+                                    inputMode="numeric"
+                                    placeholder="Enter 6-digit code"
+                                    className="w-full px-4 py-2.5 bg-slate-800/80 border border-slate-700/80 rounded-xl text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all"
+                                />
+                                <div className="mt-2 flex items-center justify-between">
+                                    <p className="text-[11px] text-slate-400">OTP was sent to your account email.</p>
+                                    <button
+                                        type="button"
+                                        onClick={async () => {
+                                            setError('')
+                                            setIsLoading(true)
+                                            try {
+                                                const resend = await signIn('admin-credentials', {
+                                                    login: form.login,
+                                                    password: form.password,
+                                                    otp_challenge_token: otpChallengeToken,
+                                                    resend_otp: '1',
+                                                    redirect: false,
+                                                })
+                                                const msg = resend?.error ?? ''
+                                                const twoFactor = parseTwoFactorError(msg)
+                                                if (twoFactor) {
+                                                    setOtpChallengeToken(twoFactor.token)
+                                                    setError(twoFactor.message)
+                                                } else if (msg) {
+                                                    setError(msg)
+                                                } else {
+                                                    setError('OTP re-sent. Please check your email.')
+                                                }
+                                            } catch {
+                                                setError('Failed to resend OTP. Please try again.')
+                                            } finally {
+                                                setIsLoading(false)
+                                            }
+                                        }}
+                                        className="text-xs font-semibold text-indigo-300 hover:text-indigo-200 transition"
+                                    >
+                                        Resend OTP
+                                    </button>
+                                </div>
+                            </div>
+                        ) : null}
+
                         {/* SUBMIT */}
                         <button
                             type="submit"
-                            disabled={isLoading}
+                            disabled={isLoading || lockoutSeconds > 0}
                             className="w-full mt-2 bg-indigo-600 hover:bg-indigo-500 active:scale-[0.99] disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold py-2.5 rounded-xl tracking-wide transition-all duration-200 shadow-lg shadow-indigo-600/25 flex items-center justify-center gap-2"
                         >
                             {isLoading ? (
@@ -252,7 +358,7 @@ const AdminLoginForm = () => {
                                     <span>Signing in...</span>
                                 </>
                             ):(
-                                <span>Sign In</span>                            )}
+                                <span>{lockoutSeconds > 0 ? `Try again in ${lockoutSeconds}s` : otpChallengeToken ? 'Verify & Sign In' : 'Sign In'}</span>                            )}
                         </button>
                     </form>
                     </div>

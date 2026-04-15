@@ -35,7 +35,7 @@ export default function AdminPagination({
   const paginationPages = getPaginationPages(currentPage, totalPages)
 
   return (
-    <div className="border-t border-slate-100 bg-slate-50/40">
+    <div className="border-t border-slate-100 bg-slate-50/40 dark:border-slate-800 dark:bg-slate-800/40">
       <Pagination size="sm" className="w-full justify-between gap-3 px-4 py-3">
         <Pagination.Summary>
           {(from ?? 0).toLocaleString()} to {(to ?? 0).toLocaleString()} of {totalRecords.toLocaleString()} results

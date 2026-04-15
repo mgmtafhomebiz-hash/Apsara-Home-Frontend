@@ -7,7 +7,7 @@ import { useSession } from 'next-auth/react';
 import { useGetWishlistQuery, useRemoveWishlistMutation } from '@/store/api/wishlistApi';
 import type { FetchBaseQueryError } from '@reduxjs/toolkit/query';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 
 const HeartIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-7 h-7">
@@ -30,6 +30,7 @@ const CartIcon = () => (
 
 export default function Wishlist() {
   const router = useRouter();
+  const pathname = usePathname();
   const { data: session, status } = useSession();
   const isAuthenticated = Boolean(session?.user);
   const [pendingRemoveId, setPendingRemoveId] = useState<number | null>(null);
@@ -182,7 +183,7 @@ export default function Wishlist() {
             <h2 className="text-lg font-bold text-slate-900">Sign in to view your wishlist</h2>
             <p className="mt-1.5 text-sm text-slate-500 max-w-xs">Save products you love and access them anytime from any device.</p>
             <Link
-              href="/login"
+              href={`/login?callback=${encodeURIComponent(pathname)}`}
               className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-orange-500 px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-orange-200 hover:bg-orange-600 transition-colors"
             >
               Sign In

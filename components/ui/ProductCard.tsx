@@ -42,6 +42,13 @@ type VariantChoice = {
 const FALLBACK_IMAGE = '/Images/HeroSection/chairs_stools.jpg';
 const NEW_BADGE_DAYS = 3;
 
+const formatMoney = (value: number) =>
+  new Intl.NumberFormat('en-PH', {
+    style: 'currency',
+    currency: 'PHP',
+    maximumFractionDigits: 2,
+  }).format(value || 0);
+
 const isNewProduct = (createdAt?: string | null) => {
   if (!createdAt) return false;
 
@@ -325,6 +332,121 @@ export default function ProductCard({
   return (
     <>
       <Link href={productPath}>
+        {isList ? (
+          <motion.div
+            whileHover={{ y: -2 }}
+            transition={{ duration: 0.25, ease: 'easeOut' }}
+            className="group relative cursor-pointer overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-shadow hover:shadow-md sm:flex sm:items-stretch"
+          >
+            <div className="relative flex aspect-[4/3] items-center justify-center bg-slate-50 sm:aspect-auto sm:h-40 sm:w-56 sm:min-w-[14rem]">
+              <Image
+                src={imageSrc}
+                alt={safeName}
+                fill
+                className="object-contain p-4 transition-transform duration-500 group-hover:scale-[1.03]"
+                onError={() => setImageSrc(FALLBACK_IMAGE)}
+              />
+
+              <div className="absolute left-3 top-3 z-10 flex flex-wrap gap-2">
+                {showNewBadge ? (
+                  <span className="rounded-full bg-emerald-500 px-2 py-1 text-[10px] font-bold tracking-wide text-white">
+                    NEW
+                  </span>
+                ) : null}
+                {badge ? (
+                  <span className="rounded-full bg-orange-500 px-2 py-1 text-[10px] font-bold tracking-wide text-white">
+                    {badge}
+                  </span>
+                ) : null}
+              </div>
+            </div>
+
+            <div className="flex flex-1 flex-col gap-3 p-4 sm:flex-row sm:items-stretch sm:justify-between">
+              <div className="min-w-0 flex-1">
+                <h3 className="line-clamp-2 text-sm font-semibold text-slate-900 transition-colors group-hover:text-orange-600 sm:text-[15px]">
+                  {safeName}
+                </h3>
+
+                {(ratingValue !== null || normalizedReviewCount !== null) ? (
+                  <div className="mt-1 flex items-center gap-1.5 text-xs text-slate-500">
+                    <div className="flex items-center gap-0.5">
+                      {Array.from({ length: 5 }).map((_, index) => {
+                        const filled = ratingValue !== null && ratingValue >= index + 1
+                        return (
+                          <svg
+                            key={index}
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="12"
+                            height="12"
+                            viewBox="0 0 24 24"
+                            fill={filled ? '#f59e0b' : 'none'}
+                            stroke={filled ? '#f59e0b' : '#cbd5f5'}
+                            strokeWidth="2"
+                          >
+                            <path d="M12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+                          </svg>
+                        )
+                      })}
+                    </div>
+                    {ratingValue !== null ? <span className="font-semibold text-slate-600">{ratingValue.toFixed(1)}</span> : null}
+                    {normalizedReviewCount !== null ? <span>{`(${normalizedReviewCount})`}</span> : null}
+                  </div>
+                ) : (
+                  <div className="mt-1 text-xs text-slate-400">No reviews yet</div>
+                )}
+
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <span className="text-base font-extrabold text-orange-600">{formatMoney(displayPrice)}</span>
+                  {strikePrice > displayPrice ? (
+                    <span className="text-sm text-slate-400 line-through">{formatMoney(strikePrice)}</span>
+                  ) : null}
+                  {strikePrice > displayPrice ? (
+                    <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-700">
+                      {`${Math.max(1, Math.round((1 - displayPrice / strikePrice) * 100))}% off`}
+                    </span>
+                  ) : null}
+                </div>
+
+                {displayPv > 0 ? (
+                  <div className="mt-2 inline-flex items-center rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-[11px] font-semibold text-blue-700">
+                    {`PV ${displayPv.toLocaleString()}`}
+                  </div>
+                ) : null}
+              </div>
+
+              <div className="flex flex-row items-center justify-between gap-3 sm:w-44 sm:flex-col sm:items-end sm:justify-between">
+                <button
+                  type="button"
+                  onClick={handleWishlist}
+                  disabled={isWishlistPending}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-orange-200 hover:bg-orange-50 disabled:opacity-60"
+                  aria-label={isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill={isWishlisted ? '#f97316' : 'none'} stroke={isWishlisted ? '#f97316' : 'currentColor'} strokeWidth="2">
+                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                  </svg>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleAddToCart}
+                  disabled={!isInStock || isFetchingProductDetails}
+                  className={`inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-xs font-semibold transition ${
+                    isInStock
+                      ? 'bg-orange-500 text-white shadow-sm hover:bg-orange-600'
+                      : 'cursor-not-allowed bg-slate-200 text-slate-500'
+                  } ${isFetchingProductDetails ? 'opacity-80' : ''}`}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" />
+                    <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+                  </svg>
+                  {isFetchingProductDetails ? 'Loading...' : isInStock ? 'Add to cart' : 'Out of stock'}
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        ) : (
         <motion.div
           whileHover={{ y: -6 }}
           transition={{ duration: 0.3, ease: 'easeOut' }}
@@ -434,6 +556,7 @@ export default function ProductCard({
             ) : null}
           </div>
         </motion.div>
+        )}
       </Link>
 
       <AnimatePresence>

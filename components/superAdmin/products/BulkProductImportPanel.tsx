@@ -292,11 +292,11 @@ export default function BulkProductImportPanel({ onClose, onImported }: BulkProd
             </div>
 
             <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
-              <div className="border-b border-slate-100 px-4 py-3">
+              <div className="border-b border-slate-100 dark:border-slate-800 px-4 py-3">
                 <p className="text-sm font-semibold text-slate-800">Upload Summary</p>
                 <p className="text-xs text-slate-500">Ito ang mga product rows na ma-u-upload kapag tinuloy mo ang import.</p>
               </div>
-              <div className="max-h-80 overflow-auto divide-y divide-slate-100">
+              <div className="max-h-80 overflow-auto divide-y divide-slate-100 dark:divide-slate-800/70">
                 {previewRows.map((row) => (
                   <div key={`${row.index}-${row.sku}-${row.name}`} className="px-4 py-3">
                     <div className="flex items-start justify-between gap-3">
@@ -319,12 +319,12 @@ export default function BulkProductImportPanel({ onClose, onImported }: BulkProd
             </div>
 
             <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
-              <div className="border-b border-slate-100 px-4 py-3">
+              <div className="border-b border-slate-100 dark:border-slate-800 px-4 py-3">
                 <p className="text-sm font-semibold text-slate-800">Raw Preview</p>
                 <p className="text-xs text-slate-500">Quick table view of the uploaded CSV fields.</p>
               </div>
               <div className="max-h-72 overflow-auto">
-                <table className="min-w-full divide-y divide-slate-100 text-left text-xs">
+                <table className="min-w-full divide-y divide-slate-100 dark:divide-slate-800/70 text-left text-xs">
                   <thead className="bg-slate-50">
                     <tr>
                       {parsed.headers.slice(0, 6).map((header) => (
@@ -332,7 +332,7 @@ export default function BulkProductImportPanel({ onClose, onImported }: BulkProd
                       ))}
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100">
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800/70">
                     {parsed.rows.slice(0, 8).map((row, index) => (
                       <tr key={index} className="bg-white">
                         {parsed.headers.slice(0, 6).map((header) => (

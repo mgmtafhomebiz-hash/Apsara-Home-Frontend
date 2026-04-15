@@ -1,12 +1,29 @@
 'use client'
 
-import { useState } from 'react'
-import { showSuccessToast } from '@/libs/toast'
+import { useEffect, useRef, useState } from 'react'
+import { showErrorToast, showSuccessToast } from '@/libs/toast'
+import {
+  useGetAdminNotificationSettingsQuery,
+  useUpdateAdminNotificationSettingsMutation,
+} from '@/store/api/adminSettingsApi'
 
 export default function AdminNotificationsSettingsPageMain() {
+  const { data, isFetching } = useGetAdminNotificationSettingsQuery()
+  const [saveSettings, { isLoading: isSaving }] = useUpdateAdminNotificationSettingsMutation()
+  const hasHydrated = useRef(false)
+
   const [emailNotifications, setEmailNotifications] = useState(true)
   const [smsNotifications, setSmsNotifications] = useState(false)
   const [adminAlerts, setAdminAlerts] = useState(true)
+
+  useEffect(() => {
+    if (!data?.settings || hasHydrated.current) return
+    const settings = data.settings
+    setEmailNotifications(Boolean(settings.email_notifications))
+    setSmsNotifications(Boolean(settings.sms_notifications))
+    setAdminAlerts(Boolean(settings.admin_alerts))
+    hasHydrated.current = true
+  }, [data])
 
   return (
     <div className="space-y-8">
@@ -80,10 +97,27 @@ export default function AdminNotificationsSettingsPageMain() {
       <div className="flex flex-wrap items-center justify-end gap-3">
         <button
           type="button"
-          onClick={() => showSuccessToast('Notification settings saved (UI only).')}
+          onClick={async () => {
+            try {
+              const response = await saveSettings({
+                email_notifications: emailNotifications,
+                sms_notifications: smsNotifications,
+                admin_alerts: adminAlerts,
+              }).unwrap()
+
+              setEmailNotifications(Boolean(response.settings.email_notifications))
+              setSmsNotifications(Boolean(response.settings.sms_notifications))
+              setAdminAlerts(Boolean(response.settings.admin_alerts))
+              showSuccessToast(response.message || 'Notification settings saved.')
+            } catch (error) {
+              console.error(error)
+              showErrorToast('Failed to save notification settings. Please try again.')
+            }
+          }}
+          disabled={isSaving || isFetching}
           className="rounded-full bg-gradient-to-r from-amber-500 to-orange-500 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:shadow-md"
         >
-          Save Settings
+          {isSaving ? 'Saving...' : 'Save Settings'}
         </button>
       </div>
     </div>
