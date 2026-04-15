@@ -9,6 +9,7 @@ import { useSession } from 'next-auth/react'
 import { useGetPublicProductBrandsQuery } from '@/store/api/productBrandsApi'
 import { useGetPublicProductsQuery } from '@/store/api/productsApi'
 import { useAddToCartMutation } from '@/store/api/cartApi'
+import { useGetCategoriesQuery } from '@/store/api/categoriesApi'
 import { Skeleton } from '@heroui/react'
 import OutlineButton from '@/components/ui/buttons/OutlineButton'
 import PrimaryButton from '@/components/ui/buttons/PrimaryButton'
@@ -159,6 +160,7 @@ export default function ByBrandPageMain() {
   }
 
   const { data, isFetching } = useGetPublicProductBrandsQuery()
+  const { data: categoriesData } = useGetCategoriesQuery({ page: 1, per_page: 100, used_only: true })
 
   const allBrands = useMemo(
     () => (data?.brands ?? []).filter((brand) => brand.status === 0 && brand.name.trim().length > 0),
@@ -636,6 +638,7 @@ export default function ByBrandPageMain() {
                 onFilterChange={setFilters}
                 pvRange={filters.pvRange}
                 search={filters.search}
+                categories={categoriesData?.categories || []}
               />
               {renderAdBlock()}
             </div>
