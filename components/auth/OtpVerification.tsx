@@ -103,7 +103,7 @@ const OtpVerification = ({ email, verificationToken, onSuccess, onBack }: OtpVer
             )}
 
             <form onSubmit={handleVerify} className="w-full space-y-8">
-                <OtpInput value={otp} onChange={setOtp} disabled={isVerifying} />
+                <OtpInput value={otp} onChange={setOtp} disabled={isVerifying} autoFocus />
 
                 <button
                     type="submit"
