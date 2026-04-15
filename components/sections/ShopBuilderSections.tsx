@@ -247,26 +247,20 @@ function CampaignBannersSection({
   products: Product[]
   partnerSlug?: string
 }) {
-  const videoUrl = getField(section, 'video_url')
-  const posterUrl = getField(section, 'video_poster') || fallbackImage
-  const eyebrow = getField(section, 'video_eyebrow') || 'Top Promos'
-  const title = getField(section, 'video_title') || 'Weekend Furniture Drop'
-  const subtitle = getField(section, 'video_subtitle') || 'Refresh your living room this week'
-  const buttonText = getField(section, 'video_button') || 'Explore Now'
-  const linkType = getField(section, 'link_type') || 'category'
-  const linkCategoryId = Number.parseInt(getField(section, 'link_category_id'), 10)
-  const linkProductId = Number.parseInt(getField(section, 'link_product_id'), 10)
-  const linkCategory = Number.isFinite(linkCategoryId) && linkCategoryId > 0
-    ? categories.find((category) => category.id === linkCategoryId)
-    : undefined
-  const linkProduct = Number.isFinite(linkProductId) && linkProductId > 0
-    ? products.find((product) => product.id === linkProductId)
-    : undefined
-  const link = linkType === 'product' && linkProduct
-    ? buildProductLink(linkProduct)
-    : linkType === 'category' && linkCategory
-      ? buildPartnerCategoryLink(partnerSlug, linkCategory)
-      : buildPartnerShopLink(getField(section, 'video_link') || '/shop', partnerSlug)
+  const banners = [
+    {
+      title: getField(section, 'banner_1_title') || 'Special Offer',
+      subtitle: getField(section, 'banner_1_subtitle') || 'Limited time only',
+      image: getField(section, 'banner_1_image') || fallbackImage,
+      link: getField(section, 'banner_1_link') || '/shop',
+    },
+    {
+      title: getField(section, 'banner_2_title') || 'New Collection',
+      subtitle: getField(section, 'banner_2_subtitle') || 'Shop now',
+      image: getField(section, 'banner_2_image') || fallbackImage,
+      link: getField(section, 'banner_2_link') || '/shop',
+    },
+  ]
 
   return (
     <motion.section
