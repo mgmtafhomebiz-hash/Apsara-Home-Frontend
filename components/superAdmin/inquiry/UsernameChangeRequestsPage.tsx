@@ -84,7 +84,7 @@ export default function UsernameChangeRequestsPage() {
       </div>
 
       <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
-        <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
+        <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
           <p className="text-xs text-slate-500">
             {rows.length} request{rows.length !== 1 ? 's' : ''}
           </p>
@@ -166,7 +166,7 @@ export default function UsernameChangeRequestsPage() {
       {confirm.open && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center px-4">
           <div className="w-full max-w-md rounded-2xl bg-white border border-slate-200 shadow-2xl">
-            <div className="p-5 border-b border-slate-100">
+            <div className="p-5 border-b border-slate-100 dark:border-slate-800">
               <h3 className="text-lg font-bold text-slate-900">
                 {confirm.action === 'approve' ? 'Confirm Approval' : 'Confirm Rejection'}
               </h3>

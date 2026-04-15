@@ -274,28 +274,60 @@ function CampaignBannersSection({
       transition={{ duration: 0.5, delay: 0.04 }}
       className="!bg-white dark:!bg-gray-900 container mx-auto px-4 py-6"
     >
-      <div className="grid gap-3 md:grid-cols-2">
-        <AnimatePresence initial={false}>
-          {banners.map((banner, index) => (
-            <motion.div
-              key={`${banner.title}-${banner.image}`}
-              initial={{ opacity: 0, y: 26, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -18, scale: 0.98 }}
-              transition={{ duration: 0.42, delay: index * 0.08 }}
-            >
-              <Link href={banner.link} className="group relative block overflow-hidden rounded-3xl border border-slate-200 dark:border-gray-700 bg-slate-200 dark:bg-gray-800 p-5">
-                <Image src={banner.image} alt={banner.title} fill className="object-cover transition-transform duration-700 group-hover:scale-105" unoptimized />
-                <div className="absolute inset-0 bg-gradient-to-r from-slate-950/75 to-slate-900/20"></div>
-                <div className="relative flex min-h-[170px] flex-col justify-end text-white">
-                  <p className="text-xl font-bold">{banner.title}</p>
-                  <p className="mt-1 max-w-[240px] text-sm text-white/80">{banner.subtitle}</p>
-                </div>
-              </Link>
-            </motion.div>
-          ))}
-        </AnimatePresence>
-      </div>
+      <AnimatePresence initial={false}>
+        <motion.div
+          key={`${title}-${posterUrl}-${videoUrl}`}
+          initial={{ opacity: 0, y: 26, scale: 0.98 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: -18, scale: 0.98 }}
+          transition={{ duration: 0.42 }}
+        >
+          <Link
+            href={link}
+            className="group relative block overflow-hidden rounded-[32px] border border-slate-200 dark:border-gray-700 bg-slate-950"
+          >
+            <div className="relative min-h-[280px] md:min-h-[380px]">
+              {videoUrl ? (
+                <video
+                  className="absolute inset-0 h-full w-full object-cover"
+                  src={videoUrl}
+                  poster={posterUrl}
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                />
+              ) : (
+                <Image
+                  src={posterUrl}
+                  alt={title}
+                  fill
+                  className="object-cover transition-transform duration-700 group-hover:scale-105"
+                  unoptimized
+                />
+              )}
+
+              <div className="absolute inset-0 bg-gradient-to-r from-slate-950/85 via-slate-950/45 to-slate-950/10" />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/65 via-transparent to-transparent" />
+
+              <div className="relative flex min-h-[280px] md:min-h-[380px] flex-col justify-end p-6 text-white md:p-10">
+                <p className="mb-3 text-xs font-semibold uppercase tracking-[0.28em] text-orange-300">
+                  {eyebrow}
+                </p>
+                <h2 className="max-w-xl text-3xl font-bold leading-tight md:text-5xl">
+                  {title}
+                </h2>
+                <p className="mt-3 max-w-lg text-sm text-white/80 md:text-base">
+                  {subtitle}
+                </p>
+                <span className="mt-6 inline-flex w-fit rounded-xl bg-orange-500 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-500/30 transition-colors group-hover:bg-orange-400">
+                  {buttonText}
+                </span>
+              </div>
+            </div>
+          </Link>
+        </motion.div>
+      </AnimatePresence>
     </motion.section>
   )
 }

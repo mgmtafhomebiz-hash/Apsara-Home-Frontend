@@ -97,10 +97,10 @@ export default function WalletCreditsTable({ wallets, sortKey, onAdjust }: Walle
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.2 }}
-      className="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden"
+      className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden"
     >
       {/* Card header */}
-      <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between gap-3">
+      <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3">
         <div>
           <h2 className="text-sm font-bold text-slate-800">Member Wallets</h2>
           <p className="text-xs text-slate-400 mt-0.5">{wallets.length} members listed</p>
@@ -113,7 +113,7 @@ export default function WalletCreditsTable({ wallets, sortKey, onAdjust }: Walle
       <div className="overflow-x-auto">
         <table className="w-full text-left">
           <thead>
-            <tr className="border-b border-slate-100 bg-slate-50">
+            <tr className="border-b border-slate-100 dark:border-slate-800 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60">
               <th className="px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wide">Member</th>
               <th className="px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wide">Tier</th>
               <th className="px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wide">Cash Balance</th>
@@ -125,7 +125,7 @@ export default function WalletCreditsTable({ wallets, sortKey, onAdjust }: Walle
               <th className="px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wide">Action</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-50">
+          <tbody className="divide-y divide-slate-100 dark:divide-slate-800/70 dark:divide-slate-800/70">
             {wallets.length === 0 ? (
               <tr>
                 <td colSpan={9} className="px-5 py-14 text-center">

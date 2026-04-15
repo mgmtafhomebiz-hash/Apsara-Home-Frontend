@@ -7,7 +7,7 @@ import Image from 'next/image'
 import { createPortal } from 'react-dom'
 import { Card, Label, SearchField } from '@heroui/react'
 import { useCart } from '@/context/CartContext'
-import { useSession, signOut } from 'next-auth/react'
+import { SessionProvider, useSession, signOut } from 'next-auth/react'
 import { useLogoutMutation } from '@/store/api/authApi'
 import { baseApi, clearAccessTokenCache } from '@/store/api/baseApi'
 import type { Category } from '@/store/api/categoriesApi'
@@ -99,7 +99,7 @@ const roomIcons: Record<string, React.ReactNode> = {
   ),
 }
 
-export default function Navbar({ initialCategories = [] }: { initialCategories?: Category[] }) {
+function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[] }) {
   const router = useRouter()
   const pathname = usePathname()
   const [scrolled, setScrolled] = useState(false)
@@ -1637,6 +1637,14 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
       />
     )}
     </>
+  )
+}
+
+export default function Navbar({ initialCategories = [] }: { initialCategories?: Category[] }) {
+  return (
+    <SessionProvider>
+      <NavbarInner initialCategories={initialCategories} />
+    </SessionProvider>
   )
 }
 

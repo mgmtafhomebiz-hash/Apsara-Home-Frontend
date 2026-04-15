@@ -17,6 +17,7 @@ import { baseApi, clearAccessTokenCache } from "@/store/api/baseApi";
 import { useAppDispatch } from "@/store/hooks";
 import { clearAdminSession } from "@/libs/adminSession";
 import { normalizeAdminPermissions } from "@/libs/adminPermissions";
+import ThemeToggle from "@/components/ui/buttons/ThemeToggle";
 import Pusher from "pusher-js";
 
 interface HeaderProps {
@@ -316,10 +317,10 @@ const Header = ({ onMenuClick }: HeaderProps) => {
     const isDashboardPage = pathname?.startsWith('/admin/dashboard');
 
     return (
-        <header className="h-16 bg-white border-b border-slate-100 flex items-center px-4 gap-4 shrink-0 sticky top-0 z-10">
+        <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center gap-4 border-b border-slate-100 dark:border-slate-800 bg-white px-4 dark:border-slate-800 dark:bg-slate-900">
             <button
                 onClick={onMenuClick}
-                className="lg:hidden flex items-center justify-center h-9 w-9 rounded-xl text-slate-500 hover:bg-slate-100 transition-colors"
+                className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 transition-colors hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800 lg:hidden"
             >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
@@ -327,13 +328,13 @@ const Header = ({ onMenuClick }: HeaderProps) => {
             </button>
 
             <div className="hidden sm:block">
-                <h1>Dashboard</h1>
-                <p className="text-slate-400">Welcome back, {displayName}</p>
+                <h1 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Dashboard</h1>
+                <p className="text-slate-400 dark:text-slate-500">Welcome back, {displayName}</p>
             </div>
 
             <div className="flex-1 max-w-md mx-auto">
                 <div className="relative">
-                    <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                     <input
@@ -341,7 +342,7 @@ const Header = ({ onMenuClick }: HeaderProps) => {
                         placeholder="Search orders, members, products..."
                         value={headerSearch}
                         onChange={(e) => handleHeaderSearchChange(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-400 transition-all"
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 pl-10 pr-4 text-sm text-slate-700 transition-all placeholder:text-slate-400 focus:border-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-500/50 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-100 dark:placeholder:text-slate-500"
                     />
                 </div>
             </div>
@@ -349,8 +350,8 @@ const Header = ({ onMenuClick }: HeaderProps) => {
             <div className="flex items-center gap-2 ml-auto">
                 {isDashboardPage && (
                     <div className="hidden md:flex items-center gap-2">
-                        <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-50 rounded-lg border border-slate-200">
-                            <svg className="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 dark:border-slate-800 dark:bg-slate-800/60">
+                            <svg className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                             </svg>
                             <select
@@ -362,7 +363,7 @@ const Header = ({ onMenuClick }: HeaderProps) => {
                                         updateDateRangeParams(nextRange);
                                     }
                                 }}
-                                className="bg-transparent text-xs text-slate-600 font-medium focus:outline-none"
+                                className="bg-transparent text-xs font-medium text-slate-600 focus:outline-none dark:text-slate-200"
                             >
                                 {DATE_RANGE_OPTIONS.map((option) => (
                                     <option key={option.value} value={option.value}>
@@ -371,26 +372,26 @@ const Header = ({ onMenuClick }: HeaderProps) => {
                                 ))}
                             </select>
                         </div>
-                        <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-50 rounded-lg border border-slate-200">
-                            <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide">Today</span>
-                            <span className="text-xs text-slate-600 font-medium">
+                        <div className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 dark:border-slate-800 dark:bg-slate-800/60">
+                            <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">Today</span>
+                            <span className="text-xs font-medium text-slate-600 dark:text-slate-200">
                                 {new Date().toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
                             </span>
                         </div>
                         {selectedRange === 'custom' && (
-                            <div className="flex items-center gap-1.5 px-2 py-1.5 bg-slate-50 rounded-lg border border-slate-200">
+                            <div className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5 dark:border-slate-800 dark:bg-slate-800/60">
                                 <input
                                     type="date"
                                     value={customStart}
                                     onChange={(e) => setCustomStart(e.target.value)}
-                                    className="text-xs text-slate-600 bg-transparent focus:outline-none"
+                                    className="bg-transparent text-xs text-slate-600 focus:outline-none dark:text-slate-200"
                                 />
-                                <span className="text-xs text-slate-400">to</span>
+                                <span className="text-xs text-slate-400 dark:text-slate-500">to</span>
                                 <input
                                     type="date"
                                     value={customEnd}
                                     onChange={(e) => setCustomEnd(e.target.value)}
-                                    className="text-xs text-slate-600 bg-transparent focus:outline-none"
+                                    className="bg-transparent text-xs text-slate-600 focus:outline-none dark:text-slate-200"
                                 />
                                 <button
                                     type="button"
@@ -404,6 +405,8 @@ const Header = ({ onMenuClick }: HeaderProps) => {
                     </div>
                 )}
 
+                <ThemeToggle isScrolled={true} />
+
                 <div className="relative">
                     <button
                         onClick={() => {
@@ -413,13 +416,13 @@ const Header = ({ onMenuClick }: HeaderProps) => {
                                 refetchNotifs();
                             }
                         }}
-                        className="relative flex items-center justify-center h-9 w-9 rounded-xl text-slate-500 hover:bg-slate-100 transition-colors"
+                        className="relative flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 transition-colors hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
                     >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                         </svg>
                         {unreadCount > 0 && (
-                            <span className="absolute top-1.5 right-1.5 h-2 w-2 bg-red-500 rounded-full ring-2 ring-white" />
+                            <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-slate-900" />
                         )}
                     </button>
                     <AnimatePresence>
@@ -429,12 +432,12 @@ const Header = ({ onMenuClick }: HeaderProps) => {
                                 animate={{ opacity: 1, y: 0, scale: 1 }}
                                 exit={{ opacity: 0, y: 8, scale: 0.95 }}
                                 transition={{ duration: 0.15 }}
-                                className="absolute right-0 top-full mt-2 w-85 bg-white rounded-2xl shadow-xl border border-slate-100 z-50 overflow-hidden"
+                                className="absolute right-0 top-full z-50 mt-2 w-85 overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-xl dark:border-slate-800 dark:bg-slate-900"
                             >
                                 {/* Header */}
-                                <div className="flex items-center justify-between px-4 py-3 bg-linear-to-r from-teal-50 to-white border-b border-teal-100/60">
+                                <div className="flex items-center justify-between border-b border-teal-100/60 bg-linear-to-r from-teal-50 to-white px-4 py-3 dark:border-slate-800 dark:from-teal-500/10 dark:to-slate-900">
                                     <div className="flex items-center gap-2">
-                                        <span className="font-bold text-slate-800 text-sm">Notifications</span>
+                                        <span className="text-sm font-bold text-slate-800 dark:text-slate-100">Notifications</span>
                                         {unreadCount > 0 && (
                                             <span className="bg-teal-500 text-white text-[10px] font-bold rounded-full min-w-4.5 h-4.5 px-1 flex items-center justify-center leading-none">
                                                 {unreadCount}
@@ -443,35 +446,35 @@ const Header = ({ onMenuClick }: HeaderProps) => {
                                     </div>
                                     <button
                                         onClick={handleMarkAllNotificationsRead}
-                                        className="text-xs text-teal-600 font-semibold hover:text-teal-700 transition-colors"
+                                        className="text-xs font-semibold text-teal-600 transition-colors hover:text-teal-700 dark:text-teal-300 dark:hover:text-teal-200"
                                     >
                                         Mark all read
                                     </button>
                                 </div>
 
                                 {/* List */}
-                                <div className="max-h-80 overflow-y-auto overscroll-contain divide-y divide-slate-50">
+                                <div className="max-h-80 divide-y divide-slate-100 dark:divide-slate-800/70 dark:divide-slate-800/70 overflow-y-auto overscroll-contain dark:divide-slate-800/70">
                                     {isNotifLoading ? (
                                         <div className="flex flex-col items-center justify-center py-10 gap-3">
                                             <div className="h-7 w-7 rounded-full border-2 border-teal-200 border-t-teal-500 animate-spin" />
-                                            <p className="text-xs text-slate-400">Loading...</p>
+                                            <p className="text-xs text-slate-400 dark:text-slate-500">Loading...</p>
                                         </div>
                                     ) : isNotifError ? (
                                         <div className="px-4 py-8 text-center">
                                             <p className="text-sm text-red-500 font-medium">Failed to load notifications</p>
-                                            <p className="text-xs text-slate-400 mt-1">Please try again later.</p>
+                                            <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">Please try again later.</p>
                                         </div>
                                     ) : visibleNotifications.length ? (
                                         visibleNotifications.map((notif) => {
                                             const isNew = !notif.is_read;
                                             const severity = notif.severity ?? 'info';
                                             const sc = severity === 'critical'
-                                                ? { bg: 'bg-red-100', dot: 'bg-red-500', badge: 'bg-red-100 text-red-600', border: 'border-l-red-400' }
+                                                ? { bg: 'bg-red-100 dark:bg-red-500/15', dot: 'bg-red-500', badge: 'bg-red-100 text-red-600 dark:bg-red-500/15 dark:text-red-300', border: 'border-l-red-400' }
                                                 : severity === 'warning'
-                                                ? { bg: 'bg-amber-100', dot: 'bg-amber-500', badge: 'bg-amber-100 text-amber-600', border: 'border-l-amber-400' }
+                                                ? { bg: 'bg-amber-100 dark:bg-amber-500/15', dot: 'bg-amber-500', badge: 'bg-amber-100 text-amber-600 dark:bg-amber-500/15 dark:text-amber-300', border: 'border-l-amber-400' }
                                                 : severity === 'success'
-                                                ? { bg: 'bg-green-100', dot: 'bg-green-500', badge: 'bg-green-100 text-green-600', border: 'border-l-green-400' }
-                                                : { bg: 'bg-blue-100', dot: 'bg-blue-500', badge: 'bg-blue-100 text-blue-600', border: 'border-l-blue-400' };
+                                                ? { bg: 'bg-green-100 dark:bg-green-500/15', dot: 'bg-green-500', badge: 'bg-green-100 text-green-600 dark:bg-green-500/15 dark:text-green-300', border: 'border-l-green-400' }
+                                                : { bg: 'bg-blue-100 dark:bg-blue-500/15', dot: 'bg-blue-500', badge: 'bg-blue-100 text-blue-600 dark:bg-blue-500/15 dark:text-blue-300', border: 'border-l-blue-400' };
                                             return (
                                                 <button
                                                     key={notif.id}
@@ -479,23 +482,23 @@ const Header = ({ onMenuClick }: HeaderProps) => {
                                                     onClick={() => {
                                                         handleNotificationClick(notif);
                                                     }}
-                                                    className={`w-full text-left flex items-start gap-3 px-4 py-3.5 hover:bg-slate-50 transition-colors cursor-pointer border-l-2 ${isNew ? `${sc.border} bg-teal-50/20` : 'border-l-transparent'}`}
+                                                    className={`flex w-full cursor-pointer items-start gap-3 border-l-2 px-4 py-3.5 text-left transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/40 ${isNew ? `${sc.border} bg-teal-50/20 dark:bg-teal-500/5` : 'border-l-transparent'}`}
                                                 >
-                                                    <div className={`shrink-0 mt-0.5 h-8 w-8 rounded-full flex items-center justify-center ${isNew ? sc.bg : 'bg-slate-100'}`}>
-                                                        <div className={`h-2 w-2 rounded-full ${isNew ? sc.dot : 'bg-slate-300'}`} />
+                                                    <div className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${isNew ? sc.bg : 'bg-slate-100 dark:bg-slate-800/60'}`}>
+                                                        <div className={`h-2 w-2 rounded-full ${isNew ? sc.dot : 'bg-slate-300 dark:bg-slate-600'}`} />
                                                     </div>
                                                     <div className="flex-1 min-w-0">
                                                         <div className="flex items-start justify-between gap-2">
-                                                            <p className={`text-sm leading-snug ${isNew ? 'font-semibold text-slate-800' : 'font-medium text-slate-600'}`}>{notif.title}</p>
+                                                            <p className={`text-sm leading-snug ${isNew ? 'font-semibold text-slate-800 dark:text-slate-100' : 'font-medium text-slate-600 dark:text-slate-300'}`}>{notif.title}</p>
                                                             {notif.type && (
-                                                                <span className={`shrink-0 text-[10px] font-semibold uppercase tracking-wide rounded px-1.5 py-0.5 leading-none ${isNew ? sc.badge : 'bg-slate-100 text-slate-400'}`}>
+                                                                <span className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase leading-none tracking-wide ${isNew ? sc.badge : 'bg-slate-100 text-slate-400 dark:bg-slate-800/60 dark:text-slate-500'}`}>
                                                                     {notif.type.replace(/_/g, ' ')}
                                                                 </span>
                                                             )}
                                                         </div>
-                                                        <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">{notif.description}</p>
+                                                        <p className="mt-0.5 text-xs leading-relaxed text-slate-500 dark:text-slate-400">{notif.description}</p>
                                                         {formatRelativeTime(notif.updated_at) && (
-                                                            <p className="text-[11px] text-slate-400 mt-1">{formatRelativeTime(notif.updated_at)}</p>
+                                                            <p className="mt-1 text-[11px] text-slate-400 dark:text-slate-500">{formatRelativeTime(notif.updated_at)}</p>
                                                         )}
                                                     </div>
                                                 </button>
@@ -503,26 +506,26 @@ const Header = ({ onMenuClick }: HeaderProps) => {
                                         })
                                     ) : (
                                         <div className="flex flex-col items-center justify-center py-10 gap-3">
-                                            <div className="h-12 w-12 rounded-full bg-slate-100 flex items-center justify-center">
-                                                <svg className="w-5 h-5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800/60">
+                                                <svg className="h-5 w-5 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                                                 </svg>
                                             </div>
                                             <div className="text-center">
-                                                <p className="text-sm font-medium text-slate-500">All caught up!</p>
-                                                <p className="text-xs text-slate-400 mt-0.5">No new notifications</p>
+                                                <p className="text-sm font-medium text-slate-500 dark:text-slate-300">All caught up!</p>
+                                                <p className="mt-0.5 text-xs text-slate-400 dark:text-slate-500">No new notifications</p>
                                             </div>
                                         </div>
                                     )}
                                 </div>
 
                                 {/* Footer */}
-                                <div className="px-4 py-2.5 border-t border-slate-100 bg-slate-50/50 flex items-center gap-1.5">
+                                <div className="flex items-center gap-1.5 border-t border-slate-100 bg-slate-50/50 px-4 py-2.5 dark:border-slate-800 dark:bg-slate-800/60">
                                     <div className="h-1.5 w-1.5 rounded-full bg-green-400" />
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-[11px] text-slate-400">Realtime · 5-second polling fallback</p>
+                                        <p className="text-[11px] text-slate-400 dark:text-slate-500">Realtime · 5-second polling fallback</p>
                                         {notifications?.generated_at && (
-                                            <p className="text-[11px] text-slate-400">Updated: {notifications.generated_at}</p>
+                                            <p className="text-[11px] text-slate-400 dark:text-slate-500">Updated: {notifications.generated_at}</p>
                                         )}
                                     </div>
                                 </div>
@@ -537,7 +540,7 @@ const Header = ({ onMenuClick }: HeaderProps) => {
                             setUserOpen(!userOpen);
                             setNotifOpen(false);
                         }}
-                        className="flex items-center gap-2 pl-1 pr-3 py-1 rounded-xl hover:bg-slate-100 transition-colors"
+                        className="flex items-center gap-2 rounded-xl py-1 pl-1 pr-3 transition-colors hover:bg-slate-100 dark:hover:bg-slate-800"
                     >
                         {avatarSrc ? (
                             <Image
@@ -552,11 +555,11 @@ const Header = ({ onMenuClick }: HeaderProps) => {
                                 <span className="text-white font-bold text-xs">{displayInitials}</span>
                             </div>
                         )}
-                        <div className="hidden sm:block text-left">
-                            <p className="text-xs font-semibold text-slate-800 leading-none">{displayName}</p>
-                            <p className="text-xs text-slate-400 mt-0">{displayRole}</p>
+                        <div className="hidden text-left sm:block">
+                            <p className="text-xs font-semibold leading-none text-slate-800 dark:text-slate-100">{displayName}</p>
+                            <p className="mt-0 text-xs text-slate-400 dark:text-slate-500">{displayRole}</p>
                         </div>
-                        <svg className="w-4 h-4 text-slate-400 hidden sm:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="hidden h-4 w-4 text-slate-400 dark:text-slate-500 sm:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                         </svg>
                     </button>
@@ -566,7 +569,7 @@ const Header = ({ onMenuClick }: HeaderProps) => {
                                 initial={{ opacity: 0, y: 8, scale: 0.95 }}
                                 animate={{ opacity: 1, y: 0, scale: 1 }}
                                 exit={{ opacity: 0, y: 8, scale: 0.95 }}
-                                className="absolute right-0 top-full mt-2 w-48 bg-white rounded-2xl shadow-xl border border-slate-100 z-50 overflow-hidden py-1"
+                                className="absolute right-0 top-full z-50 mt-2 w-48 overflow-hidden rounded-2xl border border-slate-100 bg-white py-1 shadow-xl dark:border-slate-800 dark:bg-slate-900"
                             >
                                 {userMenuItems.map((item) => (
                                     <button
@@ -575,12 +578,12 @@ const Header = ({ onMenuClick }: HeaderProps) => {
                                             setUserOpen(false);
                                             router.push(item.href);
                                         }}
-                                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50 transition-colors text-left"
+                                        className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-slate-600 transition-colors hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800/40"
                                     >
                                         {item.label}
                                     </button>
                                 ))}
-                                <div className="border-t border-slate-100 mt-1 pt-1">
+                                <div className="mt-1 border-t border-slate-100 pt-1 dark:border-slate-800">
                                     <button
                                         onClick={async () => {
                                             const isPartnerRoute = pathname.startsWith('/partner');
@@ -590,7 +593,7 @@ const Header = ({ onMenuClick }: HeaderProps) => {
                                             await clearAdminSession(loginPath);
                                             void signOut({ callbackUrl: loginPath });
                                         }}
-                                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 transition-colors text-left"
+                                        className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-red-500 transition-colors hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-500/10"
                                     >
                                         Logout
                                     </button>

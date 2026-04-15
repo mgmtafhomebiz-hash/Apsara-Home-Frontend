@@ -133,9 +133,9 @@ const OtpInput = ({ value, onChange, length = 4, disabled, autoFocus }:OtpInputP
                 onPaste={handlePaste}
                 onFocus={e => e.target.select()}
                 aria-label={`Digit ${index + 1} of ${length}`}
-                className="w-14 h-14 text-center text-2xl font-bold text-white bg-transparent outline-none caret-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-14 h-14 text-center text-2xl font-bold text-gray-900 dark:text-white bg-transparent outline-none caret-transparent disabled:opacity-50 disabled:cursor-not-allowed"
             />
-            <div className={`h-0.5 w-14 rounded-full transition-all duration-200 ${digit ? 'bg-orange-400' : 'bg-white/30'}`}/>
+            <div className={`h-0.5 w-14 rounded-full transition-all duration-200 ${digit ? 'bg-orange-400' : 'bg-gray-300 dark:bg-white/30'}`}/>
         </div>
       ))}
     </div>
