@@ -68,27 +68,27 @@ const FULFILLMENT_MODE_OPTIONS: Array<{ value: FulfillmentMode; label: string }>
 ]
 
 const APPROVAL_CONFIG: Record<string, { dot: string; badge: string; label: string }> = {
-  approved:        { dot: 'bg-emerald-400', badge: 'bg-emerald-50 text-emerald-700 border-emerald-200', label: 'Approved'        },
-  rejected:        { dot: 'bg-red-400',     badge: 'bg-red-50 text-red-700 border-red-200',             label: 'Rejected'        },
-  pending_approval:{ dot: 'bg-amber-400',   badge: 'bg-amber-50 text-amber-700 border-amber-200',       label: 'Pending'         },
-  paid:            { dot: 'bg-teal-400',    badge: 'bg-teal-50 text-teal-700 border-teal-200',          label: 'Paid'            },
-  active:          { dot: 'bg-orange-400',  badge: 'bg-orange-50 text-orange-700 border-orange-200',    label: 'Active'          },
-  pending:         { dot: 'bg-orange-400',  badge: 'bg-orange-50 text-orange-700 border-orange-200',    label: 'Pending'         },
+  approved:        { dot: 'bg-emerald-400', badge: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:border-emerald-500/30', label: 'Approved'        },
+  rejected:        { dot: 'bg-red-400',     badge: 'bg-red-50 text-red-700 border-red-200 dark:bg-red-500/10 dark:text-red-300 dark:border-red-500/30',                         label: 'Rejected'        },
+  pending_approval:{ dot: 'bg-amber-400',   badge: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:border-amber-500/30',             label: 'Pending'         },
+  paid:            { dot: 'bg-teal-400',    badge: 'bg-teal-50 text-teal-700 border-teal-200 dark:bg-teal-500/10 dark:text-teal-300 dark:border-teal-500/30',                   label: 'Paid'            },
+  active:          { dot: 'bg-orange-400',  badge: 'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-500/10 dark:text-orange-300 dark:border-orange-500/30',       label: 'Active'          },
+  pending:         { dot: 'bg-orange-400',  badge: 'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-500/10 dark:text-orange-300 dark:border-orange-500/30',       label: 'Pending'         },
 }
 
 const SLA_CONFIG = {
-  overdue:   { badge: 'bg-red-50 text-red-700 border-red-200',       dot: 'bg-red-400',   label: 'Overdue'  },
-  due_soon:  { badge: 'bg-amber-50 text-amber-700 border-amber-200', dot: 'bg-amber-400', label: 'Due Soon' },
-  on_track:  { badge: 'bg-emerald-50 text-emerald-700 border-emerald-200', dot: 'bg-emerald-400', label: 'On Track' },
+  overdue:   { badge: 'bg-red-50 text-red-700 border-red-200 dark:bg-red-500/10 dark:text-red-300 dark:border-red-500/30',           dot: 'bg-red-400',     label: 'Overdue'  },
+  due_soon:  { badge: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:border-amber-500/30', dot: 'bg-amber-400', label: 'Due Soon' },
+  on_track:  { badge: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:border-emerald-500/30', dot: 'bg-emerald-400', label: 'On Track' },
 }
 
 const ZQ_STATUS_STYLES: Record<string, string> = {
-  submitted: 'bg-sky-50 text-sky-700 border-sky-200',
-  processing: 'bg-amber-50 text-amber-700 border-amber-200',
-  unfulfilled: 'bg-slate-50 text-slate-700 border-slate-200',
-  paid: 'bg-indigo-50 text-indigo-700 border-indigo-200',
-  success: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-  close: 'bg-rose-50 text-rose-700 border-rose-200',
+  submitted:   'bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-500/10 dark:text-sky-300 dark:border-sky-500/30',
+  processing:  'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:border-amber-500/30',
+  unfulfilled: 'bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-700/40 dark:text-slate-300 dark:border-slate-600/40',
+  paid:        'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-500/10 dark:text-indigo-300 dark:border-indigo-500/30',
+  success:     'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:border-emerald-500/30',
+  close:       'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-500/10 dark:text-rose-300 dark:border-rose-500/30',
 }
 
 /* ─── helpers ──────────────────────────────────────────────── */
@@ -106,6 +106,33 @@ const formatDateTime = (value?: string | null) => {
     timeZone: 'Asia/Manila',
     year: 'numeric', month: 'short', day: 'numeric',
     hour: 'numeric', minute: '2-digit',
+  }).format(date)
+}
+
+const formatDateOnly = (value?: string | null) => {
+  if (!value) return 'N/A'
+  const hasTimeZone = /([zZ]|[+-]\d{2}:\d{2})$/.test(value.trim())
+  const normalized = value.includes('T') ? value.trim() : value.trim().replace(' ', 'T')
+  const date = new Date(hasTimeZone ? normalized : `${normalized}Z`)
+  if (Number.isNaN(date.getTime())) return 'N/A'
+  return new Intl.DateTimeFormat('en-PH', {
+    timeZone: 'Asia/Manila',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  }).format(date)
+}
+
+const formatTimeOnly = (value?: string | null) => {
+  if (!value) return 'N/A'
+  const hasTimeZone = /([zZ]|[+-]\d{2}:\d{2})$/.test(value.trim())
+  const normalized = value.includes('T') ? value.trim() : value.trim().replace(' ', 'T')
+  const date = new Date(hasTimeZone ? normalized : `${normalized}Z`)
+  if (Number.isNaN(date.getTime())) return 'N/A'
+  return new Intl.DateTimeFormat('en-PH', {
+    timeZone: 'Asia/Manila',
+    hour: 'numeric',
+    minute: '2-digit',
   }).format(date)
 }
 
@@ -213,14 +240,14 @@ function StatCard({ label, value, bg, text, border, icon }: {
   label: string; value: number; bg: string; text: string; border: string; icon: React.ReactNode
 }) {
   return (
-    <Card variant="default" className={`border ${border} bg-white shadow-none`}>
+    <Card variant="default" className={`border ${border} bg-white shadow-none dark:border-slate-800 dark:bg-slate-900`}>
       <Card.Content className="px-5 py-5">
         <div className="flex items-start justify-between gap-2">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{label}</p>
-            <p className="mt-2.5 text-3xl font-bold text-slate-800">{value}</p>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-400">{label}</p>
+            <p className="mt-2.5 text-3xl font-bold text-slate-800 dark:text-white">{value}</p>
           </div>
-          <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${bg} ${text}`}>
+          <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${bg} ${text} dark:ring-1 dark:ring-white/10`}>
             {icon}
           </div>
         </div>
@@ -262,8 +289,8 @@ function AdminOrderSelect({
 }) {
   const selectedLabel = options.find((option) => option.value === value)?.label ?? options[0]?.label ?? 'Select'
   const triggerClassName = selectedTone === 'shipment'
-    ? 'flex min-h-10 w-full items-center justify-between rounded-xl border border-teal-200 bg-teal-50 px-3 text-left text-xs font-semibold text-teal-700 transition-all duration-200 hover:bg-teal-100 focus:border-teal-300 focus:bg-white disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-50 disabled:text-slate-400 disabled:opacity-100'
-    : 'flex min-h-10 w-full items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 text-left text-xs text-slate-700 transition-all duration-200 hover:bg-white focus:border-teal-300 focus:bg-white disabled:cursor-not-allowed disabled:opacity-50'
+    ? 'flex min-h-10 w-full items-center justify-between rounded-xl border border-teal-200 bg-teal-50 px-3 text-left text-xs font-semibold text-teal-700 transition-all duration-200 hover:bg-teal-100 focus:border-teal-300 focus:bg-white disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-50 disabled:text-slate-400 disabled:opacity-100 dark:border-teal-500/30 dark:bg-teal-500/10 dark:text-teal-300 dark:hover:bg-teal-500/15 dark:focus:bg-slate-800 dark:disabled:border-white/10 dark:disabled:bg-slate-800 dark:disabled:text-slate-500'
+    : 'flex min-h-10 w-full items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 text-left text-xs text-slate-700 transition-all duration-200 hover:bg-white focus:border-teal-300 focus:bg-white disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-200 dark:hover:bg-slate-800 dark:focus:bg-slate-800'
 
   return (
     <Select
@@ -282,15 +309,15 @@ function AdminOrderSelect({
         <span className="truncate">{selectedLabel}</span>
         <Select.Indicator className="h-4 w-4 text-slate-400" />
       </Select.Trigger>
-      <Select.Popover className="min-w-[var(--trigger-width)]">
+      <Select.Popover className="min-w-[var(--trigger-width)] dark:border-slate-700 dark:bg-slate-900">
         <ListBox className="p-1">
           {options.map((option) => (
             <ListBoxItem
               id={option.value}
               key={option.value}
               className={option.value === value
-                ? 'rounded-lg border border-teal-200 bg-teal-50 text-teal-700 opacity-100'
-                : 'rounded-lg text-slate-700'
+                ? 'rounded-lg border border-teal-200 bg-teal-50 text-teal-700 opacity-100 dark:border-teal-500/30 dark:bg-teal-500/10 dark:text-teal-300'
+                : 'rounded-lg text-slate-700 dark:text-slate-200'
               }
             >
               {option.label}
@@ -310,13 +337,13 @@ function AdminOrderStaticValue({
   tone?: 'default' | 'shipment'
 }) {
   const className = tone === 'shipment'
-    ? 'flex min-h-10 w-full items-center justify-between rounded-xl border border-teal-200 bg-teal-50 px-3 text-left text-xs font-semibold text-teal-700'
-    : 'flex min-h-10 w-full items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 text-left text-xs font-semibold text-slate-700'
+    ? 'flex min-h-10 w-full items-center justify-between rounded-xl border border-teal-200 bg-teal-50 px-3 text-left text-xs font-semibold text-teal-700 dark:border-teal-500/30 dark:bg-teal-500/10 dark:text-teal-300'
+    : 'flex min-h-10 w-full items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 text-left text-xs font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-200'
 
   return (
     <div className={className}>
       <span className="truncate">{label}</span>
-      <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Locked</span>
+      <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">Locked</span>
     </div>
   )
 }
@@ -657,8 +684,8 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
         className="flex items-start justify-between gap-4 flex-wrap"
       >
         <div>
-          <h1 className="text-xl font-bold text-slate-800">Orders</h1>
-          <p className="text-sm text-slate-500 mt-0.5">Track checkout orders and handle approval workflow</p>
+          <h1 className="text-xl font-bold text-slate-800 dark:text-white">Orders</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Track checkout orders and handle approval workflow</p>
         </div>
         <div className="flex items-center gap-2">
           <span className={`inline-flex items-center px-3 py-1.5 rounded-xl text-xs font-semibold border ${
@@ -711,7 +738,7 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="rounded-3xl border border-slate-100 bg-white/95 p-4 shadow-sm"
+        className="rounded-3xl border border-slate-200 bg-white/95 p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900"
       >
         {/* Search */}
         <div className="hidden relative flex-1 min-w-50">
@@ -765,13 +792,13 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
               className="w-full"
             >
               <Label className="sr-only">Search admin orders</Label>
-              <SearchField.Group className="flex min-h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 transition-all duration-200 focus-within:border-teal-300 focus-within:bg-white">
-                <SearchField.SearchIcon className="h-4 w-4 text-slate-400" />
+              <SearchField.Group className="flex min-h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 transition-all duration-200 focus-within:border-teal-300 focus-within:bg-white dark:border-slate-700 dark:bg-slate-800/80 dark:focus-within:bg-slate-800">
+                <SearchField.SearchIcon className="h-4 w-4 text-slate-400 dark:text-slate-500" />
                 <SearchField.Input
                   placeholder="Search checkout ID, customer, or product..."
-                  className="flex-1 border-none bg-transparent p-0 text-sm text-slate-700 outline-none placeholder:text-slate-400"
+                  className="flex-1 border-none bg-transparent p-0 text-sm text-slate-700 outline-none placeholder:text-slate-400 dark:text-slate-100 dark:placeholder:text-slate-500"
                 />
-                {search ? <SearchField.ClearButton className="text-slate-400 transition hover:text-slate-600" /> : null}
+                {search ? <SearchField.ClearButton className="text-slate-400 transition hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300" /> : null}
               </SearchField.Group>
             </SearchField>
           </div>
@@ -795,13 +822,13 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
               variant="tertiary"
               onPress={() => setOverdueFirst((value) => !value)}
               className={overdueFirst
-                ? 'border border-teal-200 bg-teal-50 px-3.5 py-2 text-xs font-semibold text-teal-700'
-                : 'border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-600'}
+                ? 'border border-teal-200 bg-teal-50 px-3.5 py-2 text-xs font-semibold text-teal-700 dark:border-teal-500/30 dark:bg-teal-500/10 dark:text-teal-300'
+                : 'border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200'}
             >
               {overdueFirst ? 'Overdue First: On' : 'Overdue First: Off'}
             </Button>
 
-            <Chip size="sm" variant="soft" className="border border-slate-200 bg-slate-50 text-slate-500">
+            <Chip size="sm" variant="soft" className="border border-slate-200 bg-slate-50 text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
               {FILTER_LABELS[effectiveFilter] ?? 'All Orders'}
             </Chip>
           </div>
@@ -820,20 +847,20 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
 
       {/* ── Loading ── */}
       {isLoading ? (
-        <div className="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden animate-pulse">
-          <div className="px-5 py-4 border-b border-slate-100">
-            <div className="h-4 w-28 bg-slate-100 rounded-lg" />
+        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm animate-pulse dark:border-slate-800 dark:bg-slate-900">
+          <div className="border-b border-slate-100 dark:border-slate-800 px-5 py-4 dark:border-slate-800">
+            <div className="h-4 w-28 rounded-lg bg-slate-100 dark:bg-slate-800" />
           </div>
-          <div className="divide-y divide-slate-50">
+          <div className="divide-y divide-slate-100 dark:divide-slate-800/70 dark:divide-slate-800/70 dark:divide-slate-800/60">
             {Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="px-4 py-4 flex items-center gap-4">
-                <div className="h-9 w-9 rounded-full bg-slate-100 shrink-0" />
+                <div className="h-9 w-9 rounded-full bg-slate-100 shrink-0 dark:bg-slate-800" />
                 <div className="flex-1 space-y-2">
-                  <div className="h-3 w-32 bg-slate-100 rounded" />
-                  <div className="h-2.5 w-20 bg-slate-100 rounded" />
+                  <div className="h-3 w-32 rounded bg-slate-100 dark:bg-slate-800" />
+                  <div className="h-2.5 w-20 rounded bg-slate-100 dark:bg-slate-800" />
                 </div>
-                <div className="h-6 w-20 bg-slate-100 rounded-full" />
-                <div className="h-7 w-16 bg-slate-100 rounded-lg" />
+                <div className="h-6 w-20 rounded-full bg-slate-100 dark:bg-slate-800" />
+                <div className="h-7 w-16 rounded-lg bg-slate-100 dark:bg-slate-800" />
               </div>
             ))}
           </div>
@@ -849,29 +876,32 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
             <div className="google-loading-bar" />
           )}
 
-          <div className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
-            <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-              <h2 className="text-sm font-bold text-slate-800">Order Queue</h2>
-              <Chip size="sm" variant="soft" className="border border-slate-100 bg-slate-50 text-slate-500">
+          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 px-5 py-4 dark:border-slate-800">
+              <h2 className="text-sm font-bold text-slate-800 dark:text-white">Order Queue</h2>
+              <Chip size="sm" variant="soft" className="border border-slate-100 bg-slate-50 text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
                 {visibleOrders.length} orders
               </Chip>
             </div>
 
             <Table className="w-full">
-              <Table.ScrollContainer>
-                <Table.Content aria-label="Admin orders table" className="min-w-[1640px]">
-                  <Table.Header>
-                    <Table.Column className="min-w-[250px] text-xs font-semibold uppercase tracking-wide text-slate-400">Product</Table.Column>
-                    <Table.Column className="min-w-[180px] text-xs font-semibold uppercase tracking-wide text-slate-400">Checkout</Table.Column>
-                    <Table.Column className="min-w-[170px] text-xs font-semibold uppercase tracking-wide text-slate-400">Date</Table.Column>
-                    <Table.Column className="min-w-[240px] text-xs font-semibold uppercase tracking-wide text-slate-400">Customer</Table.Column>
-                    <Table.Column className="min-w-[130px] text-xs font-semibold uppercase tracking-wide text-slate-400">Amount</Table.Column>
-                    <Table.Column className="min-w-[120px] text-xs font-semibold uppercase tracking-wide text-slate-400">Approval</Table.Column>
-                    <Table.Column className="min-w-[120px] text-xs font-semibold uppercase tracking-wide text-slate-400">SLA</Table.Column>
-                    <Table.Column className="min-w-[360px] text-xs font-semibold uppercase tracking-wide text-slate-400">Tracking</Table.Column>
-                    <Table.Column className="min-w-[220px] text-xs font-semibold uppercase tracking-wide text-slate-400">Actions</Table.Column>
+              <Table.ScrollContainer className="overflow-x-auto overflow-y-visible">
+                <Table.Content
+                  aria-label="Admin orders table"
+                  className="min-w-370 text-sm dark:bg-slate-900"
+                >
+                  <Table.Header className="border-b border-slate-100 dark:border-slate-800 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60/80 dark:border-slate-800 dark:bg-slate-800/60">
+                    <Table.Column className="min-w-[220px] px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-400">Product</Table.Column>
+                    <Table.Column className="min-w-[150px] px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-400">Checkout</Table.Column>
+                    <Table.Column className="min-w-[140px] px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-400">Date</Table.Column>
+                    <Table.Column className="min-w-[200px] px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-400">Customer</Table.Column>
+                    <Table.Column className="min-w-[120px] px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-400">Amount</Table.Column>
+                    <Table.Column className="min-w-[110px] px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-400">Approval</Table.Column>
+                    <Table.Column className="min-w-[110px] px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-400">SLA</Table.Column>
+                    <Table.Column className="min-w-[340px] px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-400">Tracking</Table.Column>
+                    <Table.Column className="min-w-[200px] px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-400">Actions</Table.Column>
                   </Table.Header>
-                  <Table.Body>
+                  <Table.Body className="divide-y divide-slate-100 dark:divide-slate-800/70 dark:divide-slate-800/70">
                     {visibleOrders.length ? (
                       visibleOrders.map(order => {
                       const isBusy             = busyId === order.id
@@ -904,6 +934,10 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                       const canUseCourierFlow = canTrackThisOrder && isLocalCourierMode && !hasZqOrder
                       const canUseManualFlow = canTrackThisOrder && isManualMode && !hasZqOrder
                       const showNewBadge = isNewOrder(order.created_at)
+                      const createdDate = formatDateOnly(order.created_at)
+                      const createdTime = formatTimeOnly(order.created_at)
+                      const paidDate = order.paid_at ? formatDateOnly(order.paid_at) : null
+                      const paidTime = order.paid_at ? formatTimeOnly(order.paid_at) : null
                       const isCourierCancelled =
                         order.shipment_status === 'cancelled'
                         || rawCourierStatus === 'package_cancelled'
@@ -913,16 +947,16 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                         <Table.Row
                           id={`admin-order-row-${order.id}`}
                           key={order.id}
-                          className={`transition-colors ${
+                          className={`border-b border-slate-100 dark:border-slate-800 transition-colors dark:border-slate-800/60 ${
                             highlightedOrderId === order.id
-                              ? 'bg-teal-50/80 ring-1 ring-inset ring-teal-200 animate-pulse'
-                              : 'hover:bg-slate-50/70'
+                              ? 'bg-teal-50/80 ring-1 ring-inset ring-teal-200 animate-pulse dark:bg-teal-500/10 dark:ring-teal-500/30'
+                              : 'bg-white hover:bg-slate-50/60 dark:bg-slate-900 dark:hover:bg-slate-800/40'
                           }`}
                         >
                           {/* Product */}
-                          <Table.Cell className="px-4 py-3.5 align-top">
-                            <div className="flex items-start gap-3">
-                              <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
+                          <Table.Cell className="px-4 py-2 align-middle">
+                            <div className="flex items-center gap-2.5">
+                              <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-100 dark:border-slate-700 dark:bg-slate-800">
                                 {order.product_image ? (
                                   // eslint-disable-next-line @next/next/no-img-element
                                   <img
@@ -931,60 +965,71 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                                     className="h-full w-full object-cover"
                                   />
                                 ) : (
-                                  <svg className="h-5 w-5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.6} d="M20 13V7a2 2 0 00-1-1.73l-6-3.43a2 2 0 00-2 0L5 5.27A2 2 0 004 7v6a2 2 0 001 1.73l6 3.43a2 2 0 002 0l6-3.43A2 2 0 0020 13z" />
-                                  </svg>
+                                  <div className="flex h-full w-full items-center justify-center">
+                                    <svg className="h-5 w-5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                    </svg>
+                                  </div>
                                 )}
                               </div>
                               <div className="min-w-0">
-                                <div className="flex flex-wrap items-center gap-2">
-                                  <p className="text-sm font-semibold text-slate-800">{order.product_name}</p>
+                                <div className="flex items-center gap-1.5">
+                                  <p className="line-clamp-1 text-sm font-medium leading-snug text-slate-800 dark:text-slate-100">{order.product_name}</p>
                                   {showNewBadge ? (
-                                    <Chip size="sm" variant="soft" className="border border-sky-200 bg-sky-50 text-[10px] font-bold uppercase tracking-wide text-sky-700">
+                                    <Chip size="sm" variant="soft" className="shrink-0 border border-sky-200 bg-sky-50 text-[10px] font-bold uppercase tracking-wide text-sky-700">
                                       New
                                     </Chip>
                                   ) : null}
                                 </div>
-                                <p className="mt-0.5 text-xs text-slate-400">Qty: {order.quantity}</p>
+                                <p className="mt-0.5 text-[11px] text-slate-400 dark:text-slate-500">
+                                  Qty {order.quantity}
+                                </p>
                               </div>
                             </div>
                           </Table.Cell>
 
                           {/* Checkout */}
-                          <Table.Cell className="px-4 py-3.5 align-top">
-                            <p className="font-mono text-xs font-semibold text-slate-800">{order.checkout_id}</p>
-                            <p className="text-xs text-slate-400 mt-1 capitalize">{order.payment_status}</p>
+                          <Table.Cell className="px-4 py-2 align-middle">
+                            <p className="font-mono text-xs font-medium text-slate-800 dark:text-slate-100">{order.checkout_id}</p>
+                            <p className="mt-0.5 text-[10px] uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                              {order.payment_status}
+                            </p>
                           </Table.Cell>
 
                           {/* Date */}
-                          <Table.Cell className="px-4 py-3.5 align-top text-xs text-slate-500 whitespace-nowrap">
-                            <p>{formatDateTime(order.created_at)}</p>
+                          <Table.Cell className="px-4 py-2 align-middle whitespace-nowrap">
+                            <p className="text-xs font-medium text-slate-800 dark:text-slate-100">{createdDate}</p>
+                            <p className="mt-0.5 text-[10px] text-slate-400 dark:text-slate-500">{createdTime}</p>
                             {order.paid_at && (
-                              <p className="mt-0.5 text-slate-400">Paid: {formatDateTime(order.paid_at)}</p>
+                              <div className="mt-1.5 border-t border-slate-100 pt-1.5 dark:border-slate-700/60">
+                                <p className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">Paid · {paidDate}</p>
+                              </div>
                             )}
                           </Table.Cell>
 
                           {/* Customer */}
-                          <Table.Cell className="px-4 py-3.5 align-top">
+                          <Table.Cell className="px-4 py-2 align-middle">
                             <div className="flex items-center gap-2.5">
-                              <div className="h-9 w-9 rounded-full bg-linear-to-br from-teal-400 to-teal-600 flex items-center justify-center text-white text-[11px] font-bold shrink-0">
+                              <div className="h-7 w-7 rounded-full bg-linear-to-br from-teal-400 to-teal-600 flex items-center justify-center text-white text-[10px] font-bold shrink-0">
                                 {getInitials(order.customer_name)}
                               </div>
-                              <div>
-                                <p className="text-sm font-semibold text-slate-800">{order.customer_name || 'N/A'}</p>
-                                <p className="text-xs text-slate-400">{order.customer_email || ''}</p>
+                              <div className="min-w-0">
+                                <p className="line-clamp-1 text-sm font-medium text-slate-800 dark:text-slate-100">{order.customer_name || 'N/A'}</p>
+                                <p className="line-clamp-1 text-[11px] text-slate-400 dark:text-slate-500">{order.customer_email || ''}</p>
                               </div>
                             </div>
                           </Table.Cell>
 
                           {/* Amount */}
-                          <Table.Cell className="px-4 py-3.5 align-top">
-                            <p className="text-sm font-bold text-slate-800">{formatMoney(order.amount)}</p>
-                            <p className="text-xs text-slate-400 mt-0.5">{order.payment_method || '-'}</p>
+                          <Table.Cell className="px-4 py-2 align-middle">
+                            <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{formatMoney(order.amount)}</p>
+                            <p className="mt-0.5 text-[10px] uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                              {order.payment_method || '-'}
+                            </p>
                           </Table.Cell>
 
                           {/* Approval badge */}
-                          <Table.Cell className="px-4 py-3.5 align-top">
+                          <Table.Cell className="px-4 py-2 align-middle">
                             <Chip size="sm" variant="soft" className={`border text-[11px] font-semibold ${approval.badge}`}>
                               <span className={`mr-1.5 inline-block h-1.5 w-1.5 rounded-full ${approval.dot}`} />
                               {approval.label}
@@ -992,7 +1037,7 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                           </Table.Cell>
 
                           {/* SLA */}
-                          <Table.Cell className="px-4 py-3.5 align-top">
+                          <Table.Cell className="px-4 py-2 align-middle">
                             {sla ? (
                               <div className="space-y-1">
                                 <Chip size="sm" variant="soft" className={`border text-[11px] font-semibold ${sla.badge}`}>
@@ -1006,16 +1051,16 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                                   <p className="text-[11px] text-amber-600">Left: {formatDuration(order.sla?.remaining_minutes)}</p>
                                 )}
                                 {order.sla?.state === 'on_track' && (
-                                  <p className="text-[11px] text-slate-400">Elapsed: {formatDuration(order.sla?.elapsed_minutes)}</p>
+                                  <p className="text-[11px] text-slate-400 dark:text-slate-500">Elapsed: {formatDuration(order.sla?.elapsed_minutes)}</p>
                                 )}
                               </div>
                             ) : (
-                              <span className="text-xs text-slate-300">No SLA</span>
+                              <span className="text-[11px] text-slate-300 dark:text-slate-600">—</span>
                             )}
                           </Table.Cell>
 
                           {/* Tracking select */}
-                          <Table.Cell className="px-4 py-3.5 align-top">
+                          <Table.Cell className="px-4 py-2 align-middle">
                             <div className="space-y-1.5">
                               {isFulfillmentModeLocked ? (
                                 <AdminOrderStaticValue label={fulfillmentModeLabel} />
@@ -1056,14 +1101,14 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                                   ) : null}
                                 </div>
                               ) : isManualMode ? (
-                                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700/60 dark:bg-slate-800/50">
                                   <div className="flex items-center justify-between gap-2">
-                                    <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">Manual Flow</p>
-                                    <span className="inline-flex items-center rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-semibold text-slate-600">
+                                    <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Manual Flow</p>
+                                    <span className="inline-flex items-center rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
                                       Internal
                                     </span>
                                   </div>
-                                  <p className="mt-2 text-[11px] leading-relaxed text-slate-600">
+                                  <p className="mt-2 text-[11px] leading-relaxed text-slate-600 dark:text-slate-400">
                                     This order is managed manually. No courier booking or ZQ handoff will be used.
                                   </p>
                                   <AdminOrderSelect
@@ -1107,7 +1152,7 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                                       variant="tertiary"
                                       isDisabled={isBusy || !canUseCourierFlow || !order.tracking_no || isCourierCancelled}
                                       onPress={() => handleTrackCourier(order.id)}
-                                      className="border border-slate-200 bg-slate-50 px-2 py-1.5 text-[11px] font-semibold text-slate-700 transition hover:bg-slate-100"
+                                      className="border border-slate-200 bg-slate-50 px-2 py-1.5 text-[11px] font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
                                     >
                                       Track
                                     </Button>
@@ -1146,12 +1191,12 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                               )}
 
                               {(isDelivered || isCancelled || isRefunded) && (
-                                <p className="text-[11px] text-slate-400">
+                                <p className="text-[11px] text-slate-400 dark:text-slate-500">
                                   {isDelivered ? 'Delivered orders are locked.' : 'Tracking is disabled for this status.'}
                                 </p>
                               )}
                               {order.courier || order.tracking_no || order.shipment_status ? (
-                                <div className="space-y-2 text-[11px] text-slate-500 leading-relaxed">
+                                <div className="space-y-2 text-[11px] text-slate-500 leading-relaxed dark:text-slate-300">
                                   {order.zq_platform_order_id || order.zq_status ? (
                                     <div className="rounded-xl border border-violet-200 bg-violet-50 p-2.5">
                                       <div className="flex items-center justify-between gap-2">
@@ -1172,13 +1217,13 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                                       ) : null}
                                     </div>
                                   ) : null}
-                                  {order.courier ? <p className="uppercase">Courier: {formatCourierLabel(order.courier)}</p> : null}
-                                  {rawCourierStatus ? <p className="capitalize">Courier Status: {rawCourierStatus.replace(/_/g, ' ')}</p> : null}
+                                  {order.courier ? <p className="uppercase tracking-wide dark:text-slate-400">Courier: {formatCourierLabel(order.courier)}</p> : null}
+                                  {rawCourierStatus ? <p className="capitalize dark:text-slate-400">Courier Status: {rawCourierStatus.replace(/_/g, ' ')}</p> : null}
                                   {order.tracking_no ? (
-                                    <div className="rounded-xl border border-teal-200 bg-teal-50 p-2">
+                                    <div className="rounded-xl border border-teal-200 bg-teal-50 p-2 dark:border-teal-500/25 dark:bg-slate-800/75">
                                       <p className="text-[10px] font-bold uppercase tracking-wide text-teal-700">Tracking Number</p>
                                       <div className="mt-1 flex items-center gap-2">
-                                        <p className="min-w-0 flex-1 break-all text-sm font-bold text-slate-900">{order.tracking_no}</p>
+                                        <p className="min-w-0 flex-1 break-all text-sm font-bold text-slate-900 dark:text-white">{order.tracking_no}</p>
                                         <Button
                                           size="sm"
                                           variant="tertiary"
@@ -1191,25 +1236,25 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                                               showErrorToast(message)
                                             }
                                           }}
-                                          className="shrink-0 border border-teal-200 bg-white px-2 py-1 text-[10px] font-semibold text-teal-700 transition hover:bg-teal-100"
+                                          className="shrink-0 border border-teal-200 bg-white px-2 py-1 text-[10px] font-semibold text-teal-700 transition hover:bg-teal-100 dark:border-teal-500/25 dark:bg-slate-900 dark:text-teal-300 dark:hover:bg-slate-800"
                                         >
                                           Copy
                                         </Button>
                                       </div>
                                     </div>
                                   ) : null}
-                                  {order.shipment_status ? <p className="capitalize">Shipment: {order.shipment_status.replace(/_/g, ' ')}</p> : null}
+                                  {order.shipment_status ? <p className="capitalize dark:text-slate-400">Shipment: {order.shipment_status.replace(/_/g, ' ')}</p> : null}
                                   <Button
                                     size="sm"
                                     variant="tertiary"
                                     onPress={() => setPayloadPreview({ checkoutId: order.checkout_id, payload: order.shipment_payload ?? null })}
-                                    className="border border-slate-200 bg-slate-50 px-2 py-1 text-[10px] font-semibold text-slate-700 transition hover:bg-slate-100"
+                                    className="border border-slate-200 bg-slate-50 px-2 py-1 text-[10px] font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-200 dark:hover:bg-slate-800"
                                   >
                                     {order.shipment_payload ? 'View Payload' : 'No Payload Yet'}
                                   </Button>
                                 </div>
                               ) : (
-                                <p className="text-[11px] text-slate-300">
+                                <p className="text-[11px] text-slate-300 dark:text-slate-400">
                                   {order.approval_status === 'approved' ? 'No shipment info yet' : 'Awaiting approval'}
                                 </p>
                               )}
@@ -1217,7 +1262,7 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                           </Table.Cell>
 
                           {/* Actions */}
-                          <Table.Cell className="px-4 py-3.5 align-top">
+                          <Table.Cell className="px-4 py-2 align-middle">
                             {canApproveThisOrder ? (
                               <div className="flex w-36 flex-col gap-1.5">
                                 <div className="grid grid-cols-2 gap-1">
@@ -1228,7 +1273,7 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                                     Reject
                                   </Button>
                                 </div>
-                                <p className="text-[11px] text-slate-400">Approve first before fulfillment actions.</p>
+                                <p className="text-[11px] text-slate-400 dark:text-slate-300">Approve first before fulfillment actions.</p>
                               </div>
                             ) : order.approval_status === 'approved' ? (
                               <div className="flex w-36 flex-col gap-1.5">
@@ -1238,27 +1283,27 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                                       {hasZqOrder ? 'ZQ Pushed' : 'Push ZQ'}
                                     </Button>
                                     <div className="grid grid-cols-2 gap-1">
-                                      <Button size="sm" variant="tertiary" isDisabled={isBusy || !canUseZqLookup} onPress={() => handleFetchZqDetail(order.id)} className={`border px-2 py-1.5 text-[11px] font-semibold transition ${canUseZqLookup ? 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100' : 'border-slate-200 bg-slate-50 text-slate-400'}`}>
-                                        ZQ Detail
-                                      </Button>
+                                    <Button size="sm" variant="tertiary" isDisabled={isBusy || !canUseZqLookup} onPress={() => handleFetchZqDetail(order.id)} className={`border px-2 py-1.5 text-[11px] font-semibold transition ${canUseZqLookup ? 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700' : 'border-slate-200 bg-slate-50 text-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-500'}`}>
+                                      ZQ Detail
+                                    </Button>
                                       <Button size="sm" variant="tertiary" isDisabled={isBusy || !canUseZqLookup} onPress={() => handleSyncZqTracking(order.id)} className={`border px-2 py-1.5 text-[11px] font-semibold transition ${canUseZqLookup ? 'border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100' : 'border-slate-200 bg-slate-50 text-slate-400'}`}>
                                         ZQ Track
                                       </Button>
                                     </div>
                                   </>
                                 ) : (
-                                  <Chip size="sm" variant="soft" className={`border text-[11px] font-semibold ${isManualMode ? 'border-slate-200 bg-slate-50 text-slate-700' : 'border-teal-200 bg-teal-50 text-teal-700'}`}>
+                                  <Chip size="sm" variant="soft" className={`border text-[11px] font-semibold ${isManualMode ? 'border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200' : 'border-teal-200 bg-teal-50 text-teal-700 dark:border-teal-500/30 dark:bg-teal-500/10 dark:text-teal-300'}`}>
                                     {isManualMode ? 'Manual Flow' : 'Local Courier Flow'}
                                   </Chip>
                                 )}
                                 {isZqMode ? (
                                   !hasZqOrder ? (
-                                    <p className="text-[11px] text-slate-400">Push to ZQ first to unlock detail and tracking.</p>
+                                    <p className="text-[11px] text-slate-400 dark:text-slate-300">Push to ZQ first to unlock detail and tracking.</p>
                                   ) : (
                                     <p className="text-[11px] text-violet-600">ZQ lookup is now available for this order.</p>
                                   )
                                 ) : (
-                                  <p className="text-[11px] text-slate-400">
+                                  <p className="text-[11px] text-slate-400 dark:text-slate-300">
                                     {isManualMode
                                       ? 'Use the tracking column for manual shipment status updates only.'
                                       : 'Use the courier controls in the tracking column for local fulfillment.'}
@@ -1266,7 +1311,7 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                                 )}
                               </div>
                             ) : (
-                              <Chip size="sm" variant="soft" className="border border-slate-200 bg-slate-50 text-[11px] font-semibold text-slate-500">
+                              <Chip size="sm" variant="soft" className="border border-slate-200 bg-slate-50 text-[11px] font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-300">
                                 {order.approval_status === 'pending_approval' ? 'Awaiting approval' : 'No actions'}
                               </Chip>
                             )}
@@ -1275,7 +1320,7 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                       )
                     })
                   ) : (
-                    <Table.Row key="empty">
+                    <Table.Row key="empty" className="bg-white dark:bg-slate-900">
                       <Table.Cell colSpan={9}>
                         <EmptyOrdersState />
                       </Table.Cell>
@@ -1287,11 +1332,11 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
             </Table>
 
             {totalPages > 1 && (
-              <div className="flex flex-col gap-3 border-t border-slate-100 px-4 py-4 md:flex-row md:items-center md:justify-between">
-                <p className="text-sm text-slate-500">
-                  Showing <span className="font-semibold text-slate-700">{(data?.meta?.from ?? 0).toLocaleString()}</span> to{' '}
-                  <span className="font-semibold text-slate-700">{(data?.meta?.to ?? 0).toLocaleString()}</span> of{' '}
-                  <span className="font-semibold text-slate-700">{(data?.meta?.total ?? 0).toLocaleString()}</span> orders
+              <div className="flex flex-col gap-3 border-t border-slate-100 px-4 py-4 dark:border-slate-800 md:flex-row md:items-center md:justify-between">
+                <p className="text-sm text-slate-500 dark:text-slate-400">
+                  Showing <span className="font-semibold text-slate-700 dark:text-slate-200">{(data?.meta?.from ?? 0).toLocaleString()}</span> to{' '}
+                  <span className="font-semibold text-slate-700 dark:text-slate-200">{(data?.meta?.to ?? 0).toLocaleString()}</span> of{' '}
+                  <span className="font-semibold text-slate-700 dark:text-slate-200">{(data?.meta?.total ?? 0).toLocaleString()}</span> orders
                 </p>
                 <Pagination size="sm" className="w-full justify-start gap-3 md:justify-end">
                   <Pagination.Content>
@@ -1345,7 +1390,7 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
       {payloadPreview ? (
         <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/40 p-4">
           <div className="w-full max-w-3xl rounded-3xl border border-slate-200 bg-white shadow-2xl">
-            <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
+            <div className="flex items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 px-5 py-4">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Shipment Payload</p>
                 <h3 className="mt-1 text-lg font-bold text-slate-900">{payloadPreview.checkoutId}</h3>

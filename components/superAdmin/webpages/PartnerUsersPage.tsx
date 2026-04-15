@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { showErrorToast, showSuccessToast } from '@/libs/toast'
+import { getPartnerStorefrontConfig } from '@/libs/partnerStorefront'
 import {
   useCreatePartnerUserMutation,
   useDeletePartnerUserMutation,
@@ -9,12 +10,14 @@ import {
   useUpdatePartnerUserMutation,
   type PartnerUserItem,
 } from '@/store/api/partnerUsersApi'
+import { useGetAdminWebPageItemsQuery } from '@/store/api/webPagesApi'
 
 type FormState = {
   name: string
   username: string
   email: string
   password: string
+  storefrontIds: number[]
 }
 
 const emptyForm: FormState = {
@@ -22,19 +25,61 @@ const emptyForm: FormState = {
   username: '',
   email: '',
   password: '',
+  storefrontIds: [],
 }
 
 export default function PartnerUsersPage() {
   const [search, setSearch] = useState('')
+  const [storefrontFilterId, setStorefrontFilterId] = useState<number | 'all'>('all')
   const [selected, setSelected] = useState<PartnerUserItem | null>(null)
   const [form, setForm] = useState<FormState>(emptyForm)
   const [showPassword, setShowPassword] = useState(false)
-  const { data, isLoading, isError } = useGetPartnerUsersQuery({ search })
+
+  const { data: storefrontData } = useGetAdminWebPageItemsQuery({ type: 'partner-storefront', page: 1, perPage: 100, status: 'all' })
+  const storefrontItems = storefrontData?.items ?? []
+  const storefronts = useMemo(() => {
+    return storefrontItems
+      .map((item) => {
+        const cfg = getPartnerStorefrontConfig(item)
+        return {
+          id: item.id,
+          slug: cfg?.slug || String(item.key ?? '').trim() || `storefront-${item.id}`,
+          name: cfg?.displayName || String(item.title ?? '').trim() || String(item.key ?? '').trim() || `Storefront #${item.id}`,
+        }
+      })
+      .sort((a, b) => a.name.localeCompare(b.name))
+  }, [storefrontItems])
+
+  const storefrontNameById = useMemo(() => {
+    const map = new Map<number, string>()
+    storefronts.forEach((s) => map.set(s.id, s.name))
+    return map
+  }, [storefronts])
+
+  const {
+    data,
+    isLoading,
+    isError,
+    error: loadError,
+    refetch,
+  } = useGetPartnerUsersQuery(
+    {
+      search,
+      storefrontId: storefrontFilterId === 'all' ? undefined : storefrontFilterId,
+    },
+    // This page is often visited right after a backend deploy; ensure we don't
+    // get stuck showing a cached error response.
+    { refetchOnMountOrArgChange: true },
+  )
   const [createUser, { isLoading: isCreating }] = useCreatePartnerUserMutation()
   const [updateUser, { isLoading: isUpdating }] = useUpdatePartnerUserMutation()
   const [deleteUser, { isLoading: isDeleting }] = useDeletePartnerUserMutation()
 
   const users = useMemo(() => data?.users ?? [], [data?.users])
+  const visibleUsers = useMemo(() => {
+    if (storefrontFilterId === 'all') return users
+    return users.filter((user) => (user.storefront_ids ?? []).includes(storefrontFilterId))
+  }, [users, storefrontFilterId])
   const busy = isCreating || isUpdating || isDeleting
 
   const resetForm = () => {
@@ -49,12 +94,17 @@ export default function PartnerUsersPage() {
       username: user.username,
       email: user.email ?? '',
       password: '',
+      storefrontIds: user.storefront_ids ?? [],
     })
   }
 
   const handleSubmit = async () => {
     if (!form.name.trim() || !form.username.trim()) {
       showErrorToast('Name and username are required.')
+      return
+    }
+    if ((form.storefrontIds ?? []).length === 0) {
+      showErrorToast('Select at least one storefront for this account.')
       return
     }
 
@@ -66,6 +116,7 @@ export default function PartnerUsersPage() {
           username: form.username.trim(),
           email: form.email.trim(),
           password: form.password.trim() || undefined,
+          storefront_ids: form.storefrontIds,
         }).unwrap()
         showSuccessToast('Partner user updated.')
       } else {
@@ -78,6 +129,7 @@ export default function PartnerUsersPage() {
           username: form.username.trim(),
           email: form.email.trim() || undefined,
           password: form.password.trim(),
+          storefront_ids: form.storefrontIds,
         }).unwrap()
         showSuccessToast('Partner user created.')
       }
@@ -106,7 +158,23 @@ export default function PartnerUsersPage() {
   }
 
   if (isError) {
-    return <div className="rounded-3xl border border-red-200 bg-red-50 p-12 text-center text-sm font-semibold text-red-600 shadow-sm">Failed to load partner users.</div>
+    const apiMessage =
+      (loadError as { data?: { message?: string } } | undefined)?.data?.message ||
+      (loadError as { error?: string } | undefined)?.error ||
+      'Failed to load partner users.'
+
+    return (
+      <div className="rounded-3xl border border-red-200 bg-red-50 p-10 text-center shadow-sm">
+        <p className="text-sm font-semibold text-red-700">{apiMessage}</p>
+        <button
+          type="button"
+          onClick={() => refetch()}
+          className="mt-4 rounded-2xl border border-red-200 bg-white px-4 py-2 text-xs font-semibold text-red-700 hover:bg-red-100"
+        >
+          Retry
+        </button>
+      </div>
+    )
   }
 
   return (
@@ -119,6 +187,63 @@ export default function PartnerUsersPage() {
         </div>
 
         <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm space-y-4">
+          <Field label="Assigned Storefront(s)">
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+              {storefronts.length === 0 ? (
+                <p className="text-xs text-slate-500">No partner storefronts found yet.</p>
+              ) : (
+                <div className="max-h-44 space-y-2 overflow-auto pr-1">
+                  {storefronts.map((store) => {
+                    const checked = form.storefrontIds.includes(store.id)
+                    return (
+                      <label key={store.id} className="flex cursor-pointer items-center justify-between gap-3 rounded-xl bg-white px-3 py-2 text-sm">
+                        <span className="min-w-0">
+                          <span className="block truncate font-semibold text-slate-800">{store.name}</span>
+                          <span className="block truncate text-xs text-slate-400">ID #{store.id} • {store.slug}</span>
+                        </span>
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => {
+                            setForm((prev) => {
+                              const next = new Set(prev.storefrontIds)
+                              if (next.has(store.id)) next.delete(store.id)
+                              else next.add(store.id)
+                              return { ...prev, storefrontIds: Array.from(next) }
+                            })
+                          }}
+                        />
+                      </label>
+                    )
+                  })}
+                </div>
+              )}
+
+              {form.storefrontIds.length > 0 ? (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {form.storefrontIds
+                    .slice()
+                    .sort((a, b) => a - b)
+                    .map((id) => (
+                      <span key={id} className="inline-flex items-center gap-1 rounded-full bg-cyan-50 px-2.5 py-1 text-[11px] font-semibold text-cyan-700">
+                        {storefrontNameById.get(id) || `Storefront #${id}`}
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setForm((prev) => ({ ...prev, storefrontIds: prev.storefrontIds.filter((x) => x !== id) }))
+                          }
+                          className="text-cyan-700/70 hover:text-cyan-800"
+                          aria-label={`Remove storefront ${id}`}
+                        >
+                          ×
+                        </button>
+                      </span>
+                    ))}
+                </div>
+              ) : null}
+            </div>
+          </Field>
+
           <Field label="Full Name">
             <input
               value={form.name}
@@ -193,23 +318,49 @@ export default function PartnerUsersPage() {
               placeholder="Search name, username, email..."
               className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-cyan-300 focus:bg-white md:w-80"
             />
+            <select
+              value={storefrontFilterId === 'all' ? 'all' : String(storefrontFilterId)}
+              onChange={(event) => {
+                const value = event.target.value
+                setStorefrontFilterId(value === 'all' ? 'all' : Number(value))
+              }}
+              className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-cyan-300 focus:bg-white"
+            >
+              <option value="all">All storefronts</option>
+              {storefronts.map((store) => (
+                <option key={store.id} value={store.id}>
+                  {store.name}
+                </option>
+              ))}
+            </select>
             <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
-              {users.length} users
+              {visibleUsers.length} users
             </span>
           </div>
         </div>
 
         <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
-          {users.length === 0 ? (
+          {visibleUsers.length === 0 ? (
             <p className="p-6 text-sm text-slate-500">No partner users yet.</p>
           ) : (
             <div className="space-y-2">
-              {users.map((user) => (
+              {visibleUsers.map((user) => (
                 <div key={user.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 p-4">
                   <div>
                     <p className="text-sm font-semibold text-slate-900">{user.name}</p>
                     <p className="text-xs text-slate-500">@{user.username}</p>
                     {user.email ? <p className="text-xs text-slate-400">{user.email}</p> : null}
+                    {(user.storefront_ids ?? []).length > 0 ? (
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {user.storefront_ids.map((id) => (
+                          <span key={id} className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-700">
+                            {storefrontNameById.get(id) || `Storefront #${id}`}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="mt-2 text-xs text-amber-600">No storefront assigned</p>
+                    )}
                   </div>
                   <div className="flex items-center gap-2">
                     <button

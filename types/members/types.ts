@@ -28,6 +28,8 @@ export interface Member {
   walletPvCredits?: number;
   referrals: number;
   joinedAt: string;
+  createdAt?: string | null;
+  created_at?: string | null;
   lastActiveAt: string;
   addressLine?: string;
   barangay?: string;

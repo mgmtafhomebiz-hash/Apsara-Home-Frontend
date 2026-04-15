@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { AdminEncashmentItem, useGetAdminEncashmentRequestsQuery } from '@/store/api/encashmentApi'
 import AdminPagination from '@/components/superAdmin/AdminPagination'
 
@@ -22,6 +22,30 @@ const formatDate = (value?: string | null) => {
     hour: 'numeric',
     minute: '2-digit',
   }).format(d)
+}
+
+const toDateKey = (value?: string | null) => {
+  if (!value) return null
+  const d = new Date(value)
+  if (Number.isNaN(d.getTime())) return null
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
+const normalizeDateInput = (value?: string) => {
+  if (!value) return undefined
+  const trimmed = value.trim()
+  if (!trimmed) return undefined
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed
+
+  const mmddyyyy = trimmed.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/)
+  if (!mmddyyyy) return undefined
+
+  const [, mm, dd, yyyy] = mmddyyyy
+  return `${yyyy}-${String(Number(mm)).padStart(2, '0')}-${String(Number(dd)).padStart(2, '0')}`
 }
 
 const sanitize = (value?: string | null) => {
@@ -90,20 +114,131 @@ const openPrintView = (row: AdminEncashmentItem) => {
   win.document.close()
 }
 
+const openBulkPrintView = (rows: AdminEncashmentItem[]) => {
+  if (!rows.length) return
+
+  const win = window.open('', '_blank', 'width=1000,height=760')
+  if (!win) return
+
+  const invoices = rows.map((row) => `
+    <section class="invoice">
+      <div class="header">
+        <div>
+          <div class="title">AF Home Payout Invoice</div>
+          <div class="muted">Auto-generated accounting document</div>
+        </div>
+        <div style="text-align:right">
+          <div class="label">Invoice No</div>
+          <div class="value">${sanitize(row.invoice_no || 'Pending')}</div>
+        </div>
+      </div>
+
+      <div class="box">
+        <div class="row"><div><div class="label">Encashment Ref</div><div class="value">${sanitize(row.reference_no)}</div></div><div><div class="label">Released At</div><div class="value">${sanitize(formatDate(row.released_at))}</div></div></div>
+        <div class="row"><div><div class="label">Affiliate</div><div class="value">${sanitize(row.affiliate_name || 'Affiliate')}</div></div><div><div class="label">Email</div><div class="value">${sanitize(row.affiliate_email || '-')}</div></div></div>
+        <div class="row"><div><div class="label">Channel</div><div class="value">${sanitize((row.channel || '').toUpperCase())}</div></div><div><div class="label">Account</div><div class="value">${sanitize(row.account_name || '-')} (${sanitize(row.account_number || '-')})</div></div></div>
+      </div>
+
+      <div class="box">
+        <div class="label">Total Released Amount</div>
+        <div class="total">${sanitize(formatMoney(row.amount))}</div>
+      </div>
+    </section>
+  `).join('<div class="page-break"></div>')
+
+  const html = `
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Bulk Invoices (${rows.length})</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 24px; color: #0f172a; }
+    .invoice { margin-bottom: 28px; }
+    .header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 18px; }
+    .title { font-size: 22px; font-weight: 700; }
+    .muted { color:#64748b; font-size: 12px; }
+    .box { border:1px solid #e2e8f0; border-radius:10px; padding:12px; margin-bottom: 12px; }
+    .row { display:flex; justify-content:space-between; gap:16px; margin-bottom:8px; }
+    .label { color:#475569; font-size:11px; text-transform: uppercase; letter-spacing: .04em; }
+    .value { font-size:13px; font-weight:600; }
+    .total { font-size: 20px; font-weight:700; color:#0f766e; }
+    .page-break { page-break-after: always; }
+    .summary { margin-bottom: 16px; color:#334155; font-size:13px; }
+  </style>
+</head>
+<body>
+  <div class="summary">Generated ${sanitize(formatDate(new Date().toISOString()))} | Selected invoices: ${rows.length}</div>
+  ${invoices}
+  <script>window.print();</script>
+</body>
+</html>
+`
+
+  win.document.open()
+  win.document.write(html)
+  win.document.close()
+}
+
 export default function InvoicesPageMain() {
   const [search, setSearch] = useState('')
+  const [releasedFrom, setReleasedFrom] = useState('')
+  const [releasedTo, setReleasedTo] = useState('')
   const [page, setPage] = useState(1)
   const [selectedRow, setSelectedRow] = useState<AdminEncashmentItem | null>(null)
+  const [selectedIds, setSelectedIds] = useState<number[]>([])
+
+  const normalizedRange = useMemo(() => {
+    const from = normalizeDateInput(releasedFrom)
+    const to = normalizeDateInput(releasedTo)
+
+    if (from && to && from > to) {
+      return { from: to, to: from }
+    }
+    return { from, to }
+  }, [releasedFrom, releasedTo])
 
   const { data, isLoading, isError, isFetching } = useGetAdminEncashmentRequestsQuery({
     filter: 'released',
     search: search.trim() || undefined,
+    releasedFrom: normalizedRange.from,
+    releasedTo: normalizedRange.to,
     page,
     perPage: 20,
   })
 
   const rows = data?.requests ?? []
-  const totalReleased = useMemo(() => rows.reduce((sum, row) => sum + row.amount, 0), [rows])
+  const displayRows = useMemo(() => {
+    if (!normalizedRange.from && !normalizedRange.to) return rows
+    return rows.filter((row) => {
+      const releasedKey = toDateKey(row.released_at)
+      if (!releasedKey) return false
+      if (normalizedRange.from && releasedKey < normalizedRange.from) return false
+      if (normalizedRange.to && releasedKey > normalizedRange.to) return false
+      return true
+    })
+  }, [rows, normalizedRange.from, normalizedRange.to])
+
+  const totalReleased = useMemo(() => displayRows.reduce((sum, row) => sum + row.amount, 0), [displayRows])
+  const selectedRows = useMemo(() => displayRows.filter((row) => selectedIds.includes(row.id)), [displayRows, selectedIds])
+  const allSelectedOnPage = displayRows.length > 0 && displayRows.every((row) => selectedIds.includes(row.id))
+
+  useEffect(() => {
+    const rowIdSet = new Set(displayRows.map((row) => row.id))
+    setSelectedIds((prev) => prev.filter((id) => rowIdSet.has(id)))
+  }, [displayRows])
+
+  const toggleRow = (id: number) => {
+    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]))
+  }
+
+  const toggleSelectAllOnPage = () => {
+    if (allSelectedOnPage) {
+      setSelectedIds([])
+      return
+    }
+    setSelectedIds(displayRows.map((row) => row.id))
+  }
 
   return (
     <div className="space-y-5">
@@ -113,19 +248,71 @@ export default function InvoicesPageMain() {
       </div>
 
       <div className="rounded-2xl border border-slate-200 bg-white shadow-sm p-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <input
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value)
-              setPage(1)
-            }}
-            placeholder="Search invoice, reference, affiliate..."
-            className="w-full max-w-md rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-800"
-          />
-          <div className="text-right">
-            <p className="text-xs text-slate-500">Total Released (Current Page)</p>
-            <p className="text-sm font-bold text-slate-800">{formatMoney(totalReleased)}</p>
+        <div className="grid gap-4 xl:grid-cols-[1fr_auto] xl:items-start">
+          <div className="space-y-3">
+            <input
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value)
+                setPage(1)
+              }}
+              placeholder="Search invoice, reference, affiliate..."
+              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-800"
+            />
+
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_auto] lg:items-end">
+              <label className="text-xs text-slate-500">
+                From
+                <input
+                  type="date"
+                  value={releasedFrom}
+                  onChange={(e) => {
+                    setReleasedFrom(e.target.value)
+                    setPage(1)
+                  }}
+                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-800"
+                />
+              </label>
+
+              <label className="text-xs text-slate-500">
+                To
+                <input
+                  type="date"
+                  value={releasedTo}
+                  onChange={(e) => {
+                    setReleasedTo(e.target.value)
+                    setPage(1)
+                  }}
+                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-800"
+                />
+              </label>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setReleasedFrom('')
+                  setReleasedTo('')
+                  setSearch('')
+                  setPage(1)
+                }}
+                className="h-[40px] rounded-xl border border-slate-200 px-4 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+              >
+                Clear Filters
+              </button>
+            </div>
+          </div>
+
+          <div className="min-w-[240px] rounded-xl border border-slate-200 bg-slate-50/60 p-3">
+            <p className="text-[11px] uppercase tracking-wide text-slate-500">Total Released (Current Page)</p>
+            <p className="mt-1 text-xl font-bold text-slate-800">{formatMoney(totalReleased)}</p>
+            <button
+              type="button"
+              onClick={() => openBulkPrintView(selectedRows)}
+              disabled={selectedRows.length === 0}
+              className="mt-3 w-full rounded-lg border border-teal-200 px-3 py-2 text-xs font-semibold text-teal-700 hover:bg-teal-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Print Selected ({selectedRows.length})
+            </button>
           </div>
         </div>
       </div>
@@ -151,8 +338,16 @@ export default function InvoicesPageMain() {
           <div className="rounded-2xl border border-slate-100 bg-white shadow-sm overflow-hidden">
             <div className="overflow-auto">
               <table className="w-full min-w-[1100px]">
-                <thead className="bg-slate-50 border-b border-slate-100">
+                <thead className="bg-slate-50 border-b border-slate-100 dark:border-slate-800">
                   <tr className="text-left text-xs text-slate-500">
+                    <th className="px-4 py-3 font-semibold">
+                      <input
+                        type="checkbox"
+                        checked={allSelectedOnPage}
+                        onChange={toggleSelectAllOnPage}
+                        aria-label="Select all invoices on this page"
+                      />
+                    </th>
                     <th className="px-4 py-3 font-semibold">Invoice</th>
                     <th className="px-4 py-3 font-semibold">Encashment Ref</th>
                     <th className="px-4 py-3 font-semibold">Affiliate</th>
@@ -163,9 +358,17 @@ export default function InvoicesPageMain() {
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.length ? (
-                    rows.map((row) => (
+                  {displayRows.length ? (
+                    displayRows.map((row) => (
                       <tr key={row.id} className="border-b border-slate-50 last:border-b-0 text-sm">
+                        <td className="px-4 py-3">
+                          <input
+                            type="checkbox"
+                            checked={selectedIds.includes(row.id)}
+                            onChange={() => toggleRow(row.id)}
+                            aria-label={`Select invoice ${row.invoice_no || row.reference_no}`}
+                          />
+                        </td>
                         <td className="px-4 py-3 font-semibold text-slate-800">{row.invoice_no || 'Pending'}</td>
                         <td className="px-4 py-3 text-slate-700">{row.reference_no}</td>
                         <td className="px-4 py-3">
@@ -187,7 +390,7 @@ export default function InvoicesPageMain() {
                               onClick={() => openPrintView(row)}
                               className="rounded-lg border border-teal-200 px-2.5 py-1.5 text-xs font-semibold text-teal-700 hover:bg-teal-50"
                             >
-                              Download
+                              Print
                             </button>
                           </div>
                         </td>
@@ -195,7 +398,7 @@ export default function InvoicesPageMain() {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={7} className="px-4 py-10 text-center text-sm text-slate-500">
+                      <td colSpan={8} className="px-4 py-10 text-center text-sm text-slate-500">
                         No invoice records found.
                       </td>
                     </tr>
@@ -219,7 +422,7 @@ export default function InvoicesPageMain() {
       {selectedRow ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
           <div className="w-full max-w-2xl rounded-2xl border border-slate-200 bg-white shadow-xl">
-            <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 px-5 py-4">
               <div>
                 <h2 className="text-base font-bold text-slate-800">Invoice Details</h2>
                 <p className="text-xs text-slate-500 mt-0.5">{selectedRow.invoice_no || selectedRow.reference_no}</p>

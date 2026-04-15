@@ -133,7 +133,7 @@ export default function BulkEditModal({ categories, onClose }: Props) {
                 className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl my-4"
               >
                 {/* Header */}
-                <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100">
+                <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100 dark:border-slate-800">
                   <div className="flex items-center gap-3">
                     <div className="h-10 w-10 rounded-xl bg-teal-500 flex items-center justify-center shadow-md shadow-teal-500/30 shrink-0">
                       <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -173,7 +173,7 @@ export default function BulkEditModal({ categories, onClose }: Props) {
 
                 {/* Column headers */}
                 <div className="px-6 pt-4">
-                  <div className="grid grid-cols-[32px_1fr_1fr_72px_1fr] gap-2 pb-1.5 border-b border-slate-100">
+                  <div className="grid grid-cols-[32px_1fr_1fr_72px_1fr] gap-2 pb-1.5 border-b border-slate-100 dark:border-slate-800">
                     <div/>
                     <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide">Name</p>
                     <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide">URL Slug</p>

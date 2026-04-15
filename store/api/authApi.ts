@@ -14,9 +14,13 @@ interface RegisterPayload {
   birth_date?: string
   address?: string
   barangay?: string
+  barangay_code?: string
   city?: string
+  city_code?: string
   province?: string
+  province_code?: string
   region?: string
+  region_code?: string
   zip_code?: string
   gender?: 'male' | 'female' | 'other'
   occupation?: string
@@ -45,6 +49,11 @@ interface ResendRegisterOtpPayload {
 }
 
 interface ResendRegisterOtpResponse {
+  message: string
+}
+
+interface UsernameAvailabilityResponse {
+  available: boolean
   message: string
 }
 
@@ -122,6 +131,14 @@ export const authApi = baseApi.injectEndpoints({
       }),
     }),
 
+    checkUsernameAvailability: builder.query<UsernameAvailabilityResponse, string>({
+      query: (username) => ({
+        url: '/api/auth/register/check-username',
+        method: 'GET',
+        params: { username },
+      }),
+    }),
+
     logout: builder.mutation<LogoutResponse, void>({
       query: () => ({
         url: '/api/auth/logout',
@@ -160,6 +177,7 @@ export const {
   useRegisterMutation,
   useVerifyRegisterOtpMutation,
   useResendRegisterOtpMutation,
+  useLazyCheckUsernameAvailabilityQuery,
   useLogoutMutation,
   useAdminLoginMutation,
   useGetAdminMeQuery,

@@ -16,12 +16,12 @@ export default function ActivityLogsTable({ logs }: ActivityLogsTableProps) {
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.15 }}
-      className="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden"
+      className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden"
     >
       <div className="overflow-x-auto">
         <table className="w-full text-left">
           <thead>
-            <tr className="border-b border-slate-100 bg-slate-50">
+            <tr className="border-b border-slate-100 dark:border-slate-800 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60">
               <th className="px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wide">Member</th>
               <th className="px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wide">Action</th>
               <th className="px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wide">Detail</th>
@@ -30,7 +30,7 @@ export default function ActivityLogsTable({ logs }: ActivityLogsTableProps) {
               <th className="px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wide">Time</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-50">
+          <tbody className="divide-y divide-slate-100 dark:divide-slate-800/70 dark:divide-slate-800/70">
             {logs.length === 0 ? (
               <tr>
                 <td colSpan={6} className="px-5 py-14 text-center">

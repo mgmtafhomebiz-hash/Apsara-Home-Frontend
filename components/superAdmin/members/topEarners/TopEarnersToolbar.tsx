@@ -33,7 +33,7 @@ export default function TopEarnersToolbar({
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.15 }}
-      className="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm flex items-center gap-3 flex-wrap"
+      className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-4 shadow-sm flex items-center gap-3 flex-wrap"
     >
       {/* Search */}
       <div className="relative flex-1 min-w-[180px]">

@@ -9,16 +9,50 @@ import { signIn, signOut } from 'next-auth/react'
 import { clearAccessTokenCache } from '@/store/api/baseApi'
 
 const REMEMBER_SUPPLIER_LOGIN_KEY = 'afhome_supplier_login'
+const TWO_FACTOR_PREFIX = '2FA_REQUIRED|'
+const LOCKOUT_PREFIX = 'LOCKOUT|'
 
 const EyeIcon = ({ open }: { open: boolean }) => open
   ? <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" /><line x1="1" y1="1" x2="23" y2="23" /></svg>
   : <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
 
+function parseTwoFactorError(rawMessage: string): { token: string; message: string } | null {
+  if (!rawMessage.startsWith(TWO_FACTOR_PREFIX)) return null
+  const payload = rawMessage.slice(TWO_FACTOR_PREFIX.length)
+  const [token = '', ...rest] = payload.split('|')
+  return {
+    token: token.trim(),
+    message: (rest.join('|') || 'A verification code was sent to your email.').trim(),
+  }
+}
+
+function parseLockoutError(rawMessage: string): { seconds: number; message: string } | null {
+  if (!rawMessage.startsWith(LOCKOUT_PREFIX)) return null
+  const payload = rawMessage.slice(LOCKOUT_PREFIX.length)
+  const [secondsRaw = '0', ...rest] = payload.split('|')
+  const seconds = Number.parseInt(secondsRaw, 10)
+  return {
+    seconds: Number.isFinite(seconds) && seconds > 0 ? seconds : 1,
+    message: (rest.join('|') || 'Too many login attempts. Please try again later.').trim(),
+  }
+}
+
 export default function SupplierLoginForm() {
   const [showPass, setShowPass] = useState(false)
   const [error, setError] = useState('')
   const [form, setForm] = useState({ login: '', password: '', rememberMe: false })
+  const [otpCode, setOtpCode] = useState('')
+  const [otpChallengeToken, setOtpChallengeToken] = useState('')
+  const [lockoutSeconds, setLockoutSeconds] = useState(0)
   const [isLoading, setIsLoading] = useState(false)
+
+  useEffect(() => {
+    if (lockoutSeconds <= 0) return
+    const timer = window.setInterval(() => {
+      setLockoutSeconds((prev) => (prev > 1 ? prev - 1 : 0))
+    }, 1000)
+    return () => window.clearInterval(timer)
+  }, [lockoutSeconds])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -41,21 +75,43 @@ export default function SupplierLoginForm() {
 
   const handleSign = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (lockoutSeconds > 0) {
+      return
+    }
     setError('')
     setIsLoading(true)
 
     try {
-      clearAccessTokenCache()
-      await signOut({ redirect: false })
+      // Reset previous session only on first-step login, not during OTP verification.
+      if (!otpChallengeToken) {
+        clearAccessTokenCache()
+        await signOut({ redirect: false })
+      }
 
       const result = await signIn('supplier-credentials', {
         login: form.login,
         password: form.password,
+        otp: otpChallengeToken ? otpCode : undefined,
+        otp_challenge_token: otpChallengeToken || undefined,
         redirect: false,
       })
 
       if (!result?.ok) {
-        setError('Invalid username/email or password')
+        const msg = result?.error ?? ''
+        const twoFactor = parseTwoFactorError(msg)
+        if (twoFactor) {
+          setOtpChallengeToken(twoFactor.token)
+          setOtpCode('')
+          setError(twoFactor.message)
+          return
+        }
+        const lockout = parseLockoutError(msg)
+        if (lockout) {
+          setLockoutSeconds(lockout.seconds)
+          setError('')
+          return
+        }
+        setError(msg || 'Invalid username/email or password')
         return
       }
 
@@ -103,7 +159,7 @@ export default function SupplierLoginForm() {
           </div>
 
           <form onSubmit={handleSign}>
-            {error && (
+            {(error || lockoutSeconds > 0) && (
               <motion.div
                 initial={{ opacity: 0, y: -6 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -112,7 +168,7 @@ export default function SupplierLoginForm() {
                 <svg className="shrink-0 w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
                 </svg>
-                {error}
+                {lockoutSeconds > 0 ? `Too many login attempts. Try again in ${lockoutSeconds} seconds.` : error}
               </motion.div>
             )}
 
@@ -161,6 +217,57 @@ export default function SupplierLoginForm() {
               </div>
             </div>
 
+            {otpChallengeToken ? (
+              <div className="mt-3">
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5">Email OTP Code</label>
+                <input
+                  type="text"
+                  value={otpCode}
+                  onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  required
+                  inputMode="numeric"
+                  placeholder="Enter 6-digit code"
+                  className="w-full px-4 py-2.5 bg-slate-800/80 border border-slate-700/80 rounded-xl text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition-all"
+                />
+                <div className="mt-2 flex items-center justify-between">
+                  <p className="text-[11px] text-slate-400">OTP was sent to your supplier account email.</p>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      setError('')
+                      setIsLoading(true)
+                      try {
+                        const resend = await signIn('supplier-credentials', {
+                          login: form.login,
+                          password: form.password,
+                          otp_challenge_token: otpChallengeToken,
+                          resend_otp: '1',
+                          redirect: false,
+                        })
+                        const msg = resend?.error ?? ''
+                        const twoFactor = parseTwoFactorError(msg)
+                        if (twoFactor) {
+                          setOtpChallengeToken(twoFactor.token)
+                          setError(twoFactor.message)
+                        } else if (msg) {
+                          setError(msg)
+                        } else {
+                          setError('OTP re-sent. Please check your email.')
+                        }
+                      } catch {
+                        setError('Failed to resend OTP. Please try again.')
+                      } finally {
+                        setIsLoading(false)
+                      }
+                    }}
+                    className="text-xs font-semibold text-cyan-300 transition hover:text-cyan-200"
+                  >
+                    Resend OTP
+                  </button>
+                </div>
+              </div>
+            ) : null}
+
             <div className="mt-3 flex items-center justify-between gap-3">
               <label className="inline-flex items-center gap-2 text-xs text-slate-400">
                 <input
@@ -179,10 +286,10 @@ export default function SupplierLoginForm() {
 
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={isLoading || lockoutSeconds > 0}
               className="w-full mt-4 bg-cyan-600 hover:bg-cyan-500 active:scale-[0.99] disabled:opacity-60 text-white font-semibold py-2.5 rounded-xl tracking-wide transition-all duration-200 shadow-lg shadow-cyan-600/25 flex items-center justify-center gap-2"
             >
-              {isLoading ? <><Loading size={14} /><span>Signing in...</span></> : <span>Sign In</span>}
+              {isLoading ? <><Loading size={14} /><span>Signing in...</span></> : <span>{lockoutSeconds > 0 ? `Try again in ${lockoutSeconds}s` : otpChallengeToken ? 'Verify & Sign In' : 'Sign In'}</span>}
             </button>
           </form>
         </div>
