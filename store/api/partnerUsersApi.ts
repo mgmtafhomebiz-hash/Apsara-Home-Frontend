@@ -26,6 +26,7 @@ export interface PartnerUsersQuery {
   search?: string
   page?: number
   perPage?: number
+  storefrontId?: number
 }
 
 export interface CreatePartnerUserPayload {
@@ -33,6 +34,7 @@ export interface CreatePartnerUserPayload {
   username: string
   email?: string
   password: string
+  storefront_ids?: number[]
 }
 
 export interface UpdatePartnerUserPayload {
@@ -41,6 +43,7 @@ export interface UpdatePartnerUserPayload {
   username?: string
   email?: string
   password?: string
+  storefront_ids?: number[]
 }
 
 export const partnerUsersApi = baseApi.injectEndpoints({
@@ -51,6 +54,7 @@ export const partnerUsersApi = baseApi.injectEndpoints({
         method: 'GET',
         params: {
           q: params?.search,
+          storefront_id: params?.storefrontId,
           page: params?.page ?? 1,
           per_page: params?.perPage ?? 20,
         },

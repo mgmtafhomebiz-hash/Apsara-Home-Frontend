@@ -1,5 +1,5 @@
 import { buildPageMetadata } from '@/app/seo'
-import UnderMaintenancePage from '@/components/superAdmin/UnderMaintenancePage'
+import ExpenseCategoriesPageMain from '@/components/superAdmin/expenses/ExpenseCategoriesPageMain'
 
 export const metadata = buildPageMetadata({
   title: 'Admin Expense Categories',
@@ -9,10 +9,5 @@ export const metadata = buildPageMetadata({
 })
 
 export default function AdminExpenseCategoriesPage() {
-  return (
-    <UnderMaintenancePage
-      title="Expense Categories"
-      description="Expense category management is still being built."
-    />
-  )
+  return <ExpenseCategoriesPageMain />
 }

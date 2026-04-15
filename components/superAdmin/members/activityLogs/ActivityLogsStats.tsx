@@ -42,7 +42,7 @@ export default function ActivityLogsStats() {
       className="grid grid-cols-2 lg:grid-cols-4 gap-4"
     >
       {STATS.map((s, i) => (
-        <div key={i} className="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm flex items-center gap-3">
+        <div key={i} className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-4 shadow-sm flex items-center gap-3">
           <div className={`h-10 w-10 rounded-xl ${s.bg} ${s.text} flex items-center justify-center shrink-0`}>
             {s.icon}
           </div>

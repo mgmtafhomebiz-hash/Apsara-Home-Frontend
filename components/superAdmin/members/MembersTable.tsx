@@ -32,16 +32,66 @@ const getInitials = (name: string) => {
   return initials || 'MB'
 }
 const RECENT_MEMBER_DAYS = 7
+const PH_TIMEZONE = 'Asia/Manila'
+
+function resolveMemberRegisteredAt(member: Member) {
+  return member.createdAt ?? member.created_at ?? member.joinedAt
+}
+
+function parseMemberDate(value?: string | null) {
+  if (!value) return null
+
+  const trimmed = value.trim()
+  if (!trimmed) return null
+
+  const normalized = /^\d{4}-\d{2}-\d{2}$/.test(trimmed)
+    ? `${trimmed}T00:00:00+08:00`
+    : trimmed.includes('T')
+      ? trimmed
+      : trimmed.replace(' ', 'T')
+
+  const parsed = new Date(normalized)
+  return Number.isNaN(parsed.getTime()) ? null : parsed
+}
+
+function hasExplicitTime(value?: string | null) {
+  if (!value) return false
+  return /T\d{2}:\d{2}/.test(value) || /\d{2}:\d{2}:\d{2}/.test(value) || /\d{2}:\d{2}(?::\d{2})?\s?(AM|PM)/i.test(value)
+}
+
+function formatMemberRegisteredDate(value?: string | null) {
+  const parsed = parseMemberDate(value)
+  if (!parsed) return 'Unknown date'
+
+  return new Intl.DateTimeFormat('en-PH', {
+    timeZone: PH_TIMEZONE,
+    year: 'numeric',
+    month: 'short',
+    day: '2-digit',
+  }).format(parsed)
+}
+
+function formatMemberRegisteredTime(value?: string | null) {
+  if (!hasExplicitTime(value)) return 'Time unavailable'
+
+  const parsed = parseMemberDate(value)
+  if (!parsed) return 'Time unavailable'
+
+  return new Intl.DateTimeFormat('en-PH', {
+    timeZone: PH_TIMEZONE,
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  }).format(parsed)
+}
 
 function getRecentMemberMeta(joinedAt?: string) {
-  if (!joinedAt) {
+  const parsed = parseMemberDate(joinedAt)
+  if (!parsed) {
     return { isRecent: false, daysAgo: null as number | null }
   }
 
-  const joinedTime = new Date(`${joinedAt}T00:00:00`).getTime()
-  if (Number.isNaN(joinedTime)) {
-    return { isRecent: false, daysAgo: null as number | null }
-  }
+  const joinedTime = parsed.getTime()
 
   const diffMs = Date.now() - joinedTime
   const daysAgo = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)))
@@ -172,15 +222,15 @@ function EditMemberModal({
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 10, scale: 0.98 }}
         transition={{ duration: 0.2 }}
-        className="mx-auto mt-8 w-full max-w-3xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl"
+        className="mx-auto mt-8 w-full max-w-3xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="border-b border-slate-100 bg-[linear-gradient(135deg,#f8fafc,#ffffff)] px-6 py-5">
+        <div className="border-b border-slate-100 dark:border-slate-800 bg-[linear-gradient(135deg,#f8fafc,#ffffff)] px-6 py-5 dark:border-slate-800 dark:bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(30,41,59,0.98))]">
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-teal-600">Edit Member</p>
-              <h3 className="mt-1 text-xl font-bold text-slate-900">{member.name}</h3>
-              <p className="mt-1 text-sm text-slate-500">Update profile, tier, status, and address details.</p>
+              <h3 className="mt-1 text-xl font-bold text-slate-900 dark:text-slate-100">{member.name}</h3>
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Update profile, tier, status, and address details.</p>
             </div>
             <Button onPress={onClose} variant="secondary" className="rounded-xl">
               Close
@@ -198,19 +248,19 @@ function EditMemberModal({
           <div className="grid gap-4 md:grid-cols-2">
             <label className="block">
               <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Full Name</span>
-              <input value={form.name} onChange={(e) => updateField('name', e.target.value)} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 focus:border-teal-400 focus:outline-none focus:ring-4 focus:ring-teal-100" />
+              <input value={form.name} onChange={(e) => updateField('name', e.target.value)} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 focus:border-teal-400 focus:outline-none focus:ring-4 focus:ring-teal-100 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 dark:placeholder-slate-500" />
             </label>
             <label className="block">
               <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Username</span>
-              <input value={form.username} onChange={(e) => updateField('username', e.target.value)} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 focus:border-teal-400 focus:outline-none focus:ring-4 focus:ring-teal-100" />
+              <input value={form.username} onChange={(e) => updateField('username', e.target.value)} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 focus:border-teal-400 focus:outline-none focus:ring-4 focus:ring-teal-100 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 dark:placeholder-slate-500" />
             </label>
             <label className="block md:col-span-2">
               <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Email</span>
-              <input type="email" value={form.email} onChange={(e) => updateField('email', e.target.value)} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 focus:border-teal-400 focus:outline-none focus:ring-4 focus:ring-teal-100" />
+              <input type="email" value={form.email} onChange={(e) => updateField('email', e.target.value)} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 focus:border-teal-400 focus:outline-none focus:ring-4 focus:ring-teal-100 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 dark:placeholder-slate-500" />
             </label>
             <label className="block md:col-span-2">
               <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Contact Number</span>
-              <input value={form.contactNumber} onChange={(e) => updateField('contactNumber', e.target.value)} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 focus:border-teal-400 focus:outline-none focus:ring-4 focus:ring-teal-100" />
+              <input value={form.contactNumber} onChange={(e) => updateField('contactNumber', e.target.value)} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 focus:border-teal-400 focus:outline-none focus:ring-4 focus:ring-teal-100 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 dark:placeholder-slate-500" />
             </label>
           </div>
 
@@ -239,27 +289,27 @@ function EditMemberModal({
           <div className="grid gap-4 md:grid-cols-2">
             <label className="block md:col-span-2">
               <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Address Line</span>
-              <input value={form.addressLine} onChange={(e) => updateField('addressLine', e.target.value)} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 focus:border-teal-400 focus:outline-none focus:ring-4 focus:ring-teal-100" />
+              <input value={form.addressLine} onChange={(e) => updateField('addressLine', e.target.value)} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 focus:border-teal-400 focus:outline-none focus:ring-4 focus:ring-teal-100 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 dark:placeholder-slate-500" />
             </label>
             <label className="block">
               <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Barangay</span>
-              <input value={form.barangay} onChange={(e) => updateField('barangay', e.target.value)} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 focus:border-teal-400 focus:outline-none focus:ring-4 focus:ring-teal-100" />
+              <input value={form.barangay} onChange={(e) => updateField('barangay', e.target.value)} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 focus:border-teal-400 focus:outline-none focus:ring-4 focus:ring-teal-100 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 dark:placeholder-slate-500" />
             </label>
             <label className="block">
               <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">City</span>
-              <input value={form.city} onChange={(e) => updateField('city', e.target.value)} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 focus:border-teal-400 focus:outline-none focus:ring-4 focus:ring-teal-100" />
+              <input value={form.city} onChange={(e) => updateField('city', e.target.value)} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 focus:border-teal-400 focus:outline-none focus:ring-4 focus:ring-teal-100 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 dark:placeholder-slate-500" />
             </label>
             <label className="block">
               <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Province</span>
-              <input value={form.province} onChange={(e) => updateField('province', e.target.value)} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 focus:border-teal-400 focus:outline-none focus:ring-4 focus:ring-teal-100" />
+              <input value={form.province} onChange={(e) => updateField('province', e.target.value)} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 focus:border-teal-400 focus:outline-none focus:ring-4 focus:ring-teal-100 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 dark:placeholder-slate-500" />
             </label>
             <label className="block">
               <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Region</span>
-              <input value={form.region} onChange={(e) => updateField('region', e.target.value)} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 focus:border-teal-400 focus:outline-none focus:ring-4 focus:ring-teal-100" />
+              <input value={form.region} onChange={(e) => updateField('region', e.target.value)} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 focus:border-teal-400 focus:outline-none focus:ring-4 focus:ring-teal-100 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 dark:placeholder-slate-500" />
             </label>
             <label className="block">
               <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Zip Code</span>
-              <input value={form.zipCode} onChange={(e) => updateField('zipCode', e.target.value)} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 focus:border-teal-400 focus:outline-none focus:ring-4 focus:ring-teal-100" />
+              <input value={form.zipCode} onChange={(e) => updateField('zipCode', e.target.value)} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 focus:border-teal-400 focus:outline-none focus:ring-4 focus:ring-teal-100 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 dark:placeholder-slate-500" />
             </label>
           </div>
 
@@ -287,6 +337,9 @@ function MemberDetailsModal({
   const [generateTemporaryPassword, { isLoading }] = useGenerateMemberTemporaryPasswordMutation()
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [generatedPassword, setGeneratedPassword] = useState<string | null>(null)
+  const registeredAt = resolveMemberRegisteredAt(member)
+  const registeredDate = formatMemberRegisteredDate(registeredAt)
+  const registeredTime = formatMemberRegisteredTime(registeredAt)
 
   const verificationBadge = (selectedMember: Member) => {
     const status = selectedMember.verificationStatus ?? 'not_verified'
@@ -333,13 +386,13 @@ function MemberDetailsModal({
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 10, scale: 0.98 }}
         transition={{ duration: 0.2 }}
-        className="my-auto flex max-h-[88vh] w-full max-w-xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
+        className="my-auto flex max-h-[88vh] w-full max-w-xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-start justify-between border-b border-slate-100 px-5 py-4">
+        <div className="flex items-start justify-between border-b border-slate-100 dark:border-slate-800 dark:border-slate-800 px-5 py-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-teal-600">Member Details</p>
-            <h3 className="mt-1 text-xl font-bold text-slate-900">{member.name}</h3>
+            <h3 className="mt-1 text-xl font-bold text-slate-900 dark:text-slate-100">{member.name}</h3>
           </div>
           <Button onPress={onClose} variant="secondary" className="rounded-xl">
             Close
@@ -347,18 +400,18 @@ function MemberDetailsModal({
         </div>
 
         <div className="overflow-y-auto px-5 py-5">
-        <div className="mb-5 flex items-center gap-4 rounded-xl border border-slate-100 bg-slate-50 p-4">
+        <div className="mb-5 flex items-center gap-4 rounded-xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800/60">
           <MemberAvatar
             member={member}
             className="h-16 w-16 rounded-full shrink-0 ring-2 ring-white shadow"
             initialsClassName="text-white font-bold text-lg"
           />
           <div>
-            <p className="text-sm font-semibold text-slate-900">{member.email}</p>
+            <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{member.email}</p>
             {member.username && (
-              <p className="mt-1 text-xs text-slate-500">@{member.username}</p>
+              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">@{member.username}</p>
             )}
-            <p className="mt-1 text-xs text-slate-500">{member.contactNumber && member.contactNumber !== '0' ? member.contactNumber : 'No contact number'}</p>
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{member.contactNumber && member.contactNumber !== '0' ? member.contactNumber : 'No contact number'}</p>
             <div className="mt-2 flex items-center gap-2">
               <MembersStatusBadge status={member.status} />
               {verificationBadge(member)}
@@ -456,7 +509,8 @@ function MemberDetailsModal({
           </div>
           <div className="rounded-xl border border-slate-100 p-3">
             <p className="text-xs text-slate-500">Joined</p>
-            <p className="mt-1 font-semibold text-slate-800">{member.joinedAt}</p>
+            <p className="mt-1 font-semibold text-slate-800">{registeredDate}</p>
+            <p className="mt-1 text-xs text-slate-500">{registeredTime} PH</p>
           </div>
         </div>
         </div>
@@ -537,7 +591,7 @@ function MemberMenuPortal({
 
           openMenu()
         }}
-        className="h-7 w-7 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors flex items-center justify-center"
+        className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 dark:text-slate-500 dark:hover:bg-slate-800 dark:hover:text-slate-200"
       >
         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/>
@@ -553,44 +607,44 @@ function MemberMenuPortal({
               transition={{ duration: 0.15, ease: 'easeOut' }}
               onMouseDown={e => e.stopPropagation()}
               style={{ position: 'fixed', top: pos.top, right: pos.right, zIndex: 9999 }}
-              className="w-72 rounded-2xl border border-slate-200 bg-white p-2 shadow-xl shadow-slate-300/60"
+              className="w-72 rounded-2xl border border-slate-200 bg-white p-2 shadow-xl shadow-slate-300/60 dark:border-slate-800 dark:bg-slate-900 dark:shadow-black/40"
             >
               <button onClick={() => { onView(); closeMenu() }}
-                className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50">
-                <span>Open member details</span><span className="text-xs text-slate-400">View</span>
+                className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800/40">
+                <span>Open member details</span><span className="text-xs text-slate-400 dark:text-slate-500">View</span>
               </button>
               <button onClick={() => { onEdit(); closeMenu() }}
-                className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50">
-                <span>Edit member profile</span><span className="text-xs text-slate-400">Edit</span>
+                className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800/40">
+                <span>Edit member profile</span><span className="text-xs text-slate-400 dark:text-slate-500">Edit</span>
               </button>
               <button onClick={() => { onBanToggle(); closeMenu() }}
-                className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm hover:bg-slate-50 ${
-                  member.status === 'blocked' ? 'text-emerald-700' : 'text-rose-700'
+                className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm hover:bg-slate-50 dark:hover:bg-slate-800/40 ${
+                  member.status === 'blocked' ? 'text-emerald-700 dark:text-emerald-300' : 'text-rose-700 dark:text-rose-300'
                 }`}>
                 <span>{member.status === 'blocked' ? 'Unban member account' : 'Ban member account'}</span>
-                <span className="text-xs text-slate-400">{member.status === 'blocked' ? 'Restore' : 'Restrict'}</span>
+                <span className="text-xs text-slate-400 dark:text-slate-500">{member.status === 'blocked' ? 'Restore' : 'Restrict'}</span>
               </button>
               <button onClick={() => { onCopy(member.email ?? '', 'Email copied to clipboard.'); closeMenu() }}
-                className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50">
-                <span>Copy email</span><span className="text-xs text-slate-400">Clipboard</span>
+                className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800/40">
+                <span>Copy email</span><span className="text-xs text-slate-400 dark:text-slate-500">Clipboard</span>
               </button>
               <button onClick={() => { onCopy(member.contactNumber ?? '', 'Contact number copied.'); closeMenu() }}
-                className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50">
-                <span>Copy contact number</span><span className="text-xs text-slate-400">Clipboard</span>
+                className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800/40">
+                <span>Copy contact number</span><span className="text-xs text-slate-400 dark:text-slate-500">Clipboard</span>
               </button>
               <button onClick={() => { onCopy(member.fullAddress ?? '', 'Address copied.'); closeMenu() }}
-                className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50">
-                <span>Copy full address</span><span className="text-xs text-slate-400">Clipboard</span>
+                className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800/40">
+                <span>Copy full address</span><span className="text-xs text-slate-400 dark:text-slate-500">Clipboard</span>
               </button>
 
-              <div className="my-2 border-t border-slate-100" />
-              <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Quick Status</p>
+              <div className="my-2 border-t border-slate-100 dark:border-slate-800" />
+              <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">Quick Status</p>
               {quickActions.map(a => (
                 <button key={a.key} disabled={isUpdating}
                   onClick={() => { onQuickStatus(a.key as MemberStatus); closeMenu() }}
-                  className="block w-full rounded-xl px-3 py-2 text-left hover:bg-slate-50 disabled:opacity-60">
-                  <p className="text-sm font-medium text-slate-700">{a.label}</p>
-                  <p className="text-xs text-slate-400">{a.desc}</p>
+                  className="block w-full rounded-xl px-3 py-2 text-left hover:bg-slate-50 disabled:opacity-60 dark:hover:bg-slate-800/40">
+                  <p className="text-sm font-medium text-slate-700 dark:text-slate-200">{a.label}</p>
+                  <p className="text-xs text-slate-400 dark:text-slate-500">{a.desc}</p>
                 </button>
               ))}
             </motion.div>
@@ -738,48 +792,48 @@ const MembersTable = ({
 
   if (rows.length === 0) {
     return (
-      <Card className="border border-slate-200 bg-white shadow-none">
+      <Card className="border border-slate-200 bg-white shadow-none dark:border-slate-800 dark:bg-slate-900">
         <Card.Content className="flex flex-col items-center justify-center gap-3 py-16">
-          <div className="h-14 w-14 rounded-2xl bg-slate-100 flex items-center justify-center">
-          <svg className="w-7 h-7 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 dark:bg-slate-800/60">
+          <svg className="h-7 w-7 text-slate-400 dark:text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
           </svg>
           </div>
-          <p className="text-slate-600 font-semibold text-sm">No members found</p>
-          <p className="text-slate-400 text-xs">Try adjusting your search or filters</p>
+          <p className="text-sm font-semibold text-slate-600 dark:text-slate-200">No members found</p>
+          <p className="text-xs text-slate-400 dark:text-slate-500">Try adjusting your search or filters</p>
         </Card.Content>
       </Card>
     )
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-100 shadow-none overflow-visible">
+    <div className="overflow-visible rounded-2xl border border-slate-100 bg-white shadow-none dark:border-slate-800 dark:bg-slate-900">
       {quickMessage && (
-        <div className="border-b border-slate-100 bg-teal-50 px-4 py-2 text-sm text-teal-700">
+        <div className="border-b border-slate-100 dark:border-slate-800 bg-teal-50 px-4 py-2 text-sm text-teal-700 dark:border-slate-800 dark:bg-teal-500/10 dark:text-teal-300">
           {quickMessage}
         </div>
       )}
       <div className="overflow-x-auto overflow-y-visible">
         <table className="min-w-full text-sm">
           <thead>
-            <tr className="border-b border-slate-100 bg-slate-50/80">
-              <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">Member</th>
-              <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">Status</th>
-              <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 hidden sm:table-cell">Tier</th>
-              <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 hidden md:table-cell">Orders</th>
-              <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 hidden 2xl:table-cell">Address</th>
-              <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 hidden md:table-cell">Total Spent</th>
-              <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 hidden lg:table-cell">Earnings</th>
-              <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 hidden xl:table-cell">Wallet Credits</th>
-              <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 hidden lg:table-cell">Referrals</th>
-              <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 hidden xl:table-cell">Joined</th>
-              <th className="px-5 py-3.5 text-right text-xs font-semibold uppercase tracking-wide text-slate-400">Actions</th>
+            <tr className="border-b border-slate-100 dark:border-slate-800 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60/80 dark:border-slate-800 dark:bg-slate-800/60">
+              <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-300">Member</th>
+              <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-300">Status</th>
+              <th className="hidden px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-300 sm:table-cell">Tier</th>
+              <th className="hidden px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-300 md:table-cell">Orders</th>
+              <th className="hidden px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-300 2xl:table-cell">Address</th>
+              <th className="hidden px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-300 md:table-cell">Total Spent</th>
+              <th className="hidden px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-300 lg:table-cell">Earnings</th>
+              <th className="hidden px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-300 xl:table-cell">Wallet Credits</th>
+              <th className="hidden px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-300 lg:table-cell">Referrals</th>
+              <th className="hidden px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-300 xl:table-cell">Joined</th>
+              <th className="px-5 py-3.5 text-right text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-300">Actions</th>
             </tr>
           </thead>
           <AnimatePresence mode="wait" initial={false}>
             <motion.tbody
               key={`members-page-${currentPage}`}
-              className="divide-y divide-slate-50"
+              className="divide-y divide-slate-100 dark:divide-slate-800/70 dark:divide-slate-800/70 dark:divide-slate-800/70"
               variants={pageVariants}
               initial="initial"
               animate="animate"
@@ -787,38 +841,41 @@ const MembersTable = ({
             >
               {rows.map((member) => {
                 const recentMeta = getRecentMemberMeta(member.joinedAt)
+                const registeredAt = resolveMemberRegisteredAt(member)
+                const registeredDate = formatMemberRegisteredDate(registeredAt)
+                const registeredTime = formatMemberRegisteredTime(registeredAt)
 
                 return (
                   <motion.tr
                     key={member.id}
                     variants={rowVariants}
-                    className="group cursor-pointer border-b border-slate-50 transition-colors hover:bg-slate-50/60"
+                    className="group cursor-pointer border-b border-slate-100 dark:border-slate-800 transition-colors hover:bg-slate-50/60 dark:border-white/5 dark:hover:bg-slate-800/40"
                   >
                     {/* Member */}
                   <td className="px-5 py-3.5">
                     <div className="flex items-center gap-3">
                         <MemberAvatar
                           member={member}
-                          className="h-10 w-10 rounded-full shrink-0 shadow-sm ring-2 ring-white"
+                          className="h-10 w-10 rounded-full shrink-0 shadow-sm ring-2 ring-white dark:ring-slate-800"
                           initialsClassName="text-white font-bold text-xs"
                         />
-                        <div className="min-w-0">
+                        <div className="min-w-0 space-y-1">
                           <div className="flex items-center gap-2">
-                            <p className="font-semibold text-slate-800 text-sm truncate">{member.name}</p>
+                            <p className="truncate text-[15px] font-semibold leading-5 text-slate-800 dark:text-slate-100">{member.name}</p>
                             {recentMeta.isRecent && (
                               <Chip size="sm" variant="soft" className="h-5 border border-blue-100 bg-blue-50 px-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-blue-700">
                                 New
                               </Chip>
                             )}
                           </div>
-                          <p className="text-xs text-slate-400 truncate">{member.email}</p>
+                          <p className="truncate text-[12px] leading-4 text-slate-300 dark:text-slate-300">{member.email}</p>
                           {member.referredByName && (
-                            <p className="text-[11px] text-teal-600 truncate">
+                            <p className="truncate text-[12px] leading-4 text-teal-400">
                               Referred by {member.referredByName}{member.referredByUsername ? ` (@${member.referredByUsername})` : ''}
                             </p>
                           )}
                           {member.contactNumber && member.contactNumber !== '0' && (
-                            <p className="text-[11px] text-slate-400 truncate">{member.contactNumber}</p>
+                            <p className="truncate text-[12px] leading-4 text-slate-400 dark:text-slate-400">{member.contactNumber}</p>
                           )}
                         </div>
                       </div>
@@ -836,12 +893,12 @@ const MembersTable = ({
 
                     {/* Orders */}
                     <td className="px-5 py-3.5 hidden md:table-cell">
-                      <span className="text-slate-700 font-medium">{member.orders}</span>
+                      <span className="font-medium text-slate-700 dark:text-slate-200">{member.orders}</span>
                     </td>
 
                     {/* Address */}
                     <td className="px-5 py-3.5 hidden 2xl:table-cell">
-                      <span className="block max-w-xs truncate text-xs text-slate-500">
+                      <span className="block max-w-xs truncate text-[12px] leading-5 text-slate-400 dark:text-slate-300">
                         {member.fullAddress || 'No address provided'}
                       </span>
                     </td>
@@ -873,7 +930,7 @@ const MembersTable = ({
                     {/* Referrals */}
                     <td className="px-5 py-3.5 hidden lg:table-cell">
                       <div className="flex items-center gap-1.5">
-                        <span className="text-slate-700 font-medium">{member.referrals}</span>
+                        <span className="font-medium text-slate-700 dark:text-slate-200">{member.referrals}</span>
                         {member.referrals > 10 && (
                           <span className="h-1.5 w-1.5 rounded-full bg-teal-400" />
                         )}
@@ -883,7 +940,8 @@ const MembersTable = ({
                     {/* Joined */}
                     <td className="px-5 py-3.5 hidden xl:table-cell">
                       <div className="flex flex-col">
-                        <span className="text-slate-400 text-xs">{member.joinedAt}</span>
+                        <span className="text-[12px] font-medium text-slate-300 dark:text-slate-200">{registeredDate}</span>
+                        <span className="text-[11px] text-slate-400 dark:text-slate-400">{registeredTime} PH</span>
                         {recentMeta.isRecent && recentMeta.daysAgo !== null && (
                           <span className="text-[11px] font-medium text-blue-600">
                             {recentMeta.daysAgo === 0 ? 'Registered today' : `${recentMeta.daysAgo} day${recentMeta.daysAgo === 1 ? '' : 's'} ago`}
@@ -987,7 +1045,7 @@ const MembersTable = ({
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 10, scale: 0.98 }}
               transition={{ duration: 0.2 }}
-              className="mx-auto mt-24 w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl"
+              className="mx-auto mt-24 w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-start gap-4">
@@ -1003,14 +1061,14 @@ const MembersTable = ({
                   </svg>
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Member Account</p>
-                  <h3 className="mt-1 text-xl font-bold text-slate-900">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">Member Account</p>
+                  <h3 className="mt-1 text-xl font-bold text-slate-900 dark:text-slate-100">
                     {banTarget.status === 'blocked' ? 'Unban Member' : 'Ban Member'}
                   </h3>
-                  <p className="mt-2 text-sm leading-relaxed text-slate-500">
+                  <p className="mt-2 text-sm leading-relaxed text-slate-500 dark:text-slate-400">
                     {banTarget.status === 'blocked'
-                      ? <>Allow <span className="font-semibold text-slate-700">{banTarget.name}</span> to access their member account again?</>
-                      : <>Ban <span className="font-semibold text-slate-700">{banTarget.name}</span>? They will be marked as blocked and normal member access will be restricted.</>}
+                      ? <>Allow <span className="font-semibold text-slate-700 dark:text-slate-200">{banTarget.name}</span> to access their member account again?</>
+                      : <>Ban <span className="font-semibold text-slate-700 dark:text-slate-200">{banTarget.name}</span>? They will be marked as blocked and normal member access will be restricted.</>}
                   </p>
                 </div>
               </div>
@@ -1047,7 +1105,7 @@ const MembersTable = ({
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 10, scale: 0.98 }}
               transition={{ duration: 0.2 }}
-              className="mx-auto mt-24 w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl"
+              className="mx-auto mt-24 w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-start gap-4">
@@ -1057,12 +1115,12 @@ const MembersTable = ({
                   </svg>
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Delete Member</p>
-                  <h3 className="mt-1 text-xl font-bold text-slate-900">Remove this member?</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-slate-500">
-                    Delete <span className="font-semibold text-slate-700">{deleteTarget.name}</span> from the members list. This action cannot be undone.
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">Delete Member</p>
+                  <h3 className="mt-1 text-xl font-bold text-slate-900 dark:text-slate-100">Remove this member?</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+                    Delete <span className="font-semibold text-slate-700 dark:text-slate-200">{deleteTarget.name}</span> from the members list. This action cannot be undone.
                   </p>
-                  <p className="mt-2 text-xs text-slate-400">
+                  <p className="mt-2 text-xs text-slate-400 dark:text-slate-500">
                     If the member still has related records like orders, payouts, or other linked data, deletion may be blocked.
                   </p>
                 </div>

@@ -349,7 +349,7 @@ function PricingSummaryPanel({
         </div>
       </div>
 
-      <div className="bg-gradient-to-br from-slate-50 to-blue-50/60 divide-y divide-slate-100">
+      <div className="bg-gradient-to-br from-slate-50 to-blue-50/60 divide-y divide-slate-100 dark:divide-slate-800/70">
 
         {/* ── Section 1: PV Computation (hero) ── */}
         <div className="px-4 py-3">
@@ -379,7 +379,7 @@ function PricingSummaryPanel({
         {/* ── Section 2: Price breakdown ── */}
         <div className="px-4 py-3">
           <p className="text-[9px] md:text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-2">Low-End Price Breakdown</p>
-          <div className="rounded-xl bg-white border border-slate-100 overflow-hidden divide-y divide-slate-50">
+          <div className="rounded-xl bg-white border border-slate-100 overflow-hidden divide-y divide-slate-100 dark:divide-slate-800/70 dark:divide-slate-800/70">
             <CalcRow
               label="Retail Profit (SRP - Member Price)"
               a={`SRP ₱${fmt(summary.retailProfit + summary.effectiveMemberPrice)}`}
@@ -404,7 +404,7 @@ function PricingSummaryPanel({
             <p className="text-[9px] md:text-[11px] font-bold uppercase tracking-widest text-slate-400">Reference Bonus Distribution</p>
             <span className="rounded-full bg-blue-600 px-2 py-0.5 text-[9px] md:text-[11px] font-bold text-white">15% of PV</span>
           </div>
-          <div className="rounded-xl bg-white border border-slate-100 overflow-hidden divide-y divide-slate-50">
+          <div className="rounded-xl bg-white border border-slate-100 overflow-hidden divide-y divide-slate-100 dark:divide-slate-800/70 dark:divide-slate-800/70">
             {bonusRows.map(({ label, rate, value, note }) => (
               <div key={label} className="flex items-center justify-between px-3 py-2 gap-2">
                 <div className="min-w-0">
@@ -1065,7 +1065,7 @@ function ModalSelectField({
       </Select.Trigger>
       <Select.Popover className="min-w-[var(--trigger-width)]">
         {searchable ? (
-          <div className="border-b border-slate-100 p-2">
+          <div className="border-b border-slate-100 dark:border-slate-800 p-2">
             <div className="flex min-h-10 items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 transition-all duration-200 focus-within:border-teal-300 focus-within:bg-white">
               <svg className="h-4 w-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35m1.6-5.15a6.75 6.75 0 11-13.5 0 6.75 6.75 0 0113.5 0z" />
@@ -2783,7 +2783,7 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
                             return (
                               <div key={`variant-${variant.id ?? index}`} className="rounded-xl border border-slate-200 bg-white overflow-hidden">
                                 {/* Variant header */}
-                                <div className="flex items-center justify-between px-4 py-3 bg-slate-50 border-b border-slate-100">
+                                <div className="flex items-center justify-between px-4 py-3 bg-slate-50 border-b border-slate-100 dark:border-slate-800">
                                   <div className="flex items-center gap-2">
                                     <div className="h-6 w-6 rounded-lg bg-blue-100 flex items-center justify-center">
                                       <span className="text-[10px] font-bold text-blue-700">{index + 1}</span>
@@ -2822,7 +2822,7 @@ export default function EditProductModal({ product, onClose, onSaved }: EditProd
                                   </div>
                                 </div>
 
-                                <div className="divide-y divide-slate-100">
+                                <div className="divide-y divide-slate-100 dark:divide-slate-800/70">
 
                                   {/* ── Identity ── */}
                                   <div className="px-4 py-3.5 space-y-2.5">

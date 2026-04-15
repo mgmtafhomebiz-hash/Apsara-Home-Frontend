@@ -277,7 +277,7 @@ function ListRow({
 
   return (
     <>
-      <tr className="group border-b border-slate-100/80 bg-white/90 transition-all hover:bg-cyan-50/40">
+      <tr className="group border-b border-slate-100 dark:border-slate-800/80 bg-white/90 transition-all hover:bg-cyan-50/40">
         <td className="px-5 py-4">
           <div className="flex items-center gap-3">
             <Avatar
@@ -566,7 +566,7 @@ export default function ReferralTreePageMain() {
           </div>
         ) : (
           <div className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_18px_50px_rgba(15,23,42,0.05)]">
-            <div className="border-b border-slate-100 bg-[linear-gradient(180deg,#f8fafc,white)] px-5 py-4">
+            <div className="border-b border-slate-100 dark:border-slate-800 bg-[linear-gradient(180deg,#f8fafc,white)] px-5 py-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Customer Table View</p>
@@ -582,7 +582,7 @@ export default function ReferralTreePageMain() {
             <div className="overflow-x-auto">
               <table className="w-full min-w-[820px] text-left">
                 <thead>
-                  <tr className="border-b border-slate-100 bg-slate-50/90">
+                  <tr className="border-b border-slate-100 dark:border-slate-800 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60/90">
                     <th className="px-5 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Member</th>
                     <th className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Tier</th>
                     <th className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Commission</th>

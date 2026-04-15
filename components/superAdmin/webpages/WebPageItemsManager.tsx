@@ -238,7 +238,7 @@ export default function WebPageItemsManager({ type, title, description }: Props)
         ) : (
           <div className="overflow-auto">
             <table className="w-full min-w-[960px]">
-              <thead className="bg-slate-50 border-b border-slate-100">
+              <thead className="bg-slate-50 border-b border-slate-100 dark:border-slate-800">
                 <tr className="text-left text-xs text-slate-500">
                   <th className="px-3 py-2.5 font-semibold">Title</th>
                   <th className="px-3 py-2.5 font-semibold">Key</th>
@@ -250,7 +250,7 @@ export default function WebPageItemsManager({ type, title, description }: Props)
               </thead>
               <tbody>
                 {rows.length ? rows.map((row) => (
-                  <tr key={row.id} className="border-b border-slate-50 last:border-b-0 text-sm">
+                  <tr key={row.id} className="border-b border-slate-100 dark:border-slate-800 last:border-b-0 text-sm">
                     <td className="px-3 py-2.5 text-slate-800">
                       <p className="font-medium">{row.title || '(Untitled)'}</p>
                       <p className="text-xs text-slate-500 mt-0.5 truncate max-w-[260px]">{row.subtitle || row.body || '-'}</p>

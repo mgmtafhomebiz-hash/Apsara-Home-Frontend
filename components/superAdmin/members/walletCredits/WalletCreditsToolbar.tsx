@@ -27,7 +27,7 @@ export default function WalletCreditsToolbar({
   sortKey, onSortKey,
 }: WalletCreditsToolbarProps) {
   return (
-    <div className="bg-white border border-slate-100 rounded-2xl shadow-sm p-4 flex flex-wrap items-center gap-3">
+    <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl shadow-sm p-4 flex flex-wrap items-center gap-3">
       {/* Search */}
       <div className="relative flex-1 min-w-[180px]">
         <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

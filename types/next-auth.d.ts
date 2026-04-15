@@ -16,6 +16,7 @@ declare module 'next-auth' {
             isMainSupplier?: boolean;
             accessToken?: string
             passwordChangeRequired?: boolean
+            sessionTimeoutMinutes?: number
         }
     }
 }
@@ -31,5 +32,6 @@ declare module 'next-auth/jwt' {
         isMainSupplier?: boolean
         accessToken?: string
         passwordChangeRequired?: boolean
+        sessionTimeoutMinutes?: number
     }
 }

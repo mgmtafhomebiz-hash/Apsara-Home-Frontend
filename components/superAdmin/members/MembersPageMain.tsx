@@ -18,20 +18,20 @@ interface MembersPageMainProps {
 
 function SkeletonTable() {
     return (
-        <div className="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden animate-pulse">
-            <div className="px-5 py-4 border-b border-slate-100">
-                <div className="h-4 w-28 bg-slate-100 rounded-lg" />
+        <div className="animate-pulse overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <div className="border-b border-slate-100 dark:border-slate-800 px-5 py-4 dark:border-slate-800">
+                <div className="h-4 w-28 rounded-lg bg-slate-100 dark:bg-slate-800/60" />
             </div>
-            <div className="divide-y divide-slate-50">
+            <div className="divide-y divide-slate-100 dark:divide-slate-800/70 dark:divide-slate-800/70 dark:divide-slate-800/70">
                 {Array.from({ length: 6 }).map((_, i) => (
                     <div key={i} className="px-4 py-4 flex items-center gap-4">
-                        <div className="h-9 w-9 rounded-full bg-slate-100 shrink-0" />
+                        <div className="h-9 w-9 shrink-0 rounded-full bg-slate-100 dark:bg-slate-800/60" />
                         <div className="flex-1 space-y-2">
-                            <div className="h-3 w-32 bg-slate-100 rounded" />
-                            <div className="h-2.5 w-20 bg-slate-100 rounded" />
+                            <div className="h-3 w-32 rounded bg-slate-100 dark:bg-slate-800/60" />
+                            <div className="h-2.5 w-20 rounded bg-slate-100 dark:bg-slate-800/60" />
                         </div>
-                        <div className="h-6 w-20 bg-slate-100 rounded-full" />
-                        <div className="h-7 w-16 bg-slate-100 rounded-lg" />
+                        <div className="h-6 w-20 rounded-full bg-slate-100 dark:bg-slate-800/60" />
+                        <div className="h-7 w-16 rounded-lg bg-slate-100 dark:bg-slate-800/60" />
                     </div>
                 ))}
             </div>
@@ -313,8 +313,8 @@ const MembersPageMain = ({ initialData = null, initialStats = null }: MembersPag
                 className="flex items-start justify-between gap-4"
             >
                 <div>
-                    <h1 className="text-xl font-bold text-slate-800">Members</h1>
-                    <p className="text-sm text-slate-500 mt-0.5">Manage member profiles, tiers and activities</p>
+                    <h1 className="text-xl font-bold text-slate-800 dark:text-white">Members</h1>
+                    <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-300">Manage member profiles, tiers and activities</p>
                 </div>
                 <Button
                     onPress={() => setShowModal(true)}
@@ -393,7 +393,7 @@ const MembersPageMain = ({ initialData = null, initialStats = null }: MembersPag
                         onClick={() => setShowEarningsModal(false)}
                     />
                     <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden">
-                        <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+                        <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
                             <div>
                                 <h2 className="text-base font-bold text-slate-800">Members With Earnings</h2>
                                 <p className="text-xs text-slate-500 mt-0.5">
@@ -410,7 +410,7 @@ const MembersPageMain = ({ initialData = null, initialStats = null }: MembersPag
 
                         <div className="max-h-[65vh] overflow-auto">
                             {earningsMembers.length > 0 ? (
-                                <div className="divide-y divide-slate-100">
+                                <div className="divide-y divide-slate-100 dark:divide-slate-800/70">
                                     {earningsMembers.map((member) => (
                                         <div key={member.id} className="px-5 py-3.5 flex items-center justify-between gap-3">
                                             <div className="min-w-0">
