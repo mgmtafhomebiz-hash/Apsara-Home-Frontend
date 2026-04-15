@@ -4,7 +4,8 @@ import { redirect } from 'next/navigation';
 import type { Metadata } from 'next';
 import TopBar from '@/components/layout/TopBar';
 import Navbar from '@/components/layout/Navbar';
-import Footer from '@/components/layout/Footer';
+import Footer from "@/components/landing-page/Footer";
+import ScrollToTop from "@/components/landing-page/ScrollToTop";
 import ProductPageClient from '@/components/product/ProductPageClient';
 import ProductTabs from '@/components/product/ProductTabs';
 import { categoryMeta, type CategoryProduct } from '@/libs/CategoryData';
@@ -444,6 +445,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
         </div>
       </main>
       <Footer />
+      <ScrollToTop />
     </div>
   );
 }
