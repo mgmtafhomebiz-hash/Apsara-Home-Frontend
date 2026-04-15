@@ -110,7 +110,7 @@ export default function BulkEditProductsModal({ products, onClose, onSaved }: Pr
                 onClick={(e) => e.stopPropagation()}
                 className="w-full max-w-2xl rounded-2xl bg-white shadow-2xl"
               >
-                <div className="flex items-center justify-between border-b border-slate-100 px-6 py-5">
+                <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 px-6 py-5">
                   <div className="flex items-center gap-3">
                     <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-teal-500 text-white shadow-md shadow-teal-500/25">
                       <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -1,6 +1,6 @@
 'use client'
 
-import { Fragment, useRef, useState, type Key } from 'react'
+import { Fragment, useEffect, useLayoutEffect, useRef, useState, type Key } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useRegisterMutation } from '@/store/api/authApi'
 import Loading from './Loading'
@@ -124,6 +124,21 @@ const passwordChecks = (password: string) => ([
     { label: 'At least one special character', passed: /[^A-Za-z0-9]/.test(password) },
 ])
 
+const normalizePhoneDigits = (value: string) => {
+    const digits = value.replace(/\D/g, '')
+    const trimmed = digits.startsWith('0') ? digits.slice(1) : digits
+    return trimmed.slice(0, 10)
+}
+
+const formatPhoneNumber = (value: string) => {
+    const digits = normalizePhoneDigits(value)
+    const first = digits.slice(0, 3)
+    const second = digits.slice(3, 6)
+    const third = digits.slice(6, 10)
+
+    return [first, second, third].filter(Boolean).join('-')
+}
+
 type FormPage = 1 | 2 | 3
 const stepLabels: [string, string, string] = ['Personal', 'Address', 'Security']
 
@@ -139,6 +154,7 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
     const [showPass, setShowPass] = useState(false)
     const [showConfirm, setShowConfirm] = useState(false)
     const [error, setError] = useState('')
+    const [showStep3Error, setShowStep3Error] = useState(false)
     const [step, setStep] = useState<'form' | 'otp'>('form')
     const [formPage, setFormPage] = useState<FormPage>(1)
     const [verificationToken, setVerificationToken] = useState('')
@@ -179,8 +195,20 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
         try { return parseDate(form.birthDate) } catch { return null }
     })()
 
+    useLayoutEffect(() => {
+        if (step !== 'form' || formPage !== 3) return
+
+        setShowStep3Error(false)
+        setError('')
+    }, [step, formPage])
+
     const set = (field: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
         setForm(f => ({ ...f, [field]: e.target.type === 'checkbox' ? (e.target as HTMLInputElement).checked : e.target.value }))
+
+    const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const formatted = formatPhoneNumber(e.target.value)
+        setForm((prev) => ({ ...prev, phone: formatted }))
+    }
 
     const showError = (message: string): false => {
         setError(message)
@@ -188,6 +216,11 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
             errorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
         })
         return false
+    }
+
+    const showStep3ValidationError = (message: string): false => {
+        setShowStep3Error(true)
+        return showError(message)
     }
 
     const scrollStepToTop = () => {
@@ -200,6 +233,7 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
         setStep('form')
         setVerificationToken('')
         setPendingEmail('')
+        setShowStep3Error(false)
     }
 
     const validateStep1 = (): boolean => {
@@ -226,12 +260,19 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
 
     const handleNext = () => {
         setError('')
+        setShowStep3Error(false)
         if (formPage === 1 && validateStep1()) { setFormPage(2); scrollStepToTop() }
-        else if (formPage === 2 && validateStep2()) { setFormPage(3); scrollStepToTop() }
+        else if (formPage === 2 && validateStep2()) {
+            setError('')
+            setShowStep3Error(false)
+            setFormPage(3)
+            scrollStepToTop()
+        }
     }
 
     const handleBack = () => {
         setError('')
+        setShowStep3Error(false)
         setFormPage(p => (p - 1) as FormPage)
         scrollStepToTop()
     }
@@ -240,15 +281,15 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
         e.preventDefault()
         setError('')
 
-        if (!form.agreeTerms) return showError('You must agree to the Terms & Conditions.')
-        if (form.password !== form.confirmPassword) return showError('Passwords do not match.')
-        if (form.password.length < 8) return showError('Password must be at least 8 characters.')
-        if (!/[A-Z]/.test(form.password)) return showError('Password must include at least one uppercase letter.')
-        if (!/[a-z]/.test(form.password)) return showError('Password must include at least one lowercase letter.')
-        if (!/[0-9]/.test(form.password)) return showError('Password must include at least one number.')
-        if (!/[^A-Za-z0-9]/.test(form.password)) return showError('Password must include at least one special character.')
+        if (!form.agreeTerms) return showStep3ValidationError('You must agree to the Terms & Conditions.')
+        if (form.password !== form.confirmPassword) return showStep3ValidationError('Passwords do not match.')
+        if (form.password.length < 8) return showStep3ValidationError('Password must be at least 8 characters.')
+        if (!/[A-Z]/.test(form.password)) return showStep3ValidationError('Password must include at least one uppercase letter.')
+        if (!/[a-z]/.test(form.password)) return showStep3ValidationError('Password must include at least one lowercase letter.')
+        if (!/[0-9]/.test(form.password)) return showStep3ValidationError('Password must include at least one number.')
+        if (!/[^A-Za-z0-9]/.test(form.password)) return showStep3ValidationError('Password must include at least one special character.')
         if (containsBlockedWord(form.firstName) || containsBlockedWord(form.lastName) || containsBlockedWord(form.username) || containsBlockedWord(form.middleName)) {
-            return showError('Account details contain prohibited words. Please use appropriate name/username.')
+            return showStep3ValidationError('Account details contain prohibited words. Please use appropriate name/username.')
         }
 
         const result = await register({
@@ -259,7 +300,7 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
             email: form.email,
             password: form.password,
             password_confirmation: form.confirmPassword,
-            phone: form.phone,
+            phone: normalizePhoneDigits(form.phone),
             username: form.username,
             referred_by: normalizeReferralCode(form.referredBy),
             birth_date: form.birthDate,
@@ -269,9 +310,13 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
             country: form.workLocation === 'overseas' ? form.country : 'Philippines',
             address: form.address,
             barangay: ph.address.barangay,
+            barangay_code: ph.barangays.find((barangay) => barangay.name === ph.address.barangay)?.code ?? '',
             city: ph.address.city,
+            city_code: ph.cityCode,
             province: ph.address.province,
+            province_code: ph.provinceCode,
             region: ph.address.region,
+            region_code: ph.regionCode,
             zip_code: form.zipCode,
         })
 
@@ -280,6 +325,7 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
             const firstError = errorData?.errors
                 ? Object.values(errorData.errors)[0][0]
                 : errorData?.message || 'Registration failed. Please try again.'
+            setShowStep3Error(true)
             showError(firstError)
             showErrorToast(firstError)
             return
@@ -289,7 +335,18 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
         setPendingEmail(result.data.email || form.email)
         setStep('otp')
         setError('')
+        setShowStep3Error(false)
         showSuccessToast('A 4-digit verification code was sent to your email.')
+    }
+
+    const handleFormSubmit = (e: React.FormEvent) => {
+        if (formPage < 3) {
+            e.preventDefault()
+            handleNext()
+            return
+        }
+
+        void handleRegister(e)
     }
 
     return (
@@ -318,7 +375,7 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
                     onBack={resetOtpStep}
                 />
             ) : (
-                <form onSubmit={handleRegister} className="space-y-4">
+                <form onSubmit={handleFormSubmit} noValidate className="space-y-4">
 
                     {/* Step Indicator */}
                     <div ref={stepTopRef}>
@@ -358,8 +415,8 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
                     </div>
 
                     {/* Error */}
-                    {error && (
-                        <div ref={errorRef} className="bg-red-500/20 border border-red-400/20 rounded-xl px-4 py-2.5 text-sm text-red-300">
+                    {error && (formPage !== 3 || showStep3Error) && (
+                        <div ref={errorRef} className="rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-700 shadow-sm dark:border-red-400/20 dark:bg-red-500/20 dark:text-red-300">
                             {error}
                         </div>
                     )}
@@ -422,22 +479,22 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
                                                         </DatePicker.Trigger>
                                                     </DateField.Suffix>
                                                 </DateField.Group>
-                                                <DatePicker.Popover className="p-2">
-                                                    <Calendar className="rounded-2xl bg-white p-3 text-slate-800 shadow-xl">
+                                                <DatePicker.Popover className="border-0 bg-transparent p-0 shadow-none">
+                                                    <Calendar className="min-w-[340px] rounded-[24px] border border-slate-200 bg-white p-4 text-slate-800 shadow-[0_24px_80px_rgba(15,23,42,0.16)] dark:border-white/10 dark:bg-slate-900 dark:text-slate-100">
                                                         <Calendar.Header className="mb-3 flex items-center justify-between gap-3">
-                                                            <Calendar.YearPickerTrigger className="inline-flex min-w-0 items-center gap-1 rounded-full px-3 py-1.5 text-sm font-semibold text-slate-800 transition hover:bg-slate-100">
+                                                            <Calendar.YearPickerTrigger className="inline-flex min-w-0 items-center gap-1 rounded-full px-3 py-1.5 text-sm font-semibold text-slate-800 transition hover:bg-slate-100 dark:text-slate-100 dark:hover:bg-white/10">
                                                                 <Calendar.YearPickerTriggerHeading />
-                                                                <Calendar.YearPickerTriggerIndicator className="text-slate-500" />
+                                                                <Calendar.YearPickerTriggerIndicator className="text-slate-500 dark:text-slate-400" />
                                                             </Calendar.YearPickerTrigger>
                                                             <div className="ml-auto flex items-center gap-2 pl-2">
-                                                                <Calendar.NavButton slot="previous" className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:border-orange-200 hover:bg-orange-50 hover:text-orange-500" />
-                                                                <Calendar.NavButton slot="next" className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:border-orange-200 hover:bg-orange-50 hover:text-orange-500" />
+                                                                <Calendar.NavButton slot="previous" className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 transition hover:border-orange-200 hover:bg-orange-50 hover:text-orange-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:border-orange-400/30 dark:hover:bg-orange-500/10 dark:hover:text-orange-300" />
+                                                                <Calendar.NavButton slot="next" className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 transition hover:border-orange-200 hover:bg-orange-50 hover:text-orange-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:border-orange-400/30 dark:hover:bg-orange-500/10 dark:hover:text-orange-300" />
                                                             </div>
                                                         </Calendar.Header>
                                                         <Calendar.Grid className="w-full">
                                                             <Calendar.GridHeader>
                                                                 {(day) => (
-                                                                    <Calendar.HeaderCell className="pb-2 text-center text-xs font-semibold text-slate-400">
+                                                                    <Calendar.HeaderCell className="pb-2 text-center text-xs font-semibold text-slate-400 dark:text-slate-500">
                                                                         {day}
                                                                     </Calendar.HeaderCell>
                                                                 )}
@@ -446,7 +503,7 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
                                                                 {(date) => (
                                                                     <Calendar.Cell
                                                                         date={date}
-                                                                        className="flex h-9 w-9 items-center justify-center rounded-full text-sm text-slate-700 transition hover:bg-orange-100 data-[focused=true]:bg-orange-100 data-[selected=true]:bg-orange-500 data-[selected=true]:text-white data-[outside-month=true]:text-slate-300"
+                                                                        className="flex h-10 w-10 items-center justify-center rounded-full text-sm font-medium text-slate-700 transition hover:bg-orange-100 hover:text-orange-600 data-[focused=true]:bg-orange-100 data-[focused=true]:text-orange-600 data-[selected=true]:bg-orange-500 data-[selected=true]:text-white data-[outside-month=true]:text-slate-300 dark:text-slate-200 dark:hover:bg-orange-500/15 dark:hover:text-orange-300 dark:data-[focused=true]:bg-orange-500/15 dark:data-[focused=true]:text-orange-300 dark:data-[outside-month=true]:text-slate-600"
                                                                     />
                                                                 )}
                                                             </Calendar.GridBody>
@@ -456,7 +513,7 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
                                                                 {({ year }) => (
                                                                     <Calendar.YearPickerCell
                                                                         year={year}
-                                                                        className="flex h-10 items-center justify-center rounded-xl text-sm text-slate-700 transition hover:bg-orange-100 data-[selected=true]:bg-orange-500 data-[selected=true]:text-white"
+                                                                        className="flex h-10 items-center justify-center rounded-xl text-sm font-medium text-slate-700 transition hover:bg-orange-100 hover:text-orange-600 data-[selected=true]:bg-orange-500 data-[selected=true]:text-white dark:text-slate-200 dark:hover:bg-orange-500/15 dark:hover:text-orange-300"
                                                                     />
                                                                 )}
                                                             </Calendar.YearPickerGridBody>
@@ -518,7 +575,10 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
                                                 id="signup-phone"
                                                 type="tel"
                                                 value={form.phone}
-                                                onChange={set('phone')}
+                                                onChange={handlePhoneChange}
+                                                inputMode="numeric"
+                                                autoComplete="tel-national"
+                                                placeholder="929-226-0447"
                                                 required
                                                 className={inputClass}
                                             />
@@ -686,7 +746,13 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
                                         <input
                                             type="checkbox"
                                             checked={form.agreeTerms}
-                                            onChange={(e) => setForm((prev) => ({ ...prev, agreeTerms: e.target.checked }))}
+                                            onChange={(e) => {
+                                                const checked = e.target.checked
+                                                setForm((prev) => ({ ...prev, agreeTerms: checked }))
+                                                if (checked && error === 'You must agree to the Terms & Conditions.') {
+                                                    setError('')
+                                                }
+                                            }}
                                             className="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 dark:border-white/30 bg-white dark:bg-white/10 accent-orange-500"
                                         />
                                         <span className="text-xs text-gray-500 dark:text-white/60">

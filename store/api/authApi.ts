@@ -14,9 +14,13 @@ interface RegisterPayload {
   birth_date?: string
   address?: string
   barangay?: string
+  barangay_code?: string
   city?: string
+  city_code?: string
   province?: string
+  province_code?: string
   region?: string
+  region_code?: string
   zip_code?: string
   gender?: 'male' | 'female' | 'other'
   occupation?: string

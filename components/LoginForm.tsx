@@ -1,7 +1,7 @@
 'use client';
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useSearchParams } from "next/navigation";
@@ -36,10 +36,11 @@ type FloatingInputProps = {
     label: string;
     value: string;
     onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    autoComplete?: string;
     endContent?: React.ReactNode;
 }
 
-function FloatingInput({ id, type = 'text', label, value, onChange, endContent }: FloatingInputProps) {
+function FloatingInput({ id, type = 'text', label, value, onChange, autoComplete, endContent }: FloatingInputProps) {
     const hasValue = value.trim().length > 0
 
     return (
@@ -50,6 +51,7 @@ function FloatingInput({ id, type = 'text', label, value, onChange, endContent }
                 value={value}
                 onChange={onChange}
                 placeholder=" "
+                autoComplete={autoComplete}
                 className="peer h-14 w-full rounded-[22px] border border-gray-300 dark:border-white/18 bg-white dark:bg-white/12 px-4 pb-3 pt-6 text-sm text-gray-900 dark:text-white outline-none transition-all duration-200 placeholder:text-transparent focus:border-orange-400 dark:focus:border-orange-400/60 focus:bg-white dark:focus:bg-white/18"
             />
             <label
@@ -58,7 +60,7 @@ function FloatingInput({ id, type = 'text', label, value, onChange, endContent }
                     hasValue
                         ? 'top-2 text-[11px] text-orange-500 dark:text-orange-300'
                         : 'top-1/2 -translate-y-1/2 text-sm'
-                } peer-focus:top-2 peer-focus:translate-y-0 peer-focus:text-[11px] peer-focus:text-orange-500 dark:peer-focus:text-orange-300`}
+                } peer-focus:top-2 peer-focus:translate-y-0 peer-focus:text-[11px] peer-focus:text-orange-500 dark:peer-focus:text-orange-300 peer-[:not(:placeholder-shown)]:top-2 peer-[:not(:placeholder-shown)]:translate-y-0 peer-[:not(:placeholder-shown)]:text-[11px] peer-[:not(:placeholder-shown)]:text-orange-500 dark:peer-[:not(:placeholder-shown)]:text-orange-300 peer-autofill:top-2 peer-autofill:translate-y-0 peer-autofill:text-[11px] peer-autofill:text-orange-500 dark:peer-autofill:text-orange-300`}
             >
                 {label}
             </label>
@@ -82,11 +84,10 @@ const LoginForm = ({ onSwitchToSignUp, onRequirePasswordChange }: LoginFormProps
     const [showPass, setShowPass] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
-    const rememberedEmail = getRememberedUserEmail()
     const [form, setForm] = useState({
-        email: rememberedEmail,
+        email: '',
         password: '',
-        rememberMe: rememberedEmail !== '',
+        rememberMe: false,
     })
 
     const blockedFromRedirect = searchParams.get('blocked') === '1'
@@ -94,6 +95,20 @@ const LoginForm = ({ onSwitchToSignUp, onRequirePasswordChange }: LoginFormProps
 
     const set = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) =>
         setForm(f => ({ ...f, [field]: e.target.value }))
+
+    useEffect(() => {
+        const rememberedEmail = getRememberedUserEmail().trim()
+        if (!rememberedEmail) return
+
+        setForm((prev) => {
+            if (prev.email || prev.password) return prev
+            return {
+                ...prev,
+                email: rememberedEmail,
+                rememberMe: true,
+            }
+        })
+    }, [])
 
 
 
@@ -157,12 +172,12 @@ const LoginForm = ({ onSwitchToSignUp, onRequirePasswordChange }: LoginFormProps
 
             <form className="space-y-4" onSubmit={handleSignIn}>
                 {error && (
-                    <div className="bg-red-500/20 border border-red-400/20 rounded-xl px-4 py-2.5 text-sm text-red-300">
+                    <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-700 shadow-sm dark:border-red-400/20 dark:bg-red-500/20 dark:text-red-300">
                         {error}
                     </div>
                 )}
                 {!error && blockedFromRedirect && (
-                    <div className="bg-red-500/20 border border-red-400/20 rounded-xl px-4 py-2.5 text-sm text-red-300">
+                    <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-700 shadow-sm dark:border-red-400/20 dark:bg-red-500/20 dark:text-red-300">
                         Your account has been banned. Please contact support for assistance.
                     </div>
                 )}
@@ -173,6 +188,7 @@ const LoginForm = ({ onSwitchToSignUp, onRequirePasswordChange }: LoginFormProps
                         label="Username or Email"
                         value={form.email}
                         onChange={set('email')}
+                        autoComplete="username email"
                     />
                 </div>
 
@@ -183,11 +199,12 @@ const LoginForm = ({ onSwitchToSignUp, onRequirePasswordChange }: LoginFormProps
                         label="Password"
                         value={form.password}
                         onChange={set('password')}
+                        autoComplete="current-password"
                         endContent={(
                             <button
                                 type="button"
                                 onClick={() => setShowPass(p => !p)}
-                                className="text-white/60 hover:text-white/80 transition-colors"
+                                className="text-gray-400 dark:text-white/60 hover:text-gray-700 dark:hover:text-white/80 transition-colors"
                             >
                                 <EyeIcon open={showPass} />
                             </button>

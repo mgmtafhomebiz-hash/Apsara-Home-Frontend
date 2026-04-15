@@ -670,7 +670,7 @@ export default function ShopBuilderStudio() {
 
         {/* ── LEFT: Section nav ── */}
         <aside className="rounded-3xl border border-slate-200 bg-white shadow-sm">
-          <div className="border-b border-slate-100 px-4 py-4">
+          <div className="border-b border-slate-100 dark:border-slate-800 px-4 py-4">
             <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-400">Sections</p>
             <p className="mt-0.5 text-xs text-slate-400">{sections.length} blocks total</p>
           </div>
@@ -718,7 +718,7 @@ export default function ShopBuilderStudio() {
 
         {/* ── CENTER: Preview canvas ── */}
         <section className="rounded-3xl border border-slate-200 bg-white shadow-sm">
-          <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+          <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 px-5 py-4">
             <div>
               <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-400">Live Preview</p>
               <p className="mt-0.5 text-sm font-semibold text-slate-800">/shop Visual Canvas</p>
@@ -1013,7 +1013,7 @@ function ShopBuilderStudioSkeleton() {
 
       <div className="grid gap-4 xl:grid-cols-[256px_minmax(0,1fr)_348px]">
         <aside className="rounded-3xl border border-slate-200 bg-white p-3 shadow-sm">
-          <div className="mb-4 space-y-2 border-b border-slate-100 px-1 pb-4">
+          <div className="mb-4 space-y-2 border-b border-slate-100 dark:border-slate-800 px-1 pb-4">
             <div className="h-3 w-20 rounded-full bg-slate-200" />
             <div className="h-3 w-24 rounded-full bg-slate-100" />
           </div>
@@ -1031,7 +1031,7 @@ function ShopBuilderStudioSkeleton() {
         </aside>
 
         <section className="rounded-3xl border border-slate-200 bg-white shadow-sm">
-          <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+          <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 px-5 py-4">
             <div className="space-y-2">
               <div className="h-3 w-24 rounded-full bg-slate-200" />
               <div className="h-4 w-36 rounded-full bg-slate-100" />
@@ -1181,7 +1181,7 @@ function PreviewShopHeader(props: { section: BuilderSection; selectedId: Builder
           </div>
         </div>
       </div>
-      <div className="border-b border-slate-100 bg-white px-4 py-4">
+      <div className="border-b border-slate-100 dark:border-slate-800 bg-white px-4 py-4">
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           {trustItems.map((item, index) => (
             <div key={`${item.title}-${index}`} className="rounded-xl border border-slate-100 bg-slate-50 p-3">
@@ -1361,7 +1361,7 @@ function PreviewFeaturedCollection(props: {
             </h2>
             <div className="grid grid-cols-2 gap-3">
               {products.map((product) => (
-                <div key={product.id} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <div key={product.id} className="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
                   <div className="relative h-28 bg-slate-100">
                     <Image src={product.image || fallbackImage} alt={product.name} fill className="object-cover" unoptimized />
                   </div>

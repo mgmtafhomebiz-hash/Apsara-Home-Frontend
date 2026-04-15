@@ -12,12 +12,12 @@ const orders = [
 ]
 
 const statusConfig: Record<string, { bg: string; text: string; dot: string }> = {
-  Completed:  { bg: 'bg-teal-50',   text: 'text-teal-700',   dot: 'bg-teal-500' },
-  Pending:    { bg: 'bg-amber-50',  text: 'text-amber-700',  dot: 'bg-amber-400' },
-  Processing: { bg: 'bg-blue-50',   text: 'text-blue-700',   dot: 'bg-blue-500' },
-  Cancelled:  { bg: 'bg-red-50',    text: 'text-red-600',    dot: 'bg-red-500' },
-  Unpaid:     { bg: 'bg-orange-50', text: 'text-orange-700', dot: 'bg-orange-400' },
-  Returned:   { bg: 'bg-purple-50', text: 'text-purple-700', dot: 'bg-purple-500' },
+  Completed:  { bg: 'bg-teal-50 dark:bg-teal-500/10 border-teal-200 dark:border-teal-500/30',     text: 'text-teal-700 dark:text-teal-300',   dot: 'bg-teal-500' },
+  Pending:    { bg: 'bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/30',  text: 'text-amber-700 dark:text-amber-300',  dot: 'bg-amber-400' },
+  Processing: { bg: 'bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/30',     text: 'text-blue-700 dark:text-blue-300',   dot: 'bg-blue-500' },
+  Cancelled:  { bg: 'bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/30',         text: 'text-red-600 dark:text-red-300',    dot: 'bg-red-500' },
+  Unpaid:     { bg: 'bg-orange-50 dark:bg-orange-500/10 border-orange-200 dark:border-orange-500/30', text: 'text-orange-700 dark:text-orange-300', dot: 'bg-orange-400' },
+  Returned:   { bg: 'bg-purple-50 dark:bg-purple-500/10 border-purple-200 dark:border-purple-500/30', text: 'text-purple-700 dark:text-purple-300', dot: 'bg-purple-500' },
 }
 
 function avatarColor(name: string) {
@@ -34,59 +34,59 @@ function avatarColor(name: string) {
 
 const RecentOrders = () => {
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+    <div className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 px-6 py-4 dark:border-slate-800">
         <div>
-          <h3 className="text-slate-800 font-semibold text-base">Recent Orders</h3>
-          <p className="text-slate-400 text-xs mt-0.5">Latest transactions</p>
+          <h3 className="text-base font-semibold text-slate-800 dark:text-slate-100">Recent Orders</h3>
+          <p className="mt-0.5 text-xs text-slate-400 dark:text-slate-500">Latest transactions</p>
         </div>
-        <button className="text-xs text-teal-500 font-semibold hover:underline">View all</button>
+        <button className="text-xs font-semibold text-teal-500 hover:underline dark:text-teal-300">View all</button>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="bg-slate-50">
-              <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Order ID</th>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Customer</th>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider hidden md:table-cell">Date</th>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider hidden sm:table-cell">Method</th>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Amount</th>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
+            <tr className="bg-slate-50 dark:bg-slate-800/60">
+              <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Order ID</th>
+              <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Customer</th>
+              <th className="hidden px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 md:table-cell">Date</th>
+              <th className="hidden px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 sm:table-cell">Method</th>
+              <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Amount</th>
+              <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Status</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-50">
+          <tbody className="divide-y divide-slate-100 dark:divide-slate-800/70 dark:divide-slate-800/70 dark:divide-slate-800/70">
             {orders.map((order, index) => {
-              const cfg = statusConfig[order.status] ?? { bg: 'bg-slate-50', text: 'text-slate-600', dot: 'bg-slate-400' }
+              const cfg = statusConfig[order.status] ?? { bg: 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700', text: 'text-slate-600 dark:text-slate-300', dot: 'bg-slate-400' }
               return (
                 <motion.tr
                   key={order.id}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: index * 0.05 }}
-                  className="hover:bg-slate-50/60 transition-colors cursor-pointer"
+                  className="cursor-pointer transition-colors hover:bg-slate-50/60 dark:hover:bg-slate-800/40"
                 >
                   <td className="px-6 py-3.5">
-                    <span className="font-mono text-xs font-semibold text-teal-600">{order.id}</span>
+                    <span className="font-mono text-xs font-semibold text-teal-600 dark:text-teal-300">{order.id}</span>
                   </td>
                   <td className="px-6 py-3.5">
                     <div className="flex items-center gap-2.5">
                       <div className={`h-7 w-7 rounded-full bg-linear-to-br ${avatarColor(order.customer)} flex items-center justify-center shrink-0`}>
                         <span className="text-white text-[10px] font-bold">{order.customer[0]}</span>
                       </div>
-                      <span className="text-slate-700 font-medium text-xs whitespace-nowrap">{order.customer}</span>
+                      <span className="whitespace-nowrap text-xs font-medium text-slate-700 dark:text-slate-200">{order.customer}</span>
                     </div>
                   </td>
                   <td className="px-6 py-3.5 hidden md:table-cell">
-                    <span className="text-slate-500 text-xs">{order.date}</span>
+                    <span className="text-xs text-slate-500 dark:text-slate-400">{order.date}</span>
                   </td>
                   <td className="px-6 py-3.5 hidden sm:table-cell">
-                    <span className="text-slate-500 text-xs">{order.method}</span>
+                    <span className="text-xs text-slate-500 dark:text-slate-400">{order.method}</span>
                   </td>
                   <td className="px-6 py-3.5">
-                    <span className="text-slate-800 font-semibold text-xs">{order.amount}</span>
+                    <span className="text-xs font-semibold text-slate-800 dark:text-slate-100">{order.amount}</span>
                   </td>
                   <td className="px-6 py-3.5">
-                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${cfg.bg} ${cfg.text} border-transparent`}>
+                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${cfg.bg} ${cfg.text}`}>
                       <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot} shrink-0`} />
                       {order.status}
                     </span>

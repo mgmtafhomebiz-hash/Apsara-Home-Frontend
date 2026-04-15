@@ -42,21 +42,25 @@ const SalesChart = () => {
 
   const data = [todayData, monthlyData, yearlyData][activeTab]
 
-  if (!mounted) return <div className="bg-white rounded-2xl p-6 h-85 animate-pulse border border-slate-100" />
+  if (!mounted) return <div className="h-85 animate-pulse rounded-2xl border border-slate-100 bg-white p-6 dark:border-slate-800 dark:bg-slate-900" />
 
   return (
-    <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+    <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 dark:shadow-none">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h3 className="text-slate-800 font-semibold text-base">Sales Order Report</h3>
-          <p className="text-slate-400 text-xs mt-0.5">Track your revenue performance</p>
+          <h3 className="text-base font-semibold text-slate-800 dark:text-slate-100">Sales Order Report</h3>
+          <p className="mt-0.5 text-xs text-slate-400 dark:text-slate-500">Track your revenue performance</p>
         </div>
-        <div className="flex bg-slate-100 rounded-xl p-1 gap-1 self-start sm:self-auto">
+        <div className="flex gap-1 self-start rounded-xl bg-slate-100 p-1 dark:bg-slate-800/80 sm:self-auto">
           {tabs.map((tab, index) => (
             <button
               key={tab}
               onClick={() => setActiveTab(index)}
-              className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 ${activeTab === index ? 'bg-white text-teal-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+              className={`rounded-lg px-4 py-1.5 text-sm font-medium transition-all duration-200 ${
+                activeTab === index
+                  ? 'bg-white text-teal-600 shadow-sm dark:bg-slate-700 dark:text-teal-300'
+                  : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
+              }`}
             >
               {tab}
             </button>
@@ -79,11 +83,14 @@ const SalesChart = () => {
               <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
             </linearGradient>
           </defs>
-          <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+          <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.18)" />
           <XAxis dataKey="time" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
           <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-          <Tooltip contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', fontSize: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.06)' }} />
-          <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '12px', paddingTop: '16px' }} />
+          <Tooltip
+            contentStyle={{ borderRadius: '12px', border: '1px solid rgba(51,65,85,0.7)', fontSize: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.10)', backgroundColor: 'rgba(15,23,42,0.95)', color: '#e2e8f0' }}
+            labelStyle={{ color: '#e2e8f0' }}
+          />
+          <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '12px', paddingTop: '16px', color: '#94a3b8' }} />
           <Area type="monotone" dataKey="referral" name="Via Referral" stroke="#14b8a6" fill="url(#colorReferral)" strokeWidth={2.5} dot={false} activeDot={{ r: 4 }} />
           <Area type="monotone" dataKey="direct" name="Direct" stroke="#f97316" fill="url(#colorDirect)" strokeWidth={2.5} dot={false} activeDot={{ r: 4 }} />
           <Area type="monotone" dataKey="social" name="Via Social" stroke="#8b5cf6" fill="url(#colorSocial)" strokeWidth={2.5} dot={false} activeDot={{ r: 4 }} />
