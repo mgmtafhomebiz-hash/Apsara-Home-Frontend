@@ -273,50 +273,52 @@ function CampaignBannersSection({
           exit={{ opacity: 0, y: -18, scale: 0.98 }}
           transition={{ duration: 0.42 }}
         >
-          <Link
-            href={link}
-            className="group relative isolate block overflow-hidden rounded-[32px] border border-slate-200 dark:border-gray-700 bg-slate-950"
-          >
-            <div className="relative min-h-[280px] overflow-hidden rounded-[32px] md:min-h-[380px]">
-              {videoUrl ? (
-                <video
-                  className="absolute inset-0 h-full w-full rounded-[32px] object-cover"
-                  src={videoUrl}
-                  poster={posterUrl}
-                  autoPlay
-                  muted
-                  loop
-                  playsInline
-                />
-              ) : (
-                <Image
-                  src={posterUrl}
-                  alt={title}
-                  fill
-                  className="rounded-[32px] object-cover transition-transform duration-700 group-hover:scale-105"
-                  unoptimized
-                />
-              )}
+          <div className="rounded-[32px] border border-slate-200 bg-slate-950 dark:border-gray-700">
+            <Link
+              href={link}
+              className="group relative isolate block overflow-hidden rounded-[32px]"
+            >
+              <div className="relative min-h-[280px] overflow-hidden rounded-[32px] md:min-h-[380px]">
+                {videoUrl ? (
+                  <video
+                    className="absolute inset-0 h-full w-full rounded-[32px] object-cover"
+                    src={videoUrl}
+                    poster={posterUrl}
+                    autoPlay
+                    muted
+                    loop
+                    playsInline
+                  />
+                ) : (
+                  <Image
+                    src={posterUrl}
+                    alt={title}
+                    fill
+                    className="rounded-[32px] object-cover transition-transform duration-700 group-hover:scale-105"
+                    unoptimized
+                  />
+                )}
 
-              <div className="absolute inset-0 rounded-[32px] bg-gradient-to-r from-slate-950/85 via-slate-950/45 to-slate-950/10" />
-              <div className="absolute inset-0 rounded-[32px] bg-gradient-to-t from-slate-950/65 via-transparent to-transparent" />
+                <div className="absolute inset-0 rounded-[32px] bg-gradient-to-r from-slate-950/85 via-slate-950/45 to-slate-950/10" />
+                <div className="absolute inset-0 rounded-[32px] bg-gradient-to-t from-slate-950/65 via-transparent to-transparent" />
 
-              <div className="relative flex min-h-[280px] md:min-h-[380px] flex-col justify-end p-6 text-white md:p-10">
-                <p className="mb-3 text-xs font-semibold uppercase tracking-[0.28em] text-orange-300">
-                  {eyebrow}
-                </p>
-                <h2 className="max-w-xl text-3xl font-bold leading-tight md:text-5xl">
-                  {title}
-                </h2>
-                <p className="mt-3 max-w-lg text-sm text-white/80 md:text-base">
-                  {subtitle}
-                </p>
-                <span className="mt-6 inline-flex w-fit rounded-xl bg-orange-500 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-500/30 transition-colors group-hover:bg-orange-400">
-                  {buttonText}
-                </span>
+                <div className="relative flex min-h-[280px] flex-col justify-end p-6 text-white md:min-h-[380px] md:p-10">
+                  <p className="mb-3 text-xs font-semibold uppercase tracking-[0.28em] text-orange-300">
+                    {eyebrow}
+                  </p>
+                  <h2 className="max-w-xl text-3xl font-bold leading-tight md:text-5xl">
+                    {title}
+                  </h2>
+                  <p className="mt-3 max-w-lg text-sm text-white/80 md:text-base">
+                    {subtitle}
+                  </p>
+                  <span className="mt-6 inline-flex w-fit rounded-xl bg-orange-500 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-500/30 transition-colors group-hover:bg-orange-400">
+                    {buttonText}
+                  </span>
+                </div>
               </div>
-            </div>
-          </Link>
+            </Link>
+          </div>
         </motion.div>
       </AnimatePresence>
     </motion.section>
