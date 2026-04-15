@@ -51,18 +51,9 @@ const buildProductLink = (product: Pick<Product, 'id' | 'name'>) =>
 
 const getFeaturedProducts = (featuredCollection: WebPageItem | undefined, products: Product[]) => {
   const sourceCategoryId = Number.parseInt(getField(featuredCollection, 'source_category_id'), 10)
-  const categoryProducts = Number.isFinite(sourceCategoryId) && sourceCategoryId > 0
-    ? products.filter((item) => item.catid === sourceCategoryId)
+  return Number.isFinite(sourceCategoryId) && sourceCategoryId > 0
+    ? products.filter((item) => item.catid === sourceCategoryId).slice(0, 4)
     : []
-
-  if (categoryProducts.length > 0) {
-    return categoryProducts.slice(0, 4)
-  }
-
-  return parseIdList(getField(featuredCollection, 'product_ids'))
-    .map((id) => products.find((item) => item.id === id))
-    .filter((item): item is Product => Boolean(item))
-    .slice(0, 4)
 }
 
 const resolveCategoryCardImage = ({
@@ -284,12 +275,12 @@ function CampaignBannersSection({
         >
           <Link
             href={link}
-            className="group relative block overflow-hidden rounded-[32px] border border-slate-200 dark:border-gray-700 bg-slate-950"
+            className="group relative isolate block overflow-hidden rounded-[32px] border border-slate-200 dark:border-gray-700 bg-slate-950"
           >
-            <div className="relative min-h-[280px] md:min-h-[380px]">
+            <div className="relative min-h-[280px] overflow-hidden rounded-[32px] md:min-h-[380px]">
               {videoUrl ? (
                 <video
-                  className="absolute inset-0 h-full w-full object-cover"
+                  className="absolute inset-0 h-full w-full rounded-[32px] object-cover"
                   src={videoUrl}
                   poster={posterUrl}
                   autoPlay
@@ -302,13 +293,13 @@ function CampaignBannersSection({
                   src={posterUrl}
                   alt={title}
                   fill
-                  className="object-cover transition-transform duration-700 group-hover:scale-105"
+                  className="rounded-[32px] object-cover transition-transform duration-700 group-hover:scale-105"
                   unoptimized
                 />
               )}
 
-              <div className="absolute inset-0 bg-gradient-to-r from-slate-950/85 via-slate-950/45 to-slate-950/10" />
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/65 via-transparent to-transparent" />
+              <div className="absolute inset-0 rounded-[32px] bg-gradient-to-r from-slate-950/85 via-slate-950/45 to-slate-950/10" />
+              <div className="absolute inset-0 rounded-[32px] bg-gradient-to-t from-slate-950/65 via-transparent to-transparent" />
 
               <div className="relative flex min-h-[280px] md:min-h-[380px] flex-col justify-end p-6 text-white md:p-10">
                 <p className="mb-3 text-xs font-semibold uppercase tracking-[0.28em] text-orange-300">
@@ -398,8 +389,8 @@ function FeaturedCollectionSection({
     : undefined
   const buttonLink = sourceCategory
     ? buildPartnerCategoryLink(partnerSlug, sourceCategory)
-    : buildPartnerShopLink(getField(section, 'lead_link') || '/shop', partnerSlug)
-  const buttonText = section.button_text || 'Shop Collection'
+    : buildPartnerShopLink('/shop', partnerSlug)
+  const buttonText = 'Shop Collection'
 
   return (
     <motion.section
@@ -477,20 +468,9 @@ function FeaturedCollectionSection({
                   ))}
                 </AnimatePresence>
               ) : (
-                [1, 2, 3, 4].map((index) => (
-                  <motion.div
-                    key={index}
-                    initial={{ opacity: 0, y: 18 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true, amount: 0.3 }}
-                    transition={{ duration: 0.3, delay: index * 0.05 }}
-                    className="rounded-2xl bg-white dark:bg-gray-800 p-3 shadow-sm"
-                  >
-                    <div className="aspect-square rounded-2xl bg-gradient-to-br from-slate-100 to-white dark:from-gray-700 dark:to-gray-800" />
-                    <p className="mt-3 text-sm font-medium text-gray-800 dark:text-gray-200">Select product IDs in Shop Builder</p>
-                    <p className="mt-1 text-base font-bold text-orange-500">PHP 0</p>
-                  </motion.div>
-                ))
+                <div className="col-span-2 rounded-2xl border border-dashed border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-10 text-center text-sm text-slate-400 dark:text-gray-500">
+                  Select a category in Shop Builder to display Top Picks.
+                </div>
               )}
             </div>
           </motion.div>

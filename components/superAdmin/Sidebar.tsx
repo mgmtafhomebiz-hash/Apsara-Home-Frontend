@@ -474,15 +474,15 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
 
       <aside className={`
         fixed top-0 left-0 h-screen z-30 flex flex-col
-        bg-slate-900 border-r border-slate-700/50
+        bg-white/95 dark:bg-slate-900 border-r border-slate-200/80 dark:border-slate-700/50 shadow-[0_18px_40px_rgba(15,23,42,0.08)] dark:shadow-none backdrop-blur-xl
         transition-all duration-300 ease-in-out
         ${isOpen ? 'translate-x-0' : '-translate-x-full'}
         ${isCollapsed ? 'w-16' : 'w-64'}
         lg:translate-x-0 lg:sticky lg:top-0w
       `}>
         {/* Logo */}
-        <div className={`flex items-center h-16 px-3 border-b border-slate-700/50 shrink-0 ${isCollapsed ? 'justify-center' : 'gap-2'}`}>
-          <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-lg">
+        <div className={`flex items-center h-16 px-3 border-b border-slate-200/80 dark:border-slate-700/50 shrink-0 ${isCollapsed ? 'justify-center' : 'gap-2'}`}>
+          <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-xl bg-gradient-to-br from-orange-50 to-cyan-50 ring-1 ring-slate-200 dark:bg-transparent dark:ring-0">
             <Image
               src="/af_home_logo.png"
               alt="AF Home"
@@ -493,21 +493,21 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
           </div>
           {!isCollapsed && (
             <div className="flex-1 min-w-0">
-              <p className="text-white font-bold text-sm leading-none whitespace-nowrap">AF Home</p>
-              <p className="text-teal-400 text-xs mt-0.5">{displayRole}</p>
+              <p className="text-slate-900 dark:text-white font-bold text-sm leading-none whitespace-nowrap">AF Home</p>
+              <p className="text-teal-600 dark:text-teal-400 text-xs mt-0.5">{displayRole}</p>
             </div>
           )}
           {!isCollapsed && (
-            <button onClick={onToggleCollapse} className="hidden lg:flex items-center justify-center h-7 w-7 rounded-lg text-slate-500 hover:text-white hover:bg-slate-700 transition-colors shrink-0">
+            <button onClick={onToggleCollapse} className="hidden lg:flex items-center justify-center h-7 w-7 rounded-lg text-slate-400 dark:text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors shrink-0">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7" /></svg>
             </button>
           )}
           {isCollapsed && (
-            <button onClick={onToggleCollapse} className="hidden lg:flex items-center justify-center h-7 w-7 rounded-lg text-slate-500 hover:text-white hover:bg-slate-700 transition-colors absolute right-1 top-4">
+            <button onClick={onToggleCollapse} className="hidden lg:flex items-center justify-center h-7 w-7 rounded-lg text-slate-400 dark:text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors absolute right-1 top-4">
               <svg className="w-4 h-4 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7" /></svg>
             </button>
           )}
-          <button onClick={onClose} className="lg:hidden text-slate-400 hover:text-white ml-auto">
+          <button onClick={onClose} className="lg:hidden text-slate-400 hover:text-slate-900 dark:hover:text-white ml-auto">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
           </button>
         </div>
@@ -526,7 +526,9 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
                     onClick={() => !isCollapsed && !isAccounting && !isFinanceOfficer && toggleMenu(item.id)}
                     title={isCollapsed ? item.label : undefined}
                     className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-200 group relative
-                      ${active ? 'bg-teal-500/15 text-teal-400' : 'text-slate-400 hover:bg-slate-800 hover:text-slate-100'}
+                      ${active
+                        ? 'bg-gradient-to-r from-teal-500/14 to-cyan-500/10 text-teal-700 ring-1 ring-teal-200/80 shadow-sm dark:from-teal-500/15 dark:to-transparent dark:text-teal-400 dark:ring-0 dark:shadow-none'
+                        : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100'}
                       ${isCollapsed ? 'justify-center' : ''}
                     `}
                   >
@@ -535,7 +537,7 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
                       <>
                         <span className="flex-1 text-left font-medium">{item.label}</span>
                         {typeof item.badge === 'number' && item.badge > 0 && (
-                          <span className="bg-teal-500 text-white text-xs px-1.5 py-0.5 rounded-full font-bold min-w-[20px] text-center">
+                          <span className="bg-teal-500 text-white text-xs px-1.5 py-0.5 rounded-full font-bold min-w-[20px] text-center shadow-sm">
                             {item.badge}
                           </span>
                         )}
@@ -545,21 +547,23 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
                       </>
                     )}
                     {isCollapsed && (
-                      <span className="absolute left-full ml-3 px-2.5 py-1.5 bg-slate-800 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50 shadow-xl border border-slate-700">{item.label}</span>
+                      <span className="absolute left-full ml-3 px-2.5 py-1.5 bg-slate-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50 shadow-xl border border-slate-700">{item.label}</span>
                     )}
                   </button>
                 ) : (
                   <Link href={item.path ?? '#'} prefetch onClick={() => isOpen && onClose()}
                     title={isCollapsed ? item.label : undefined}
                     className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-200 group relative
-                      ${active ? 'bg-teal-500/15 text-teal-400' : 'text-slate-400 hover:bg-slate-800 hover:text-slate-100'}
+                      ${active
+                        ? 'bg-gradient-to-r from-teal-500/14 to-cyan-500/10 text-teal-700 ring-1 ring-teal-200/80 shadow-sm dark:from-teal-500/15 dark:to-transparent dark:text-teal-400 dark:ring-0 dark:shadow-none'
+                        : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100'}
                       ${isCollapsed ? 'justify-center' : ''}
                     `}
                   >
                     <span className="shrink-0">{item.icon}</span>
                     {!isCollapsed && <span className="font-medium">{item.label}</span>}
                     {isCollapsed && (
-                      <span className="absolute left-full ml-3 px-2.5 py-1.5 bg-slate-800 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50 shadow-xl border border-slate-700">{item.label}</span>
+                      <span className="absolute left-full ml-3 px-2.5 py-1.5 bg-slate-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50 shadow-xl border border-slate-700">{item.label}</span>
                     )}
                   </Link>
                 )}
@@ -573,7 +577,7 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
                         exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }}
                         className="overflow-hidden"
                       >
-                        <div className="ml-4 mt-0.5 pl-3 border-l border-slate-700 py-1 space-y-0.5">
+                        <div className="ml-4 mt-0.5 pl-3 border-l border-slate-200 dark:border-slate-700 py-1 space-y-0.5">
                           {item.children?.map((child) => (
                             <Link
                               key={child.path}
@@ -585,16 +589,18 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
                                 if (isOpen) onClose()
                               }}
                               className={`flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs transition-all duration-200
-                                ${isActive(child.path) ? 'text-teal-400 font-semibold' : 'text-slate-500 hover:text-slate-200'}
+                                ${isActive(child.path)
+                                  ? 'text-teal-700 dark:text-teal-400 font-semibold bg-teal-50/80 dark:bg-transparent'
+                                  : 'text-slate-500 dark:text-slate-500 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-transparent'}
                               `}
                             >
-                              <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${isActive(child.path) ? 'bg-teal-400' : 'bg-slate-600'}`} />
+                              <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${isActive(child.path) ? 'bg-teal-500 dark:bg-teal-400' : 'bg-slate-300 dark:bg-slate-600'}`} />
                               <span className="flex-1 truncate">{child.label}</span>
                               {typeof child.badge === 'number' && child.badge > 0 && (
                                 <span className={`min-w-[20px] rounded-full px-1.5 py-0.5 text-[10px] font-semibold text-center ${
                                   isActive(child.path)
-                                    ? 'bg-teal-500/15 text-teal-300'
-                                    : 'bg-slate-800 text-slate-300'
+                                    ? 'bg-teal-100 text-teal-700 dark:bg-teal-500/15 dark:text-teal-300'
+                                    : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'
                                 }`}>
                                   {child.badge}
                                 </span>
@@ -612,9 +618,9 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
         </nav>
 
         {/* Footer */}
-        <div className={`shrink-0 p-3 border-t border-slate-700/50`}>
+        <div className={`shrink-0 p-3 border-t border-slate-200/80 dark:border-slate-700/50`}>
           {!isCollapsed && (
-            <div className="flex items-center gap-3 px-3 py-2.5 mb-2 rounded-xl bg-slate-800">
+            <div className="flex items-center gap-3 px-3 py-2.5 mb-2 rounded-2xl bg-gradient-to-br from-slate-50 to-white ring-1 ring-slate-200 shadow-sm dark:from-slate-800 dark:to-slate-800 dark:ring-slate-700/70 dark:shadow-none">
               {avatarSrc ? (
                 <Image
                   src={avatarSrc}
@@ -624,20 +630,20 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
                   className="h-8 w-8 rounded-full object-cover shrink-0"
                 />
               ) : (
-                <div className="h-8 w-8 rounded-full bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center shrink-0">
+                <div className="h-8 w-8 rounded-full bg-gradient-to-br from-teal-400 to-cyan-500 flex items-center justify-center shrink-0">
                   <span className="text-white font-bold text-xs">{displayInitials}</span>
                 </div>
               )}
               <div className="flex-1 min-w-0">
-                <p className="text-white text-xs font-semibold truncate">{displayName}</p>
-                <p className="text-slate-400 text-xs truncate">{displayEmailText}</p>
+                <p className="text-slate-900 dark:text-white text-xs font-semibold truncate">{displayName}</p>
+                <p className="text-slate-500 dark:text-slate-400 text-xs truncate">{displayEmailText}</p>
               </div>
             </div>
           )}
           <button
             onClick={handleLogout}
             disabled={isLoggingOut}
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-all duration-200 w-full disabled:opacity-60 ${isCollapsed ? 'justify-center' : ''}`}
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-500 dark:text-slate-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all duration-200 w-full disabled:opacity-60 ${isCollapsed ? 'justify-center' : ''}`}
           >
             {isLoggingOut
               ? <svg className="w-5 h-5 shrink-0 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
@@ -650,4 +656,3 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
     </>
   )
 }
-
