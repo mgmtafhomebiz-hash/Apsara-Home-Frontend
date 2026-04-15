@@ -309,9 +309,9 @@ function CampaignBannersSection({
                 </span>
               </div>
             </div>
+          </div>
           </Link>
         </motion.div>
-      </AnimatePresence>
     </motion.section>
   )
 }
