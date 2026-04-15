@@ -5,8 +5,10 @@ import Image from 'next/image'
 import { useMemo, useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSearchParams } from 'next/navigation'
+import { useSession } from 'next-auth/react'
 import { useGetPublicProductBrandsQuery } from '@/store/api/productBrandsApi'
 import { useGetPublicProductsQuery } from '@/store/api/productsApi'
+import { useAddToCartMutation } from '@/store/api/cartApi'
 import { Skeleton } from '@heroui/react'
 import OutlineButton from '@/components/ui/buttons/OutlineButton'
 import PrimaryButton from '@/components/ui/buttons/PrimaryButton'
@@ -14,7 +16,8 @@ import Footer from '@/components/landing-page/Footer'
 import ScrollToTop from '@/components/landing-page/ScrollToTop'
 import ItemCard from '@/components/item/ItemCard'
 import ProductFilter, { FilterState } from '@/components/item/ProductFilter'
-import Chat from '@/components/chat/Chat'
+import TopFilter from '@/components/item/TopFilter'
+import toast from 'react-hot-toast'
 
 const toSlug = (value: string) =>
   value
@@ -24,6 +27,19 @@ const toSlug = (value: string) =>
     .replace(/^-+|-+$/g, '')
 const formatPeso = (value: number) => `P${Number(value || 0).toLocaleString('en-PH', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`
 const getBrandInitials = (value: string) => value.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part.charAt(0).toUpperCase()).join('') || 'BR'
+
+const renderAdBlock = () => (
+  <div className="mt-4 rounded-2xl overflow-hidden aspect-square border border-slate-100 bg-slate-50">
+    <video
+      className="h-full w-full object-cover"
+      src="/loginpageVideo/afhome.mp4"
+      autoPlay
+      muted
+      loop
+      playsInline
+    />
+  </div>
+)
 
 const GRADIENT_PALETTES = [
   'from-orange-400 to-rose-400',
@@ -101,18 +117,45 @@ export default function ByBrandPageMain() {
     search: '',
     hasPvOnly: false
   })
-  const [isChatOpen, setIsChatOpen] = useState(false)
-  const [viewType, setViewType] = useState<'grid' | 'list'>('grid')
-  const [showGridTooltip, setShowGridTooltip] = useState(false)
-  const [showListTooltip, setShowListTooltip] = useState(false)
+    const [viewType, setViewType] = useState<'grid' | 'list'>('grid')
+  const [showNumber, setShowNumber] = useState<number | 'all'>(12)
+  const { data: session } = useSession()
+  const isLoggedIn = Boolean(session?.user)
+  const [addToCart, { isLoading: isAddingToCart }] = useAddToCartMutation()
+  const [hoveringShareProductId, setHoveringShareProductId] = useState<number | null>(null)
 
   // Handlers for TopFilters
   const handleSearchChange = (search: string) => {
     setFilters(prev => ({ ...prev, search }))
   }
 
+  const handleSortChange = (sort: string) => {
+    setSortBy(sort as 'name-asc' | 'name-desc' | 'default')
+  }
+
   const handlePvRangeChange = (pvRange: [number, number]) => {
     setFilters(prev => ({ ...prev, pvRange }))
+  }
+
+  const handleAddToCart = async (productId: number, e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+
+    if (!isLoggedIn) {
+      toast.error('Please sign in to add items to cart')
+      return
+    }
+
+    try {
+      await addToCart({
+        product_id: productId,
+        quantity: 1,
+      }).unwrap()
+      toast.success('Item added to cart successfully')
+    } catch (error) {
+      console.error('Error adding to cart:', error)
+      toast.error('Failed to add item to cart')
+    }
   }
 
   const { data, isFetching } = useGetPublicProductBrandsQuery()
@@ -235,15 +278,27 @@ export default function ByBrandPageMain() {
       )
     }
 
-    // Sort by name
-    if (filters.sortBy === 'asc') {
+    // Sort by name and price
+    if (sortBy === 'name-asc') {
       filtered = [...filtered].sort((a, b) => a.name.localeCompare(b.name))
-    } else if (filters.sortBy === 'desc') {
+    } else if (sortBy === 'name-desc') {
       filtered = [...filtered].sort((a, b) => b.name.localeCompare(a.name))
+    } else if (sortBy === 'price-asc') {
+      filtered = [...filtered].sort((a, b) => {
+        const priceA = Number(a.priceSrp ?? a.priceDp ?? 0)
+        const priceB = Number(b.priceSrp ?? b.priceDp ?? 0)
+        return priceA - priceB
+      })
+    } else if (sortBy === 'price-desc') {
+      filtered = [...filtered].sort((a, b) => {
+        const priceA = Number(a.priceSrp ?? a.priceDp ?? 0)
+        const priceB = Number(b.priceSrp ?? b.priceDp ?? 0)
+        return priceB - priceA
+      })
     }
 
     return filtered
-  }, [rawBrandProducts, filters])
+  }, [rawBrandProducts, filters, sortBy])
 
   return (
     <main className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -266,7 +321,27 @@ export default function ByBrandPageMain() {
         {/* Brand Profile Card — only when brand selected */}
         {selectedBrandItem && (
           <>
-            <div className="rounded-lg bg-white dark:bg-gray-800 p-6 border border-gray-200 dark:border-gray-700">
+            <div className="rounded-lg bg-white dark:bg-gray-800 p-6 border border-gray-200 dark:border-gray-700 relative">
+              <button
+                onClick={() => {
+                  const brandUrl = window.location.href
+                  navigator.clipboard.writeText(brandUrl).then(() => {
+                    toast.success('Brand link copied to clipboard')
+                  }).catch(() => {
+                    toast.error('Failed to copy link')
+                  })
+                }}
+                className="absolute top-4 right-4 p-2 rounded-full border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 hover:bg-orange-500 hover:border-orange-500 dark:hover:bg-orange-500 dark:hover:border-orange-500 hover:text-white transition-all duration-200 cursor-pointer"
+                title="Share Brand"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-700 dark:text-gray-300 hover:text-white transition-colors">
+                  <circle cx="18" cy="5" r="3" />
+                  <circle cx="6" cy="12" r="3" />
+                  <circle cx="18" cy="19" r="3" />
+                  <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+                  <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+                </svg>
+              </button>
               <div className="flex items-center gap-6">
                 <div className={`relative flex h-32 w-32 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600`}>
                   {selectedBrandItem.image ? (
@@ -315,12 +390,6 @@ export default function ByBrandPageMain() {
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <PrimaryButton onClick={() => setIsChatOpen(true)} className="!rounded-full !px-4 !py-2.5 !text-sm cursor-pointer">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                    </svg>
-                    Chat
-                  </PrimaryButton>
                   <OutlineButton href="/by-brand" className="shrink-0 !px-4 !py-2.5 !text-sm">
                     ← Back to All Brands
                   </OutlineButton>
@@ -568,6 +637,7 @@ export default function ByBrandPageMain() {
                 pvRange={filters.pvRange}
                 search={filters.search}
               />
+              {renderAdBlock()}
             </div>
 
             {/* Right Side - Products */}
@@ -582,82 +652,18 @@ export default function ByBrandPageMain() {
                 </span>
               </div>
 
-              {/* Top Filters - Search and View Toggle */}
-              <div className="mt-6 pb-6 border-b border-gray-100 dark:border-gray-700">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                  {/* Search bar */}
-                  <div className="relative flex-1">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 pointer-events-none">
-                      <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
-                    </svg>
-                    <input
-                      type="text"
-                      value={filters.search}
-                      onChange={(e) => handleSearchChange(e.target.value)}
-                      placeholder="Search products..."
-                      className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 py-3 pl-12 pr-12 text-base text-gray-700 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-orange-400 focus:bg-white dark:focus:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-orange-400/30 transition-all"
-                    />
-                    {filters.search && (
-                      <button
-                        onClick={() => handleSearchChange('')}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400 transition-colors"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
-                      </button>
-                    )}
-                  </div>
-
-                  {/* View toggle */}
-                  <div className="flex items-center gap-2">
-                    <div className="relative">
-                      <button
-                        onClick={() => setViewType('grid')}
-                        className={`p-2 rounded-lg transition-colors cursor-pointer hover:scale-105 ${
-                          viewType === 'grid'
-                            ? 'bg-orange-500 text-white shadow-md'
-                            : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-orange-100 dark:hover:bg-orange-500/20'
-                        }`}
-                        onMouseEnter={() => setShowGridTooltip(true)}
-                        onMouseLeave={() => setShowGridTooltip(false)}
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <rect x="3" y="3" width="7" height="7" />
-                          <rect x="14" y="3" width="7" height="7" />
-                          <rect x="14" y="14" width="7" height="7" />
-                          <rect x="3" y="14" width="7" height="7" />
-                        </svg>
-                      </button>
-                      {showGridTooltip && (
-                        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 px-2 py-1 bg-gray-900 dark:bg-gray-700 text-white text-xs rounded whitespace-nowrap z-10">
-                          Grid View
-                        </div>
-                      )}
-                    </div>
-                    <div className="relative">
-                      <button
-                        onClick={() => setViewType('list')}
-                        className={`p-2 rounded-lg transition-colors cursor-pointer hover:scale-105 ${
-                          viewType === 'list'
-                            ? 'bg-orange-500 text-white shadow-md'
-                            : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-orange-100 dark:hover:bg-orange-500/20'
-                        }`}
-                        onMouseEnter={() => setShowListTooltip(true)}
-                        onMouseLeave={() => setShowListTooltip(false)}
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                          <line x1="3" y1="9" x2="21" y2="9" />
-                          <line x1="3" y1="15" x2="21" y2="15" />
-                        </svg>
-                      </button>
-                      {showListTooltip && (
-                        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 px-2 py-1 bg-gray-900 dark:bg-gray-700 text-white text-xs rounded whitespace-nowrap z-10">
-                          List View
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
+              {/* Top Filters */}
+              <div className="mt-6">
+                <TopFilter
+                  onSearchChange={handleSearchChange}
+                  onViewTypeChange={setViewType}
+                  onShowNumberChange={setShowNumber}
+                  onSortChange={handleSortChange}
+                  searchValue={filters.search}
+                  viewType={viewType}
+                  showNumber={showNumber}
+                  sortValue={sortBy}
+                />
               </div>
 
               <div className="mt-6">
@@ -673,15 +679,62 @@ export default function ByBrandPageMain() {
                   </div>
                 ) : (
                   <div className={viewType === 'grid' ? 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4 pb-6' : 'flex flex-col gap-4 pb-6'}>
-                    {brandProducts.map((product) => (
+                    {brandProducts.slice(0, showNumber === 'all' ? brandProducts.length : showNumber).map((product) => (
                       viewType === 'grid' ? (
                         <ItemCard key={product.id} product={product} brandName={selectedBrandItem.name} />
                       ) : (
                         <Link
                           key={product.id}
                           href={`/product/${toSlug(product.name)}-i${product.id}`}
-                          className="flex gap-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden hover:border-orange-500 dark:hover:border-orange-400 transition-colors group"
+                          className="flex gap-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden hover:border-orange-500 dark:hover:border-orange-400 transition-colors group relative"
                         >
+                          {/* Action Icons */}
+                          <div className="absolute top-2 right-2 flex flex-col gap-2 z-10">
+                            <button
+                              onClick={(e) => {
+                                e.preventDefault()
+                                e.stopPropagation()
+                                toast.success('Added to wishlist')
+                              }}
+                              className="p-2 rounded-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-md border border-gray-200 dark:border-gray-600 shadow-lg hover:bg-orange-500 hover:border-orange-500 dark:hover:bg-orange-500 dark:hover:border-orange-500 transition-all duration-200 cursor-pointer"
+                              title="Add to Wishlist"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-700 dark:text-gray-300 hover:text-white transition-colors">
+                                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                              </svg>
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.preventDefault()
+                                e.stopPropagation()
+                                const productUrl = `${window.location.origin}/product/${toSlug(product.name)}-i${product.id}`
+                                navigator.clipboard.writeText(productUrl).then(() => {
+                                  toast.success('Link copied to clipboard')
+                                }).catch(() => {
+                                  toast.error('Failed to copy link')
+                                })
+                              }}
+                              onMouseEnter={() => setHoveringShareProductId(product.id)}
+                              onMouseLeave={() => setHoveringShareProductId(null)}
+                              className="p-2 rounded-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-md border border-gray-200 dark:border-gray-600 shadow-lg hover:bg-orange-500 hover:border-orange-500 dark:hover:bg-orange-500 dark:hover:border-orange-500 transition-all duration-200 cursor-pointer"
+                              title="Share"
+                            >
+                              {hoveringShareProductId === product.id ? (
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-700 dark:text-gray-300 hover:text-white transition-colors">
+                                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                                </svg>
+                              ) : (
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-700 dark:text-gray-300 hover:text-white transition-colors">
+                                  <circle cx="18" cy="5" r="3" />
+                                  <circle cx="6" cy="12" r="3" />
+                                  <circle cx="18" cy="19" r="3" />
+                                  <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+                                  <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+                                </svg>
+                              )}
+                            </button>
+                          </div>
                           <div className="relative aspect-square w-32 bg-gray-100 dark:bg-gray-700 overflow-hidden shrink-0">
                             {product.image ? (
                               <Image
@@ -741,13 +794,28 @@ export default function ByBrandPageMain() {
                               <span className="text-xs text-gray-400 dark:text-gray-500">124 sold</span>
                             </div>
                             {/* Add to Cart Button */}
-                            <button className="absolute bottom-4 right-4 flex items-center justify-center gap-2 rounded-full bg-orange-500 hover:bg-orange-600 px-4 py-2 text-sm font-semibold text-white opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 cursor-pointer">
-                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <circle cx="9" cy="21" r="1" />
-                                <circle cx="20" cy="21" r="1" />
-                                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
-                              </svg>
-                              Add to Cart
+                            <button
+                              onClick={(e) => handleAddToCart(product.id, e)}
+                              disabled={isAddingToCart}
+                              className="absolute bottom-4 right-4 flex items-center justify-center gap-2 rounded-full bg-orange-500 hover:bg-orange-600 px-4 py-2 text-sm font-semibold text-white opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {isAddingToCart ? (
+                                <>
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="animate-spin">
+                                    <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                                  </svg>
+                                  Adding...
+                                </>
+                              ) : (
+                                <>
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <circle cx="9" cy="21" r="1" />
+                                    <circle cx="20" cy="21" r="1" />
+                                    <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+                                  </svg>
+                                  Add to Cart
+                                </>
+                              )}
                             </button>
                           </div>
                         </Link>
@@ -865,12 +933,6 @@ export default function ByBrandPageMain() {
       </div>
       <Footer />
       <ScrollToTop />
-      <Chat
-        isOpen={isChatOpen}
-        onClose={() => setIsChatOpen(false)}
-        brandName={selectedBrandItem?.name}
-        brandImage={selectedBrandItem?.image || undefined}
-      />
     </main>
   )
 }
