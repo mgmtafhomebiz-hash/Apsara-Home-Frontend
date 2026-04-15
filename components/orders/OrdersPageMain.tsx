@@ -11,6 +11,24 @@ import { useGetCheckoutHistoryQuery } from "@/store/api/paymentApi";
 
 type TabKey = typeof TABS[number]['key'];
 
+const ORDER_STATUS_PRIORITY: Record<string, number> = {
+  pending: 0,
+  processing: 1,
+  packed: 2,
+  shipped: 3,
+  out_for_delivery: 3,
+  delivered: 4,
+  cancelled: 5,
+  refunded: 5,
+};
+
+const getOrderTimestamp = (value?: string | null) => {
+  if (!value) return 0;
+  const normalized = value.includes('T') ? value.trim() : value.trim().replace(' ', 'T');
+  const hasTimeZone = /([zZ]|[+-]\d{2}:\d{2})$/.test(normalized);
+  const parsed = new Date(hasTimeZone ? normalized : `${normalized}Z`).getTime();
+  return Number.isNaN(parsed) ? 0 : parsed;
+};
 
 const OrdersPageMain = () => {
   const router = useRouter();
@@ -26,7 +44,16 @@ const OrdersPageMain = () => {
     let list = orders;
     if (activeTab !== 'all') list = list.filter((o) => o.status === activeTab || (activeTab === 'shipped' && o.status === 'out_for_delivery'));
     if (search.trim()) list = list.filter((o) => o.order_number.toLocaleLowerCase().includes(search.toLowerCase()) || o.items.some((i) => i.name.toLowerCase().includes(search.toLowerCase())))
-    return list;
+
+    return [...list].sort((left, right) => {
+      const timeDiff = getOrderTimestamp(right.created_at) - getOrderTimestamp(left.created_at);
+      if (timeDiff !== 0) return timeDiff;
+
+      const statusDiff = (ORDER_STATUS_PRIORITY[left.status] ?? 99) - (ORDER_STATUS_PRIORITY[right.status] ?? 99);
+      if (statusDiff !== 0) return statusDiff;
+
+      return right.id - left.id;
+    });
   }, [activeTab, search, orders]);
 
   const tabCounts = useMemo(() => {

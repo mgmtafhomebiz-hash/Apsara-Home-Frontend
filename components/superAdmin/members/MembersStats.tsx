@@ -52,6 +52,17 @@ export default function MembersStats({ stats, onTotalEarningsClick }: MembersSta
       ),
     },
     {
+      label: 'New This 7 Days',
+      value: stats ? stats.newMembers.toLocaleString() : '-',
+      bg: 'bg-blue-50', text: 'text-blue-600', border: 'border-blue-100', val: 'text-blue-700',
+      sub: 'Recently registered',
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M12 4v16m8-8H4" />
+        </svg>
+      ),
+    },
+    {
       label: 'Total Spent',
       value: stats ? `PHP ${stats.totalSpent.toLocaleString()}` : '-',
       bg: 'bg-teal-50', text: 'text-teal-600', border: 'border-teal-100', val: 'text-teal-700',

@@ -14,6 +14,7 @@ import {
 } from '@/store/api/webPagesApi'
 
 type BuilderSectionId =
+  | 'shop-header'
   | 'announcements'
   | 'campaign-banners'
   | 'category-grid'
@@ -27,7 +28,7 @@ type BuilderField = {
   key: string
   label: string
   value: string
-  kind?: 'textarea'
+  kind?: 'textarea' | 'video'
 }
 
 type BuilderSection = {
@@ -44,6 +45,39 @@ type BuilderSection = {
 
 const defaultSections: BuilderSection[] = [
   {
+    id: 'shop-header',
+    label: 'Shop Header',
+    eyebrow: 'Storefront Chrome',
+    title: 'Top contact strip and trust bar',
+    description: 'Controls the top contact info, social links, marquee messages, and trust highlights shown above the shop content.',
+    status: 'live',
+    accent: 'from-slate-500/20 to-blue-400/10',
+    fields: [
+      { key: 'contact_phone', label: 'Contact phone', value: '+63 912 345 6789' },
+      { key: 'contact_email', label: 'Contact email', value: 'hello@afhome.ph' },
+      {
+        key: 'marquee_messages',
+        label: 'Marquee messages (one per line)',
+        value: 'Free Shipping on orders over PHP 5,000\nSummer Sale - Up to 50% off selected items\nNew arrivals every week\nNationwide delivery to all major cities\nInstallment available via GCash & Maya',
+        kind: 'textarea',
+      },
+      { key: 'facebook_label', label: 'Facebook label', value: 'FB' },
+      { key: 'facebook_url', label: 'Facebook URL', value: '#' },
+      { key: 'instagram_label', label: 'Instagram label', value: 'IG' },
+      { key: 'instagram_url', label: 'Instagram URL', value: '#' },
+      { key: 'tiktok_label', label: 'TikTok label', value: 'TikTok' },
+      { key: 'tiktok_url', label: 'TikTok URL', value: '#' },
+      { key: 'trust_item_1_title', label: 'Trust item 1 title', value: 'Nationwide Shipping' },
+      { key: 'trust_item_1_desc', label: 'Trust item 1 description', value: 'Delivered to your door' },
+      { key: 'trust_item_2_title', label: 'Trust item 2 title', value: 'Authenticity Guaranteed' },
+      { key: 'trust_item_2_desc', label: 'Trust item 2 description', value: '100% legit and verified items' },
+      { key: 'trust_item_3_title', label: 'Trust item 3 title', value: 'Trusted Brands' },
+      { key: 'trust_item_3_desc', label: 'Trust item 3 description', value: '100+ premium brands' },
+      { key: 'trust_item_4_title', label: 'Trust item 4 title', value: 'Customer Care' },
+      { key: 'trust_item_4_desc', label: 'Trust item 4 description', value: '24/7 support available' },
+    ],
+  },
+  {
     id: 'announcements',
     label: 'Announcements',
     eyebrow: 'Top Utility Bar',
@@ -59,19 +93,21 @@ const defaultSections: BuilderSection[] = [
     id: 'campaign-banners',
     label: 'Campaign Banners',
     eyebrow: 'Top Promos',
-    title: 'Promo banner strip',
-    description: 'Two large visual promos that can use image URLs plus direct links into collections or categories.',
+    title: 'Hero video banner',
+    description: 'A large autoplaying hero-style video banner with editable copy and destination link.',
     status: 'live',
     accent: 'from-sky-500/20 to-cyan-400/10',
     fields: [
-      { key: 'left_title', label: 'Left banner title', value: 'Weekend Furniture Drop' },
-      { key: 'left_subtitle', label: 'Left banner subtitle', value: 'Refresh your living room this week' },
-      { key: 'left_image', label: 'Left banner image URL', value: '/Images/HeroSection/chairs_stools.jpg' },
-      { key: 'left_link', label: 'Left banner link', value: '/shop?category=8' },
-      { key: 'right_title', label: 'Right banner title', value: 'Appliance Upgrade Days' },
-      { key: 'right_subtitle', label: 'Right banner subtitle', value: 'Choose your best appliance today' },
-      { key: 'right_image', label: 'Right banner image URL', value: '/Images/PromoBanners/ct2-img2-large.jpg' },
-      { key: 'right_link', label: 'Right banner link', value: '/shop?category=4' },
+      { key: 'video_eyebrow', label: 'Video eyebrow', value: 'Top Promos' },
+      { key: 'video_title', label: 'Video title', value: 'Weekend Furniture Drop' },
+      { key: 'video_subtitle', label: 'Video subtitle', value: 'Refresh your living room this week' },
+      { key: 'video_url', label: 'Video URL', value: '', kind: 'video' },
+      { key: 'video_poster', label: 'Video poster image URL', value: '/Images/HeroSection/chairs_stools.jpg' },
+      { key: 'link_type', label: 'Link type', value: 'category' },
+      { key: 'link_category_id', label: 'Link category ID', value: '8' },
+      { key: 'link_product_id', label: 'Link product ID', value: '' },
+      { key: 'video_link', label: 'Custom video link', value: '/shop?category=8' },
+      { key: 'video_button', label: 'Button text', value: 'Explore Now' },
     ],
   },
   {
@@ -108,7 +144,8 @@ const defaultSections: BuilderSection[] = [
       { key: 'lead_link', label: 'Lead button link', value: '/shop' },
       { key: 'right_eyebrow', label: 'Product eyebrow', value: 'Sale Items' },
       { key: 'right_heading', label: 'Product heading', value: 'Top Picks This Week' },
-      { key: 'product_ids', label: 'Product IDs (comma-separated)', value: '' },
+      { key: 'source_category_id', label: 'Source category ID', value: '' },
+      { key: 'product_ids', label: 'Manual product IDs (optional fallback)', value: '' },
     ],
   },
   {
@@ -178,6 +215,22 @@ const parseIdList = (value: string) =>
     .map((item) => Number.parseInt(item.trim(), 10))
     .filter((item) => Number.isFinite(item) && item > 0)
 
+const resolveCategoryImage = ({
+  section,
+  categoryId,
+  slotIndex,
+  categoryImage,
+}: {
+  section: BuilderSection
+  categoryId: number
+  slotIndex?: number
+  categoryImage?: string | null
+}) =>
+  getFieldValue(section, `category_image_${categoryId}`) ||
+  (typeof slotIndex === 'number' ? getFieldValue(section, `card_${slotIndex + 1}_image`) : '') ||
+  categoryImage ||
+  fallbackImage
+
 const mergeItemIntoSection = (section: BuilderSection, item?: WebPageItem): BuilderSection => {
   if (!item) return section
 
@@ -188,6 +241,19 @@ const mergeItemIntoSection = (section: BuilderSection, item?: WebPageItem): Buil
     fields?: Record<string, string>
   }
 
+  const baseFields = section.fields.map((field) => ({
+    ...field,
+    value: payload.fields?.[field.key] ?? field.value,
+  }))
+
+  const extraFields = Object.entries(payload.fields ?? {})
+    .filter(([key]) => !baseFields.some((field) => field.key === key))
+    .map(([key, value]) => ({
+      key,
+      label: key.replace(/_/g, ' '),
+      value,
+    }))
+
   return {
     ...section,
     dbId: item.id,
@@ -196,15 +262,21 @@ const mergeItemIntoSection = (section: BuilderSection, item?: WebPageItem): Buil
     description: item.body || section.description,
     status: payload.status || section.status,
     accent: payload.accent || section.accent,
-    fields: section.fields.map((field) => ({
-      ...field,
-      value: payload.fields?.[field.key] ?? field.value,
-    })),
+    fields: [...baseFields, ...extraFields],
   }
 }
 
 // Section icons
 function SectionIcon({ id }: { id: BuilderSectionId }) {
+  if (id === 'shop-header') {
+    return (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M3 5h18" />
+        <path d="M3 12h18" />
+        <path d="M3 19h18" />
+      </svg>
+    )
+  }
   if (id === 'announcements') {
     return (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -255,15 +327,15 @@ function SectionIcon({ id }: { id: BuilderSectionId }) {
 
 export default function ShopBuilderStudio() {
   const [selectedSectionId, setSelectedSectionId] = useState<BuilderSectionId>('category-grid')
-  const [uploadingFieldKey, setUploadingFieldKey] = useState<string | null>(null)
-  const { data, isLoading, isError } = useGetAdminWebPageItemsQuery({
+  const [uploadingFieldKeys, setUploadingFieldKeys] = useState<string[]>([])
+  const { data, isLoading, isError, refetch } = useGetAdminWebPageItemsQuery({
     type: 'shop-builder',
     page: 1,
     perPage: 50,
     status: 'all',
   })
   const { data: categoriesData } = useGetCategoriesQuery({ per_page: 200 })
-  const { data: productsData } = useGetProductsQuery({ perPage: 30, status: '1' })
+  const { data: productsData } = useGetProductsQuery({ perPage: 200, status: '1' })
   const [createItem, { isLoading: isCreating }] = useCreateAdminWebPageItemMutation()
   const [updateItem, { isLoading: isUpdating }] = useUpdateAdminWebPageItemMutation()
   const [dirtySections, setDirtySections] = useState<Record<string, BuilderSection>>({})
@@ -301,11 +373,12 @@ export default function ShopBuilderStudio() {
           id: category.id,
           name: category.name,
           count: category.product_count ?? 0,
-          image:
-            getFieldValue(categorySection, `category_image_${category.id}`) ||
-            getFieldValue(categorySection, `card_${index + 1}_image`) ||
-            category.image ||
-            fallbackImage,
+          image: resolveCategoryImage({
+            section: categorySection,
+            categoryId: category.id,
+            slotIndex: index,
+            categoryImage: category.image,
+          }),
         }
       })
       .filter((item): item is NonNullable<typeof item> => Boolean(item))
@@ -316,7 +389,11 @@ export default function ShopBuilderStudio() {
         id: category.id,
         name: category.name,
         count: category.product_count ?? 0,
-        image: category.image || fallbackImage,
+        image: resolveCategoryImage({
+          section: categorySection,
+          categoryId: category.id,
+          categoryImage: category.image,
+        }),
       }))
 
     if (selected.length > 0) return [...selected, ...remaining]
@@ -330,26 +407,49 @@ export default function ShopBuilderStudio() {
 
     const selectedIds = parseIdList(getFieldValue(categorySection, 'category_ids'))
     const selectedSet = new Set(selectedIds)
-    const orderedCategories = [
-      ...categories.filter((category) => selectedSet.has(category.id)),
-      ...categories.filter((category) => !selectedSet.has(category.id)),
-    ]
+    const selectedCategories = selectedIds
+      .map((id) => categories.find((category) => category.id === id))
+      .filter((category): category is NonNullable<typeof category> => Boolean(category))
+      .map((category, index) => ({
+        id: category.id,
+        name: category.name,
+        count: category.product_count ?? 0,
+        image: resolveCategoryImage({
+          section: categorySection,
+          categoryId: category.id,
+          slotIndex: index,
+          categoryImage: category.image,
+        }),
+      }))
 
-    return orderedCategories.map((category, index) => ({
-      id: category.id,
-      name: category.name,
-      count: category.product_count ?? 0,
-      image:
-        getFieldValue(categorySection, `category_image_${category.id}`) ||
-        getFieldValue(categorySection, `card_${index + 1}_image`) ||
-        category.image ||
-        fallbackImage,
-    }))
+    const remainingCategories = categories
+      .filter((category) => !selectedSet.has(category.id))
+      .map((category) => ({
+        id: category.id,
+        name: category.name,
+        count: category.product_count ?? 0,
+        image: resolveCategoryImage({
+          section: categorySection,
+          categoryId: category.id,
+          categoryImage: category.image,
+        }),
+      }))
+
+    return selectedCategories.length > 0 ? [...selectedCategories, ...remainingCategories] : remainingCategories
   }, [categories, sections])
 
   const selectedFeatureProducts = useMemo(() => {
     const featuredSection = sections.find((section) => section.id === 'featured-collection')
     if (!featuredSection) return []
+    const sourceCategoryId = Number.parseInt(getFieldValue(featuredSection, 'source_category_id'), 10)
+    const categoryProducts = Number.isFinite(sourceCategoryId) && sourceCategoryId > 0
+      ? products.filter((item) => item.catid === sourceCategoryId)
+      : []
+
+    if (categoryProducts.length > 0) {
+      return categoryProducts.slice(0, 4)
+    }
+
     const ids = parseIdList(getFieldValue(featuredSection, 'product_ids'))
     return ids
       .map((id) => products.find((item) => item.id === id))
@@ -358,19 +458,35 @@ export default function ShopBuilderStudio() {
   }, [products, sections])
 
   const visibleSelectedFields = useMemo(() => {
-    if (selectedSection.id !== 'category-grid') return selectedSection.fields
-    return selectedSection.fields.filter((field) => !/^card_[1-4]_image$/.test(field.key))
+    if (selectedSection.id === 'category-grid') {
+      return selectedSection.fields.filter(
+        (field) => !/^card_[1-4]_image$/.test(field.key) && !/^category_image_\d+$/.test(field.key),
+      )
+    }
+    if (selectedSection.id === 'campaign-banners') {
+      const linkType = getFieldValue(selectedSection, 'link_type') || 'category'
+      return selectedSection.fields.filter((field) => {
+        if (/^(left|right)_/.test(field.key)) return false
+        if (/^link_(type|category_id|product_id)$/.test(field.key)) return false
+        if (field.key === 'video_link') return linkType === 'custom'
+        return true
+      })
+    }
+    return selectedSection.fields
   }, [selectedSection])
 
   const updateField = (sectionId: BuilderSectionId, fieldKey: string, value: string) => {
     setDirtySections((current) => {
       const base = sections.find((section) => section.id === sectionId)
       if (!base) return current
+      const hasField = base.fields.some((field) => field.key === fieldKey)
       return {
         ...current,
         [sectionId]: {
           ...base,
-          fields: base.fields.map((field) => (field.key === fieldKey ? { ...field, value } : field)),
+          fields: hasField
+            ? base.fields.map((field) => (field.key === fieldKey ? { ...field, value } : field))
+            : [...base.fields, { key: fieldKey, label: fieldKey.replace(/_/g, ' '), value }],
         },
       }
     })
@@ -397,12 +513,27 @@ export default function ShopBuilderStudio() {
 
   const uploadImageForField = async (sectionId: BuilderSectionId, fieldKey: string, file: File | null) => {
     if (!file) return
+    const targetField = sections
+      .find((section) => section.id === sectionId)
+      ?.fields.find((field) => field.key === fieldKey)
+    const uploadType = file.type.startsWith('video/') ? 'video' : 'image'
+
+    if (targetField?.kind === 'video' && uploadType !== 'video') {
+      showErrorToast('Please upload a video file for this field.')
+      return
+    }
+
+    if (targetField?.kind !== 'video' && uploadType !== 'image') {
+      showErrorToast('Please upload an image file for this field.')
+      return
+    }
 
     const payload = new FormData()
     payload.append('file', file)
     payload.append('folder', 'web-content')
+    payload.append('asset_type', uploadType)
 
-    setUploadingFieldKey(fieldKey)
+    setUploadingFieldKeys((current) => (current.includes(fieldKey) ? current : [...current, fieldKey]))
 
     try {
       const response = await fetch('/api/admin/upload', {
@@ -413,16 +544,16 @@ export default function ShopBuilderStudio() {
       const result = (await response.json()) as { url?: string; error?: string }
 
       if (!response.ok || !result.url) {
-        throw new Error(result.error || 'Failed to upload image.')
+        throw new Error(result.error || `Failed to upload ${uploadType}.`)
       }
 
       updateField(sectionId, fieldKey, result.url)
-      showSuccessToast('Image uploaded.')
+      showSuccessToast(`${uploadType === 'video' ? 'Video' : 'Image'} uploaded.`)
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to upload image.'
+      const message = error instanceof Error ? error.message : `Failed to upload ${uploadType}.`
       showErrorToast(message)
     } finally {
-      setUploadingFieldKey(null)
+      setUploadingFieldKeys((current) => current.filter((key) => key !== fieldKey))
     }
   }
 
@@ -452,6 +583,8 @@ export default function ShopBuilderStudio() {
         await createItem({ type: 'shop-builder', data: payload }).unwrap()
       }
 
+      await refetch()
+
       setDirtySections((current) => {
         const next = { ...current }
         delete next[section.id]
@@ -467,6 +600,12 @@ export default function ShopBuilderStudio() {
   const isSaving = isCreating || isUpdating
   const isDirty = Boolean(dirtySections[selectedSectionId])
   const savedCount = data?.items?.length ?? 0
+  const uploadingFieldKey = uploadingFieldKeys[0] ?? null
+  const isFieldUploading = (fieldKey: string) => uploadingFieldKeys.includes(fieldKey)
+
+  if (isLoading) {
+    return <ShopBuilderStudioSkeleton />
+  }
 
   if (isLoading) {
     return (
@@ -590,12 +729,13 @@ export default function ShopBuilderStudio() {
           <div className="p-4">
             <div className="rounded-[28px] bg-slate-100 p-3">
               <div className="mx-auto max-w-5xl overflow-hidden rounded-3xl bg-white shadow-[0_20px_60px_rgba(15,23,42,0.10)]">
-                <PreviewAnnouncements section={sections[0]} selectedId={selectedSection.id} onSelect={setSelectedSectionId} />
-                <PreviewCampaignBanners section={sections[1]} selectedId={selectedSection.id} onSelect={setSelectedSectionId} />
-                <PreviewCategoryGrid section={sections[2]} selectedId={selectedSection.id} onSelect={setSelectedSectionId} categoryCards={selectedCategoryCards} />
-                <PreviewFeaturedCollection section={sections[3]} selectedId={selectedSection.id} onSelect={setSelectedSectionId} featuredProducts={selectedFeatureProducts} />
-                <PreviewPromoPair section={sections[4]} selectedId={selectedSection.id} onSelect={setSelectedSectionId} />
-                <PreviewNewsletter section={sections[5]} selectedId={selectedSection.id} onSelect={setSelectedSectionId} />
+                <PreviewShopHeader section={sections[0]} selectedId={selectedSection.id} onSelect={setSelectedSectionId} />
+                <PreviewAnnouncements section={sections[1]} selectedId={selectedSection.id} onSelect={setSelectedSectionId} />
+                <PreviewCampaignBanners section={sections[2]} selectedId={selectedSection.id} onSelect={setSelectedSectionId} />
+                <PreviewCategoryGrid section={sections[3]} selectedId={selectedSection.id} onSelect={setSelectedSectionId} categoryCards={selectedCategoryCards} />
+                <PreviewFeaturedCollection section={sections[4]} selectedId={selectedSection.id} onSelect={setSelectedSectionId} featuredProducts={selectedFeatureProducts} />
+                <PreviewPromoPair section={sections[5]} selectedId={selectedSection.id} onSelect={setSelectedSectionId} />
+                <PreviewNewsletter section={sections[6]} selectedId={selectedSection.id} onSelect={setSelectedSectionId} />
               </div>
             </div>
           </div>
@@ -644,19 +784,24 @@ export default function ShopBuilderStudio() {
                 <label className="block text-[11px] font-semibold uppercase tracking-wide text-slate-400">
                   {field.label}
                 </label>
-                {field.kind === 'textarea' ? (
+                {field.key === 'marquee_messages' ? (
+                  <MarqueeMessagesEditor
+                    value={field.value}
+                    onChange={(value) => updateField(selectedSection.id, field.key, value)}
+                  />
+                ) : field.kind === 'textarea' ? (
                   <textarea
                     value={field.value}
                     onChange={(event) => updateField(selectedSection.id, field.key, event.target.value)}
                     rows={3}
                     className="mt-1.5 w-full rounded-2xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-800 outline-none transition focus:border-cyan-300 focus:bg-white focus:ring-2 focus:ring-cyan-100"
                   />
-                ) : field.key.includes('image') ? (
+                ) : field.kind === 'video' || field.key.includes('image') ? (
                   <div className="mt-1.5 space-y-2">
                     <input
                       value={field.value}
                       onChange={(event) => updateField(selectedSection.id, field.key, event.target.value)}
-                      placeholder="Paste URL or upload below"
+                      placeholder={field.kind === 'video' ? 'Paste video URL or upload below' : 'Paste URL or upload below'}
                       className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-800 outline-none transition focus:border-cyan-300 focus:bg-white focus:ring-2 focus:ring-cyan-100"
                     />
                     <label className="inline-flex cursor-pointer items-center gap-2 rounded-2xl border border-cyan-200 bg-cyan-50 px-3.5 py-2 text-xs font-semibold text-cyan-700 transition hover:bg-white">
@@ -667,7 +812,7 @@ export default function ShopBuilderStudio() {
                       </svg>
                       <input
                         type="file"
-                        accept="image/jpeg,image/png,image/webp,image/gif"
+                        accept={field.kind === 'video' ? 'video/mp4,video/quicktime,video/webm,video/x-msvideo,video/x-ms-wmv' : 'image/jpeg,image/png,image/webp,image/gif'}
                         className="hidden"
                         onChange={(event) => {
                           const file = event.target.files?.[0] ?? null
@@ -675,20 +820,82 @@ export default function ShopBuilderStudio() {
                           event.currentTarget.value = ''
                         }}
                       />
-                      {uploadingFieldKey === field.key ? 'Uploading…' : 'Upload Image'}
+                      {uploadingFieldKey === field.key ? 'Uploading…' : field.kind === 'video' ? 'Upload Video' : 'Upload Image'}
                     </label>
-                    {field.value ? (
-                      <div className="relative h-28 overflow-hidden rounded-2xl border border-slate-200 bg-slate-100">
-                        <Image src={field.value} alt={field.label} fill className="object-cover" unoptimized />
-                      </div>
-                    ) : null}
+                    <div className="relative h-28 overflow-hidden rounded-2xl border border-slate-200 bg-slate-100">
+                      {(() => {
+                        const fallbackPoster =
+                          field.kind === 'video' && selectedSection.id === 'campaign-banners'
+                            ? getFieldValue(selectedSection, 'video_poster') || fallbackImage
+                            : ''
+                        const hasPreview = Boolean(field.value || fallbackPoster)
+
+                        return hasPreview ? (
+                        field.kind === 'video' ? (
+                          field.value ? (
+                            <video
+                              src={field.value}
+                              poster={fallbackPoster || undefined}
+                              className={`h-full w-full object-cover transition ${isFieldUploading(field.key) ? 'opacity-35 blur-[1px]' : ''}`}
+                              muted
+                              loop
+                              autoPlay
+                              playsInline
+                            />
+                          ) : (
+                            <Image
+                              src={fallbackPoster}
+                              alt="Video poster preview"
+                              fill
+                              className={`object-cover transition ${isFieldUploading(field.key) ? 'opacity-35 blur-[1px]' : ''}`}
+                              unoptimized
+                            />
+                          )
+                        ) : (
+                          <Image
+                            src={field.value}
+                            alt={field.label}
+                            fill
+                            className={`object-cover transition ${isFieldUploading(field.key) ? 'opacity-35 blur-[1px]' : ''}`}
+                            unoptimized
+                          />
+                        )
+                        ) : null
+                      })()}
+                      {isFieldUploading(field.key) ? (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-white/75 backdrop-blur-[1px]">
+                          <div className="h-6 w-6 animate-spin rounded-full border-2 border-cyan-600 border-t-transparent" />
+                          <p className="text-xs font-semibold text-cyan-700">{field.kind === 'video' ? 'Uploading video...' : 'Uploading image...'}</p>
+                        </div>
+                      ) : null}
+                      {!field.value && !(field.kind === 'video' && selectedSection.id === 'campaign-banners' && getFieldValue(selectedSection, 'video_poster')) && !isFieldUploading(field.key) ? (
+                        <div className="absolute inset-0 animate-pulse bg-linear-to-r from-slate-100 via-slate-50 to-slate-100" />
+                      ) : null}
+                    </div>
                   </div>
                 ) : (
-                  <input
-                    value={field.value}
-                    onChange={(event) => updateField(selectedSection.id, field.key, event.target.value)}
-                    className="mt-1.5 w-full rounded-2xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-800 outline-none transition focus:border-cyan-300 focus:bg-white focus:ring-2 focus:ring-cyan-100"
-                  />
+                  <div className="mt-1.5 space-y-2">
+                    <input
+                      value={field.value}
+                      onChange={(event) => updateField(selectedSection.id, field.key, event.target.value)}
+                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-800 outline-none transition focus:border-cyan-300 focus:bg-white focus:ring-2 focus:ring-cyan-100"
+                    />
+                    {/^https?:\/\//i.test(field.value.trim()) ? (
+                      <a
+                        href={field.value.trim()}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-slate-600 transition hover:border-slate-300 hover:text-slate-900"
+                      >
+                        Open Link
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" />
+                          <polyline points="15 3 21 3 21 9" />
+                          <line x1="10" y1="14" x2="21" y2="3" />
+                        </svg>
+                      </a>
+                    ) : null}
+                  </div>
                 )}
               </div>
             ))}
@@ -700,7 +907,7 @@ export default function ShopBuilderStudio() {
                 categoryCards={categoryEditorCards}
                 onChange={updateField}
                 onUpload={uploadImageForField}
-                uploadingFieldKey={uploadingFieldKey}
+                uploadingFieldKeys={uploadingFieldKeys}
               />
             ) : null}
 
@@ -718,6 +925,26 @@ export default function ShopBuilderStudio() {
               <HelperPanel
                 title="Available products"
                 items={products.map((product) => `${product.id} — ${product.name}`)}
+              />
+            ) : null}
+            {selectedSection.id === 'featured-collection' ? (
+              <FeaturedCategoryPickerPanel
+                categories={categories}
+                selectedId={Number.parseInt(getFieldValue(selectedSection, 'source_category_id'), 10)}
+                onSelect={(categoryId) => updateField(selectedSection.id, 'source_category_id', categoryId > 0 ? String(categoryId) : '')}
+              />
+            ) : null}
+            {selectedSection.id === 'campaign-banners' ? (
+              <CampaignBannerLinkPanel
+                categories={categories}
+                products={products}
+                selectedType={getFieldValue(selectedSection, 'link_type') || 'category'}
+                selectedCategoryId={Number.parseInt(getFieldValue(selectedSection, 'link_category_id'), 10)}
+                selectedProductId={Number.parseInt(getFieldValue(selectedSection, 'link_product_id'), 10)}
+                customLink={getFieldValue(selectedSection, 'video_link')}
+                onTypeChange={(value) => updateField(selectedSection.id, 'link_type', value)}
+                onCategorySelect={(categoryId) => updateField(selectedSection.id, 'link_category_id', categoryId > 0 ? String(categoryId) : '')}
+                onProductSelect={(productId) => updateField(selectedSection.id, 'link_product_id', productId > 0 ? String(productId) : '')}
               />
             ) : null}
           </div>
@@ -768,6 +995,99 @@ export default function ShopBuilderStudio() {
 // ─────────────────────────────────────────────────────────────────────────────
 // Shared preview wrapper — click to select a section
 // ─────────────────────────────────────────────────────────────────────────────
+
+function ShopBuilderStudioSkeleton() {
+  return (
+    <div className="space-y-5 animate-pulse">
+      <div className="flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-slate-200 bg-white px-6 py-5 shadow-sm">
+        <div className="space-y-3">
+          <div className="h-3 w-32 rounded-full bg-slate-200" />
+          <div className="h-7 w-44 rounded-full bg-slate-200" />
+          <div className="h-4 w-72 rounded-full bg-slate-100" />
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="h-9 w-28 rounded-full bg-slate-100" />
+          <div className="h-10 w-36 rounded-2xl bg-slate-100" />
+        </div>
+      </div>
+
+      <div className="grid gap-4 xl:grid-cols-[256px_minmax(0,1fr)_348px]">
+        <aside className="rounded-3xl border border-slate-200 bg-white p-3 shadow-sm">
+          <div className="mb-4 space-y-2 border-b border-slate-100 px-1 pb-4">
+            <div className="h-3 w-20 rounded-full bg-slate-200" />
+            <div className="h-3 w-24 rounded-full bg-slate-100" />
+          </div>
+          <div className="space-y-2">
+            {[1, 2, 3, 4, 5, 6].map((item) => (
+              <div key={item} className="flex items-center gap-3 rounded-2xl px-3 py-3">
+                <div className="h-8 w-8 rounded-xl bg-slate-200" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-4 w-28 rounded-full bg-slate-200" />
+                  <div className="h-3 w-20 rounded-full bg-slate-100" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </aside>
+
+        <section className="rounded-3xl border border-slate-200 bg-white shadow-sm">
+          <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+            <div className="space-y-2">
+              <div className="h-3 w-24 rounded-full bg-slate-200" />
+              <div className="h-4 w-36 rounded-full bg-slate-100" />
+            </div>
+            <div className="h-3 w-32 rounded-full bg-slate-100" />
+          </div>
+          <div className="p-4">
+            <div className="rounded-[28px] bg-slate-100 p-3">
+              <div className="space-y-4 rounded-3xl bg-white p-4">
+                <div className="h-14 rounded-2xl bg-slate-100" />
+                <div className="grid gap-3 md:grid-cols-2">
+                  <div className="h-36 rounded-3xl bg-slate-100" />
+                  <div className="h-36 rounded-3xl bg-slate-100" />
+                </div>
+                <div className="space-y-5 rounded-3xl border border-slate-100 p-4">
+                  <div className="mx-auto h-4 w-40 rounded-full bg-slate-100" />
+                  <div className="mx-auto h-8 w-72 rounded-full bg-slate-200" />
+                  <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+                    {[1, 2, 3, 4].map((item) => (
+                      <div key={item} className="h-32 rounded-2xl bg-slate-100" />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <aside className="rounded-3xl border border-slate-200 bg-white shadow-sm">
+          <div className="p-5">
+            <div className="space-y-3">
+              <div className="h-3 w-24 rounded-full bg-slate-200" />
+              <div className="h-6 w-32 rounded-full bg-slate-200" />
+              <div className="h-3 w-full rounded-full bg-slate-100" />
+              <div className="h-3 w-5/6 rounded-full bg-slate-100" />
+            </div>
+            <div className="mt-4 flex gap-2">
+              <div className="h-8 w-16 rounded-xl bg-slate-100" />
+              <div className="h-8 w-16 rounded-xl bg-slate-100" />
+              <div className="h-8 w-16 rounded-xl bg-slate-100" />
+            </div>
+          </div>
+          <div className="space-y-4 px-5 pb-5">
+            {[1, 2, 3, 4, 5].map((item) => (
+              <div key={item} className="space-y-2">
+                <div className="h-3 w-28 rounded-full bg-slate-200" />
+                <div className="h-11 rounded-2xl bg-slate-100" />
+              </div>
+            ))}
+            <div className="h-11 rounded-2xl bg-slate-200" />
+          </div>
+        </aside>
+      </div>
+    </div>
+  )
+}
 
 function PreviewSection({
   section,
@@ -830,36 +1150,82 @@ function PreviewAnnouncements(props: { section: BuilderSection; selectedId: Buil
   )
 }
 
+function PreviewShopHeader(props: { section: BuilderSection; selectedId: BuilderSectionId; onSelect: (id: BuilderSectionId) => void }) {
+  const messages = getFieldValue(props.section, 'marquee_messages').split('\n').map((item) => item.trim()).filter(Boolean)
+  const trustItems = [1, 2, 3, 4].map((index) => ({
+    title: getFieldValue(props.section, `trust_item_${index}_title`),
+    desc: getFieldValue(props.section, `trust_item_${index}_desc`),
+  }))
+
+  return (
+    <PreviewSection {...props}>
+      <div className="bg-slate-900 px-4 py-2 text-white">
+        <div className="flex items-center justify-between gap-3 text-[10px]">
+          <div className="hidden items-center gap-4 text-white/60 md:flex">
+            <span>{getFieldValue(props.section, 'contact_phone') || '+63 912 345 6789'}</span>
+            <span>{getFieldValue(props.section, 'contact_email') || 'hello@afhome.ph'}</span>
+          </div>
+          <div className="flex-1 overflow-hidden">
+            <div className="flex gap-6 whitespace-nowrap text-white/70">
+              {(messages.length > 0 ? messages : ['Free Shipping on orders over PHP 5,000']).slice(0, 3).map((message) => (
+                <span key={message}>{message}</span>
+              ))}
+            </div>
+          </div>
+          <div className="hidden items-center gap-2 text-white/50 md:flex">
+            <span>{getFieldValue(props.section, 'facebook_label') || 'FB'}</span>
+            <span>|</span>
+            <span>{getFieldValue(props.section, 'instagram_label') || 'IG'}</span>
+            <span>|</span>
+            <span>{getFieldValue(props.section, 'tiktok_label') || 'TikTok'}</span>
+          </div>
+        </div>
+      </div>
+      <div className="border-b border-slate-100 bg-white px-4 py-4">
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          {trustItems.map((item, index) => (
+            <div key={`${item.title}-${index}`} className="rounded-xl border border-slate-100 bg-slate-50 p-3">
+              <p className="text-xs font-semibold text-slate-800">{item.title || `Trust Item ${index + 1}`}</p>
+              <p className="mt-1 text-[10px] text-slate-500">{item.desc || 'Description'}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </PreviewSection>
+  )
+}
+
 function PreviewCampaignBanners(props: { section: BuilderSection; selectedId: BuilderSectionId; onSelect: (id: BuilderSectionId) => void }) {
-  const banners = [
-    {
-      title: getFieldValue(props.section, 'left_title'),
-      subtitle: getFieldValue(props.section, 'left_subtitle'),
-      image: getFieldValue(props.section, 'left_image') || fallbackImage,
-    },
-    {
-      title: getFieldValue(props.section, 'right_title'),
-      subtitle: getFieldValue(props.section, 'right_subtitle'),
-      image: getFieldValue(props.section, 'right_image') || fallbackImage,
-    },
-  ]
+  const videoUrl = getFieldValue(props.section, 'video_url')
+  const posterUrl = getFieldValue(props.section, 'video_poster') || fallbackImage
 
   return (
     <PreviewSection {...props}>
       <div className="px-4 py-4">
-        <div className="grid gap-3 md:grid-cols-2">
-          {banners.map((banner) => (
-            <div key={banner.title} className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-slate-200">
-              <div className="relative min-h-35">
-                <Image src={banner.image} alt={banner.title || 'Campaign banner'} fill className="object-cover transition-transform duration-700 group-hover:scale-105" unoptimized />
-                <div className="absolute inset-0 bg-linear-to-r from-slate-950/75 to-slate-900/20" />
-                <div className="absolute bottom-0 left-0 right-0 p-4">
-                  <p className="text-base font-bold text-white">{banner.title}</p>
-                  <p className="mt-0.5 text-xs text-white/80">{banner.subtitle}</p>
-                </div>
-              </div>
+        <div className="group relative overflow-hidden rounded-3xl border border-slate-200 bg-slate-200">
+          <div className="relative min-h-52">
+            {videoUrl ? (
+              <video
+                src={videoUrl}
+                poster={posterUrl}
+                className="absolute inset-0 h-full w-full scale-[1.06] object-cover object-center"
+                autoPlay
+                muted
+                loop
+                playsInline
+              />
+            ) : (
+              <Image src={posterUrl} alt="Campaign video poster" fill className="object-cover transition-transform duration-700 group-hover:scale-105" unoptimized />
+            )}
+            <div className="absolute inset-0 bg-linear-to-r from-slate-950/75 via-slate-900/35 to-slate-900/10" />
+            <div className="absolute bottom-0 left-0 right-0 p-5">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-cyan-300">
+                {getFieldValue(props.section, 'video_eyebrow') || 'Top Promos'}
+              </p>
+              <p className="mt-2 text-2xl font-bold text-white">{getFieldValue(props.section, 'video_title') || 'Weekend Furniture Drop'}</p>
+              <p className="mt-1 max-w-[320px] text-sm text-white/80">{getFieldValue(props.section, 'video_subtitle') || 'Refresh your living room this week'}</p>
             </div>
-          ))}
+          </div>
         </div>
       </div>
     </PreviewSection>
@@ -1095,6 +1461,78 @@ function HelperPanel({ title, items }: { title: string; items: string[] }) {
   )
 }
 
+function MarqueeMessagesEditor({
+  value,
+  onChange,
+}: {
+  value: string
+  onChange: (value: string) => void
+}) {
+  const items = value
+    .split('\n')
+    .map((item) => item.trim())
+    .filter(Boolean)
+
+  const updateItem = (index: number, nextValue: string) => {
+    const nextItems = items.map((item, itemIndex) => (itemIndex === index ? nextValue : item))
+    onChange(nextItems.join('\n'))
+  }
+
+  const addItem = () => {
+    onChange([...items, 'New marquee message'].join('\n'))
+  }
+
+  const removeItem = (index: number) => {
+    onChange(items.filter((_, itemIndex) => itemIndex !== index).join('\n'))
+  }
+
+  return (
+    <div className="mt-1.5 rounded-2xl border border-slate-200 bg-slate-50 p-3">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-xs font-medium text-slate-500">Manage rotating top banner messages.</p>
+        <button
+          type="button"
+          onClick={addItem}
+          className="inline-flex items-center gap-1.5 rounded-xl border border-cyan-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-cyan-700 transition hover:bg-cyan-50"
+        >
+          <span className="text-sm leading-none">+</span>
+          Add
+        </button>
+      </div>
+
+      <div className="mt-3 space-y-2">
+        {items.length > 0 ? items.map((item, index) => (
+          <div key={`${index}-${item}`} className="rounded-xl border border-slate-200 bg-white p-2">
+            <div className="flex items-start gap-2">
+              <div className="mt-2 flex h-6 w-6 flex-none items-center justify-center rounded-full bg-slate-100 text-[11px] font-bold text-slate-500">
+                {index + 1}
+              </div>
+              <input
+                value={item}
+                onChange={(event) => updateItem(index, event.target.value)}
+                placeholder="Enter marquee message"
+                className="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-cyan-300 focus:bg-white focus:ring-2 focus:ring-cyan-100"
+              />
+              <button
+                type="button"
+                onClick={() => removeItem(index)}
+                className="mt-1 inline-flex h-8 w-8 flex-none items-center justify-center rounded-lg border border-red-200 bg-red-50 text-sm font-bold text-red-600 transition hover:bg-red-100"
+                aria-label={`Remove marquee message ${index + 1}`}
+              >
+                x
+              </button>
+            </div>
+          </div>
+        )) : (
+          <div className="rounded-xl border border-dashed border-slate-200 bg-white px-3 py-4 text-center text-xs text-slate-400">
+            No marquee messages yet. Click Add to create one.
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 function CategoryPickerPanel({
   categories,
   selectedIds,
@@ -1140,18 +1578,190 @@ function CategoryPickerPanel({
   )
 }
 
+function FeaturedCategoryPickerPanel({
+  categories,
+  selectedId,
+  onSelect,
+}: {
+  categories: Array<{ id: number; name: string; product_count?: number }>
+  selectedId: number
+  onSelect: (categoryId: number) => void
+}) {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+      <div className="flex items-center justify-between gap-2">
+        <div>
+          <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">Auto product source</p>
+          <p className="mt-1 text-[11px] text-slate-400">Assign one category to auto-fill the right-side product cards.</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => onSelect(0)}
+          className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-semibold text-slate-500 transition hover:border-slate-300 hover:text-slate-700"
+        >
+          Clear
+        </button>
+      </div>
+      <div className="mt-3 max-h-52 space-y-1.5 overflow-y-auto">
+        {categories.map((category) => {
+          const active = selectedId === category.id
+          return (
+            <button
+              key={category.id}
+              type="button"
+              onClick={() => onSelect(category.id)}
+              className={`flex w-full items-center justify-between rounded-xl border px-3 py-2 text-left transition ${
+                active
+                  ? 'border-emerald-300 bg-emerald-50 text-emerald-900'
+                  : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
+              }`}
+            >
+              <div>
+                <p className="text-xs font-semibold">{category.name}</p>
+                <p className="text-[10px] text-slate-400">ID {category.id}</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] text-slate-400">{category.product_count ?? 0}</span>
+                <span className={`h-4 w-4 rounded-full border-2 transition ${
+                  active ? 'border-emerald-500 bg-emerald-500' : 'border-slate-300 bg-white'
+                }`} />
+              </div>
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+function CampaignBannerLinkPanel({
+  categories,
+  products,
+  selectedType,
+  selectedCategoryId,
+  selectedProductId,
+  customLink,
+  onTypeChange,
+  onCategorySelect,
+  onProductSelect,
+}: {
+  categories: Array<{ id: number; name: string; product_count?: number }>
+  products: Array<{ id: number; name: string; catid: number }>
+  selectedType: string
+  selectedCategoryId: number
+  selectedProductId: number
+  customLink: string
+  onTypeChange: (value: 'category' | 'product' | 'custom') => void
+  onCategorySelect: (categoryId: number) => void
+  onProductSelect: (productId: number) => void
+}) {
+  const safeType = selectedType === 'product' || selectedType === 'custom' ? selectedType : 'category'
+  const selectedProduct = products.find((product) => product.id === selectedProductId)
+
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+      <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">Hero link target</p>
+      <p className="mt-1 text-[11px] text-slate-400">Choose where the full video banner and Explore Now button should navigate.</p>
+
+      <div className="mt-3 flex flex-wrap gap-2">
+        {([
+          { key: 'category', label: 'Category' },
+          { key: 'product', label: 'Product' },
+          { key: 'custom', label: 'Custom URL' },
+        ] as const).map((option) => (
+          <button
+            key={option.key}
+            type="button"
+            onClick={() => onTypeChange(option.key)}
+            className={`rounded-xl border px-3 py-2 text-[11px] font-semibold transition ${
+              safeType === option.key
+                ? 'border-cyan-300 bg-cyan-50 text-cyan-900'
+                : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300 hover:text-slate-700'
+            }`}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+
+      {safeType === 'category' ? (
+        <div className="mt-3 max-h-48 space-y-1.5 overflow-y-auto">
+          {categories.map((category) => {
+            const active = selectedCategoryId === category.id
+            return (
+              <button
+                key={category.id}
+                type="button"
+                onClick={() => onCategorySelect(category.id)}
+                className={`flex w-full items-center justify-between rounded-xl border px-3 py-2 text-left transition ${
+                  active
+                    ? 'border-cyan-300 bg-cyan-50 text-cyan-900'
+                    : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
+                }`}
+              >
+                <div>
+                  <p className="text-xs font-semibold">{category.name}</p>
+                  <p className="text-[10px] text-slate-400">ID {category.id}</p>
+                </div>
+                <span className="text-[10px] text-slate-400">{category.product_count ?? 0}</span>
+              </button>
+            )
+          })}
+        </div>
+      ) : null}
+
+      {safeType === 'product' ? (
+        <div className="mt-3 max-h-48 space-y-1.5 overflow-y-auto">
+          {products.map((product) => {
+            const active = selectedProductId === product.id
+            return (
+              <button
+                key={product.id}
+                type="button"
+                onClick={() => onProductSelect(product.id)}
+                className={`w-full rounded-xl border px-3 py-2 text-left transition ${
+                  active
+                    ? 'border-cyan-300 bg-cyan-50 text-cyan-900'
+                    : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
+                }`}
+              >
+                <p className="text-xs font-semibold">{product.name}</p>
+                <p className="mt-1 text-[10px] text-slate-400">ID {product.id} · Category {product.catid}</p>
+              </button>
+            )
+          })}
+        </div>
+      ) : null}
+
+      {safeType === 'custom' ? (
+        <div className="mt-3 rounded-xl border border-dashed border-slate-200 bg-white px-3 py-3 text-[11px] text-slate-500">
+          Use the Custom video link field above.
+          {customLink.trim() ? <span className="block mt-1 text-slate-400">Current: {customLink.trim()}</span> : null}
+        </div>
+      ) : null}
+
+      {safeType === 'category' && selectedCategoryId > 0 ? (
+        <p className="mt-3 text-[11px] text-slate-500">Current target: selected category ID {selectedCategoryId}</p>
+      ) : null}
+      {safeType === 'product' && selectedProduct ? (
+        <p className="mt-3 text-[11px] text-slate-500">Current target: {selectedProduct.name}</p>
+      ) : null}
+    </div>
+  )
+}
+
 function DynamicCategoryImageFields({
   section,
   categoryCards,
   onChange,
   onUpload,
-  uploadingFieldKey,
+  uploadingFieldKeys,
 }: {
   section: BuilderSection
   categoryCards: Array<{ id: number; name: string; count: number; image: string }>
   onChange: (sectionId: BuilderSectionId, fieldKey: string, value: string) => void
   onUpload: (sectionId: BuilderSectionId, fieldKey: string, file: File | null) => Promise<void>
-  uploadingFieldKey: string | null
+  uploadingFieldKeys: string[]
 }) {
   if (categoryCards.length === 0) return null
 
@@ -1163,6 +1773,8 @@ function DynamicCategoryImageFields({
         {categoryCards.map((category) => {
           const fieldKey = `category_image_${category.id}`
           const fieldValue = getFieldValue(section, fieldKey) || category.image || ''
+          const isUploading = uploadingFieldKeys.includes(fieldKey)
+          const uploadingFieldKey = isUploading ? fieldKey : null
 
           return (
             <div key={category.id} className="rounded-xl border border-slate-200 bg-white p-3">
@@ -1171,11 +1783,25 @@ function DynamicCategoryImageFields({
                   <p className="text-xs font-semibold text-slate-900">{category.name}</p>
                   <p className="text-[10px] text-slate-400">ID {category.id} · {category.count} items</p>
                 </div>
-                {fieldValue ? (
-                  <div className="relative h-10 w-16 flex-none overflow-hidden rounded-lg border border-slate-200">
-                    <Image src={fieldValue} alt={category.name} fill className="object-cover" unoptimized />
-                  </div>
-                ) : null}
+                <div className="relative h-10 w-16 flex-none overflow-hidden rounded-lg border border-slate-200 bg-slate-100">
+                  {fieldValue ? (
+                    <Image
+                      src={fieldValue}
+                      alt={category.name}
+                      fill
+                      className={`object-cover transition ${isUploading ? 'opacity-35 blur-[1px]' : ''}`}
+                      unoptimized
+                    />
+                  ) : null}
+                  {isUploading ? (
+                    <div className="absolute inset-0 flex items-center justify-center bg-white/80">
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-cyan-600 border-t-transparent" />
+                    </div>
+                  ) : null}
+                  {!fieldValue && !isUploading ? (
+                    <div className="absolute inset-0 animate-pulse bg-linear-to-r from-slate-100 via-slate-50 to-slate-100" />
+                  ) : null}
+                </div>
               </div>
 
               <input
@@ -1185,11 +1811,16 @@ function DynamicCategoryImageFields({
                 className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700 outline-none transition focus:border-cyan-300 focus:bg-white focus:ring-2 focus:ring-cyan-100"
               />
 
-              <label className="mt-2 inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-cyan-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-cyan-700 transition hover:bg-cyan-50">
+              <label className={`mt-2 inline-flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-[11px] font-semibold transition ${
+                isUploading
+                  ? 'cursor-wait border-cyan-200 bg-cyan-50 text-cyan-700'
+                  : 'cursor-pointer border-cyan-200 bg-white text-cyan-700 hover:bg-cyan-50'
+              }`}>
                 <input
                   type="file"
                   accept="image/jpeg,image/png,image/webp,image/gif"
                   className="hidden"
+                  disabled={isUploading}
                   onChange={(event) => {
                     const file = event.target.files?.[0] ?? null
                     void onUpload(section.id, fieldKey, file)

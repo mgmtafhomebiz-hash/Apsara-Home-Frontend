@@ -28,14 +28,17 @@ export default function AssemblyGuidesPageClient({ localGuides = [] }: Props) {
       title: guide.title,
       key: guide.folder,
       image_url: null,
-      button_text: 'Open PDF',
+      button_text: 'Open Assembly Guide',
       link_url: guide.href,
     }))
 
     const normalizedAdminItems = adminItems.map((item) => ({
       ...item,
       id: `admin-${item.id}`,
-      button_text: item.button_text || 'Open PDF',
+      button_text:
+        item.button_text && item.button_text !== 'Open PDF'
+          ? item.button_text
+          : 'Open Assembly Guide',
     }))
 
     const seenLinks = new Set<string>()
@@ -79,6 +82,7 @@ export default function AssemblyGuidesPageClient({ localGuides = [] }: Props) {
   }
 
   return (
+    
     <main className="bg-[radial-gradient(circle_at_top,_rgba(251,146,60,0.12),_transparent_38%),linear-gradient(180deg,_#fff7ed_0%,_#ffffff_28%,_#fffaf5_100%)]">
       <motion.section
         initial={{ opacity: 0, y: 24 }}
@@ -96,16 +100,6 @@ export default function AssemblyGuidesPageClient({ localGuides = [] }: Props) {
               <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-600 md:text-base">
                 Open the PDF guide you need and view the setup instructions right away.
               </p>
-            </div>
-
-            <div className="rounded-[1.75rem] border border-orange-100 bg-[linear-gradient(135deg,_#fff7ed,_#ffffff_55%,_#ffedd5)] p-6">
-              <p className="text-sm font-bold text-slate-900">PDF source</p>
-              <ul className="mt-4 space-y-3 text-sm leading-6 text-slate-600">
-                <li>PDF files from the public folder can appear here automatically</li>
-                <li>Admin-added PDF links can still be used as fallback</li>
-                <li>Click any guide card to open the PDF</li>
-                <li>Useful for grouped assembly manuals by product line</li>
-              </ul>
             </div>
           </div>
         </div>
@@ -125,7 +119,7 @@ export default function AssemblyGuidesPageClient({ localGuides = [] }: Props) {
         >
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
-              <p className="text-xs font-bold uppercase tracking-[0.24em] text-orange-500">PDF Library</p>
+              <p className="text-xs font-bold uppercase tracking-[0.24em] text-orange-500">Assembly Library</p>
               <p className="mt-1 text-sm text-slate-500">
                 {items.length.toLocaleString()} guide{items.length !== 1 ? 's' : ''} available
               </p>
@@ -145,7 +139,7 @@ export default function AssemblyGuidesPageClient({ localGuides = [] }: Props) {
                   type="text"
                   value={search}
                   onChange={(e) => handleSearchChange(e.target.value)}
-                  placeholder="Search PDF guide..."
+                  placeholder="Search Assembly guide..."
                   className="w-full rounded-2xl border border-orange-100 bg-orange-50/50 px-10 py-3 text-sm text-slate-700 shadow-sm outline-none transition focus:border-orange-300 focus:ring-2 focus:ring-orange-100"
                 />
                 {search ? (
@@ -225,28 +219,25 @@ export default function AssemblyGuidesPageClient({ localGuides = [] }: Props) {
                           <path d="M9 11h2" />
                         </svg>
                       </motion.div>
-                      <span className="rounded-full border border-orange-200 bg-white px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-orange-500">
-                        PDF
-                      </span>
                     </div>
                   </div>
 
                   <div className="flex flex-1 flex-col p-6">
                     <div className="flex-1">
                       <p className="text-xs font-bold uppercase tracking-[0.2em] text-orange-500">
-                        {item.key || 'PDF Guide'}
+                        {item.key || 'Assembly Guide'}
                       </p>
                       <h2 className="mt-3 text-xl font-bold leading-tight text-slate-900">
                         {item.title || 'Assembly Guide'}
                       </h2>
                       <p className="mt-3 text-sm leading-7 text-slate-600">
-                        Click to open this PDF assembly guide.
+                        Click to open the assembly guide.
                       </p>
                     </div>
 
                     <div className="mt-6 flex items-center justify-between border-t border-slate-100 pt-4">
                       <span className="text-sm font-semibold text-orange-600">
-                        {item.button_text || 'Open PDF'}
+                        {item.button_text || 'Open Assembly Guide'}
                       </span>
                       <motion.span
                         whileHover={{ x: 3, y: -3 }}

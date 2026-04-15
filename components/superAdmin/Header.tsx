@@ -46,10 +46,18 @@ const DATE_RANGE_OPTIONS: { value: DateRangePreset; label: string }[] = [
     { value: 'last_year', label: 'Last Year' },
     { value: 'custom', label: 'Custom Range' },
 ];
+
+const parseNotificationDate = (value?: string | null) => {
+    if (!value) return null;
+    const normalized = value.includes('T') ? value.trim() : value.trim().replace(' ', 'T');
+    const hasTimeZone = /([zZ]|[+-]\d{2}:\d{2})$/.test(normalized);
+    const date = new Date(hasTimeZone ? normalized : `${normalized}Z`);
+    return Number.isNaN(date.getTime()) ? null : date;
+};
+
 const formatRelativeTime = (value?: string | null) => {
-    if (!value) return '';
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return '';
+    const date = parseNotificationDate(value);
+    if (!date) return '';
     const diffMs = Date.now() - date.getTime();
     if (diffMs < 0) return 'just now';
 

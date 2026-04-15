@@ -38,6 +38,49 @@ const parseIdList = (value: string) =>
     .map((item) => Number.parseInt(item.trim(), 10))
     .filter((item) => Number.isFinite(item) && item > 0)
 
+const slugifyProductName = (value: string) =>
+  value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+
+const buildProductLink = (product: Pick<Product, 'id' | 'name'>) =>
+  `/product/${slugifyProductName(product.name)}-i${product.id}`
+
+const getFeaturedProducts = (featuredCollection: WebPageItem | undefined, products: Product[]) => {
+  const sourceCategoryId = Number.parseInt(getField(featuredCollection, 'source_category_id'), 10)
+  const categoryProducts = Number.isFinite(sourceCategoryId) && sourceCategoryId > 0
+    ? products.filter((item) => item.catid === sourceCategoryId)
+    : []
+
+  if (categoryProducts.length > 0) {
+    return categoryProducts.slice(0, 4)
+  }
+
+  return parseIdList(getField(featuredCollection, 'product_ids'))
+    .map((id) => products.find((item) => item.id === id))
+    .filter((item): item is Product => Boolean(item))
+    .slice(0, 4)
+}
+
+const resolveCategoryCardImage = ({
+  section,
+  categoryId,
+  slotIndex,
+  categoryImage,
+}: {
+  section: WebPageItem | undefined
+  categoryId: number
+  slotIndex?: number
+  categoryImage?: string | null
+}) =>
+  getField(section, `category_image_${categoryId}`) ||
+  (typeof slotIndex === 'number' ? getField(section, `card_${slotIndex + 1}_image`) : '') ||
+  categoryImage ||
+  fallbackImage
+
 export type ShopBuilderSectionsData = {
   items: WebPageItem[]
   categories: Category[]
@@ -47,6 +90,7 @@ export type ShopBuilderSectionsData = {
 export type ShopBuilderSectionsProps = {
   data?: ShopBuilderSectionsData
   partnerSlug?: string
+  allowedCategoryIds?: number[]
 }
 
 export type ShopBuilderApiResponse = {
@@ -63,7 +107,7 @@ export function normalizeShopBuilderApiResponse(data: ShopBuilderApiResponse | n
   }
 }
 
-export default function ShopBuilderSections({ data = null, partnerSlug }: ShopBuilderSectionsProps) {
+export default function ShopBuilderSections({ data = null, partnerSlug, allowedCategoryIds }: ShopBuilderSectionsProps) {
   const { items, categories, products } = normalizeShopBuilderApiResponse(data)
 
   if (!data || items.length === 0) {
@@ -93,42 +137,51 @@ export default function ShopBuilderSections({ data = null, partnerSlug }: ShopBu
         name: category.name,
         url: buildPartnerCategoryLink(partnerSlug, category),
         count: category.product_count ?? 0,
-        image: getField(categoryGrid, `card_${index + 1}_image`) || category.image || fallbackImage,
+        image: resolveCategoryCardImage({
+          section: categoryGrid,
+          categoryId: category.id,
+          slotIndex: index,
+          categoryImage: category.image,
+        }),
       }
     })
     .filter((item): item is NonNullable<typeof item> => Boolean(item))
 
-  const remainingCategoryCards = categories
-    .filter((category) => !selectedCategoryCards.some((card) => card.id === category.id))
-    .map((category) => ({
-      id: category.id,
-      name: category.name,
-      url: buildPartnerCategoryLink(partnerSlug, category),
-      count: category.product_count ?? 0,
-      image: category.image || fallbackImage,
-    }))
+  const partnerAllowedIds = partnerSlug ? (allowedCategoryIds ?? []) : []
+  const partnerAllowedSet = new Set(partnerAllowedIds)
+  const partnerCategoryCards = partnerSlug
+    ? categories
+      .filter((category) => partnerAllowedSet.has(category.id))
+      .map((category, index) => ({
+        id: category.id,
+        name: category.name,
+        url: buildPartnerCategoryLink(partnerSlug, category),
+        count: category.product_count ?? 0,
+        image: resolveCategoryCardImage({
+          section: categoryGrid,
+          categoryId: category.id,
+          slotIndex: index,
+          categoryImage: category.image,
+        }),
+      }))
+    : []
 
-  const allCategoryCards = selectedCategoryCards.length > 0
-    ? [...selectedCategoryCards, ...remainingCategoryCards]
-    : remainingCategoryCards
+  const allCategoryCards = partnerSlug ? partnerCategoryCards : selectedCategoryCards
 
-  const featuredProducts = parseIdList(getField(featuredCollection, 'product_ids'))
-    .map((id) => products.find((item) => item.id === id))
-    .filter((item): item is Product => Boolean(item))
-    .slice(0, 4)
+  const featuredProducts = getFeaturedProducts(featuredCollection, products)
 
   return (
     <>
       {announcements ? <AnnouncementsSection section={announcements} /> : null}
-      {campaignBanners ? <CampaignBannersSection section={campaignBanners} partnerSlug={partnerSlug} /> : null}
+      {campaignBanners ? <CampaignBannersSection section={campaignBanners} categories={categories} products={products} partnerSlug={partnerSlug} /> : null}
 
-      {categoryGrid ? (
+      {categoryGrid && allCategoryCards.length > 0 && (!partnerSlug || partnerAllowedIds.length > 0) ? (
         <CategoryGridSection
           section={categoryGrid}
           categoryCards={allCategoryCards}
           partnerSlug={partnerSlug}
         />
-      ) : (
+      ) : partnerSlug ? null : (
         <HeroSection />
       )}
 
@@ -136,6 +189,7 @@ export default function ShopBuilderSections({ data = null, partnerSlug }: ShopBu
         <FeaturedCollectionSection
           section={featuredCollection}
           featuredProducts={featuredProducts}
+          categories={categories}
           partnerSlug={partnerSlug}
         />
       ) : (
@@ -182,21 +236,37 @@ function AnnouncementsSection({ section }: { section: WebPageItem }) {
   )
 }
 
-function CampaignBannersSection({ section, partnerSlug }: { section: WebPageItem; partnerSlug?: string }) {
-  const banners = [
-    {
-      title: getField(section, 'left_title') || 'Weekend Furniture Drop',
-      subtitle: getField(section, 'left_subtitle') || 'Refresh your living room this week',
-      image: getField(section, 'left_image') || fallbackImage,
-      link: buildPartnerShopLink(getField(section, 'left_link') || '/shop', partnerSlug),
-    },
-    {
-      title: getField(section, 'right_title') || 'Appliance Upgrade Days',
-      subtitle: getField(section, 'right_subtitle') || 'Choose your best appliance today',
-      image: getField(section, 'right_image') || '/Images/PromoBanners/ct2-img2-large.jpg',
-      link: buildPartnerShopLink(getField(section, 'right_link') || '/shop', partnerSlug),
-    },
-  ]
+function CampaignBannersSection({
+  section,
+  categories,
+  products,
+  partnerSlug,
+}: {
+  section: WebPageItem
+  categories: Category[]
+  products: Product[]
+  partnerSlug?: string
+}) {
+  const videoUrl = getField(section, 'video_url')
+  const posterUrl = getField(section, 'video_poster') || fallbackImage
+  const eyebrow = getField(section, 'video_eyebrow') || 'Top Promos'
+  const title = getField(section, 'video_title') || 'Weekend Furniture Drop'
+  const subtitle = getField(section, 'video_subtitle') || 'Refresh your living room this week'
+  const buttonText = getField(section, 'video_button') || 'Explore Now'
+  const linkType = getField(section, 'link_type') || 'category'
+  const linkCategoryId = Number.parseInt(getField(section, 'link_category_id'), 10)
+  const linkProductId = Number.parseInt(getField(section, 'link_product_id'), 10)
+  const linkCategory = Number.isFinite(linkCategoryId) && linkCategoryId > 0
+    ? categories.find((category) => category.id === linkCategoryId)
+    : undefined
+  const linkProduct = Number.isFinite(linkProductId) && linkProductId > 0
+    ? products.find((product) => product.id === linkProductId)
+    : undefined
+  const link = linkType === 'product' && linkProduct
+    ? buildProductLink(linkProduct)
+    : linkType === 'category' && linkCategory
+      ? buildPartnerCategoryLink(partnerSlug, linkCategory)
+      : buildPartnerShopLink(getField(section, 'video_link') || '/shop', partnerSlug)
 
   return (
     <motion.section
@@ -221,11 +291,9 @@ function CampaignBannersSection({ section, partnerSlug }: { section: WebPageItem
               <p className="text-xl font-bold">{banner.title}</p>
               <p className="mt-1 max-w-[240px] text-sm text-white/80">{banner.subtitle}</p>
             </div>
-              </Link>
-            </motion.div>
-          ))}
-        </AnimatePresence>
-      </div>
+          </div>
+        </Link>
+      </motion.div>
     </motion.section>
   )
 }
@@ -239,14 +307,7 @@ function CategoryGridSection({
   categoryCards: Array<{ id: number; name: string; url: string; count: number; image: string }>
   partnerSlug?: string
 }) {
-  const fallbackCards = [1, 2, 3, 4].map((index) => ({
-    id: index,
-    name: `Category ${index}`,
-    url: buildPartnerShopLink('/shop', partnerSlug),
-    count: 0,
-    image: getField(section, `card_${index}_image`) || fallbackImage,
-  }))
-  const cards = categoryCards.length > 0 ? categoryCards : fallbackCards
+  const cards = categoryCards
 
   return (
     <motion.section
@@ -289,13 +350,21 @@ function CategoryGridSection({
 function FeaturedCollectionSection({
   section,
   featuredProducts,
+  categories,
   partnerSlug,
 }: {
   section: WebPageItem
   featuredProducts: Product[]
+  categories: Category[]
   partnerSlug?: string
 }) {
-  const buttonLink = buildPartnerShopLink(getField(section, 'lead_link') || '/shop', partnerSlug)
+  const sourceCategoryId = Number.parseInt(getField(section, 'source_category_id'), 10)
+  const sourceCategory = Number.isFinite(sourceCategoryId) && sourceCategoryId > 0
+    ? categories.find((category) => category.id === sourceCategoryId)
+    : undefined
+  const buttonLink = sourceCategory
+    ? buildPartnerCategoryLink(partnerSlug, sourceCategory)
+    : buildPartnerShopLink(getField(section, 'lead_link') || '/shop', partnerSlug)
   const buttonText = section.button_text || 'Shop Collection'
 
   return (
