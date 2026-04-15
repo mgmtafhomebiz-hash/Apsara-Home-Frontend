@@ -205,6 +205,8 @@ export interface AdminEncashmentResponse {
 interface AdminEncashmentQuery {
   filter?: string;
   search?: string;
+  releasedFrom?: string;
+  releasedTo?: string;
   page?: number;
   perPage?: number;
 }
@@ -376,6 +378,8 @@ export const encashmentApi = baseApi.injectEndpoints({
         params: {
           filter: params?.filter ?? 'all',
           q: params?.search,
+          released_from: params?.releasedFrom,
+          released_to: params?.releasedTo,
           page: params?.page ?? 1,
           per_page: params?.perPage ?? 20,
         },

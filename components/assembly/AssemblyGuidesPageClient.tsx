@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
 import { useGetPublicWebPageItemsQuery } from '@/store/api/webPagesApi'
@@ -17,6 +18,7 @@ type Props = {
 }
 
 export default function AssemblyGuidesPageClient({ localGuides = [] }: Props) {
+  const router = useRouter()
   const [search, setSearch] = useState('')
   const [sortOrder, setSortOrder] = useState<'a-z' | 'z-a'>('a-z')
   const [page, setPage] = useState(1)
@@ -81,6 +83,14 @@ export default function AssemblyGuidesPageClient({ localGuides = [] }: Props) {
     setPage(1)
   }
 
+  const handleBack = () => {
+    if (window.history.length > 1) {
+      router.back()
+      return
+    }
+    router.push('/')
+  }
+
   return (
     
     <main className="bg-[radial-gradient(circle_at_top,_rgba(251,146,60,0.12),_transparent_38%),linear-gradient(180deg,_#fff7ed_0%,_#ffffff_28%,_#fffaf5_100%)]">
@@ -93,6 +103,13 @@ export default function AssemblyGuidesPageClient({ localGuides = [] }: Props) {
         <div className="overflow-hidden rounded-[2rem] border border-orange-100 bg-white/90 shadow-[0_24px_80px_rgba(249,115,22,0.10)]">
           <div className="grid gap-8 px-6 py-8 md:grid-cols-[1.2fr_0.8fr] md:px-10 md:py-12">
             <div>
+              <button
+                type="button"
+                onClick={handleBack}
+                className="mb-3 inline-flex items-center gap-2 text-sm font-medium text-orange-500 transition hover:text-orange-600"
+              >
+                ← Back
+              </button>
               <p className="text-xs font-bold uppercase tracking-[0.28em] text-orange-500">All Assembly Guides</p>
               <h1 className="mt-4 max-w-2xl text-4xl font-black tracking-tight text-slate-900 md:text-5xl">
                 All Assembly Guides
@@ -310,3 +327,5 @@ export default function AssemblyGuidesPageClient({ localGuides = [] }: Props) {
     </main>
   )
 }
+
+

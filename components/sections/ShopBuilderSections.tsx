@@ -265,53 +265,46 @@ function CampaignBannersSection({
       transition={{ duration: 0.5, delay: 0.04 }}
       className="!bg-white dark:!bg-gray-900 container mx-auto px-4 py-6"
     >
-      <AnimatePresence initial={false}>
-        <motion.div
-          key={`${title}-${posterUrl}-${videoUrl}`}
-          initial={{ opacity: 0, y: 26, scale: 0.98 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: -18, scale: 0.98 }}
-          transition={{ duration: 0.42 }}
-        >
-          <Link
-            href={link}
-            className="group relative isolate block overflow-hidden rounded-[32px] border border-slate-200 dark:border-gray-700 bg-slate-950"
-          >
-            <div className="relative min-h-[280px] overflow-hidden rounded-[32px] md:min-h-[380px]">
-              {videoUrl ? (
-                <video
-                  className="absolute inset-0 h-full w-full rounded-[32px] object-cover"
-                  src={videoUrl}
-                  poster={posterUrl}
-                  autoPlay
-                  muted
-                  loop
-                  playsInline
-                />
-              ) : (
-                <Image
-                  src={posterUrl}
-                  alt={title}
-                  fill
-                  className="rounded-[32px] object-cover transition-transform duration-700 group-hover:scale-105"
-                  unoptimized
-                />
-              )}
-
-              <div className="absolute inset-0 rounded-[32px] bg-gradient-to-r from-slate-950/85 via-slate-950/45 to-slate-950/10" />
-              <div className="absolute inset-0 rounded-[32px] bg-gradient-to-t from-slate-950/65 via-transparent to-transparent" />
-
-              <div className="relative flex min-h-[280px] md:min-h-[380px] flex-col justify-end p-6 text-white md:p-10">
-                <p className="mb-3 text-xs font-semibold uppercase tracking-[0.28em] text-orange-300">
+      <motion.div
+        initial={{ opacity: 0, y: 26, scale: 0.985 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.45 }}
+      >
+        <Link href={link} className="group relative block overflow-hidden rounded-[32px] border border-slate-200 dark:border-gray-700 bg-slate-950 shadow-[0_24px_60px_rgba(15,23,42,0.14)]">
+          <div className="relative aspect-[21/8] min-h-[240px] w-full md:min-h-[300px]">
+            {videoUrl ? (
+              <video
+                src={videoUrl}
+                poster={posterUrl}
+                className="absolute inset-0 h-full w-full scale-[1.06] object-cover object-center transition-transform duration-700 group-hover:scale-[1.1]"
+                autoPlay
+                muted
+                loop
+                playsInline
+              />
+            ) : (
+              <Image
+                src={posterUrl}
+                alt={title}
+                fill
+                className="object-cover transition-transform duration-700 group-hover:scale-[1.02]"
+                unoptimized
+              />
+            )}
+            <div className="absolute inset-0 bg-gradient-to-r from-slate-950/80 via-slate-950/45 to-slate-950/10" />
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/40 via-transparent to-transparent" />
+            <div className="relative flex h-full items-end p-6 md:p-8">
+              <div className="max-w-xl text-white">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-cyan-300">
                   {eyebrow}
                 </p>
-                <h2 className="max-w-xl text-3xl font-bold leading-tight md:text-5xl">
+                <h2 className="mt-3 text-2xl font-bold leading-tight md:text-4xl">
                   {title}
                 </h2>
                 <p className="mt-3 max-w-lg text-sm text-white/80 md:text-base">
                   {subtitle}
                 </p>
-                <span className="mt-6 inline-flex w-fit rounded-xl bg-orange-500 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-500/30 transition-colors group-hover:bg-orange-400">
+                <span className="mt-5 inline-flex rounded-xl bg-white/12 px-5 py-3 text-sm font-semibold text-white ring-1 ring-inset ring-white/20 backdrop-blur-sm transition group-hover:bg-white/18">
                   {buttonText}
                 </span>
               </div>

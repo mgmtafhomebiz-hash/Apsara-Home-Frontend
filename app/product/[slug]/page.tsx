@@ -33,6 +33,7 @@ interface ApiProductsResponse {
 interface ProductPageData {
   product: CategoryProduct;
   categorySlug: string;
+  categoryId: number;
   categoryLabel: string;
   relatedProducts: CategoryProduct[];
   reviewSummary?: {
@@ -349,6 +350,7 @@ async function getProductPageData(slug: string): Promise<ProductPageData | null>
 
     const categorySlug = getCategorySlugFromProduct(target, categories);
     const matchedCategory = categories.find((c) => normalizeCategorySlug(c.url, c.name) === categorySlug);
+    const categoryId = matchedCategory?.id ?? 0;
     const categoryLabel = matchedCategory?.name ?? categoryMeta[categorySlug]?.label ?? 'Category';
 
     const relatedProducts = products
@@ -387,6 +389,7 @@ async function getProductPageData(slug: string): Promise<ProductPageData | null>
     return {
       product: resolvedProduct,
       categorySlug,
+      categoryId,
       categoryLabel,
       relatedProducts,
       reviewSummary,
@@ -440,7 +443,12 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
           />
           <RelatedProducts products={dynamicData.relatedProducts} category={dynamicData.categorySlug} />
           <ProductQA />
-          <CompleteTheLook currentCategory={dynamicData.categorySlug} />
+          <CompleteTheLook
+            currentCategory={dynamicData.categorySlug}
+            currentCategoryId={dynamicData.categoryId}
+            currentCategoryLabel={dynamicData.categoryLabel}
+            currentProductId={dynamicData.product.id}
+          />
         </div>
       </main>
       <Footer />

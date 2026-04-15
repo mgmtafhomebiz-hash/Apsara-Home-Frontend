@@ -1,6 +1,8 @@
 'use client'
 
 import { motion } from 'framer-motion'
+import { useMemo } from 'react'
+import { useGetExpensesSummaryQuery } from '@/store/api/expensesApi'
 
 interface StatCard {
   label: string
@@ -15,6 +17,27 @@ interface StatCard {
   border: string
   borderDark: string
   valColor: string
+}
+
+const formatMoney = (value: number) =>
+  new Intl.NumberFormat('en-PH', {
+    style: 'currency',
+    currency: 'PHP',
+    maximumFractionDigits: 2,
+  }).format(value || 0)
+
+const dateKey = (value: Date) => {
+  const y = value.getFullYear()
+  const m = String(value.getMonth() + 1).padStart(2, '0')
+  const d = String(value.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
+const monthRange = (offsetMonths: number) => {
+  const now = new Date()
+  const start = new Date(now.getFullYear(), now.getMonth() + offsetMonths, 1)
+  const end = new Date(now.getFullYear(), now.getMonth() + offsetMonths + 1, 0)
+  return { from: dateKey(start), to: dateKey(end) }
 }
 
 const stats: StatCard[] = [
@@ -181,9 +204,45 @@ const stats: StatCard[] = [
 ]
 
 const StatsGrid = () => {
+  const currentMonth = useMemo(() => monthRange(0), [])
+  const lastMonth = useMemo(() => monthRange(-1), [])
+
+  const { data: currentExpenses } = useGetExpensesSummaryQuery({ from: currentMonth.from, to: currentMonth.to, status: 1 })
+  const { data: lastExpenses } = useGetExpensesSummaryQuery({ from: lastMonth.from, to: lastMonth.to, status: 1 })
+
+  const resolvedStats = useMemo(() => {
+    const currentTotal = Number(currentExpenses?.total_amount ?? 0) || 0
+    const lastTotal = Number(lastExpenses?.total_amount ?? 0) || 0
+
+    let pct = 0
+    if (lastTotal > 0) {
+      pct = ((currentTotal - lastTotal) / lastTotal) * 100
+    } else if (currentTotal > 0) {
+      pct = 100
+    }
+
+    const isIncrease = currentTotal > lastTotal
+    const isDecrease = currentTotal < lastTotal
+
+    // For expenses, a decrease is "good" (green arrow).
+    const changeType: StatCard['changeType'] = isIncrease ? 'down' : isDecrease ? 'up' : 'neutral'
+    const change = `${pct >= 0 ? '+' : ''}${pct.toFixed(1)}% vs last month`
+
+    return stats.map((stat) =>
+      stat.label === 'Total Expenses'
+        ? {
+            ...stat,
+            value: formatMoney(currentTotal),
+            change,
+            changeType,
+          }
+        : stat,
+    )
+  }, [currentExpenses?.total_amount, lastExpenses?.total_amount])
+
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-      {stats.map((stat, i) => (
+      {resolvedStats.map((stat, i) => (
         <motion.div
           key={stat.label}
           initial={{ opacity: 0, y: 12 }}
