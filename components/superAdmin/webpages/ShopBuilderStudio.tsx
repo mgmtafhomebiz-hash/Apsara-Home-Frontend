@@ -44,6 +44,25 @@ type BuilderSection = {
 }
 
 const sectionFieldWhitelist: Partial<Record<BuilderSectionId, string[]>> = {
+  'shop-header': [
+    'contact_phone',
+    'contact_email',
+    'marquee_messages',
+    'facebook_label',
+    'facebook_url',
+    'instagram_label',
+    'instagram_url',
+    'tiktok_label',
+    'tiktok_url',
+    'trust_item_1_title',
+    'trust_item_1_desc',
+    'trust_item_2_title',
+    'trust_item_2_desc',
+    'trust_item_3_title',
+    'trust_item_3_desc',
+    'trust_item_4_title',
+    'trust_item_4_desc',
+  ],
   'featured-collection': [
     'left_eyebrow',
     'left_heading',
@@ -488,7 +507,8 @@ export default function ShopBuilderStudio() {
 
   const visibleSelectedFields = useMemo(() => {
     if (selectedSection.id === 'shop-header') {
-      return selectedSection.fields.filter((field) => !/^trust_item_\d+_(title|desc)$/.test(field.key))
+      const allowedFields = new Set(sectionFieldWhitelist['shop-header'] ?? [])
+      return selectedSection.fields.filter((field) => allowedFields.has(field.key) && !/^trust_item_\d+_(title|desc)$/.test(field.key))
     }
     if (selectedSection.id === 'category-grid') {
       return selectedSection.fields.filter(
