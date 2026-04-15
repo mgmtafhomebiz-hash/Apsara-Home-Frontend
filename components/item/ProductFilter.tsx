@@ -360,7 +360,7 @@ export default function ProductFilter({ onFilterChange, className = '', pvRange:
             </button>
             {showPvInfo && (
               <div className="absolute bottom-full left-0 mb-2 w-56 bg-gray-900 dark:bg-gray-700 text-white text-xs rounded-lg p-2 z-10">
-                <p>PV (Product Value) represents the earning points you get when you purchase a product. Higher PV means more value earned.</p>
+                <p>PV (Performance Value) represents the earning points you get when you purchase a product. Higher PV means more value earned.</p>
               </div>
             )}
           </div>
