@@ -1,5 +1,17 @@
 'use client'
 
+export type TopBarConfig = {
+  phone?: string
+  email?: string
+  messages?: string[]
+  facebookLabel?: string
+  facebookUrl?: string
+  instagramLabel?: string
+  instagramUrl?: string
+  tiktokLabel?: string
+  tiktokUrl?: string
+}
+
 function FacebookIcon() {
     return (
         <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
