@@ -4,9 +4,9 @@ import { Star, Quote } from 'lucide-react';
 const testimonials = [
   {
     id: 1,
-    name: 'Sarah Mitchell',
+    name: 'James Dela Cruz',
     role: 'Interior Designer',
-    image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&q=80',
+    image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSKrrwhQ_77kdU7Nn1--i-7HkgF3t1hmGQyDA&s',
     content:
       'The quality of AFhome furniture is exceptional. Every piece I\'ve purchased has exceeded my expectations. Their attention to detail is remarkable.',
     rating: 5,
@@ -15,16 +15,16 @@ const testimonials = [
     id: 2,
     name: 'James Rodriguez',
     role: 'Architect',
-    image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&q=80',
+    image: 'https://t3.ftcdn.net/jpg/06/69/31/58/360_F_669315870_bzhKwzvSERkba6LsjmNh5FhXDtLtM1TS.jpg',
     content:
       "I've furnished multiple client projects with AFhome pieces. The blend of modern design and craftsmanship is unmatched in this price range.",
     rating: 5,
   },
   {
     id: 3,
-    name: 'Emily Chen',
+    name: 'Emily Chua',
     role: 'Homeowner',
-    image: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&q=80',
+    image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS12Z07ElLrs733vYazzm77ZSTb6qMAG1euQg&s',
     content:
       "Our living room was transformed completely. The velvet sofa became the centerpiece of our home. Delivery and setup were seamless.",
     rating: 5,
