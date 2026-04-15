@@ -4,7 +4,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useState } from 'react'
 import { useSession } from 'next-auth/react'
-import { useAddToCartMutation } from '@/store/api/cartApi'
+import { useAddToCartMutation, useGetCartQuery } from '@/store/api/cartApi'
 import { useGetWishlistQuery, useAddWishlistMutation, useRemoveWishlistMutation } from '@/store/api/wishlistApi'
 import { useCart } from '@/context/CartContext'
 import toast from 'react-hot-toast'
@@ -44,6 +44,7 @@ export default function ItemCard({ product, brandName }: ItemCardProps) {
   const isLoggedIn = Boolean(session?.user)
   const [addToCart, { isLoading: isAddingToCart }] = useAddToCartMutation()
   const { setIsOpen } = useCart()
+  const { refetch: refetchCart } = useGetCartQuery(undefined, { skip: !isLoggedIn })
   const [isHoveringShare, setIsHoveringShare] = useState(false)
   
   const handleShareExternal = (type: 'messenger' | 'whatsapp' | 'x' | 'telegram' | 'viber') => {
@@ -90,6 +91,8 @@ export default function ItemCard({ product, brandName }: ItemCardProps) {
       console.log('Add to cart result:', result)
       toast.success('Item added to cart successfully')
       setIsOpen(true)
+      // Refetch cart to sync with backend
+      refetchCart()
     } catch (error: any) {
       console.error('Error adding to cart - Full error object:', JSON.stringify(error, null, 2))
       console.error('Error properties:', {
@@ -150,7 +153,7 @@ export default function ItemCard({ product, brandName }: ItemCardProps) {
   const displayPv = Number(product.prodpv ?? 0)
 
   return (
-    <Link href={href} className="flex flex-col group bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden hover:border-orange-500 dark:hover:border-orange-400 transition-colors">
+    <Link href={href} className="flex flex-col group bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden hover:border-orange-500 dark:hover:border-orange-400 transition-colors cursor-pointer">
       {/* Product Image */}
       <div className="relative aspect-[3/4] w-full bg-gray-100 dark:bg-gray-700 overflow-hidden border-b border-gray-200 dark:border-gray-700">
         {/* Action Icons */}
@@ -159,7 +162,7 @@ export default function ItemCard({ product, brandName }: ItemCardProps) {
             <button
             onClick={handleWishlist}
             disabled={isAddingToWishlist || isRemovingFromWishlist}
-            className={`p-2 rounded-full backdrop-blur-md border shadow-lg transition-all duration-200 cursor-pointer ${
+            className={`p-2 rounded-full backdrop-blur-md border shadow-lg transition-all duration-200 cursor-pointer hover:cursor-hand ${
               isInWishlist 
                 ? 'bg-orange-500 border-orange-500 hover:bg-orange-600 hover:border-orange-600' 
                 : 'bg-white/90 dark:bg-gray-800/90 border-gray-200 dark:border-gray-600 hover:bg-orange-500 hover:border-orange-500 dark:hover:bg-orange-500 dark:hover:border-orange-500'
@@ -190,7 +193,7 @@ export default function ItemCard({ product, brandName }: ItemCardProps) {
             onClick={handleShare}
             onMouseEnter={() => setIsHoveringShare(true)}
             onMouseLeave={() => setIsHoveringShare(false)}
-            className="p-2 rounded-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-md border border-gray-200 dark:border-gray-600 shadow-lg hover:bg-orange-500 hover:border-orange-500 dark:hover:bg-orange-500 dark:hover:border-orange-500 transition-all duration-200 cursor-pointer"
+            className="p-2 rounded-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-md border border-gray-200 dark:border-gray-600 shadow-lg hover:bg-orange-500 hover:border-orange-500 dark:hover:bg-orange-500 dark:hover:border-orange-500 transition-all duration-200 cursor-pointer hover:cursor-hand"
           >
             {isHoveringShare ? (
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-700 dark:text-gray-300 hover:text-white transition-colors">
@@ -238,7 +241,7 @@ export default function ItemCard({ product, brandName }: ItemCardProps) {
         <button
           onClick={handleAddToCart}
           disabled={isAddingToCart}
-          className="absolute bottom-3 right-3 flex items-center justify-center gap-2 rounded-full bg-orange-500 hover:bg-orange-600 px-4 py-2 text-sm font-semibold text-white opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          className="absolute bottom-3 right-3 flex items-center justify-center gap-2 rounded-full bg-orange-500 hover:bg-orange-600 px-4 py-2 text-sm font-semibold text-white opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 cursor-pointer hover:cursor-hand disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isAddingToCart ? (
             <>
