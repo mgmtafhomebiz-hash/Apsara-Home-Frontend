@@ -9,6 +9,7 @@ type TokenUser = {
   supplierName?: string | null;
   supplierLevelType?: number | null;
   isMainSupplier?: boolean;
+  sessionTimeoutMinutes?: number;
 };
 
 const isProd = process.env.NODE_ENV === 'production';
@@ -21,6 +22,9 @@ export const supplierAuthOptions: NextAuthOptions = {
       credentials: {
         login: { label: 'Email or Username', type: 'text' },
         password: { label: 'Password', type: 'password' },
+        otp: { label: 'OTP', type: 'text' },
+        otp_challenge_token: { label: 'OTP Challenge Token', type: 'text' },
+        resend_otp: { label: 'Resend OTP', type: 'text' },
       },
       async authorize(credentials) {
         if (!credentials?.login || !credentials?.password) {
@@ -28,24 +32,47 @@ export const supplierAuthOptions: NextAuthOptions = {
         }
 
         try {
-          const url = `${process.env.LARAVEL_API_URL}/api/supplier/auth/login`;
+          const isResendOtp = credentials.resend_otp === '1';
+          const url = isResendOtp
+            ? `${process.env.LARAVEL_API_URL}/api/supplier/auth/login/2fa/resend`
+            : `${process.env.LARAVEL_API_URL}/api/supplier/auth/login`;
+          const body = isResendOtp
+            ? {
+                otp_challenge_token: credentials.otp_challenge_token,
+              }
+            : {
+                login: credentials.login,
+                password: credentials.password,
+                otp: credentials.otp?.trim() || undefined,
+                otp_challenge_token: credentials.otp_challenge_token || undefined,
+              };
           const res = await fetch(url, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
               'Accept': 'application/json',
             },
-            body: JSON.stringify({
-              login: credentials.login,
-              password: credentials.password,
-            }),
+            body: JSON.stringify(body),
           });
+          const data = await res.json();
+          if (data?.requires_otp) {
+            const token = String(data.otp_challenge_token ?? '');
+            const message = String(data.message ?? 'OTP required');
+            throw new Error(`2FA_REQUIRED|${token}|${message}`);
+          }
 
           if (!res.ok) {
+            const errBody = data as { message?: string; errors?: Record<string, string[]> };
+            const firstValidation = errBody.errors ? Object.values(errBody.errors)[0]?.[0] : undefined;
+            const message = firstValidation || errBody.message || '';
+            if (message) throw new Error(message);
             return null;
           }
 
-          const data = await res.json();
+          if (isResendOtp) {
+            return null;
+          }
+
           if (!data.user || !data.token) return null;
 
           return {
@@ -58,8 +85,12 @@ export const supplierAuthOptions: NextAuthOptions = {
             supplierName: data.user.supplier_name ?? null,
             supplierLevelType: data.user.level_type ?? null,
             isMainSupplier: Boolean(data.user.is_main_supplier),
+            sessionTimeoutMinutes: Number(data.user.session_timeout_minutes ?? 60),
           };
-        } catch {
+        } catch (error) {
+          if (error instanceof Error && error.message) {
+            throw error;
+          }
           return null;
         }
       }
@@ -115,6 +146,10 @@ export const supplierAuthOptions: NextAuthOptions = {
         token.supplierName = authUser.supplierName;
         token.supplierLevelType = authUser.supplierLevelType;
         token.isMainSupplier = authUser.isMainSupplier;
+        token.sessionTimeoutMinutes = authUser.sessionTimeoutMinutes;
+        if (typeof authUser.sessionTimeoutMinutes === 'number' && Number.isFinite(authUser.sessionTimeoutMinutes)) {
+          token.exp = Math.floor(Date.now() / 1000) + (Math.max(5, authUser.sessionTimeoutMinutes) * 60);
+        }
       }
       if (trigger === 'update' && session) {
         const nextSession = session as {
@@ -141,6 +176,7 @@ export const supplierAuthOptions: NextAuthOptions = {
         sessionUser.supplierName = authToken.supplierName;
         sessionUser.supplierLevelType = authToken.supplierLevelType;
         sessionUser.isMainSupplier = authToken.isMainSupplier;
+        sessionUser.sessionTimeoutMinutes = authToken.sessionTimeoutMinutes;
       }
       return session;
     },

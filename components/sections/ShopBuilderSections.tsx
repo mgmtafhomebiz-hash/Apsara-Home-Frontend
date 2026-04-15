@@ -274,22 +274,49 @@ function CampaignBannersSection({
       transition={{ duration: 0.5, delay: 0.04 }}
       className="!bg-white dark:!bg-gray-900 container mx-auto px-4 py-6"
     >
-      <div className="grid gap-3 md:grid-cols-2">
-        <AnimatePresence initial={false}>
-          {banners.map((banner, index) => (
-            <motion.div
-              key={`${banner.title}-${banner.image}`}
-              initial={{ opacity: 0, y: 26, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -18, scale: 0.98 }}
-              transition={{ duration: 0.42, delay: index * 0.08 }}
-            >
-              <Link href={banner.link} className="group relative block overflow-hidden rounded-3xl border border-slate-200 dark:border-gray-700 bg-slate-200 dark:bg-gray-800 p-5">
-            <Image src={banner.image} alt={banner.title} fill className="object-cover transition-transform duration-700 group-hover:scale-105" unoptimized />
-            <div className="absolute inset-0 bg-gradient-to-r from-slate-950/75 to-slate-900/20" />
-            <div className="relative flex min-h-[170px] flex-col justify-end text-white">
-              <p className="text-xl font-bold">{banner.title}</p>
-              <p className="mt-1 max-w-[240px] text-sm text-white/80">{banner.subtitle}</p>
+      <motion.div
+        initial={{ opacity: 0, y: 26, scale: 0.985 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.45 }}
+      >
+        <Link href={link} className="group relative block overflow-hidden rounded-[32px] border border-slate-200 dark:border-gray-700 bg-slate-950 shadow-[0_24px_60px_rgba(15,23,42,0.14)]">
+          <div className="relative aspect-[21/8] min-h-[240px] w-full md:min-h-[300px]">
+            {videoUrl ? (
+              <video
+                src={videoUrl}
+                poster={posterUrl}
+                className="absolute inset-0 h-full w-full scale-[1.06] object-cover object-center transition-transform duration-700 group-hover:scale-[1.1]"
+                autoPlay
+                muted
+                loop
+                playsInline
+              />
+            ) : (
+              <Image
+                src={posterUrl}
+                alt={title}
+                fill
+                className="object-cover transition-transform duration-700 group-hover:scale-[1.02]"
+                unoptimized
+              />
+            )}
+            <div className="absolute inset-0 bg-gradient-to-r from-slate-950/80 via-slate-950/45 to-slate-950/10" />
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/40 via-transparent to-transparent" />
+            <div className="relative flex h-full items-end p-6 md:p-8">
+              <div className="max-w-xl text-white">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-cyan-300">
+                  {eyebrow}
+                </p>
+                <h2 className="mt-3 text-2xl font-bold leading-tight md:text-4xl">
+                  {title}
+                </h2>
+                <p className="mt-3 max-w-lg text-sm text-white/80 md:text-base">
+                  {subtitle}
+                </p>
+                <span className="mt-5 inline-flex rounded-xl bg-white/12 px-5 py-3 text-sm font-semibold text-white ring-1 ring-inset ring-white/20 backdrop-blur-sm transition group-hover:bg-white/18">
+                  {buttonText}
+                </span>
+              </div>
             </div>
           </div>
         </Link>
