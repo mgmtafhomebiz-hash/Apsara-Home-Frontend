@@ -3,7 +3,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { useState, useMemo, useEffect, useRef } from 'react';
-import Footer from '@/components/layout/Footer';
+import Footer from '@/components/landing-page/Footer';
 import TopBar from '@/components/layout/TopBar';
 import Navbar from '@/components/layout/Navbar';
 import ItemCard from '@/components/item/ItemCard';
