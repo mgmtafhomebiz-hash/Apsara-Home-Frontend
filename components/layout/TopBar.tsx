@@ -61,7 +61,7 @@ export default function TopBar({
     { icon: FacebookIcon, href: facebookUrl, label: facebookLabel },
     { icon: InstagramIcon, href: instagramUrl, label: instagramLabel },
     { icon: TikTokIcon, href: tiktokUrl, label: tiktokLabel },
-  ]
+  ].filter((social) => Boolean(social.href?.trim()))
 
   return (
     <div className="sticky top-0 z-[51] bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-white text-xs py-2 overflow-hidden">

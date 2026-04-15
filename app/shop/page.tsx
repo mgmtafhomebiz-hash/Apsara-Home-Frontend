@@ -37,6 +37,30 @@ const parseList = (value: string) =>
     .map((item) => item.trim())
     .filter(Boolean)
 
+const parseTrustItems = (item: ShopBuilderApiResponse['items'][number] | undefined) => {
+  const fields = (((item?.payload ?? {}) as { fields?: Record<string, string> }).fields ?? {})
+  const grouped = new Map<number, { title: string; desc: string }>()
+
+  Object.entries(fields).forEach(([key, value]) => {
+    const match = key.match(/^trust_item_(\d+)_(title|desc)$/)
+    if (!match) return
+
+    const index = Number.parseInt(match[1], 10)
+    const kind = match[2]
+    const current = grouped.get(index) ?? { title: '', desc: '' }
+
+    if (kind === 'title') current.title = value
+    if (kind === 'desc') current.desc = value
+
+    grouped.set(index, current)
+  })
+
+  return Array.from(grouped.entries())
+    .sort((a, b) => a[0] - b[0])
+    .map(([, trustItem]) => trustItem)
+    .filter((trustItem) => trustItem.title || trustItem.desc)
+}
+
 const getShopHeaderConfig = (items: ShopBuilderApiResponse['items']) => {
   const shopHeader = getItemByKey(items, 'shop-header')
 
@@ -45,20 +69,15 @@ const getShopHeaderConfig = (items: ShopBuilderApiResponse['items']) => {
     email: getField(shopHeader, 'contact_email') || 'hello@afhome.ph',
     messages: parseList(getField(shopHeader, 'marquee_messages')),
     facebookLabel: getField(shopHeader, 'facebook_label') || 'FB',
-    facebookUrl: getField(shopHeader, 'facebook_url') || '#',
+    facebookUrl: getField(shopHeader, 'facebook_url'),
     instagramLabel: getField(shopHeader, 'instagram_label') || 'IG',
-    instagramUrl: getField(shopHeader, 'instagram_url') || '#',
+    instagramUrl: getField(shopHeader, 'instagram_url'),
     tiktokLabel: getField(shopHeader, 'tiktok_label') || 'TikTok',
-    tiktokUrl: getField(shopHeader, 'tiktok_url') || '#',
+    tiktokUrl: getField(shopHeader, 'tiktok_url'),
   }
 
   const trustBar: TrustBarConfig = {
-    items: [1, 2, 3, 4]
-      .map((index) => ({
-        title: getField(shopHeader, `trust_item_${index}_title`),
-        desc: getField(shopHeader, `trust_item_${index}_desc`),
-      }))
-      .filter((item) => item.title || item.desc),
+    items: parseTrustItems(shopHeader),
   }
 
   return { topBar, trustBar }
