@@ -896,7 +896,7 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
                 </div>
 
                 <motion.div whileTap={{ scale: 0.96 }} transition={{ duration: 0.12 }}>
-                  <PrimaryButton href="/login" className="!px-5 !py-2 !text-sm !rounded-full h-10">
+                  <PrimaryButton href={`/login?callback=${encodeURIComponent(pathname)}`} className="!px-5 !py-2 !text-sm !rounded-full h-10">
                     <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0">
                       <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                       <circle cx="12" cy="7" r="4" />
@@ -1267,7 +1267,7 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
                   <div className="bg-white px-4 py-3 flex gap-2">
                     <motion.div whileTap={{ scale: 0.97 }} transition={{ duration: 0.12 }} className="flex-1">
                       <PrimaryButton
-                        href="/login"
+                        href={`/login?callback=${encodeURIComponent(pathname)}`}
                         onClick={() => setMobileOpen(false)}
                         className="!w-full !px-4 !py-2.5 !text-sm !rounded-[18px]"
                       >
