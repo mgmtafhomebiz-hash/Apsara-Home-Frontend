@@ -73,6 +73,21 @@ const formatRelativeTime = (value?: string | null) => {
     return `${diffDays}d ago`;
 };
 
+const formatExactNotificationTime = (value?: string | null) => {
+    const date = parseNotificationDate(value);
+    if (!date) return '';
+
+    return date.toLocaleString('en-PH', {
+        timeZone: 'Asia/Manila',
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+    });
+};
+
 const resolveNotificationHref = (notif: AdminNotificationItem) => {
     const rawHref = (notif.href || '/admin/orders').trim();
     const fallbackHref = rawHref.startsWith('/') ? rawHref : '/admin/orders';
@@ -497,8 +512,12 @@ const Header = ({ onMenuClick }: HeaderProps) => {
                                                             )}
                                                         </div>
                                                         <p className="mt-0.5 text-xs leading-relaxed text-slate-500 dark:text-slate-400">{notif.description}</p>
-                                                        {formatRelativeTime(notif.updated_at) && (
-                                                            <p className="mt-1 text-[11px] text-slate-400 dark:text-slate-500">{formatRelativeTime(notif.updated_at)}</p>
+                                                        {(formatExactNotificationTime(notif.updated_at) || formatRelativeTime(notif.updated_at)) && (
+                                                            <p className="mt-1 text-[11px] text-slate-400 dark:text-slate-500">
+                                                                {formatExactNotificationTime(notif.updated_at)}
+                                                                {formatExactNotificationTime(notif.updated_at) && formatRelativeTime(notif.updated_at) ? ' · ' : ''}
+                                                                {formatRelativeTime(notif.updated_at)}
+                                                            </p>
                                                         )}
                                                     </div>
                                                 </button>
