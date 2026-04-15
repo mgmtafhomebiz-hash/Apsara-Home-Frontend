@@ -91,7 +91,7 @@ const CompleteTheLook = ({ currentCategory, currentCategoryId, currentCategoryLa
       ? {
           page: 1,
           perPage: 18,
-          status: 1,
+          status: '1',
           catId: currentCategoryId,
         }
       : undefined,
