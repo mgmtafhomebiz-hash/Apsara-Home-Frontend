@@ -15,6 +15,8 @@ import { useGetPublicProductsQuery } from '@/store/api/productsApi'
 import formatPrice from '@/helpers/FormatPrice'
 import { useMeQuery } from '@/store/api/userApi'
 import { useGetCustomerNotificationsQuery } from '@/store/api/customerNotificationsApi'
+import { useGetWishlistQuery } from '@/store/api/wishlistApi'
+import { useWishlist } from '@/context/WishlistContext'
 import { useRouter, usePathname } from 'next/navigation'
 import { useAppDispatch } from '@/store/hooks'
 import { ROOM_OPTIONS } from '@/libs/roomConfig'
@@ -22,8 +24,6 @@ import { useGetPublicProductBrandsQuery } from '@/store/api/productBrandsApi'
 import PrimaryButton from '@/components/ui/buttons/PrimaryButton'
 import OutlineButton from '@/components/ui/buttons/OutlineButton'
 import ThemeToggle from '@/components/ui/buttons/ThemeToggle'
-import Chat from '@/components/chat/Chat'
-import ConversationList from '@/components/chat/ConversationList'
 
 type NavLink = {
   label: string;
@@ -108,15 +108,13 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null)
   const [profileMenuOpen, setProfileMenuOpen] = useState(false)
   const [notifMenuOpen, setNotifMenuOpen] = useState(false)
-  const [isChatOpen, setIsChatOpen] = useState(false)
-  const [chatMode, setChatMode] = useState<'list' | 'chat'>('list')
-  const [selectedConversation, setSelectedConversation] = useState<{ name: string; avatar?: string } | null>(null)
   const [searchModalQuery, setSearchModalQuery] = useState('')
   const [megaSearch, setMegaSearch] = useState('')
   const [mobileSearch, setMobileSearch] = useState('')
   const [brandSearch, setBrandSearch] = useState('')
   const [mobileBrandSearch, setMobileBrandSearch] = useState('')
   const { cartCount, setIsOpen } = useCart()
+  const { isOpen: isWishlistOpen, setIsOpen: setWishlistOpen } = useWishlist()
   const dispatch = useAppDispatch()
   const { data: session, status } = useSession();
   const user = session?.user
@@ -138,14 +136,16 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
     refetchOnFocus: true,
   })
   const customerNotificationStorageKey = `afhome-customer-notif-read:${customerNotificationCacheKey}`
+  const {
+    data: wishlist = [],
+  } = useGetWishlistQuery(undefined, {
+    skip: !isLoggedIn,
+  })
   const [readCustomerNotificationKeys, setReadCustomerNotificationKeys] = useState<string[]>([])
 
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const profileMenuRef = useRef<HTMLDivElement | null>(null)
   const notifMenuRef = useRef<HTMLDivElement | null>(null)
-  const chatMenuRef = useRef<HTMLDivElement | null>(null)
-  const chatModeRef = useRef<'list' | 'chat'>('list')
-  chatModeRef.current = chatMode
   const searchInputRef = useRef<HTMLInputElement | null>(null)
   const [searchModalOpen, setSearchModalOpen] = useState(false)
 
@@ -287,7 +287,6 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
       const target = event.target as Node
       const clickedOutsideProfile = !profileMenuRef.current || !profileMenuRef.current.contains(target)
       const clickedOutsideNotifications = !notifMenuRef.current || !notifMenuRef.current.contains(target)
-      const clickedOutsideChat = !chatMenuRef.current || !chatMenuRef.current.contains(target)
 
       if (clickedOutsideProfile) {
         setProfileMenuOpen(false)
@@ -295,15 +294,11 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
       if (clickedOutsideNotifications) {
         setNotifMenuOpen(false)
       }
-      if (clickedOutsideChat && chatModeRef.current !== 'chat') {
-        setIsChatOpen(false)
-      }
     }
 
     const onEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') setProfileMenuOpen(false)
       if (event.key === 'Escape') setNotifMenuOpen(false)
-      if (event.key === 'Escape' && chatModeRef.current !== 'chat') setIsChatOpen(false)
       if (event.key === 'Escape') {
         setSearchModalOpen(false)
         setSearchModalQuery('')
@@ -549,15 +544,20 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
             {/* Auth actions */}
             {isLoggedIn ? (
               <>
-                <Link
-                  href="/wishlist"
-                  className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                  title="Wishlist"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="m12 21-1.45-1.32C5.4 15.36 2 12.28 2 8.5A4.5 4.5 0 0 1 6.5 4 5 5 0 0 1 12 6.09 5 5 0 0 1 17.5 4 4.5 4.5 0 0 1 22 8.5c0 3.78-3.4 6.86-8.55 11.18z" />
-                  </svg>
-                </Link>
+                <button
+                    onClick={() => setWishlistOpen(true)}
+                    className="relative p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer"
+                    title="Wishlist"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                    </svg>
+                    {wishlist.length > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-[10px] rounded-full min-w-[16px] h-4 px-1 flex items-center justify-center">
+                        {wishlist.length > 99 ? '99+' : wishlist.length}
+                      </span>
+                    )}
+                  </button>
                 <div className="relative" ref={notifMenuRef}>
                   <button
                     onClick={() => {
@@ -567,7 +567,7 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
                         refetchNotifications()
                       }
                     }}
-                    className="relative p-2 rounded-xl hover:bg-gray-100 transition-colors"
+                    className="relative p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer"
                     title="Notifications"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -681,31 +681,6 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
                     )}
                   </AnimatePresence>
                 </div>
-                <div className="relative" ref={chatMenuRef}>
-                  <button
-                    onClick={() => {
-                      if (chatMode === 'chat' && isChatOpen) return
-                      setIsChatOpen((prev) => !prev)
-                      setChatMode('list')
-                    }}
-                    className={`relative p-2 rounded-xl transition-colors cursor-pointer ${isChatOpen ? 'bg-orange-100 text-orange-600' : 'hover:bg-gray-100'}`}
-                    title="Messages"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                    </svg>
-                  </button>
-                  {chatMode === 'list' && (
-                    <ConversationList
-                      isOpen={isChatOpen}
-                      onClose={() => setIsChatOpen(false)}
-                      onSelectConversation={(conv) => {
-                        setSelectedConversation(conv)
-                        setChatMode('chat')
-                      }}
-                    />
-                  )}
-                </div>
                 <button
                   onClick={() => setIsOpen(true)}
                   className="relative p-2 rounded-xl hover:bg-gray-100 active:bg-gray-200 transition-colors cursor-pointer"
@@ -742,7 +717,7 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
                       setProfileMenuOpen((prev) => !prev)
                       setNotifMenuOpen(false)
                     }}
-                    className="flex items-center gap-2 p-2 rounded-xl hover:bg-gray-100 transition-colors"
+                    className="flex items-center gap-2 p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer"
                     title="Profile menu"
                   >
                     {avatarUrl ? (
@@ -1622,21 +1597,6 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
       </AnimatePresence>,
       document.body,
     )}
-    {chatMode === 'chat' && (
-      <Chat
-        isOpen={isChatOpen}
-        onClose={() => {
-          setIsChatOpen(false)
-          setChatMode('list')
-          setSelectedConversation(null)
-        }}
-        brandName={selectedConversation?.name}
-        brandImage={selectedConversation?.avatar}
-        mode="chat"
-        onBackToList={() => setChatMode('list')}
-      />
-    )}
-    </>
+  </>
   )
 }
-
