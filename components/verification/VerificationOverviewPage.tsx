@@ -64,7 +64,7 @@ function getStatusInfo(status: VerificationStatus) {
         badge: 'bg-emerald-50 text-emerald-700 border-emerald-200',
         label: 'Verified',
         ctaLabel: 'View Profile',
-        ctaHref: '/profile',
+        ctaHref: '/profile?tab=encashment',
         ctaPrimary: true,
       }
     case 'pending_review':
@@ -74,7 +74,7 @@ function getStatusInfo(status: VerificationStatus) {
         badge: 'bg-amber-50 text-amber-700 border-amber-200',
         label: 'Pending review',
         ctaLabel: 'Review My Submission',
-        ctaHref: '/verification/status',
+        ctaHref: '/profile?tab=encashment&focus=verification#verification-form',
         ctaPrimary: false,
       }
     case 'on_hold':
@@ -84,7 +84,7 @@ function getStatusInfo(status: VerificationStatus) {
         badge: 'bg-slate-100 text-slate-600 border-slate-300',
         label: 'On hold',
         ctaLabel: 'View Submission',
-        ctaHref: '/verification/status',
+        ctaHref: '/profile?tab=encashment&focus=verification#verification-form',
         ctaPrimary: false,
       }
     default:
@@ -94,7 +94,7 @@ function getStatusInfo(status: VerificationStatus) {
         badge: 'bg-orange-50 text-orange-700 border-orange-200',
         label: 'Not verified',
         ctaLabel: 'Start Verification',
-        ctaHref: '/verification/submit',
+        ctaHref: '/profile?tab=encashment&focus=verification#verification-form',
         ctaPrimary: true,
       }
   }

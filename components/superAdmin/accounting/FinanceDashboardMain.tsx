@@ -24,54 +24,54 @@ export default function FinanceDashboardMain() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-xl font-bold text-slate-800">Finance Officer Dashboard</h1>
-        <p className="text-sm text-slate-500 mt-0.5">Final payout release workspace after accounting approval.</p>
+        <h1 className="text-xl font-bold text-slate-800 dark:text-white">Finance Officer Dashboard</h1>
+        <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Final payout release workspace after accounting approval.</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <div className="rounded-2xl border border-blue-100 bg-blue-50 p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">Ready for Release</p>
-          <p className="text-2xl font-black text-blue-800 mt-1">{forReleaseCount}</p>
+        <div className="rounded-2xl border border-blue-100 dark:border-blue-500/30 bg-blue-50 dark:bg-blue-500/10 p-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-300">Ready for Release</p>
+          <p className="text-2xl font-black text-blue-800 dark:text-blue-300 mt-1">{forReleaseCount}</p>
         </div>
-        <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">Queue Amount</p>
-          <p className="text-2xl font-black text-emerald-800 mt-1">{formatMoney(forReleaseAmount)}</p>
+        <div className="rounded-2xl border border-emerald-100 dark:border-emerald-500/30 bg-emerald-50 dark:bg-emerald-500/10 p-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Queue Amount</p>
+          <p className="text-2xl font-black text-emerald-800 dark:text-emerald-300 mt-1">{formatMoney(forReleaseAmount)}</p>
         </div>
-        <div className="rounded-2xl border border-slate-200 bg-white p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Action</p>
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Action</p>
           <Link
             href="/admin/encashment/approved_by_admin"
-            className="mt-2 inline-flex rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-800"
+            className="mt-2 inline-flex rounded-lg bg-slate-900 dark:bg-slate-700 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-800 dark:hover:bg-slate-600"
           >
             Open Release Center
           </Link>
         </div>
       </div>
 
-      <div className="rounded-2xl border border-slate-100 bg-white p-4">
+      <div className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-slate-800">Top Queue Items</h2>
-          <Link href="/admin/encashment/approved_by_admin" className="text-xs font-semibold text-teal-600 hover:text-teal-700">
+          <h2 className="text-sm font-semibold text-slate-800 dark:text-white">Top Queue Items</h2>
+          <Link href="/admin/encashment/approved_by_admin" className="text-xs font-semibold text-teal-600 hover:text-teal-700 dark:text-teal-400 dark:hover:text-teal-300">
             View all
           </Link>
         </div>
 
         {isError ? (
-          <div className="mt-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+          <div className="mt-3 rounded-xl border border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-500/10 p-3 text-sm text-red-700 dark:text-red-300">
             Failed to load finance queue.
           </div>
         ) : isLoading ? (
           <div className="mt-3 space-y-2 animate-pulse">
             {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="h-10 rounded bg-slate-100" />
+              <div key={i} className="h-10 rounded bg-slate-100 dark:bg-slate-800" />
             ))}
           </div>
         ) : queue.length === 0 ? (
-          <p className="mt-3 text-sm text-slate-500">No approved requests waiting for release.</p>
+          <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">No approved requests waiting for release.</p>
         ) : (
           <div className="mt-3 overflow-auto">
-            <table className="w-full min-w-[760px]">
-              <thead className="border-b border-slate-100 bg-slate-50 text-xs text-slate-500">
+            <table className="w-full min-w-190">
+              <thead className="border-b border-slate-100 dark:border-slate-800 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 text-xs text-slate-500 dark:text-slate-400">
                 <tr>
                   <th className="px-3 py-2 text-left font-semibold">Reference</th>
                   <th className="px-3 py-2 text-left font-semibold">Affiliate</th>
@@ -82,12 +82,12 @@ export default function FinanceDashboardMain() {
               </thead>
               <tbody>
                 {queue.slice(0, 10).map((row) => (
-                  <tr key={row.id} className="border-b border-slate-50 text-sm last:border-b-0">
-                    <td className="px-3 py-2 text-slate-800 font-medium">{row.reference_no}</td>
-                    <td className="px-3 py-2 text-slate-700">{row.affiliate_name || 'Affiliate'}</td>
-                    <td className="px-3 py-2 text-slate-700 uppercase">{row.channel}</td>
-                    <td className="px-3 py-2 text-slate-800 font-semibold">{formatMoney(row.amount)}</td>
-                    <td className="px-3 py-2 text-slate-600">{row.approved_at || 'N/A'}</td>
+                  <tr key={row.id} className="border-b border-slate-100 dark:border-slate-800 dark:border-slate-800/70 text-sm last:border-b-0">
+                    <td className="px-3 py-2 text-slate-800 dark:text-slate-100 font-medium">{row.reference_no}</td>
+                    <td className="px-3 py-2 text-slate-700 dark:text-slate-300">{row.affiliate_name || 'Affiliate'}</td>
+                    <td className="px-3 py-2 text-slate-700 dark:text-slate-300 uppercase">{row.channel}</td>
+                    <td className="px-3 py-2 text-slate-800 dark:text-slate-100 font-semibold">{formatMoney(row.amount)}</td>
+                    <td className="px-3 py-2 text-slate-600 dark:text-slate-400">{row.approved_at || 'N/A'}</td>
                   </tr>
                 ))}
               </tbody>

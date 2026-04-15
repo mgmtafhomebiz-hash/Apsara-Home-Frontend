@@ -268,8 +268,15 @@ const EncashmentTab = () => {
   const verification = data?.verification;
   const isEligibleByPolicy = Boolean(eligibility?.eligible ?? true);
   const needsVerification = Boolean(eligibility && !eligibility.has_active_account);
+  const hasReachedVerificationThreshold = Boolean(
+    eligibility
+      && policy
+      && (eligibility.available_amount || 0) >= (policy.min_amount || 0)
+      && (eligibility.current_points || 0) >= (policy.min_points || 0),
+  );
+  const canSubmitVerification = needsVerification && hasReachedVerificationThreshold;
   const isVerificationPending = verification?.status === 'pending_review';
-  const showMessageInVerificationCard = Boolean(message) && needsVerification && !isVerificationPending;
+  const showMessageInVerificationCard = Boolean(message) && canSubmitVerification && !isVerificationPending;
   const focusVerification = searchParams.get('focus') === 'verification';
   const selectedVerificationRegion = phVerification.address.region || verificationForm.region.trim();
   const selectedVerificationProvince = (phVerification.noProvince
@@ -362,7 +369,7 @@ const EncashmentTab = () => {
   ]);
 
   useEffect(() => {
-    if (!needsVerification || isVerificationPending || !focusVerification) return;
+    if (!canSubmitVerification || isVerificationPending || !focusVerification) return;
 
     setIsVerificationSpotlightActive(true);
     const rafId = window.requestAnimationFrame(() => {
@@ -374,7 +381,7 @@ const EncashmentTab = () => {
       window.cancelAnimationFrame(rafId);
       window.clearTimeout(timeoutId);
     };
-  }, [focusVerification, isVerificationPending, needsVerification]);
+  }, [canSubmitVerification, focusVerification, isVerificationPending]);
 
   const summary = useMemo(() => {
     return rows.reduce(
@@ -695,15 +702,17 @@ const EncashmentTab = () => {
     }
 
     if (!isEligibleByPolicy) {
-      if (needsVerification && !isVerificationPending) {
+      if (canSubmitVerification && !isVerificationPending) {
         setIsVerificationSpotlightActive(true);
         verificationFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         window.setTimeout(() => setIsVerificationSpotlightActive(false), 1800);
       }
       setMessage({
         type: 'error',
-        text: needsVerification && !isVerificationPending
-          ? 'Complete your verification first before submitting an encashment request.'
+        text: canSubmitVerification && !isVerificationPending
+          ? 'Submit your verification first before requesting encashment.'
+          : needsVerification
+            ? `Reach ${money.format(policy?.min_amount || 0)} available encashment balance first to unlock verification submission.`
           : (eligibility?.message || 'You are currently not eligible to submit an encashment request.'),
       });
       return;
@@ -1071,7 +1080,27 @@ const EncashmentTab = () => {
       </div>
       )}
 
-      {isCustomerSession && needsVerification && !isVerificationPending && (
+      {isCustomerSession && needsVerification && !isVerificationPending && !canSubmitVerification && (
+        <div className="rounded-2xl border border-blue-200 bg-blue-50 p-5 md:p-6">
+          <div className="flex items-start gap-3">
+            <div className="mt-0.5 h-8 w-8 shrink-0 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-bold">
+              i
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-blue-900">Verification Unlocks at the Minimum Threshold</h3>
+              <p className="mt-1 text-sm text-blue-800">
+                Your KYC verification form will appear once your available encashment balance reaches {money.format(policy?.min_amount || 0)}.
+              </p>
+              <div className="mt-2 text-xs text-blue-900/80 space-y-1">
+                <p>Available now: <span className="font-semibold">{money.format(eligibility?.available_amount || 0)}</span></p>
+                <p>Required minimum: <span className="font-semibold">{money.format(policy?.min_amount || 0)}</span></p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isCustomerSession && canSubmitVerification && !isVerificationPending && (
         <motion.div
           ref={verificationFormRef}
           id="verification-form"

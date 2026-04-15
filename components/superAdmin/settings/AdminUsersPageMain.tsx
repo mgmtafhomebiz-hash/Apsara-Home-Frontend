@@ -547,7 +547,7 @@ function AdminActivityModal({
         onClick={e => e.stopPropagation()}
         className="relative z-10 w-full max-w-3xl max-h-[86vh] overflow-hidden rounded-3xl bg-white shadow-2xl border border-slate-200"
       >
-        <div className="px-6 py-5 border-b border-slate-100 flex items-start justify-between gap-4">
+        <div className="px-6 py-5 border-b border-slate-100 dark:border-slate-800 flex items-start justify-between gap-4">
           <div className="min-w-0">
             <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Account Activity</p>
             <h3 className="mt-1 text-xl font-bold text-slate-800">{target.name}</h3>
@@ -654,7 +654,7 @@ function EditModal({
         className="relative bg-white rounded-2xl shadow-xl w-full max-w-lg z-10 overflow-hidden"
       >
         {/* Header */}
-        <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-3">
+        <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3">
           <div className={`h-9 w-9 rounded-full bg-linear-to-br ${avatarGrad(target.name)} flex items-center justify-center text-white text-xs font-bold shrink-0`}>
             {getInitials(target.name)}
           </div>
@@ -1045,10 +1045,10 @@ export default function AdminUsersPageMain() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.05 }}
         onSubmit={handleCreate}
-        className="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden"
+        className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden"
       >
         {/* Form header with live avatar */}
-        <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-3">
+        <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3">
           <div className={`h-10 w-10 rounded-xl bg-linear-to-br ${nameGrad} flex items-center justify-center text-white text-sm font-bold shrink-0 transition-all duration-300`}>
             {nameInitials ?? (
               <svg className="w-5 h-5 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1247,10 +1247,10 @@ export default function AdminUsersPageMain() {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden"
+        className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden"
       >
         {/* Toolbar */}
-        <div className="px-5 py-4 border-b border-slate-100 flex items-center gap-3 flex-wrap">
+        <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3 flex-wrap">
           <div className="relative flex-1 min-w-50">
             <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -1316,7 +1316,7 @@ export default function AdminUsersPageMain() {
 
         {/* Table / Skeleton */}
         {isLoading ? (
-          <div className="divide-y divide-slate-50 animate-pulse">
+          <div className="divide-y divide-slate-100 dark:divide-slate-800/70 dark:divide-slate-800/70 animate-pulse">
             {Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="px-5 py-4 flex items-center gap-4">
                 <div className="h-9 w-9 rounded-full bg-slate-100 shrink-0" />
@@ -1333,13 +1333,13 @@ export default function AdminUsersPageMain() {
           <div className="overflow-x-auto">
             <table className="w-full text-left min-w-175">
               <thead>
-                <tr className="border-b border-slate-100 bg-slate-50">
+                <tr className="border-b border-slate-100 dark:border-slate-800 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60">
                   {['Admin', 'Username', 'Email', 'Role', 'Actions'].map(h => (
                     <th key={h} className="px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wide">{h}</th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-50">
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800/70 dark:divide-slate-800/70">
                 {rows.length ? rows.map(row => {
                   const roleKey = row.role.toLowerCase().replace(/\s+/g, '_')
                   const roleCls = ROLE_COLORS[roleKey] ?? 'bg-slate-100 text-slate-600 border-slate-200'

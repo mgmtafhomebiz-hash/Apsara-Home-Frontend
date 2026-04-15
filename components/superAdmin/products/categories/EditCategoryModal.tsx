@@ -113,7 +113,7 @@ export default function EditCategoryModal({ category, onClose }: Props) {
                 className="bg-white rounded-2xl shadow-2xl w-full max-w-lg my-4"
               >
                 {/* Header */}
-                <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100">
+                <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100 dark:border-slate-800">
                   <div className="flex items-center gap-3">
                     <div className="h-10 w-10 rounded-xl bg-blue-500 flex items-center justify-center shadow-md shadow-blue-500/30">
                       <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -154,7 +154,7 @@ export default function EditCategoryModal({ category, onClose }: Props) {
                       value={form.cat_name}
                       onChange={(e) => set('cat_name', e.target.value)}
                       maxLength={50}
-                      className={`w-full px-3 py-2.5 bg-slate-50 border rounded-xl text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 transition-all
+                      className={`w-full px-3 py-2.5 bg-slate-50 border rounded-xl text-sm text-slate-700 dark:bg-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 transition-all
                         ${errors.cat_name ? 'border-red-300 focus:ring-red-300/30 focus:border-red-400' : 'border-slate-200 focus:ring-blue-500/30 focus:border-blue-400'}`}
                     />
                     <div className="flex justify-between mt-1">
@@ -187,7 +187,7 @@ export default function EditCategoryModal({ category, onClose }: Props) {
                       onChange={(e) => set('cat_description', e.target.value)}
                       rows={3}
                       maxLength={200}
-                      className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition-all resize-none"
+                      className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition-all resize-none"
                     />
                     <div className="flex justify-between mt-1">
                       {errors.cat_description ? <p className="text-red-500 text-xs">{errors.cat_description}</p> : <span/>}
@@ -203,7 +203,7 @@ export default function EditCategoryModal({ category, onClose }: Props) {
                       value={form.cat_order}
                       onChange={(e) => set('cat_order', e.target.value)}
                       min="0"
-                      className="w-32 px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition-all"
+                      className="w-32 px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition-all"
                     />
                     <p className="text-slate-400 text-xs mt-1">Lower number = appears first</p>
                   </div>

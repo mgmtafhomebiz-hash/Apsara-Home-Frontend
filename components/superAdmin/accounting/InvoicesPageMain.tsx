@@ -338,7 +338,7 @@ export default function InvoicesPageMain() {
           <div className="rounded-2xl border border-slate-100 bg-white shadow-sm overflow-hidden">
             <div className="overflow-auto">
               <table className="w-full min-w-[1100px]">
-                <thead className="bg-slate-50 border-b border-slate-100">
+                <thead className="bg-slate-50 border-b border-slate-100 dark:border-slate-800">
                   <tr className="text-left text-xs text-slate-500">
                     <th className="px-4 py-3 font-semibold">
                       <input
@@ -422,7 +422,7 @@ export default function InvoicesPageMain() {
       {selectedRow ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
           <div className="w-full max-w-2xl rounded-2xl border border-slate-200 bg-white shadow-xl">
-            <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 px-5 py-4">
               <div>
                 <h2 className="text-base font-bold text-slate-800">Invoice Details</h2>
                 <p className="text-xs text-slate-500 mt-0.5">{selectedRow.invoice_no || selectedRow.reference_no}</p>

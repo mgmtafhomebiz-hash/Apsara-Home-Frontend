@@ -51,18 +51,9 @@ const buildProductLink = (product: Pick<Product, 'id' | 'name'>) =>
 
 const getFeaturedProducts = (featuredCollection: WebPageItem | undefined, products: Product[]) => {
   const sourceCategoryId = Number.parseInt(getField(featuredCollection, 'source_category_id'), 10)
-  const categoryProducts = Number.isFinite(sourceCategoryId) && sourceCategoryId > 0
-    ? products.filter((item) => item.catid === sourceCategoryId)
+  return Number.isFinite(sourceCategoryId) && sourceCategoryId > 0
+    ? products.filter((item) => item.catid === sourceCategoryId).slice(0, 4)
     : []
-
-  if (categoryProducts.length > 0) {
-    return categoryProducts.slice(0, 4)
-  }
-
-  return parseIdList(getField(featuredCollection, 'product_ids'))
-    .map((id) => products.find((item) => item.id === id))
-    .filter((item): item is Product => Boolean(item))
-    .slice(0, 4)
 }
 
 const resolveCategoryCardImage = ({
@@ -318,9 +309,9 @@ function CampaignBannersSection({
                 </span>
               </div>
             </div>
-          </div>
-        </Link>
-      </motion.div>
+          </Link>
+        </motion.div>
+      </AnimatePresence>
     </motion.section>
   )
 }
@@ -391,8 +382,8 @@ function FeaturedCollectionSection({
     : undefined
   const buttonLink = sourceCategory
     ? buildPartnerCategoryLink(partnerSlug, sourceCategory)
-    : buildPartnerShopLink(getField(section, 'lead_link') || '/shop', partnerSlug)
-  const buttonText = section.button_text || 'Shop Collection'
+    : buildPartnerShopLink('/shop', partnerSlug)
+  const buttonText = 'Shop Collection'
 
   return (
     <motion.section
@@ -409,28 +400,28 @@ function FeaturedCollectionSection({
             transition={{ duration: 0.55 }}
           >
             <Link href={buttonLink} className="group relative block aspect-[4/5] overflow-hidden rounded-3xl">
-            <Image
-              src={getField(section, 'lead_image') || '/Images/FeaturedSection/home_living.jpg'}
-              alt={getField(section, 'left_heading') || 'Featured collection'}
-              fill
-              className="object-cover transition-transform duration-700 group-hover:scale-105"
-              unoptimized
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-            <div className="absolute bottom-8 left-8 right-8">
-              <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-orange-300">
-                {getField(section, 'left_eyebrow') || 'Featured'}
-              </p>
-              <h2 className="mb-3 text-3xl font-bold leading-tight text-white">
-                {getField(section, 'left_heading') || 'Minimal & Simple Design'}
-              </h2>
-              <p className="mb-5 text-sm text-white/60">
-                {getField(section, 'left_description') || 'Crafted for the modern home.'}
-              </p>
-              <span className="inline-flex rounded-xl bg-orange-500 px-6 py-3 text-sm font-semibold text-white">
-                {buttonText}
-              </span>
-            </div>
+              <Image
+                src={getField(section, 'lead_image') || '/Images/FeaturedSection/home_living.jpg'}
+                alt={getField(section, 'left_heading') || 'Featured collection'}
+                fill
+                className="object-cover transition-transform duration-700 group-hover:scale-105"
+                unoptimized
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
+              <div className="absolute bottom-8 left-8 right-8">
+                <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-orange-300">
+                  {getField(section, 'left_eyebrow') || 'Featured'}
+                </p>
+                <h2 className="mb-3 text-3xl font-bold leading-tight text-white">
+                  {getField(section, 'left_heading') || 'Minimal & Simple Design'}
+                </h2>
+                <p className="mb-5 text-sm text-white/60">
+                  {getField(section, 'left_description') || 'Crafted for the modern home.'}
+                </p>
+                <span className="inline-flex rounded-xl bg-orange-500 px-6 py-3 text-sm font-semibold text-white">
+                  {buttonText}
+                </span>
+              </div>
             </Link>
           </motion.div>
 
@@ -470,20 +461,9 @@ function FeaturedCollectionSection({
                   ))}
                 </AnimatePresence>
               ) : (
-                [1, 2, 3, 4].map((index) => (
-                  <motion.div
-                    key={index}
-                    initial={{ opacity: 0, y: 18 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true, amount: 0.3 }}
-                    transition={{ duration: 0.3, delay: index * 0.05 }}
-                    className="rounded-2xl bg-white dark:bg-gray-800 p-3 shadow-sm"
-                  >
-                    <div className="aspect-square rounded-2xl bg-gradient-to-br from-slate-100 to-white dark:from-gray-700 dark:to-gray-800" />
-                    <p className="mt-3 text-sm font-medium text-gray-800 dark:text-gray-200">Select product IDs in Shop Builder</p>
-                    <p className="mt-1 text-base font-bold text-orange-500">PHP 0</p>
-                  </motion.div>
-                ))
+                <div className="col-span-2 rounded-2xl border border-dashed border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-10 text-center text-sm text-slate-400 dark:text-gray-500">
+                  Select a category in Shop Builder to display Top Picks.
+                </div>
               )}
             </div>
           </motion.div>
@@ -532,17 +512,17 @@ function PromoPairSection({ section, partnerSlug }: { section: WebPageItem; part
               transition={{ duration: 0.42, delay: index * 0.08 }}
             >
               <Link href={promo.link} className="group relative block h-96 overflow-hidden rounded-3xl">
-            <Image src={promo.image} alt={promo.heading} fill className="object-cover transition-transform duration-700 group-hover:scale-105" unoptimized />
-            <div className={`absolute inset-0 bg-gradient-to-t ${promo.tone}`} />
-            <div className="absolute inset-0 p-8">
-              <div className="flex h-full flex-col justify-end">
-                <p className={`mb-2 text-xs font-semibold uppercase tracking-widest ${promo.badge}`}>{promo.eyebrow}</p>
-                <h3 className="mb-5 text-2xl font-bold leading-tight text-white">{promo.heading}</h3>
-                <span className="inline-flex w-fit rounded-xl bg-white/15 px-5 py-2.5 text-sm font-semibold text-white backdrop-blur-sm">
-                  {promo.button}
-                </span>
-              </div>
-            </div>
+                <Image src={promo.image} alt={promo.heading} fill className="object-cover transition-transform duration-700 group-hover:scale-105" unoptimized />
+                <div className={`absolute inset-0 bg-gradient-to-t ${promo.tone}`}></div>
+                <div className="absolute inset-0 p-8">
+                  <div className="flex h-full flex-col justify-end">
+                    <p className={`mb-2 text-xs font-semibold uppercase tracking-widest ${promo.badge}`}>{promo.eyebrow}</p>
+                    <h3 className="mb-5 text-2xl font-bold leading-tight text-white">{promo.heading}</h3>
+                    <span className="inline-flex w-fit rounded-xl bg-white/15 px-5 py-2.5 text-sm font-semibold text-white backdrop-blur-sm">
+                      {promo.button}
+                    </span>
+                  </div>
+                </div>
               </Link>
             </motion.div>
           ))}

@@ -233,13 +233,13 @@ function StockCell({ qty }: { qty: number }) {
 function EmptyProductsState() {
   return (
     <div className="flex flex-col items-center gap-2 py-16 text-center">
-      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100">
-        <svg className="h-7 w-7 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 dark:bg-slate-800">
+        <svg className="h-7 w-7 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
         </svg>
       </div>
-      <p className="text-sm font-semibold text-slate-500">No products found</p>
-      <p className="text-xs text-slate-400">Try adjusting your search or filter.</p>
+      <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">No products found</p>
+      <p className="text-xs text-slate-400 dark:text-slate-500">Try adjusting your search or filter.</p>
     </div>
   )
 }
@@ -315,7 +315,7 @@ export default function ProductsTable({
   }
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-100 bg-white">
+    <div className="overflow-hidden rounded-2xl border border-slate-100 bg-white dark:border-slate-800 dark:bg-slate-900">
       <Table className="w-full">
         <Table.ScrollContainer>
           <Table.Content
@@ -340,36 +340,36 @@ export default function ProductsTable({
                   </Checkbox.Control>
                 </Checkbox>
               </Table.Column>
-              <Table.Column className="w-20 text-xs font-semibold uppercase tracking-wide text-slate-400">Image</Table.Column>
-              <Table.Column allowsSorting isRowHeader id="name" className="min-w-[240px] text-xs font-semibold uppercase tracking-wide text-slate-400">
+              <Table.Column className="w-20 text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">Image</Table.Column>
+              <Table.Column allowsSorting isRowHeader id="name" className="min-w-[240px] text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
                 {({ sortDirection }) => <SortableColumnHeader sortDirection={sortDirection}>Product</SortableColumnHeader>}
               </Table.Column>
-              <Table.Column allowsSorting id="sku" className="min-w-[140px] text-xs font-semibold uppercase tracking-wide text-slate-400">
+              <Table.Column allowsSorting id="sku" className="min-w-[140px] text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
                 {({ sortDirection }) => <SortableColumnHeader sortDirection={sortDirection}>SKU</SortableColumnHeader>}
               </Table.Column>
-              <Table.Column allowsSorting id="supplier" className="min-w-[180px] text-xs font-semibold uppercase tracking-wide text-slate-400">
+              <Table.Column allowsSorting id="supplier" className="min-w-[180px] text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
                 {({ sortDirection }) => <SortableColumnHeader sortDirection={sortDirection}>Supplier</SortableColumnHeader>}
               </Table.Column>
-              <Table.Column allowsSorting id="uploader" className="min-w-[180px] text-xs font-semibold uppercase tracking-wide text-slate-400">
+              <Table.Column allowsSorting id="uploader" className="min-w-[180px] text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
                 {({ sortDirection }) => <SortableColumnHeader sortDirection={sortDirection}>Uploader</SortableColumnHeader>}
               </Table.Column>
-              <Table.Column allowsSorting id="priceSrp" className="text-end text-xs font-semibold uppercase tracking-wide text-slate-400">
+              <Table.Column allowsSorting id="priceSrp" className="text-end text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
                 {({ sortDirection }) => <SortableColumnHeader sortDirection={sortDirection}>SRP</SortableColumnHeader>}
               </Table.Column>
-              <Table.Column allowsSorting id="priceDp" className="text-end text-xs font-semibold uppercase tracking-wide text-slate-400">
+              <Table.Column allowsSorting id="priceDp" className="text-end text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
                 {({ sortDirection }) => <SortableColumnHeader sortDirection={sortDirection}>Dealer</SortableColumnHeader>}
               </Table.Column>
-              <Table.Column allowsSorting id="priceMember" className="text-end text-xs font-semibold uppercase tracking-wide text-slate-400">
+              <Table.Column allowsSorting id="priceMember" className="text-end text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
                 {({ sortDirection }) => <SortableColumnHeader sortDirection={sortDirection}>Member</SortableColumnHeader>}
               </Table.Column>
-              <Table.Column allowsSorting id="stock" className="text-end text-xs font-semibold uppercase tracking-wide text-slate-400">
+              <Table.Column allowsSorting id="stock" className="text-end text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
                 {({ sortDirection }) => <SortableColumnHeader sortDirection={sortDirection}>Stock</SortableColumnHeader>}
               </Table.Column>
-              <Table.Column className="min-w-[130px] text-center text-xs font-semibold uppercase tracking-wide text-slate-400">Badges</Table.Column>
-              <Table.Column allowsSorting id="status" className="text-center text-xs font-semibold uppercase tracking-wide text-slate-400">
+              <Table.Column className="min-w-[130px] text-center text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">Badges</Table.Column>
+              <Table.Column allowsSorting id="status" className="text-center text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
                 {({ sortDirection }) => <SortableColumnHeader sortDirection={sortDirection}>Status</SortableColumnHeader>}
               </Table.Column>
-              <Table.Column className="text-end text-xs font-semibold uppercase tracking-wide text-slate-400">Actions</Table.Column>
+              <Table.Column className="text-end text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">Actions</Table.Column>
             </Table.Header>
 
             <Table.Body>
@@ -391,8 +391,8 @@ export default function ProductsTable({
                       key={product.id}
                       id={product.id}
                       className={cn(
-                        'border-b border-slate-50 transition-colors hover:bg-slate-50/60',
-                        isSelected ? 'bg-teal-50/40' : '',
+                        'border-b border-slate-100 dark:border-slate-800 transition-colors hover:bg-slate-50/60 dark:border-slate-800/70 dark:hover:bg-slate-800/40',
+                        isSelected ? 'bg-teal-50/40 dark:bg-teal-500/10' : '',
                       )}
                     >
                       <Table.Cell className="pr-0">
@@ -409,12 +409,12 @@ export default function ProductsTable({
                       </Table.Cell>
 
                       <Table.Cell>
-                        <div className="relative h-11 w-11 overflow-hidden rounded-xl border border-slate-200 bg-slate-100">
+                        <div className="relative h-11 w-11 overflow-hidden rounded-xl border border-slate-200 bg-slate-100 dark:border-slate-700 dark:bg-slate-800">
                           {product.image ? (
                             <Image src={product.image} alt={product.name} fill className="object-cover" unoptimized />
                           ) : (
                             <div className="flex h-full w-full items-center justify-center">
-                              <svg className="h-5 w-5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <svg className="h-5 w-5 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                               </svg>
                             </div>
@@ -424,11 +424,11 @@ export default function ProductsTable({
 
                       <Table.Cell>
                         <div className="min-w-0">
-                          <p className="line-clamp-1 font-medium leading-snug text-slate-800">{product.name || 'N/A'}</p>
+                          <p className="line-clamp-1 font-medium leading-snug text-slate-800 dark:text-slate-100">{product.name || 'N/A'}</p>
                           <div className="mt-1 flex flex-wrap items-center gap-2">
-                            <span className="text-[10px] font-mono text-slate-400">#{product.id}</span>
+                            <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500">#{product.id}</span>
                             {variantCount > 0 && (
-                              <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-500">
+                              <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-500 dark:bg-slate-800 dark:text-slate-400">
                                 {variantCount} variant{variantCount !== 1 ? 's' : ''}
                               </span>
                             )}
@@ -437,46 +437,46 @@ export default function ProductsTable({
                       </Table.Cell>
 
                       <Table.Cell>
-                        <span className="inline-flex rounded-lg border border-slate-100 bg-slate-50 px-2 py-1 font-mono text-xs text-slate-500">
+                        <span className="inline-flex rounded-lg border border-slate-100 bg-slate-50 px-2 py-1 font-mono text-xs text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">
                           {product.sku || 'N/A'}
                         </span>
                       </Table.Cell>
 
                       <Table.Cell>
                         <div className="min-w-[150px]">
-                          <p className="line-clamp-1 text-sm font-medium text-slate-700">
+                          <p className="line-clamp-1 text-sm font-medium text-slate-700 dark:text-slate-200">
                             {product.supplierName?.trim() || product.brand?.trim() || 'No supplier'}
                           </p>
                           {product.supplierId ? (
-                            <p className="line-clamp-1 text-[11px] text-slate-400">Supplier #{product.supplierId}</p>
+                            <p className="line-clamp-1 text-[11px] text-slate-400 dark:text-slate-500">Supplier #{product.supplierId}</p>
                           ) : product.brand ? (
-                            <p className="line-clamp-1 text-[11px] text-slate-400">Brand</p>
+                            <p className="line-clamp-1 text-[11px] text-slate-400 dark:text-slate-500">Brand</p>
                           ) : null}
                         </div>
                       </Table.Cell>
 
                       <Table.Cell>
                         <div className="min-w-[150px]">
-                          <p className="line-clamp-1 text-sm font-medium text-slate-700">
+                          <p className="line-clamp-1 text-sm font-medium text-slate-700 dark:text-slate-200">
                             {product.uploaderName?.trim() || 'Unknown user'}
                           </p>
                           {product.uploaderRole ? (
-                            <p className="line-clamp-1 text-[10px] uppercase tracking-[0.12em] text-slate-400">
+                            <p className="line-clamp-1 text-[10px] uppercase tracking-[0.12em] text-slate-400 dark:text-slate-500">
                               {product.uploaderRole.replace(/_/g, ' ')}
                             </p>
                           ) : product.uploaderEmail ? (
-                            <p className="line-clamp-1 text-[11px] text-slate-400">{product.uploaderEmail}</p>
+                            <p className="line-clamp-1 text-[11px] text-slate-400 dark:text-slate-500">{product.uploaderEmail}</p>
                           ) : null}
                         </div>
                       </Table.Cell>
 
-                      <Table.Cell className="text-end font-semibold text-slate-700">
+                      <Table.Cell className="text-end font-semibold text-slate-700 dark:text-slate-200">
                         {formatPrice(product.priceSrp)}
                       </Table.Cell>
-                      <Table.Cell className="text-end text-slate-500">
+                      <Table.Cell className="text-end text-slate-500 dark:text-slate-400">
                         {formatPrice(product.priceDp)}
                       </Table.Cell>
-                      <Table.Cell className="text-end text-slate-500">
+                      <Table.Cell className="text-end text-slate-500 dark:text-slate-400">
                         {formatPrice(product.priceMember ?? 0)}
                       </Table.Cell>
 
