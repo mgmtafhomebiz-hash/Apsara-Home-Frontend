@@ -2,6 +2,7 @@
 
 import { motion, AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
+import Link from 'next/link'
 import { useCart } from '@/context/CartContext'
 import { useRouter } from 'next/navigation'
 import type { CustomerCheckoutLineItem } from '@/types/CustomerCheckout/types'
@@ -255,8 +256,8 @@ export default function CartDrawer() {
                   <AnimatePresence>
                     {Array.from(groupedItems.entries()).map(([brandName, brandItems]) => (
                       <div key={brandName} className="space-y-3">
-                        <div className="flex items-center justify-between rounded-2xl border border-orange-100 bg-orange-50/60 px-3 py-2">
-                          <label className="flex items-center gap-2 text-xs font-semibold text-orange-700">
+                        <div className="flex items-center justify-between rounded-2xl border border-gray-200 bg-white px-3 py-2">
+                          <label className="flex items-center gap-2 text-xs font-semibold text-gray-700 cursor-pointer">
                             <input
                               type="checkbox"
                               checked={brandItems.every((item) => selectedIds.includes(item.id))}
@@ -270,9 +271,29 @@ export default function CartDrawer() {
                                   setSelection(selectedIds.filter((id) => !removeIds.has(id)))
                                 }
                               }}
-                              className="h-4 w-4 rounded border-orange-200 text-orange-500 focus:ring-orange-200"
+                              className="h-4 w-4 rounded border-gray-300 text-orange-500 focus:ring-orange-200 cursor-pointer"
+                              style={{ cursor: 'pointer' }}
                             />
-                            <span className="font-bold uppercase tracking-[0.2em]">{brandName}</span>
+                            <Link
+                              href={`/by-brand/${brandName.toLowerCase().replace(/\s+/g, '-')}`}
+                              className="flex items-center gap-1.5 font-bold uppercase tracking-[0.2em] hover:text-orange-600 transition-colors group"
+                            >
+                              {brandName}
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="12"
+                                height="12"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                className="opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                <polyline points="9 18 15 12 9 6" />
+                              </svg>
+                            </Link>
                           </label>
                           <span className="text-[11px] text-slate-400">
                             {brandItems.length} item{brandItems.length === 1 ? '' : 's'}
@@ -288,16 +309,27 @@ export default function CartDrawer() {
     transition={{ duration: 0.2 }}
     className="flex gap-3 rounded-2xl bg-gray-50 p-3"
   >
-    <label className="mt-1 flex items-start">
-      <input
-        type="checkbox"
-        checked={selectedIds.includes(item.id)}
-        onChange={() => toggleItemSelected(item.id)}
-        className="h-4 w-4 rounded border-gray-300 text-orange-500 focus:ring-orange-200"
-      />
-    </label>
+                            <label className="mt-1 flex items-start cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={selectedIds.includes(item.id)}
+                                onChange={() => toggleItemSelected(item.id)}
+                                className="h-4 w-4 rounded border-gray-300 text-orange-500 focus:ring-orange-200 cursor-pointer"
+                                style={{ cursor: 'pointer' }}
+                              />
+                            </label>
     <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl">
-      <Image src={item.image} alt={item.name} fill className="object-cover" />
+      {item.image ? (
+        <Image src={item.image} alt={item.name} fill className="object-cover" />
+      ) : (
+        <div className="h-full w-full bg-gray-200 flex items-center justify-center">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-gray-400">
+            <path d="M21 8v13H3V8" />
+            <path d="M1 3h22v5H1z" />
+            <path d="M10 12h4" />
+          </svg>
+        </div>
+      )}
     </div>
 
     <div className="min-w-0 flex-1">
@@ -329,14 +361,14 @@ export default function CartDrawer() {
       <div className="mt-2 flex items-center gap-2">
         <button
           onClick={() => updateQuantity(item.id, item.quantity - 1)}
-          className="flex h-7 w-7 items-center justify-center rounded-lg border border-gray-200 bg-white text-base font-bold leading-none transition-colors hover:border-orange-400 hover:text-orange-500"
+          className="flex h-7 w-7 items-center justify-center rounded-lg border border-gray-200 bg-white text-lg font-bold leading-none transition-colors hover:border-orange-400 hover:text-orange-500"
         >
-          -
+          −
         </button>
         <span className="w-5 text-center text-sm font-semibold">{item.quantity}</span>
         <button
           onClick={() => updateQuantity(item.id, item.quantity + 1)}
-          className="flex h-7 w-7 items-center justify-center rounded-lg border border-gray-200 bg-white text-base font-bold leading-none transition-colors hover:border-orange-400 hover:text-orange-500"
+          className="flex h-7 w-7 items-center justify-center rounded-lg border border-gray-200 bg-white text-lg font-bold leading-none transition-colors hover:border-orange-400 hover:text-orange-500"
         >
           +
         </button>
@@ -346,7 +378,7 @@ export default function CartDrawer() {
     <div className="flex flex-col items-end justify-between">
       <button
         onClick={() => removeFromCart(item.id)}
-        className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-500"
+        className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-500 cursor-pointer"
       >
         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <polyline points="3 6 5 6 21 6" />
@@ -376,19 +408,15 @@ export default function CartDrawer() {
                   <span className="text-xl font-bold text-slate-900">{'\u20b1'}{selectedTotal.toLocaleString()}</span>
                 </div>
                 <p className="text-xs text-gray-400">Shipping calculated at checkout</p>
-                <motion.button
-                  whileTap={{ scale: 0.98 }}
-                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-orange-500 py-3.5 font-semibold text-white transition-colors hover:bg-orange-600 disabled:opacity-60"
+                <PrimaryButton
                   onClick={handleCustomerCheckout}
                   disabled={checkoutItems.length === 0}
+                  className="w-full !py-3.5 !text-sm"
                 >
                   Proceed to Checkout
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="ml-2">
                     <polyline points="9 18 15 12 9 6" />
                   </svg>
-                </motion.button>
-                <PrimaryButton onClick={() => setIsOpen(false)} className="w-full !py-3 !text-sm">
-                  Continue Shopping
                 </PrimaryButton>
               </div>
             )}
