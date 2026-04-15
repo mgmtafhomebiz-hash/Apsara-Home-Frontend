@@ -170,23 +170,6 @@ const ProductImageGallery = ({ product, selectedVariantImages, preferredActiveIm
               </motion.div>
             </AnimatePresence>
 
-            {product.badge && (
-              <span className="absolute top-3 left-3 sm:top-4 sm:left-4 bg-orange-500 text-white text-[10px] sm:text-xs font-bold px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full z-10">
-                {product.badge}
-              </span>
-            )}
-
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsWishlisted((w) => !w);
-              }}
-              className="absolute top-3 right-3 sm:top-4 sm:right-4 bg-white/90 backdrop-blur-sm p-2 sm:p-2.5 rounded-full shadow-md hover:scale-110 transition-all z-10"
-              title={isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
-            >
-              <HeartIcon filled={isWishlisted} />
-            </button>
-
             {hasMultipleImages && (
               <div className="absolute bottom-4 right-4 z-10 flex items-center gap-2">
                 <button

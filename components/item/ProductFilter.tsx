@@ -1,70 +1,86 @@
 'use client'
 
 import { useState } from 'react'
+import type { Category } from '@/store/api/categoriesApi'
 
 export interface FilterState {
   priceRange: [number, number]
-  categories: string[]
-  ratings: number[]
+  sortBy: 'default' | 'asc' | 'desc'
   inStock: boolean
+  discountOnly: boolean
+  minDiscount: number
+  pvRange: [number, number]
+  search: string
+  hasPvOnly: boolean
 }
 
 interface ProductFilterProps {
   onFilterChange: (filters: FilterState) => void
   className?: string
+  pvRange?: [number, number]
+  search?: string
+  categories?: Category[]
+  currentCategory?: string
 }
 
-export default function ProductFilter({ onFilterChange, className = '' }: ProductFilterProps) {
+export default function ProductFilter({ onFilterChange, className = '', pvRange: propPvRange = [0, 5000], search: propSearch = '', categories = [], currentCategory }: ProductFilterProps) {
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 10000])
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([])
-  const [selectedRatings, setSelectedRatings] = useState<number[]>([])
+  const [sortBy, setSortBy] = useState<'default' | 'asc' | 'desc'>('default')
   const [inStockOnly, setInStockOnly] = useState(false)
+  const [discountOnly, setDiscountOnly] = useState(false)
+  const [minDiscount, setMinDiscount] = useState(0)
+  const [pvRange, setPvRange] = useState<[number, number]>(propPvRange)
+  const [hasPvOnly, setHasPvOnly] = useState(false)
+  const [showPvInfo, setShowPvInfo] = useState(false)
 
-  const categories = [
-    'Electronics',
-    'Home & Living',
-    'Fashion',
-    'Beauty',
-    'Sports',
-    'Toys',
-    'Books',
-    'Food & Grocery'
+  const discountPresets = [
+    { label: '10% or more', value: 10 },
+    { label: '20% or more', value: 20 },
+    { label: '30% or more', value: 30 },
+    { label: '50% or more', value: 50 },
   ]
+
+  const pricePresets = [
+    { label: 'Under ₱1,000', min: 0, max: 1000 },
+    { label: '₱1,000 - ₱5,000', min: 1000, max: 5000 },
+    { label: '₱5,000 - ₱10,000', min: 5000, max: 10000 },
+    { label: 'Over ₱10,000', min: 10000, max: 999999 },
+  ]
+
+  const pvPresets = [
+    { label: 'Under 500 PV', min: 0, max: 500 },
+    { label: '500 - 1000 PV', min: 500, max: 1000 },
+    { label: '1000 - 2000 PV', min: 1000, max: 2000 },
+    { label: 'Over 2000 PV', min: 2000, max: 5000 },
+  ]
+
 
   const handlePriceChange = (min: number, max: number) => {
     const newRange: [number, number] = [min, max]
     setPriceRange(newRange)
     onFilterChange({
       priceRange: newRange,
-      categories: selectedCategories,
-      ratings: selectedRatings,
-      inStock: inStockOnly
+      sortBy,
+      inStock: inStockOnly,
+      discountOnly,
+      minDiscount,
+      pvRange,
+      search: propSearch,
+      hasPvOnly
     })
   }
 
-  const handleCategoryToggle = (category: string) => {
-    const newCategories = selectedCategories.includes(category)
-      ? selectedCategories.filter(c => c !== category)
-      : [...selectedCategories, category]
-    setSelectedCategories(newCategories)
+  const handleSortChange = (newSort: 'default' | 'asc' | 'desc') => {
+    setSortBy(newSort)
     onFilterChange({
       priceRange,
-      categories: newCategories,
-      ratings: selectedRatings,
-      inStock: inStockOnly
-    })
-  }
-
-  const handleRatingToggle = (rating: number) => {
-    const newRatings = selectedRatings.includes(rating)
-      ? selectedRatings.filter(r => r !== rating)
-      : [...selectedRatings, rating]
-    setSelectedRatings(newRatings)
-    onFilterChange({
-      priceRange,
-      categories: selectedCategories,
-      ratings: newRatings,
-      inStock: inStockOnly
+      sortBy: newSort,
+      inStock: inStockOnly,
+      discountOnly,
+      minDiscount,
+      pvRange,
+      search: propSearch,
+      hasPvOnly
     })
   }
 
@@ -73,26 +89,176 @@ export default function ProductFilter({ onFilterChange, className = '' }: Produc
     setInStockOnly(newInStock)
     onFilterChange({
       priceRange,
-      categories: selectedCategories,
-      ratings: selectedRatings,
-      inStock: newInStock
+      sortBy,
+      inStock: newInStock,
+      discountOnly,
+      minDiscount,
+      pvRange,
+      search: propSearch,
+      hasPvOnly
     })
   }
+
+  const handleDiscountToggle = () => {
+    const newDiscountOnly = !discountOnly
+    setDiscountOnly(newDiscountOnly)
+    // Reset minDiscount to 0 when unchecking discountOnly
+    const newMinDiscount = newDiscountOnly ? minDiscount : 0
+    if (!newDiscountOnly) {
+      setMinDiscount(newMinDiscount)
+    }
+    onFilterChange({
+      priceRange,
+      sortBy,
+      inStock: inStockOnly,
+      discountOnly: newDiscountOnly,
+      minDiscount: newMinDiscount,
+      pvRange,
+      search: propSearch,
+      hasPvOnly
+    })
+  }
+
+  const handleDiscountPercentageChange = (percentage: number) => {
+    setMinDiscount(percentage)
+    onFilterChange({
+      priceRange,
+      sortBy,
+      inStock: inStockOnly,
+      discountOnly,
+      minDiscount: percentage,
+      pvRange,
+      search: propSearch,
+      hasPvOnly
+    })
+  }
+
+  const handleRangeInputChange = (type: 'min' | 'max', value: number) => {
+    const newMin = type === 'min' ? value : priceRange[0]
+    const newMax = type === 'max' ? value : priceRange[1]
+
+    if (newMin <= newMax) {
+      handlePriceChange(newMin, newMax)
+    }
+  }
+
+  const handlePresetClick = (preset: { min: number; max: number }) => {
+    setPriceRange([preset.min, preset.max])
+    onFilterChange({
+      priceRange: [preset.min, preset.max],
+      sortBy,
+      inStock: inStockOnly,
+      discountOnly,
+      minDiscount,
+      pvRange,
+      search: propSearch,
+      hasPvOnly
+    })
+  }
+
+  const handlePvRangeChange = (min: number, max: number) => {
+    const newRange: [number, number] = [min, max]
+    setPvRange(newRange)
+    onFilterChange({
+      priceRange,
+      sortBy,
+      inStock: inStockOnly,
+      discountOnly,
+      minDiscount,
+      pvRange: newRange,
+      search: propSearch,
+      hasPvOnly
+    })
+  }
+
+  const handlePvRangeInputChange = (type: 'min' | 'max', value: number) => {
+    const newMin = type === 'min' ? value : pvRange[0]
+    const newMax = type === 'max' ? value : pvRange[1]
+
+    if (newMin <= newMax) {
+      handlePvRangeChange(newMin, newMax)
+    }
+  }
+
+  const handlePvPresetClick = (preset: { min: number; max: number }) => {
+    setPvRange([preset.min, preset.max])
+    onFilterChange({
+      priceRange,
+      sortBy,
+      inStock: inStockOnly,
+      discountOnly,
+      minDiscount,
+      pvRange: [preset.min, preset.max],
+      search: propSearch,
+      hasPvOnly
+    })
+  }
+
+  const handleHasPvOnlyToggle = () => {
+    const newHasPvOnly = !hasPvOnly
+    setHasPvOnly(newHasPvOnly)
+    // Reset pvRange to default when unchecking hasPvOnly
+    const newPvRange: [number, number] = newHasPvOnly ? pvRange : [0, 5000]
+    if (!newHasPvOnly) {
+      setPvRange(newPvRange)
+    }
+    onFilterChange({
+      priceRange,
+      sortBy,
+      inStock: inStockOnly,
+      discountOnly,
+      minDiscount,
+      pvRange: newPvRange,
+      search: propSearch,
+      hasPvOnly: newHasPvOnly
+    })
+  }
+
 
   return (
     <div className={`bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 ${className}`}>
       <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-6">Filters</h3>
+      
+      {/* Category Filter for Category Page Only */}
+      <div className="mb-6">
+        <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">Shop Category</h4>
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => onFilterChange({ ...{ priceRange, sortBy, inStock: inStockOnly, discountOnly, minDiscount, pvRange, search: '', hasPvOnly } })}
+            className={`px-3 py-1 rounded-full text-sm font-medium transition-colors cursor-pointer ${
+              !currentCategory && !propSearch ? 'bg-orange-100 text-orange-600' : 'bg-gray-100 text-gray-600'
+            }`}
+          >
+            All Products
+          </button>
+          {categories.map((category) => (
+            <button
+              key={category.id}
+              onClick={() => onFilterChange({ ...{ priceRange, sortBy, inStock: inStockOnly, discountOnly, minDiscount, pvRange, search: category.name, hasPvOnly } })}
+              className={`px-3 py-1 rounded-full text-sm font-medium transition-colors cursor-pointer ${
+                currentCategory === category.name || propSearch === category.name
+                  ? 'bg-orange-100 text-orange-600'
+                  : 'bg-gray-100 text-gray-600'
+              }`}
+            >
+              {category.name}
+            </button>
+          ))}
+        </div>
+      </div>
 
       {/* Price Range Filter */}
       <div className="mb-6">
         <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">Price Range</h4>
-        <div className="flex items-center gap-3">
+
+        {/* Custom Range Inputs */}
+        <div className="flex items-center gap-3 mb-4">
           <div className="flex-1">
             <label className="text-xs text-gray-500 dark:text-gray-400 block mb-1">Min</label>
             <input
               type="number"
               value={priceRange[0]}
-              onChange={(e) => handlePriceChange(Number(e.target.value), priceRange[1])}
+              onChange={(e) => handleRangeInputChange('min', Number(e.target.value))}
               className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-orange-500"
               placeholder="0"
             />
@@ -103,67 +269,158 @@ export default function ProductFilter({ onFilterChange, className = '' }: Produc
             <input
               type="number"
               value={priceRange[1]}
-              onChange={(e) => handlePriceChange(priceRange[0], Number(e.target.value))}
+              onChange={(e) => handleRangeInputChange('max', Number(e.target.value))}
               className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-orange-500"
               placeholder="10000"
             />
           </div>
         </div>
-      </div>
 
-      {/* Category Filter */}
-      <div className="mb-6">
-        <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">Categories</h4>
+        {/* Price Presets */}
         <div className="space-y-2">
-          {categories.map((category) => (
-            <label key={category} className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={selectedCategories.includes(category)}
-                onChange={() => handleCategoryToggle(category)}
-                className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-orange-500 focus:ring-orange-500"
-              />
-              <span className="text-sm text-gray-700 dark:text-gray-300">{category}</span>
-            </label>
+          {pricePresets.map((preset) => (
+            <button
+              key={preset.label}
+              onClick={() => handlePresetClick(preset)}
+              className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
+                priceRange[0] === preset.min && priceRange[1] === preset.max
+                  ? 'bg-orange-500 text-white'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-orange-100 dark:hover:bg-orange-500/20 hover:text-orange-600 dark:hover:text-orange-400'
+              }`}
+            >
+              {preset.label}
+            </button>
           ))}
         </div>
       </div>
 
-      {/* Rating Filter */}
+      {/* Sort Filter */}
       <div className="mb-6">
-        <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">Rating</h4>
+        <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">Sort By Name</h4>
         <div className="space-y-2">
-          {[4, 3, 2, 1].map((rating) => (
-            <label key={rating} className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={selectedRatings.includes(rating)}
-                onChange={() => handleRatingToggle(rating)}
-                className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-orange-500 focus:ring-orange-500"
-              />
-              <div className="flex items-center gap-1">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <svg
-                    key={star}
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill={star <= rating ? '#f97316' : 'none'}
-                    stroke={star <= rating ? '#f97316' : '#d1d5db'}
-                    strokeWidth="2"
-                  >
-                    <path d="M12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
-                  </svg>
-                ))}
-                <span className="text-sm text-gray-700 dark:text-gray-300">& Up</span>
+          <button
+            onClick={() => handleSortChange('default')}
+            className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
+              sortBy === 'default'
+                ? 'bg-orange-500 text-white'
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-orange-100 dark:hover:bg-orange-500/20 hover:text-orange-600 dark:hover:text-orange-400'
+            }`}
+          >
+            Default
+          </button>
+          <button
+            onClick={() => handleSortChange('asc')}
+            className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
+              sortBy === 'asc'
+                ? 'bg-orange-500 text-white'
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-orange-100 dark:hover:bg-orange-500/20 hover:text-orange-600 dark:hover:text-orange-400'
+            }`}
+          >
+            A to Z
+          </button>
+          <button
+            onClick={() => handleSortChange('desc')}
+            className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
+              sortBy === 'desc'
+                ? 'bg-orange-500 text-white'
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-orange-100 dark:hover:bg-orange-500/20 hover:text-orange-600 dark:hover:text-orange-400'
+            }`}
+          >
+            Z to A
+          </button>
+        </div>
+      </div>
+
+      {/* Discount Filter */}
+      <div className="mb-6">
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={discountOnly}
+            onChange={handleDiscountToggle}
+            className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-orange-500 focus:ring-orange-500"
+          />
+          <span className="text-sm text-gray-700 dark:text-gray-300">Discounted Items Only</span>
+        </label>
+      </div>
+
+      {/* Discount Percentage Filter */}
+      {discountOnly && (
+        <div className="mb-6">
+          <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">Min Discount %</h4>
+          <div className="space-y-2">
+            {discountPresets.map((preset) => (
+              <button
+                key={preset.value}
+                onClick={() => handleDiscountPercentageChange(preset.value)}
+                className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
+                  minDiscount === preset.value
+                    ? 'bg-orange-500 text-white'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-orange-100 dark:hover:bg-orange-500/20 hover:text-orange-600 dark:hover:text-orange-400'
+                }`}
+              >
+                {preset.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Performance Value Filter */}
+      <div className="mb-6">
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={hasPvOnly}
+            onChange={handleHasPvOnlyToggle}
+            className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-orange-500 focus:ring-orange-500"
+          />
+          <span className="text-sm text-gray-700 dark:text-gray-300">Has Performance Value</span>
+          <div className="relative group flex items-center">
+            <button
+              type="button"
+              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 cursor-pointer flex items-center"
+              onMouseEnter={() => setShowPvInfo(true)}
+              onMouseLeave={() => setShowPvInfo(false)}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M12 16v-4" />
+                <path d="M12 8h.01" />
+              </svg>
+            </button>
+            {showPvInfo && (
+              <div className="absolute bottom-full left-0 mb-2 w-56 bg-gray-900 dark:bg-gray-700 text-white text-xs rounded-lg p-2 z-10">
+                <p>PV (Performance Value) represents the earning points you get when you purchase a product. Higher PV means more value earned.</p>
               </div>
-            </label>
-          ))}
-        </div>
+            )}
+          </div>
+        </label>
       </div>
 
-      {/* Stock Filter */}
+      {/* PV Range Sub-filter */}
+      {hasPvOnly && (
+        <div className="mb-6">
+          <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">Min Performance Value</h4>
+          <div className="space-y-2">
+            {pvPresets.map((preset) => (
+              <button
+                key={preset.label}
+                onClick={() => handlePvPresetClick(preset)}
+                className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
+                  pvRange[0] === preset.min && pvRange[1] === preset.max
+                    ? 'bg-orange-500 text-white'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-orange-100 dark:hover:bg-orange-500/20 hover:text-orange-600 dark:hover:text-orange-400'
+                }`}
+              >
+                {preset.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+            {/* Stock Filter */}
       <div className="mb-6">
         <label className="flex items-center gap-2 cursor-pointer">
           <input
@@ -180,19 +437,26 @@ export default function ProductFilter({ onFilterChange, className = '' }: Produc
       <button
         onClick={() => {
           setPriceRange([0, 10000])
-          setSelectedCategories([])
-          setSelectedRatings([])
+          setSortBy('default')
           setInStockOnly(false)
+          setDiscountOnly(false)
+          setMinDiscount(0)
+          setPvRange(propPvRange)
+          setHasPvOnly(false)
           onFilterChange({
             priceRange: [0, 10000],
-            categories: [],
-            ratings: [],
-            inStock: false
+            sortBy: 'default',
+            inStock: false,
+            discountOnly: false,
+            minDiscount: 0,
+            pvRange: propPvRange,
+            search: propSearch,
+            hasPvOnly: false
           })
         }}
         className="w-full rounded-lg border border-gray-300 dark:border-gray-600 py-2 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer"
       >
-        Clear All Filters
+        Clear Filters
       </button>
     </div>
   )

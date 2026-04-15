@@ -5,15 +5,20 @@ import Image from 'next/image'
 import { useMemo, useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSearchParams } from 'next/navigation'
+import { useSession } from 'next-auth/react'
 import { useGetPublicProductBrandsQuery } from '@/store/api/productBrandsApi'
 import { useGetPublicProductsQuery } from '@/store/api/productsApi'
+import { useAddToCartMutation } from '@/store/api/cartApi'
+import { useGetCategoriesQuery } from '@/store/api/categoriesApi'
+import { Skeleton } from '@heroui/react'
 import OutlineButton from '@/components/ui/buttons/OutlineButton'
 import PrimaryButton from '@/components/ui/buttons/PrimaryButton'
 import Footer from '@/components/landing-page/Footer'
 import ScrollToTop from '@/components/landing-page/ScrollToTop'
 import ItemCard from '@/components/item/ItemCard'
 import ProductFilter, { FilterState } from '@/components/item/ProductFilter'
-import Chat from '@/components/chat/Chat'
+import TopFilter from '@/components/item/TopFilter'
+import toast from 'react-hot-toast'
 
 const toSlug = (value: string) =>
   value
@@ -23,6 +28,19 @@ const toSlug = (value: string) =>
     .replace(/^-+|-+$/g, '')
 const formatPeso = (value: number) => `P${Number(value || 0).toLocaleString('en-PH', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`
 const getBrandInitials = (value: string) => value.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part.charAt(0).toUpperCase()).join('') || 'BR'
+
+const renderAdBlock = () => (
+  <div className="mt-4 rounded-2xl overflow-hidden aspect-square border border-slate-100 bg-slate-50">
+    <video
+      className="h-full w-full object-cover"
+      src="/loginpageVideo/afhome.mp4"
+      autoPlay
+      muted
+      loop
+      playsInline
+    />
+  </div>
+)
 
 const GRADIENT_PALETTES = [
   'from-orange-400 to-rose-400',
@@ -58,22 +76,22 @@ const highlightText = (text: string, query: string) => {
 
 function BrandCardSkeleton() {
   return (
-    <div className="flex flex-col items-center animate-pulse rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-      <div className="h-20 w-20 shrink-0 rounded bg-gray-200 dark:bg-gray-700" />
-      <div className="mt-3 h-4 w-3/4 rounded bg-gray-200 dark:bg-gray-700" />
+    <div className="flex flex-col items-center rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+      <Skeleton className="h-20 w-20 shrink-0 rounded-lg" />
+      <Skeleton className="mt-3 h-4 w-3/4 rounded" />
     </div>
   )
 }
 
 function ProductCardSkeleton() {
   return (
-    <div className="animate-pulse overflow-hidden rounded-2xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800">
-      <div className="aspect-[4/3] bg-gray-200 dark:bg-gray-700" />
+    <div className="overflow-hidden rounded-2xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800">
+      <Skeleton className="aspect-[4/3]" />
       <div className="space-y-2 p-4">
-        <div className="h-3 w-1/3 rounded-full bg-gray-200 dark:bg-gray-700" />
-        <div className="h-4 w-full rounded-full bg-gray-200 dark:bg-gray-700" />
-        <div className="h-4 w-4/5 rounded-full bg-gray-200 dark:bg-gray-700" />
-        <div className="h-5 w-1/2 rounded-full bg-gray-200 dark:bg-gray-700" />
+        <Skeleton className="h-3 w-1/3 rounded-full" />
+        <Skeleton className="h-4 w-full rounded-full" />
+        <Skeleton className="h-4 w-4/5 rounded-full" />
+        <Skeleton className="h-5 w-1/2 rounded-full" />
       </div>
     </div>
   )
@@ -92,12 +110,57 @@ export default function ByBrandPageMain() {
   const [sortBy, setSortBy] = useState<'name-asc' | 'name-desc' | 'default'>('default')
   const [filters, setFilters] = useState<FilterState>({
     priceRange: [0, 10000],
-    categories: [],
-    ratings: [],
-    inStock: false
+    sortBy: 'default',
+    inStock: false,
+    discountOnly: false,
+    minDiscount: 0,
+    pvRange: [0, 5000],
+    search: '',
+    hasPvOnly: false
   })
-  const [isChatOpen, setIsChatOpen] = useState(false)
+    const [viewType, setViewType] = useState<'grid' | 'list'>('grid')
+  const [showNumber, setShowNumber] = useState<number | 'all'>(12)
+  const { data: session } = useSession()
+  const isLoggedIn = Boolean(session?.user)
+  const [addToCart, { isLoading: isAddingToCart }] = useAddToCartMutation()
+  const [hoveringShareProductId, setHoveringShareProductId] = useState<number | null>(null)
+
+  // Handlers for TopFilters
+  const handleSearchChange = (search: string) => {
+    setFilters(prev => ({ ...prev, search }))
+  }
+
+  const handleSortChange = (sort: string) => {
+    setSortBy(sort as 'name-asc' | 'name-desc' | 'default')
+  }
+
+  const handlePvRangeChange = (pvRange: [number, number]) => {
+    setFilters(prev => ({ ...prev, pvRange }))
+  }
+
+  const handleAddToCart = async (productId: number, e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+
+    if (!isLoggedIn) {
+      toast.error('Please sign in to add items to cart')
+      return
+    }
+
+    try {
+      await addToCart({
+        product_id: productId,
+        quantity: 1,
+      }).unwrap()
+      toast.success('Item added to cart successfully')
+    } catch (error) {
+      console.error('Error adding to cart:', error)
+      toast.error('Failed to add item to cart')
+    }
+  }
+
   const { data, isFetching } = useGetPublicProductBrandsQuery()
+  const { data: categoriesData } = useGetCategoriesQuery({ page: 1, per_page: 100, used_only: true })
 
   const allBrands = useMemo(
     () => (data?.brands ?? []).filter((brand) => brand.status === 0 && brand.name.trim().length > 0),
@@ -134,12 +197,20 @@ export default function ByBrandPageMain() {
     [data?.brands, selectedBrand],
   )
 
-  // Reset to page 1 when brand changes
+  // Reset to page 1 when brand changes or filters change
   const prevBrand = useRef(selectedBrand)
-  if (prevBrand.current !== selectedBrand) {
-    prevBrand.current = selectedBrand
-    if (productPage !== 1) setProductPage(1)
-  }
+  const prevFilters = useRef(filters)
+
+  useEffect(() => {
+    if (prevBrand.current !== selectedBrand) {
+      prevBrand.current = selectedBrand
+      setProductPage(1)
+    }
+    if (JSON.stringify(prevFilters.current) !== JSON.stringify(filters)) {
+      prevFilters.current = filters
+      setProductPage(1)
+    }
+  }, [selectedBrand, filters])
 
   const { data: brandProductsData, isFetching: isFetchingProducts } = useGetPublicProductsQuery(
     selectedBrandItem
@@ -147,9 +218,89 @@ export default function ByBrandPageMain() {
       : undefined,
     { skip: !selectedBrandItem },
   )
-  const brandProducts = brandProductsData?.products ?? []
+  const rawBrandProducts = brandProductsData?.products ?? []
   const productsMeta = brandProductsData?.meta
   const totalPages = productsMeta?.last_page ?? 1
+
+  // Filter products based on selected filters
+  const brandProducts = useMemo(() => {
+    let filtered = rawBrandProducts
+
+    // Filter by price range
+    if (filters.priceRange[0] > 0 || filters.priceRange[1] < 10000) {
+      filtered = filtered.filter(product => {
+        const price = product.priceSrp ?? product.priceDp ?? 0
+        return price >= filters.priceRange[0] && price <= filters.priceRange[1]
+      })
+    }
+
+    // Filter by PV range
+    if (filters.pvRange[0] > 0 || filters.pvRange[1] < 5000) {
+      filtered = filtered.filter(product => {
+        const pv = Number(product.prodpv ?? 0)
+        return pv >= filters.pvRange[0] && pv <= filters.pvRange[1]
+      })
+    }
+
+    // Filter by has PV only
+    if (filters.hasPvOnly) {
+      filtered = filtered.filter(product => {
+        const pv = Number(product.prodpv ?? 0)
+        return pv > 0
+      })
+    }
+
+    // Filter by stock
+    if (filters.inStock) {
+      filtered = filtered.filter(product => (product.qty ?? 0) > 0)
+    }
+
+    // Filter by discount
+    if (filters.discountOnly) {
+      filtered = filtered.filter(product => {
+        const srpPrice = Number(product.priceSrp ?? product.priceDp ?? 0)
+        const memberPrice = Number(product.priceMember ?? product.priceDp ?? 0)
+        const hasDiscount = memberPrice > 0 && memberPrice < srpPrice
+
+        // If minDiscount is set, check if discount percentage meets minimum
+        if (filters.minDiscount > 0 && hasDiscount) {
+          const discountPercentage = Math.round(((srpPrice - memberPrice) / srpPrice) * 100)
+          return discountPercentage >= filters.minDiscount
+        }
+
+        return hasDiscount
+      })
+    }
+
+    // Filter by search term
+    if (filters.search.trim().length > 0) {
+      const searchTerm = filters.search.toLowerCase().trim()
+      filtered = filtered.filter(product =>
+        product.name.toLowerCase().includes(searchTerm)
+      )
+    }
+
+    // Sort by name and price
+    if (sortBy === 'name-asc') {
+      filtered = [...filtered].sort((a, b) => a.name.localeCompare(b.name))
+    } else if (sortBy === 'name-desc') {
+      filtered = [...filtered].sort((a, b) => b.name.localeCompare(a.name))
+    } else if (sortBy === 'price-asc') {
+      filtered = [...filtered].sort((a, b) => {
+        const priceA = Number(a.priceSrp ?? a.priceDp ?? 0)
+        const priceB = Number(b.priceSrp ?? b.priceDp ?? 0)
+        return priceA - priceB
+      })
+    } else if (sortBy === 'price-desc') {
+      filtered = [...filtered].sort((a, b) => {
+        const priceA = Number(a.priceSrp ?? a.priceDp ?? 0)
+        const priceB = Number(b.priceSrp ?? b.priceDp ?? 0)
+        return priceB - priceA
+      })
+    }
+
+    return filtered
+  }, [rawBrandProducts, filters, sortBy])
 
   return (
     <main className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -172,7 +323,27 @@ export default function ByBrandPageMain() {
         {/* Brand Profile Card — only when brand selected */}
         {selectedBrandItem && (
           <>
-            <div className="rounded-lg bg-white dark:bg-gray-800 p-6 border border-gray-200 dark:border-gray-700">
+            <div className="rounded-lg bg-white dark:bg-gray-800 p-6 border border-gray-200 dark:border-gray-700 relative">
+              <button
+                onClick={() => {
+                  const brandUrl = window.location.href
+                  navigator.clipboard.writeText(brandUrl).then(() => {
+                    toast.success('Brand link copied to clipboard')
+                  }).catch(() => {
+                    toast.error('Failed to copy link')
+                  })
+                }}
+                className="absolute top-4 right-4 p-2 rounded-full border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 hover:bg-orange-500 hover:border-orange-500 dark:hover:bg-orange-500 dark:hover:border-orange-500 hover:text-white transition-all duration-200 cursor-pointer"
+                title="Share Brand"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-700 dark:text-gray-300 hover:text-white transition-colors">
+                  <circle cx="18" cy="5" r="3" />
+                  <circle cx="6" cy="12" r="3" />
+                  <circle cx="18" cy="19" r="3" />
+                  <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+                  <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+                </svg>
+              </button>
               <div className="flex items-center gap-6">
                 <div className={`relative flex h-32 w-32 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600`}>
                   {selectedBrandItem.image ? (
@@ -221,12 +392,6 @@ export default function ByBrandPageMain() {
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <PrimaryButton onClick={() => setIsChatOpen(true)} className="!rounded-full !px-4 !py-2.5 !text-sm cursor-pointer">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                    </svg>
-                    Chat
-                  </PrimaryButton>
                   <OutlineButton href="/by-brand" className="shrink-0 !px-4 !py-2.5 !text-sm">
                     ← Back to All Brands
                   </OutlineButton>
@@ -469,7 +634,13 @@ export default function ByBrandPageMain() {
           <div className="flex flex-col gap-6 lg:flex-row">
             {/* Left Sidebar - Filter */}
             <div className="lg:w-72 shrink-0">
-              <ProductFilter onFilterChange={setFilters} />
+              <ProductFilter
+                onFilterChange={setFilters}
+                pvRange={filters.pvRange}
+                search={filters.search}
+                categories={categoriesData?.categories || []}
+              />
+              {renderAdBlock()}
             </div>
 
             {/* Right Side - Products */}
@@ -484,9 +655,23 @@ export default function ByBrandPageMain() {
                 </span>
               </div>
 
+              {/* Top Filters */}
+              <div className="mt-6">
+                <TopFilter
+                  onSearchChange={handleSearchChange}
+                  onViewTypeChange={setViewType}
+                  onShowNumberChange={setShowNumber}
+                  onSortChange={handleSortChange}
+                  searchValue={filters.search}
+                  viewType={viewType}
+                  showNumber={showNumber}
+                  sortValue={sortBy}
+                />
+              </div>
+
               <div className="mt-6">
                 {isFetchingProducts ? (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  <div className={viewType === 'grid' ? 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4 pb-6' : 'flex flex-col gap-4 pb-6'}>
                     {Array.from({ length: 8 }).map((_, i) => <ProductCardSkeleton key={i} />)}
                   </div>
                 ) : brandProducts.length === 0 ? (
@@ -496,9 +681,148 @@ export default function ByBrandPageMain() {
                     <p className="mt-1 text-sm text-gray-400 dark:text-gray-500">No products assigned to this brand yet.</p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    {brandProducts.map((product) => (
-                      <ItemCard key={product.id} product={product} brandName={selectedBrandItem.name} />
+                  <div className={viewType === 'grid' ? 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4 pb-6' : 'flex flex-col gap-4 pb-6'}>
+                    {brandProducts.slice(0, showNumber === 'all' ? brandProducts.length : showNumber).map((product) => (
+                      viewType === 'grid' ? (
+                        <ItemCard key={product.id} product={product} brandName={selectedBrandItem.name} />
+                      ) : (
+                        <Link
+                          key={product.id}
+                          href={`/product/${toSlug(product.name)}-i${product.id}`}
+                          className="flex gap-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden hover:border-orange-500 dark:hover:border-orange-400 transition-colors group relative"
+                        >
+                          {/* Action Icons */}
+                          <div className="absolute top-2 right-2 flex flex-col gap-2 z-10">
+                            <button
+                              onClick={(e) => {
+                                e.preventDefault()
+                                e.stopPropagation()
+                                toast.success('Added to wishlist')
+                              }}
+                              className="p-2 rounded-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-md border border-gray-200 dark:border-gray-600 shadow-lg hover:bg-orange-500 hover:border-orange-500 dark:hover:bg-orange-500 dark:hover:border-orange-500 transition-all duration-200 cursor-pointer"
+                              title="Add to Wishlist"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-700 dark:text-gray-300 hover:text-white transition-colors">
+                                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                              </svg>
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.preventDefault()
+                                e.stopPropagation()
+                                const productUrl = `${window.location.origin}/product/${toSlug(product.name)}-i${product.id}`
+                                navigator.clipboard.writeText(productUrl).then(() => {
+                                  toast.success('Link copied to clipboard')
+                                }).catch(() => {
+                                  toast.error('Failed to copy link')
+                                })
+                              }}
+                              onMouseEnter={() => setHoveringShareProductId(product.id)}
+                              onMouseLeave={() => setHoveringShareProductId(null)}
+                              className="p-2 rounded-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-md border border-gray-200 dark:border-gray-600 shadow-lg hover:bg-orange-500 hover:border-orange-500 dark:hover:bg-orange-500 dark:hover:border-orange-500 transition-all duration-200 cursor-pointer"
+                              title="Share"
+                            >
+                              {hoveringShareProductId === product.id ? (
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-700 dark:text-gray-300 hover:text-white transition-colors">
+                                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                                </svg>
+                              ) : (
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-700 dark:text-gray-300 hover:text-white transition-colors">
+                                  <circle cx="18" cy="5" r="3" />
+                                  <circle cx="6" cy="12" r="3" />
+                                  <circle cx="18" cy="19" r="3" />
+                                  <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+                                  <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+                                </svg>
+                              )}
+                            </button>
+                          </div>
+                          <div className="relative aspect-square w-32 bg-gray-100 dark:bg-gray-700 overflow-hidden shrink-0">
+                            {product.image ? (
+                              <Image
+                                src={product.image}
+                                alt={product.name}
+                                fill
+                                className="object-cover group-hover:scale-105 transition-transform duration-300"
+                                unoptimized
+                              />
+                            ) : (
+                              <div className="flex h-full items-center justify-center text-gray-400 dark:text-gray-500">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                                  <circle cx="8.5" cy="8.5" r="1.5" />
+                                  <polyline points="21 15 16 10 5 21" />
+                                </svg>
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex flex-col justify-center flex-1 p-4 relative">
+                            <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-2 line-clamp-2 group-hover:text-orange-500 dark:group-hover:text-orange-400 transition-colors">{product.name}</h3>
+                            <div className="flex items-baseline gap-2 mb-2">
+                              <span className="text-lg font-bold text-orange-500 dark:text-orange-400">
+                                ₱{Number(product.priceSrp ?? product.priceDp ?? 0).toLocaleString()}
+                              </span>
+                              {product.priceMember && Number(product.priceMember) > 0 && Number(product.priceMember) < Number(product.priceSrp ?? product.priceDp ?? 0) && (
+                                <span className="text-sm text-gray-400 dark:text-gray-500 line-through">
+                                  ₱{Number(product.priceSrp ?? product.priceDp ?? 0).toLocaleString()}
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {product.prodpv && Number(product.prodpv) > 0 && (
+                                <span className="inline-flex items-center rounded-full border border-blue-200 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 text-[11px] font-semibold text-blue-700 dark:text-blue-300">
+                                  PV {Number(product.prodpv).toLocaleString()}
+                                </span>
+                              )}
+                            </div>
+                            {/* Sales/Ratings */}
+                            <div className="flex items-center gap-1 mt-1">
+                              <div className="flex items-center">
+                                {[1, 2, 3, 4, 5].map((star) => (
+                                  <svg
+                                    key={star}
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    width="10"
+                                    height="10"
+                                    viewBox="0 0 24 24"
+                                    fill={star <= 4 ? '#f97316' : 'none'}
+                                    stroke={star <= 4 ? '#f97316' : '#d1d5db'}
+                                    strokeWidth="2"
+                                  >
+                                    <path d="M12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+                                  </svg>
+                                ))}
+                              </div>
+                              <span className="text-xs text-gray-400 dark:text-gray-500">124 sold</span>
+                            </div>
+                            {/* Add to Cart Button */}
+                            <button
+                              onClick={(e) => handleAddToCart(product.id, e)}
+                              disabled={isAddingToCart}
+                              className="absolute bottom-4 right-4 flex items-center justify-center gap-2 rounded-full bg-orange-500 hover:bg-orange-600 px-4 py-2 text-sm font-semibold text-white opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {isAddingToCart ? (
+                                <>
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="animate-spin">
+                                    <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                                  </svg>
+                                  Adding...
+                                </>
+                              ) : (
+                                <>
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <circle cx="9" cy="21" r="1" />
+                                    <circle cx="20" cy="21" r="1" />
+                                    <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+                                  </svg>
+                                  Add to Cart
+                                </>
+                              )}
+                            </button>
+                          </div>
+                        </Link>
+                      )
                     ))}
                   </div>
                 )}
@@ -506,7 +830,7 @@ export default function ByBrandPageMain() {
 
               {/* Pagination */}
               {!isFetchingProducts && totalPages > 1 && (
-                <div className="-mx-6 -mb-6 flex flex-col items-center border-t border-gray-100 dark:border-gray-700 pt-6 gap-4 bg-white dark:bg-gray-800 px-6 pb-6">
+                <div className="-mx-6 -mb-6 flex items-center justify-between border-t border-gray-100 dark:border-gray-700 pt-6 bg-white dark:bg-gray-800 px-6 pb-6">
                   <p className="text-sm text-gray-400 dark:text-gray-500">
                     Page <span className="font-semibold text-gray-700 dark:text-gray-300">{productPage}</span> of <span className="font-semibold text-gray-700 dark:text-gray-300">{totalPages}</span>
                   </p>
@@ -612,12 +936,6 @@ export default function ByBrandPageMain() {
       </div>
       <Footer />
       <ScrollToTop />
-      <Chat
-        isOpen={isChatOpen}
-        onClose={() => setIsChatOpen(false)}
-        brandName={selectedBrandItem?.name}
-        brandImage={selectedBrandItem?.image || undefined}
-      />
     </main>
   )
 }

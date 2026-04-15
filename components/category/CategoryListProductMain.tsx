@@ -3,10 +3,12 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { useState, useMemo, useEffect, useRef } from 'react';
-import Footer from '@/components/layout/Footer';
+import Footer from '@/components/landing-page/Footer';
 import TopBar from '@/components/layout/TopBar';
 import Navbar from '@/components/layout/Navbar';
-import ProductCard from '@/components/ui/ProductCard';
+import ItemCard from '@/components/item/ItemCard';
+import TopFilter from '@/components/item/TopFilter';
+import ProductFilter, { FilterState } from '@/components/item/ProductFilter';
 import { CategoryProduct, categoryMeta, categoryProducts, CATEGORY_BRANDS } from '@/libs/CategoryData';
 import type { Category } from '@/store/api/categoriesApi';
 
@@ -43,50 +45,6 @@ const ChevronDown = () => (
         stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="6 9 12 15 18 9" /></svg>
 );
 
-const PRICE_BRACKETS = [
-    { id: 'under10', label: 'Under PHP 10k', min: 0, max: 9999 },
-    { id: '10to25', label: 'PHP 10k - PHP 25k', min: 10000, max: 25000 },
-    { id: '25to50', label: 'PHP 25k - PHP 50k', min: 25000, max: 50000 },
-    { id: 'above50', label: 'PHP 50k+', min: 50000, max: Infinity },
-] as const;
-
-interface FilterSectionProps {
-    title: string;
-    children: React.ReactNode;
-    defaultOpen?: boolean;
-}
-
-function FilterSection({ title, children, defaultOpen = true }: FilterSectionProps) {
-    const [open, setOpen] = useState(defaultOpen);
-    return (
-        <div className="border-b border-gray-100 pb-4 mb-4 last:border-0 last:mb-0 last:pb-0">
-            <button
-                onClick={() => setOpen(o => !o)}
-                className="flex items-center justify-between w-full mb-3 group"
-            >
-                <span className="text-xs font-bold text-slate-700 uppercase tracking-widest group-hover:text-orange-500 transition-colors">
-                    {title}
-                </span>
-                <span className={`text-gray-400 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}>
-                    <ChevronDown />
-                </span>
-            </button>
-            <AnimatePresence initial={false}>
-                {open && (
-                    <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.2 }}
-                        className="overflow-hidden"
-                    >
-                        {children}
-                    </motion.div>
-                )}
-            </AnimatePresence>
-        </div>
-    );
-}
 
 interface CategoryListProductMainProps {
     slug: string;
@@ -118,78 +76,116 @@ export default function CategoryListProductMain({
 
     const categoryLabel = initialCategoryLabel ?? meta?.label ?? titleFromSlug(slug);
 
-    const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
-    const [selectedPriceBrackets, setSelectedPriceBrackets] = useState<string[]>([]);
-    const [priceMinInput, setPriceMinInput] = useState('');
-    const [priceMaxInput, setPriceMaxInput] = useState('');
-    const [customPriceMin, setCustomPriceMin] = useState<number | null>(null);
-    const [customPriceMax, setCustomPriceMax] = useState<number | null>(null);
-    const [sortBy, setSortBy] = useState('best-selling');
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
     const [showCount, setShowCount] = useState(16);
     const [currentPage, setCurrentPage] = useState(1);
-    const [showMobileFilters, setShowMobileFilters] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
     const listingTopRef = useRef<HTMLDivElement | null>(null);
+    
+    // Filter state for ProductFilter component
+    const [filterState, setFilterState] = useState<FilterState>({
+        priceRange: [0, 10000],
+        sortBy: 'default',
+        inStock: false,
+        discountOnly: false,
+        minDiscount: 0,
+        pvRange: [0, 5000],
+        search: '',
+        hasPvOnly: false
+    });
 
-    const toggleBrand = (brand: string) =>
-        setSelectedBrands(prev => prev.includes(brand) ? prev.filter(b => b !== brand) : [...prev, brand]);
-    const togglePriceBracket = (id: string) =>
-        setSelectedPriceBrackets((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]));
-
-    const resetFilters = () => {
-        setSelectedBrands([]);
-        setSelectedPriceBrackets([]);
-        setPriceMinInput('');
-        setPriceMaxInput('');
-        setCustomPriceMin(null);
-        setCustomPriceMax(null);
+    // Filter change handler for ProductFilter component
+    const handleFilterChange = (filters: FilterState) => {
+        setFilterState(filters);
     };
-    const applyCustomPriceRange = () => {
-        const parsedMin = priceMinInput.trim() === '' ? null : Number(priceMinInput);
-        const parsedMax = priceMaxInput.trim() === '' ? null : Number(priceMaxInput);
 
-        const min = parsedMin != null && Number.isFinite(parsedMin) && parsedMin >= 0 ? parsedMin : null;
-        const max = parsedMax != null && Number.isFinite(parsedMax) && parsedMax >= 0 ? parsedMax : null;
+    // Reset filters function
+    const resetFilters = () => {
+        setFilterState({
+            priceRange: [0, 10000],
+            sortBy: 'default',
+            inStock: false,
+            discountOnly: false,
+            minDiscount: 0,
+            pvRange: [0, 5000],
+            search: '',
+            hasPvOnly: false
+        });
+        setSearchQuery('');
+    };
 
-        if (min != null && max != null && min > max) {
-            setCustomPriceMin(max);
-            setCustomPriceMax(min);
-            return;
-        }
+    // Search change handler for TopFilter component
+    const handleSearchChange = (search: string) => {
+        setSearchQuery(search);
+    };
 
-        setCustomPriceMin(min);
-        setCustomPriceMax(max);
+    // View type change handler for TopFilter component
+    const handleViewTypeChange = (viewType: 'grid' | 'list') => {
+        setViewMode(viewType);
+    };
+
+    // Show number change handler for TopFilter component
+    const handleShowNumberChange = (showNumber: number | 'all') => {
+        setShowCount(showNumber === 'all' ? safeProducts.length : showNumber);
+    };
+
+    // Sort change handler for TopFilter component
+    const handleSortChange = (sort: string) => {
+        // Map TopFilter sort values to our internal values
+        const sortMapping: Record<string, 'default' | 'asc' | 'desc'> = {
+            'default': 'default',
+            'name-asc': 'asc',
+            'name-desc': 'desc',
+            'price-asc': 'asc',
+            'price-desc': 'desc'
+        };
+        
+        const newSortBy = sortMapping[sort] || 'default';
+        setFilterState(prev => ({ ...prev, sortBy: newSortBy }));
     };
 
     const filteredProducts = useMemo(() => {
         let result = safeProducts.filter(p => {
-            const passBracket =
-                selectedPriceBrackets.length === 0 ||
-                selectedPriceBrackets.some((id) => {
-                    const bracket = PRICE_BRACKETS.find((item) => item.id === id);
-                    if (!bracket) return false;
-                    return p.price >= bracket.min && p.price <= bracket.max;
-                });
-            const passCustom =
-                (customPriceMin == null || p.price >= customPriceMin) &&
-                (customPriceMax == null || p.price <= customPriceMax);
-            const passPrice = passBracket && passCustom;
-            const passBrand = selectedBrands.length === 0 || (p.brand && selectedBrands.includes(p.brand));
-            return passPrice && passBrand;
+            // Filter by price range
+            const passPrice = p.price >= filterState.priceRange[0] && p.price <= filterState.priceRange[1];
+            
+            // Filter by search query
+            const passSearch = searchQuery === '' || 
+                p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                (p.brand && p.brand.toLowerCase().includes(searchQuery.toLowerCase()));
+            
+            // Filter by stock (assuming all products are in stock for now)
+            const passStock = !filterState.inStock || true;
+            
+            // Filter by discount (assuming no discount data for now)
+            const passDiscount = !filterState.discountOnly || false;
+            
+            return passPrice && passSearch && passStock && passDiscount;
         });
-        if (sortBy === 'price-asc') result = [...result].sort((a, b) => a.price - b.price);
-        if (sortBy === 'price-desc') result = [...result].sort((a, b) => b.price - a.price);
-        if (sortBy === 'newest') result = [...result].reverse();
+
+        // Apply sorting
+        if (filterState.sortBy === 'asc') {
+            // For simplicity, sort by price ascending
+            result = [...result].sort((a, b) => a.price - b.price);
+        }
+        if (filterState.sortBy === 'desc') {
+            // For simplicity, sort by price descending
+            result = [...result].sort((a, b) => b.price - a.price);
+        }
+        if (filterState.sortBy === 'default') {
+            // Keep original order (newest first)
+            result = [...result];
+        }
+        
         return result;
-    }, [safeProducts, selectedPriceBrackets, customPriceMin, customPriceMax, selectedBrands, sortBy]);
+    }, [safeProducts, filterState, searchQuery]);
 
     // Reset to page 1 when filters/sort/showCount change.
-    useEffect(() => { setCurrentPage(1); }, [selectedBrands, selectedPriceBrackets, customPriceMin, customPriceMax, sortBy, showCount]);
+    useEffect(() => { setCurrentPage(1); }, [filterState, searchQuery, showCount]);
 
     // Reset pagination when switching to a different category route.
     useEffect(() => {
         setCurrentPage(1);
-        setShowMobileFilters(false);
     }, [slug]);
 
     const totalPages = Math.max(1, Math.ceil(filteredProducts.length / showCount));
@@ -201,157 +197,23 @@ export default function CategoryListProductMain({
         listingTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, [boundedCurrentPage]);
 
-    const hasActivePriceRange = selectedPriceBrackets.length > 0 || customPriceMin !== null || customPriceMax !== null;
-    const hasActiveFilters = selectedBrands.length > 0 || hasActivePriceRange;
-    const activeFilterCount = selectedBrands.length + selectedPriceBrackets.length + (customPriceMin !== null || customPriceMax !== null ? 1 : 0);
-
-    const renderFilters = () => (
-        <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
-            <div className="flex items-center justify-between mb-5">
-                <span className="text-sm font-bold text-slate-800">Filters</span>
-                {hasActiveFilters && (
-                    <button
-                        onClick={resetFilters}
-                        className="text-xs text-orange-500 hover:text-orange-600 font-semibold transition-colors"
-                    >
-                        Clear all
-                    </button>
-                )}
-            </div>
-
-            {/* Product Type */}
-            <FilterSection title="Product Type">
-                <label className="flex items-center justify-between cursor-pointer group">
-                    <div className="flex items-center gap-2.5">
-                        <div className="w-4 h-4 rounded border-2 border-orange-500 bg-orange-500 flex items-center justify-center shrink-0">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12" /></svg>
-                        </div>
-                        <span className="text-sm text-slate-700 group-hover:text-orange-500 transition-colors">{categoryLabel}</span>
-                    </div>
-                    <span className="text-xs text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full">{safeProducts.length}</span>
-                </label>
-            </FilterSection>
-
-            {/* Price Range — bracket chips */}
-                        <FilterSection title="Price Range">
-                <div className="space-y-2.5">
-                    {PRICE_BRACKETS.map(bracket => {
-                        const checked = selectedPriceBrackets.includes(bracket.id);
-                        return (
-                            <label
-                                key={bracket.id}
-                                className="flex items-center justify-between gap-2 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-700 hover:border-orange-300 hover:bg-orange-50 transition-colors cursor-pointer"
-                            >
-                                <span className="flex items-center gap-2">
-                                    <span className={`h-4 w-4 rounded border flex items-center justify-center transition-colors ${checked ? 'border-orange-500 bg-orange-500' : 'border-gray-300 bg-white'}`}>
-                                        {checked && (
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12" /></svg>
-                                        )}
-                                    </span>
-                                    <span className="font-medium">{bracket.label}</span>
-                                </span>
-                                <input
-                                    type="checkbox"
-                                    className="sr-only"
-                                    checked={checked}
-                                    onChange={() => togglePriceBracket(bracket.id)}
-                                />
-                            </label>
-                        );
-                    })}
-
-                    <div className="mt-3 rounded-xl border border-gray-200 bg-white p-3">
-                        <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500 mb-2">Custom range</p>
-                        <div className="grid grid-cols-2 gap-2">
-                            <input
-                                type="number"
-                                min={0}
-                                step={1}
-                                inputMode="numeric"
-                                value={priceMinInput}
-                                onChange={(e) => setPriceMinInput(e.target.value)}
-                                placeholder="Min (PHP)"
-                                className="w-full rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-2 text-xs text-gray-700 placeholder:text-gray-400 focus:border-orange-300 focus:bg-white focus:outline-none"
-                            />
-                            <input
-                                type="number"
-                                min={0}
-                                step={1}
-                                inputMode="numeric"
-                                value={priceMaxInput}
-                                onChange={(e) => setPriceMaxInput(e.target.value)}
-                                placeholder="Max (PHP)"
-                                className="w-full rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-2 text-xs text-gray-700 placeholder:text-gray-400 focus:border-orange-300 focus:bg-white focus:outline-none"
-                            />
-                        </div>
-                        <div className="mt-2 flex items-center gap-2">
-                            <button
-                                type="button"
-                                onClick={applyCustomPriceRange}
-                                className="rounded-lg bg-orange-500 px-3 py-1.5 text-[11px] font-semibold text-white hover:bg-orange-600 transition-colors"
-                            >
-                                Apply
-                            </button>
-                            {(customPriceMin !== null || customPriceMax !== null) && (
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setPriceMinInput('');
-                                        setPriceMaxInput('');
-                                        setCustomPriceMin(null);
-                                        setCustomPriceMax(null);
-                                    }}
-                                    className="rounded-lg border border-gray-200 px-3 py-1.5 text-[11px] font-semibold text-gray-600 hover:border-gray-300 hover:bg-gray-50 transition-colors"
-                                >
-                                    Reset
-                                </button>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            </FilterSection>
-
-            {/* Brands */}
-            <FilterSection title="Brands">
-                <div className="flex flex-col gap-2.5">
-                    {CATEGORY_BRANDS.map(brand => {
-                        const count = safeProducts.filter(p => p.brand === brand).length;
-                        if (count === 0) return null;
-                        const checked = selectedBrands.includes(brand);
-                        return (
-                            <label key={brand} className="flex items-center justify-between cursor-pointer group">
-                                <div className="flex items-center gap-2.5">
-                                    <div className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${checked ? 'border-orange-500 bg-orange-500' : 'border-gray-300 bg-white group-hover:border-orange-400'}`}>
-                                        {checked && (
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12" /></svg>
-                                        )}
-                                    </div>
-                                    <span className={`text-sm transition-colors ${checked ? 'text-orange-600 font-medium' : 'text-gray-600 group-hover:text-orange-500'}`}>
-                                        {brand}
-                                    </span>
-                                </div>
-                                <span className="text-xs text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full">{count}</span>
-                                <input type="checkbox" className="sr-only" checked={checked} onChange={() => toggleBrand(brand)} />
-                            </label>
-                        );
-                    })}
-                </div>
-            </FilterSection>
-        </div>
-    );
-
-    const renderAdBlock = () => (
-        <div className="mt-4 rounded-2xl overflow-hidden aspect-square border border-slate-100 bg-slate-50">
-            <video
-                className="h-full w-full object-cover"
-                src="/loginpageVideo/afhome.mp4"
-                autoPlay
-                muted
-                loop
-                playsInline
-            />
-        </div>
-    );
+    const hasActiveFilters = filterState.priceRange[0] > 0 || 
+        filterState.priceRange[1] < 10000 || 
+        filterState.inStock || 
+        filterState.discountOnly ||
+        filterState.minDiscount > 0 ||
+        filterState.hasPvOnly ||
+        searchQuery !== '';
+    
+    const activeFilterCount = [
+        filterState.priceRange[0] > 0,
+        filterState.priceRange[1] < 10000,
+        filterState.inStock,
+        filterState.discountOnly,
+        filterState.minDiscount > 0,
+        filterState.hasPvOnly,
+        searchQuery !== ''
+    ].filter(Boolean).length;
 
     return (
         <div className="min-h-screen bg-white flex flex-col">
@@ -374,186 +236,55 @@ export default function CategoryListProductMain({
                 <div className="container mx-auto px-4 py-6 lg:py-8">
                     <div className="flex gap-6 items-start">
 
-                        {/* ─── DESKTOP SIDEBAR ─── */}
-                        <aside className="hidden lg:block w-60 shrink-0 sticky top-4">
-                            {renderFilters()}
-                            {renderAdBlock()}
+                        {/* ─── PRODUCT FILTER SIDEBAR ─── */}
+                        <aside className="hidden lg:block w-80 shrink-0 sticky top-4">
+                            <ProductFilter
+                                onFilterChange={handleFilterChange}
+                                search={searchQuery}
+                                categories={initialCategories}
+                                currentCategory={categoryLabel}
+                            />
+                            {/* Video Section */}
+                            <div className="mt-4 rounded-2xl overflow-hidden aspect-square border border-slate-100 bg-slate-50">
+                                <video
+                                    className="h-full w-full object-cover"
+                                    src="/loginpageVideo/afhome.mp4"
+                                    autoPlay
+                                    muted
+                                    loop
+                                    playsInline
+                                />
+                            </div>
                         </aside>
-
-                        {/* ─── MOBILE FILTER DRAWER ─── */}
-                        <AnimatePresence>
-                            {showMobileFilters && (
-                                <>
-                                    <motion.div
-                                        key="backdrop"
-                                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                                        onClick={() => setShowMobileFilters(false)}
-                                        className="fixed inset-0 bg-black/50 z-40 lg:hidden"
-                                    />
-                                    <motion.div
-                                        key="drawer"
-                                        initial={{ x: '-100%' }} animate={{ x: 0 }} exit={{ x: '-100%' }}
-                                        transition={{ type: 'tween', duration: 0.25 }}
-                                        className="fixed left-0 top-0 bottom-0 w-72 bg-white z-50 lg:hidden overflow-y-auto shadow-2xl"
-                                    >
-                                        {/* Drawer header */}
-                                        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 sticky top-0 bg-white z-10">
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-sm font-bold text-slate-800">Filters</span>
-                                                {hasActiveFilters && (
-                                                    <span className="h-5 w-5 rounded-full bg-orange-500 text-white text-[10px] font-bold flex items-center justify-center">
-                                                        {activeFilterCount}
-                                                    </span>
-                                                )}
-                                            </div>
-                                            <button
-                                                onClick={() => setShowMobileFilters(false)}
-                                                className="h-8 w-8 rounded-lg bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
-                                            >
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                                                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                                                </svg>
-                                            </button>
-                                        </div>
-                                        {/* Drawer content */}
-                                        <div className="p-5">
-                                            {renderFilters()}
-                                            {renderAdBlock()}
-                                        </div>
-                                        {/* Apply button */}
-                                        <div className="sticky bottom-0 px-5 pb-5 pt-3 bg-white border-t border-gray-100">
-                                            <button
-                                                onClick={() => setShowMobileFilters(false)}
-                                                className="w-full py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-xl text-sm font-bold transition-colors"
-                                            >
-                                                Show {filteredProducts.length} Products
-                                            </button>
-                                        </div>
-                                    </motion.div>
-                                </>
-                            )}
-                        </AnimatePresence>
 
                         {/* ─── MAIN CONTENT ─── */}
                         <div className="flex-1 min-w-0">
 
-                            {/* Toolbar */}
-                            <div ref={listingTopRef} className="flex items-center justify-between mb-5 flex-wrap gap-3 bg-gray-50 rounded-xl px-4 py-3 border border-gray-100">
-                                <div className="flex items-center gap-2 sm:gap-3">
-
-                                    {/* Mobile filter trigger */}
-                                    <button
-                                        onClick={() => setShowMobileFilters(true)}
-                                        className="lg:hidden flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-semibold text-gray-600 hover:border-orange-300 hover:text-orange-500 transition-colors"
-                                    >
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                                            <line x1="4" y1="6" x2="20" y2="6"/>
-                                            <line x1="8" y1="12" x2="16" y2="12"/>
-                                            <line x1="11" y1="18" x2="13" y2="18"/>
-                                        </svg>
-                                        Filters
-                                        {hasActiveFilters && (
-                                            <span className="h-4 w-4 rounded-full bg-orange-500 text-white text-[9px] font-bold flex items-center justify-center">
-                                                {activeFilterCount}
-                                            </span>
-                                        )}
-                                    </button>
-
-                                    <span className="hidden sm:inline text-xs text-gray-400 font-medium">View as:</span>
-                                    <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-lg p-1">
-                                        <button
-                                            onClick={() => setViewMode('grid')}
-                                            className={`p-1.5 rounded-md transition-colors ${viewMode === 'grid' ? 'bg-orange-50' : 'hover:bg-gray-100'}`}
-                                            title="Grid view"
-                                        >
-                                            <GridIcon active={viewMode === 'grid'} />
-                                        </button>
-                                        <button
-                                            onClick={() => setViewMode('list')}
-                                            className={`p-1.5 rounded-md transition-colors ${viewMode === 'list' ? 'bg-orange-50' : 'hover:bg-gray-100'}`}
-                                            title="List view"
-                                        >
-                                            <ListIcon active={viewMode === 'list'} />
-                                        </button>
-                                    </div>
-                                    <span className="text-xs text-gray-400">
-                                        Showing{' '}
-                                        <span className="font-semibold text-slate-700">{paginatedProducts.length}</span>
-                                        <span className="hidden sm:inline">
-                                            {' '}of{' '}
-                                            <span className="font-semibold text-slate-700">{filteredProducts.length}</span>
-                                            {' '}products
-                                        </span>
+                            {/* Top Filter */}
+                            <div ref={listingTopRef} className="mb-5">
+                                <TopFilter
+                                    onSearchChange={handleSearchChange}
+                                    onViewTypeChange={handleViewTypeChange}
+                                    onShowNumberChange={handleShowNumberChange}
+                                    onSortChange={handleSortChange}
+                                    searchValue={searchQuery}
+                                    viewType={viewMode}
+                                    showNumber={showCount}
+                                    sortValue={filterState.sortBy}
+                                    className="mb-4"
+                                />
+                                <div className="flex items-center justify-between text-sm text-gray-600">
+                                    <span>
+                                        Showing <span className="font-semibold text-slate-700">{paginatedProducts.length}</span> of{' '}
+                                        <span className="font-semibold text-slate-700">{filteredProducts.length}</span> products
                                     </span>
-                                </div>
-
-                                <div className="flex items-center gap-2 sm:gap-3">
-                                    <div className="flex items-center gap-1.5 text-xs text-gray-500">
-                                        <span className="hidden sm:inline">Show:</span>
-                                        <select
-                                            value={showCount}
-                                            onChange={e => setShowCount(Number(e.target.value))}
-                                            className="border border-gray-200 bg-white rounded-lg px-2 py-1 text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-orange-300 cursor-pointer"
-                                        >
-                                            <option value={16}>16</option>
-                                            <option value={24}>24</option>
-                                            <option value={32}>32</option>
-                                            <option value={48}>48</option>
-                                        </select>
-                                    </div>
-                                    <div className="flex items-center gap-1.5 text-xs text-gray-500">
-                                        <span className="hidden sm:inline">Sort by:</span>
-                                        <select
-                                            value={sortBy}
-                                            onChange={e => setSortBy(e.target.value)}
-                                            className="border border-gray-200 bg-white rounded-lg px-2 py-1 text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-orange-300 cursor-pointer"
-                                        >
-                                            <option value="best-selling">Best Selling</option>
-                                            <option value="price-asc">Price: Low to High</option>
-                                            <option value="price-desc">Price: High to Low</option>
-                                            <option value="newest">Newest</option>
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Active filter chips */}
-                            {hasActiveFilters && (
-                                <div className="flex items-center gap-2 flex-wrap mb-4">
-                                    {selectedBrands.map(b => (
-                                        <span key={b} className="flex items-center gap-1.5 bg-orange-50 border border-orange-200 text-orange-600 text-xs font-medium px-2.5 py-1 rounded-full">
-                                            {b}
-                                            <button onClick={() => toggleBrand(b)} className="hover:text-orange-800 transition-colors">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
-                                            </button>
-                                        </span>
-                                    ))}
-                                    {selectedPriceBrackets.map((id) => (
-                                        <span key={id} className="flex items-center gap-1.5 bg-orange-50 border border-orange-200 text-orange-600 text-xs font-medium px-2.5 py-1 rounded-full">
-                                            {PRICE_BRACKETS.find((b) => b.id === id)?.label}
-                                            <button onClick={() => togglePriceBracket(id)} className="hover:text-orange-800 transition-colors">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
-                                            </button>
-                                        </span>
-                                    ))}
-                                    {(customPriceMin !== null || customPriceMax !== null) && (
-                                        <span className="flex items-center gap-1.5 bg-orange-50 border border-orange-200 text-orange-600 text-xs font-medium px-2.5 py-1 rounded-full">
-                                            {`PHP ${customPriceMin ?? 0} - PHP ${customPriceMax ?? 'Any'}`}
-                                            <button
-                                                onClick={() => {
-                                                    setPriceMinInput('');
-                                                    setPriceMaxInput('');
-                                                    setCustomPriceMin(null);
-                                                    setCustomPriceMax(null);
-                                                }}
-                                                className="hover:text-orange-800 transition-colors"
-                                            >
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
-                                            </button>
+                                    {hasActiveFilters && (
+                                        <span className="text-xs text-orange-500 font-medium">
+                                            {activeFilterCount} filter{activeFilterCount !== 1 ? 's' : ''} active
                                         </span>
                                     )}
                                 </div>
-                            )}
+                            </div>
 
                             {/* Products */}
                             {filteredProducts.length === 0 ? (
@@ -570,17 +301,11 @@ export default function CategoryListProductMain({
                                     </button>
                                 </div>
                             ) : (
-                                <motion.div
-                                    key={`${viewMode}-${sortBy}-${boundedCurrentPage}`}
-                                    className={
-                                        viewMode === 'grid'
-                                            ? 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4'
-                                            : 'flex flex-col gap-3'
-                                    }
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ duration: 0.25, ease: 'easeOut' }}
-                                >
+                                <div className={
+                                    viewMode === 'grid'
+                                        ? 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4'
+                                        : 'flex flex-col gap-3'
+                                }>
                                     {paginatedProducts.map((product, i) => (
                                         <motion.div
                                             key={`${product.name}-${i}`}
@@ -588,76 +313,131 @@ export default function CategoryListProductMain({
                                             animate={{ opacity: 1, y: 0 }}
                                             transition={{ duration: 0.22, delay: i * 0.02, ease: 'easeOut' }}
                                         >
-                                            <ProductCard {...product} viewMode={viewMode} />
+                                            {viewMode === 'grid' ? (
+                                                <ItemCard key={product.id} product={product} brandName={product.brand || ''} />
+                                            ) : (
+                                                <Link
+                                                    key={product.id}
+                                                    href={`/product/${product.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-i${product.id}`}
+                                                    className="flex gap-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden hover:border-orange-500 dark:hover:border-orange-400 transition-colors group relative"
+                                                >
+                                                    {/* Action Icons */}
+                                                    <div className="absolute top-2 right-2 flex flex-col gap-2 z-10">
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.preventDefault()
+                                                                e.stopPropagation()
+                                                                // Add to wishlist functionality here
+                                                            }}
+                                                            className="p-2 rounded-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-md border border-gray-200 dark:border-gray-600 shadow-lg hover:bg-orange-500 hover:border-orange-500 dark:hover:bg-orange-500 dark:hover:border-orange-500 transition-all duration-200 cursor-pointer"
+                                                            title="Add to Wishlist"
+                                                        >
+                                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-700 dark:text-gray-300 hover:text-white transition-colors">
+                                                                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                                                            </svg>
+                                                        </button>
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.preventDefault()
+                                                                e.stopPropagation()
+                                                                const productUrl = `${window.location.origin}/product/${product.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-i${product.id}`
+                                                                navigator.clipboard.writeText(productUrl).then(() => {
+                                                                    // Show success message
+                                                                }).catch(() => {
+                                                                    // Show error message
+                                                                })
+                                                            }}
+                                                            className="p-2 rounded-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-md border border-gray-200 dark:border-gray-600 shadow-lg hover:bg-orange-500 hover:border-orange-500 dark:hover:bg-orange-500 dark:hover:border-orange-500 transition-all duration-200 cursor-pointer"
+                                                            title="Share"
+                                                        >
+                                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-700 dark:text-gray-300 hover:text-white transition-colors">
+                                                                <circle cx="18" cy="5" r="3" />
+                                                                <circle cx="6" cy="12" r="3" />
+                                                                <circle cx="18" cy="19" r="3" />
+                                                                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+                                                                <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+                                                            </svg>
+                                                        </button>
+                                                    </div>
+                                                    <div className="relative aspect-square w-32 bg-gray-100 dark:bg-gray-700 overflow-hidden shrink-0">
+                                                        {product.image ? (
+                                                            <img
+                                                                src={product.image}
+                                                                alt={product.name}
+                                                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                                            />
+                                                        ) : (
+                                                            <div className="flex h-full items-center justify-center text-gray-400 dark:text-gray-500">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                                                                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                                                                    <circle cx="8.5" cy="8.5" r="1.5" />
+                                                                    <polyline points="21 15 16 10 5 21" />
+                                                                </svg>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <div className="flex flex-col justify-center flex-1 p-4 relative">
+                                                        <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-2 line-clamp-2 group-hover:text-orange-500 dark:group-hover:text-orange-400 transition-colors">{product.name}</h3>
+                                                        <div className="flex items-baseline gap-2 mb-2">
+                                                            <span className="text-lg font-bold text-orange-500 dark:text-orange-400">
+                                                                ₱{Number(product.price || 0).toLocaleString()}
+                                                            </span>
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            {product.prodpv && Number(product.prodpv) > 0 && (
+                                                                <span className="inline-flex items-center rounded-full border border-blue-200 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 text-[11px] font-semibold text-blue-700 dark:text-blue-300">
+                                                                    PV {Number(product.prodpv).toLocaleString()}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        {/* Sales/Ratings */}
+                                                        <div className="flex items-center gap-1 mt-1">
+                                                            <div className="flex items-center">
+                                                                {[1, 2, 3, 4, 5].map((star) => (
+                                                                    <svg
+                                                                        key={star}
+                                                                        xmlns="http://www.w3.org/2000/svg"
+                                                                        width="10"
+                                                                        height="10"
+                                                                        viewBox="0 0 24 24"
+                                                                        fill={star <= 4 ? '#f97316' : 'none'}
+                                                                        stroke={star <= 4 ? '#f97316' : '#d1d5db'}
+                                                                        strokeWidth="2"
+                                                                    >
+                                                                        <path d="M12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+                                                                    </svg>
+                                                                ))}
+                                                            </div>
+                                                            <span className="text-xs text-gray-400 dark:text-gray-500">124 sold</span>
+                                                        </div>
+                                                        {/* Add to Cart Button */}
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.preventDefault()
+                                                                e.stopPropagation()
+                                                                // Add to cart functionality here
+                                                            }}
+                                                            className="absolute bottom-4 right-4 flex items-center justify-center gap-2 rounded-full bg-orange-500 hover:bg-orange-600 px-4 py-2 text-sm font-semibold text-white opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 cursor-pointer"
+                                                        >
+                                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                                <circle cx="9" cy="21" r="1" />
+                                                                <circle cx="20" cy="21" r="1" />
+                                                                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+                                                            </svg>
+                                                            Add to Cart
+                                                        </button>
+                                                    </div>
+                                                </Link>
+                                            )}
                                         </motion.div>
                                     ))}
-                                </motion.div>
-                            )}
-
-                            {filteredProducts.length > 0 && (
-                                <div className="mt-8 flex items-center justify-center gap-1.5">
-                                    {/* Prev */}
-                                    <button
-                                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                                        disabled={boundedCurrentPage === 1}
-                                        className="h-8 w-8 flex items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 hover:border-orange-300 hover:text-orange-500 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                                    >
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="15 18 9 12 15 6" /></svg>
-                                    </button>
-
-                                    {/* Page numbers */}
-                                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => {
-                                        const isFirst = page === 1;
-                                        const isLast = page === totalPages;
-                                        const nearCurrent = Math.abs(page - boundedCurrentPage) <= 1;
-                                        if (!isFirst && !isLast && !nearCurrent) {
-                                            if (page === 2 || page === totalPages - 1) {
-                                                return <span key={page} className="text-xs text-gray-400 px-0.5">…</span>;
-                                            }
-                                            return null;
-                                        }
-                                        return (
-                                            <button
-                                                key={page}
-                                                onClick={() => setCurrentPage(page)}
-                                                className={`h-8 min-w-8 px-2 flex items-center justify-center rounded-lg text-xs font-semibold transition-colors ${
-                                                    boundedCurrentPage === page
-                                                        ? 'bg-orange-500 text-white border border-orange-500'
-                                                        : 'border border-gray-200 bg-white text-gray-600 hover:border-orange-300 hover:text-orange-500'
-                                                }`}
-                                            >
-                                                {page}
-                                            </button>
-                                        );
-                                    })}
-
-                                    {/* Next */}
-                                    <button
-                                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                                        disabled={boundedCurrentPage === totalPages}
-                                        className="h-8 w-8 flex items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 hover:border-orange-300 hover:text-orange-500 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                                    >
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="9 18 15 12 9 6" /></svg>
-                                    </button>
                                 </div>
-                            )}
-                            {filteredProducts.length > 0 && (
-                                <p className="mt-3 text-center text-xs text-gray-400">
-                                    Showing {(boundedCurrentPage - 1) * showCount + 1}–{Math.min(boundedCurrentPage * showCount, filteredProducts.length)} of {filteredProducts.length} products
-                                </p>
                             )}
                         </div>
                     </div>
                 </div>
             </main>
-
             <Footer />
         </div>
     );
 }
-
-
-
-
-
-
