@@ -2,7 +2,7 @@
 
 import { Fragment, useEffect, useLayoutEffect, useRef, useState, type Key } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useRegisterMutation } from '@/store/api/authApi'
+import { useLazyCheckUsernameAvailabilityQuery, useRegisterMutation } from '@/store/api/authApi'
 import Loading from './Loading'
 import { usePhAddress } from '@/hooks/usePhAddress'
 import { useSearchParams } from 'next/navigation'
@@ -139,6 +139,12 @@ const formatPhoneNumber = (value: string) => {
     return [first, second, third].filter(Boolean).join('-')
 }
 
+const isEmailLikeUsername = (value: string) => {
+    const trimmed = value.trim()
+    if (!trimmed) return false
+    return trimmed.includes('@')
+}
+
 type FormPage = 1 | 2 | 3
 const stepLabels: [string, string, string] = ['Personal', 'Address', 'Security']
 
@@ -149,6 +155,7 @@ interface SignUpFormProps {
 export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
     const searchParams = useSearchParams()
     const [register, { isLoading }] = useRegisterMutation()
+    const [checkUsernameAvailability, { isFetching: isCheckingUsername }] = useLazyCheckUsernameAvailabilityQuery()
     const initialReferral = normalizeReferralCode(searchParams.get('ref') ?? searchParams.get('referred_by') ?? '') || getStoredReferralCode()
 
     const [showPass, setShowPass] = useState(false)
@@ -190,6 +197,14 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
 
     const passwordStrength = getPasswordStrength(form.password)
     const passwordRequirements = passwordChecks(form.password)
+    const [usernameAvailabilityMessage, setUsernameAvailabilityMessage] = useState('')
+    const [isUsernameAvailable, setIsUsernameAvailable] = useState<boolean | null>(null)
+    const isUsernameEmailLike = isEmailLikeUsername(form.username)
+    const usernameFieldError = isUsernameEmailLike
+        ? 'Username must not be an email address. Remove @gmail.com, @yahoo.com, or any email format.'
+        : isUsernameAvailable === false
+            ? (usernameAvailabilityMessage || 'This username is already taken.')
+            : ''
     const birthDateValue = (() => {
         if (!form.birthDate) return null
         try { return parseDate(form.birthDate) } catch { return null }
@@ -201,6 +216,41 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
         setShowStep3Error(false)
         setError('')
     }, [step, formPage])
+
+    useEffect(() => {
+        const username = form.username.trim()
+
+        if (!username) {
+            setUsernameAvailabilityMessage('')
+            setIsUsernameAvailable(null)
+            return
+        }
+
+        if (isEmailLikeUsername(username)) {
+            setUsernameAvailabilityMessage('Username must not be an email address.')
+            setIsUsernameAvailable(false)
+            return
+        }
+
+        if (username.length < 3) {
+            setUsernameAvailabilityMessage('Username must be at least 3 characters.')
+            setIsUsernameAvailable(null)
+            return
+        }
+
+        const timer = window.setTimeout(async () => {
+            try {
+                const response = await checkUsernameAvailability(username).unwrap()
+                setIsUsernameAvailable(response.available)
+                setUsernameAvailabilityMessage(response.message)
+            } catch {
+                setIsUsernameAvailable(null)
+                setUsernameAvailabilityMessage('Unable to check username right now.')
+            }
+        }, 450)
+
+        return () => window.clearTimeout(timer)
+    }, [checkUsernameAvailability, form.username])
 
     const set = (field: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
         setForm(f => ({ ...f, [field]: e.target.type === 'checkbox' ? (e.target as HTMLInputElement).checked : e.target.value }))
@@ -245,6 +295,9 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
         if (!form.occupation.trim()) return showError('Occupation is required.')
         if (!form.phone.trim()) return showError('Phone number is required.')
         if (!form.username.trim()) return showError('Username is required.')
+        if (form.username.trim().length < 3) return showError('Username must be at least 3 characters.')
+        if (isEmailLikeUsername(form.username)) return showError('Username must not be an email address. Please remove @gmail.com, @yahoo.com, and similar email formats.')
+        if (isUsernameAvailable === false) return showError(usernameAvailabilityMessage || 'This username is already taken.')
         if (!form.referredBy.trim()) return showError('Referral code is required.')
         return true
     }
@@ -282,6 +335,9 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
         setError('')
 
         if (!form.agreeTerms) return showStep3ValidationError('You must agree to the Terms & Conditions.')
+        if (form.username.trim().length < 3) return showStep3ValidationError('Username must be at least 3 characters.')
+        if (isEmailLikeUsername(form.username)) return showStep3ValidationError('Username must not be an email address. Please remove @gmail.com, @yahoo.com, and similar email formats.')
+        if (isUsernameAvailable === false) return showStep3ValidationError(usernameAvailabilityMessage || 'This username is already taken.')
         if (form.password !== form.confirmPassword) return showStep3ValidationError('Passwords do not match.')
         if (form.password.length < 8) return showStep3ValidationError('Password must be at least 8 characters.')
         if (!/[A-Z]/.test(form.password)) return showStep3ValidationError('Password must include at least one uppercase letter.')
@@ -577,6 +633,8 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
                                                 value={form.phone}
                                                 onChange={handlePhoneChange}
                                                 inputMode="numeric"
+                                                pattern="[0-9-]*"
+                                                maxLength={12}
                                                 autoComplete="tel-national"
                                                 placeholder="929-226-0447"
                                                 required
@@ -586,8 +644,33 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
                                     </div>
 
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                        <FloatingInput id="signup-username" label="Username" required
-                                            value={form.username} onChange={set('username')} />
+                                        <div>
+                                            <FloatingInput id="signup-username" label="Username" required
+                                                value={form.username}
+                                                onChange={(e) => setForm((prev) => ({ ...prev, username: e.target.value.replace(/\s+/g, '') }))}
+                                            />
+                                            {usernameFieldError ? (
+                                                <p className="mt-1.5 text-xs font-medium text-red-500 dark:text-red-300">
+                                                    {usernameFieldError}
+                                                </p>
+                                            ) : isCheckingUsername && form.username.trim().length >= 3 ? (
+                                                <p className="mt-1.5 text-xs font-medium text-amber-500 dark:text-amber-300">
+                                                    Checking username availability...
+                                                </p>
+                                            ) : isUsernameAvailable === true ? (
+                                                <p className="mt-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-300">
+                                                    {usernameAvailabilityMessage || 'Username is available.'}
+                                                </p>
+                                            ) : form.username.trim().length > 0 && form.username.trim().length < 3 ? (
+                                                <p className="mt-1.5 text-xs font-medium text-amber-500 dark:text-amber-300">
+                                                    Username must be at least 3 characters.
+                                                </p>
+                                            ) : form.username.trim() ? (
+                                                <p className="mt-1.5 text-xs text-gray-500 dark:text-white/55">
+                                                    Use a username only, not an email address.
+                                                </p>
+                                            ) : null}
+                                        </div>
                                         <FloatingInput
                                             id="signup-referred-by"
                                             label="Referral Code or Link"
