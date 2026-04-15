@@ -4,7 +4,9 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { Suspense } from 'react'
 import { ThemeProvider } from 'next-themes'
 import { CartProvider } from '@/context/CartContext'
+import { WishlistProvider } from '@/context/WishlistContext'
 import CartDrawer from '@/components/ui/CartDrawer'
+import WishlistDrawer from '@/components/ui/WishlistDrawer'
 import { Provider as ReduxProvider } from 'react-redux'
 import { SessionProvider, useSession } from 'next-auth/react'
 import { store } from '@/store/store'
@@ -83,14 +85,16 @@ export default function Providers({ children }: { children: React.ReactNode }) {
     <SessionProvider>
         <ReduxProvider store={store}>
           <CartProvider>
-          <Suspense fallback={null}>
-            <ReferralCapture />
-          </Suspense>
-          <CustomerSessionGuard />
-          <CustomerBannedOverlay />
-          {children}
-          <CartDrawer />
-          <Toaster
+          <WishlistProvider>
+            <Suspense fallback={null}>
+              <ReferralCapture />
+            </Suspense>
+            <CustomerSessionGuard />
+            <CustomerBannedOverlay />
+            {children}
+            <CartDrawer />
+            <WishlistDrawer />
+            <Toaster
             position="top-center"
             toastOptions={{
               duration: 3000,
@@ -104,6 +108,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
               },
             }}
           />
+          </WishlistProvider>
           </CartProvider>
         </ReduxProvider>
     </SessionProvider>
