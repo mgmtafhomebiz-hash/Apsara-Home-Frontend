@@ -26,8 +26,8 @@ export default function LifetimeBenefitsSection() {
   ];
 
   return (
-    <section id="benefits" className="py-24 bg-stone-50 dark:bg-gray-950 relative overflow-hidden">
-      <div className="max-w-[1400px] mx-auto px-6 md:px-10 lg:px-20 relative z-10">
+    <section id="benefits" className="py-24 !bg-white dark:!bg-gray-950 relative overflow-hidden">
+      <div className="container mx-auto px-4 relative z-10">
         <div className="grid lg:grid-cols-2 gap-16 items-center">
           
           {/* Text Content */}
@@ -134,8 +134,8 @@ export default function LifetimeBenefitsSection() {
                  
                  <div className="mt-6 pt-5 border-t border-gray-100 dark:border-gray-700 flex justify-between items-end">
                     <div>
-                        <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold">Total Savings</p>
-                        <p className="text-xs text-gray-400">Instant discount applied</p>
+                        <p className="text-xs text-gray-600 dark:text-gray-400 uppercase tracking-wider font-semibold">Total Savings</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Instant discount applied</p>
                     </div>
                     <div className="text-right">
                         <span className="block text-3xl font-bold text-red-500">₱5,000</span>

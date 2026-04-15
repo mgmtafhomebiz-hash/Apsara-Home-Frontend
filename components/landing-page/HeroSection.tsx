@@ -105,7 +105,7 @@ export default function HeroSection() {
         style={{ y: textY, opacity }}
         className="relative z-20 h-full flex items-center pt-28 md:pt-0"
       >
-        <div className="max-w-[1400px] mx-auto px-6 md:px-10 lg:px-20 w-full">
+        <div className="container mx-auto px-4 w-full">
           <div className="max-w-4xl mx-auto md:mx-0 text-left">
             <motion.h1
               initial={{ opacity: 0, y: 30 }}

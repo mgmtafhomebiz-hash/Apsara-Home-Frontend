@@ -33,7 +33,7 @@ export default function Newsletter() {
         />
       </div>
 
-      <div className="relative z-10 max-w-[1400px] mx-auto px-6 md:px-10 lg:px-20">
+      <div className="relative z-10 container mx-auto px-4">
         <div className="max-w-2xl mx-auto text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}

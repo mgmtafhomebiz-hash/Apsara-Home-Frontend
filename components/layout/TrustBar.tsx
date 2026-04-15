@@ -29,23 +29,23 @@ export default function TrustBar({ items = defaultItems }: TrustBarConfig = {}) 
   const safeItems = items.length > 0 ? items.slice(0, 4) : defaultItems
 
   return (
-    <div className="border-b border-gray-100 bg-white">
+    <div className="!bg-white dark:!bg-gray-900 border-b border-gray-100 dark:border-gray-800">
       <div className="container mx-auto px-4 py-4">
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          {safeItems.map((item, i) => (
+        <div className="flex flex-wrap items-center gap-1 -ml-3">
+          {items.map((item, i) => (
             <motion.div
               key={`${item.title}-${i}`}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.1, duration: 0.4 }}
-              className="group flex cursor-default items-center gap-3 rounded-xl p-3 transition-colors duration-300 hover:bg-orange-50"
+              className="flex items-center gap-3 p-3 rounded-xl hover:bg-orange-50 dark:hover:bg-orange-950/20 transition-colors duration-300 group cursor-default"
             >
               <div className="shrink-0 text-orange-500 transition-transform duration-300 group-hover:scale-110">
                 {icons[i] ?? icons[icons.length - 1]}
               </div>
               <div>
-                <p className="text-sm font-semibold text-gray-800">{item.title}</p>
-                <p className="text-xs text-gray-500">{item.desc}</p>
+                <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">{item.title}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{item.desc}</p>
               </div>
             </motion.div>
           ))}

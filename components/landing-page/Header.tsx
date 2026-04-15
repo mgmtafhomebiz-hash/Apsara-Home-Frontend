@@ -86,7 +86,7 @@ export default function Header({ cartCount }: HeaderProps) {
         : 'bg-transparent'
         }`}
     >
-      <div className="max-w-[1400px] mx-auto px-6 md:px-10 lg:px-20">
+      <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-20">
           {/* Logo */}
           <motion.a

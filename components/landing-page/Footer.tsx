@@ -1,3 +1,5 @@
+'use client';
+
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import {
@@ -6,8 +8,15 @@ import {
   MapPin,
   Phone,
   Mail,
-  Youtube,
 } from 'lucide-react';
+
+function TikTokIcon({ size = 18 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.32 6.32 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.18 8.18 0 0 0 4.78 1.52V6.75a4.85 4.85 0 0 1-1.01-.06z" />
+    </svg>
+  );
+}
 
 const footerLinks = {
   shop: [
@@ -35,9 +44,9 @@ const footerLinks = {
 };
 
 const socialLinks = [
-  { icon: Facebook, href: '#', label: 'Facebook' },
-  { icon: Instagram, href: '#', label: 'Instagram' },
-  { icon: Youtube, href: '#', label: 'Youtube' },
+  { icon: Facebook, href: 'https://www.facebook.com/AFHomePH/', label: 'Facebook' },
+  { icon: Instagram, href: 'https://www.instagram.com/afhome.ph/', label: 'Instagram' },
+  { icon: TikTokIcon, href: 'https://www.tiktok.com/@afhomeph', label: 'TikTok' },
 ];
 
 export default function Footer() {
@@ -66,7 +75,7 @@ export default function Footer() {
 
   return (
     <footer id="contact" className="bg-gray-100 dark:bg-gray-950 text-gray-900 dark:text-white">
-      <div className="max-w-[1400px] mx-auto px-6 md:px-10 lg:px-20 py-16 md:py-20">
+      <div className="container mx-auto px-4 pt-16 md:pt-20 pb-8">
         <motion.div
           variants={containerVariants}
           initial="hidden"
@@ -92,6 +101,8 @@ export default function Footer() {
                 <motion.a
                   key={social.label}
                   href={social.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   whileHover={{ scale: 1.1, y: -2 }}
                   whileTap={{ scale: 0.95 }}
                   className="w-10 h-10 bg-gray-300/60 dark:bg-white/10 rounded-full flex items-center justify-center hover:bg-orange-500 hover:text-white transition-colors"
@@ -163,7 +174,7 @@ export default function Footer() {
               <li className="flex items-start gap-3">
                 <MapPin size={18} className="text-orange-500 flex-shrink-0 mt-1" />
                 <span className="text-gray-600 dark:text-white/70 text-sm">
-                  Quezon City Philippines
+                  88 Calavite St., Brgy Paang Bundok, La Loma, Quezon City, Philippines
                 </span>
               </li>
               <li className="flex items-center gap-3">
@@ -172,10 +183,7 @@ export default function Footer() {
                   href="tel:+02-840 0290"
                   className="text-gray-600 dark:text-white/70 hover:text-orange-500 dark:hover:text-orange-400 transition-colors text-sm"
                 >
-
                   02-840 0290
-
-
                 </a>
               </li>
               <li className="flex items-center gap-3">
@@ -192,13 +200,13 @@ export default function Footer() {
           </motion.div>
         </motion.div>
 
-        {/* Bottom Bar */}
+        {/* Bottom Bar */}  
         <motion.div
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6, delay: 0.5 }}
-          className="mt-16 pt-8 border-t border-gray-300 dark:border-white/10 flex flex-col md:flex-row justify-between items-center gap-4"
+          className="mt-10 pt-6 border-t border-gray-300 dark:border-white/10 flex flex-col md:flex-row justify-between items-center gap-4"
         >
           <p className="text-gray-500 dark:text-white/50 text-sm">
             © {new Date().getFullYear()} AFhome. All rights reserved.

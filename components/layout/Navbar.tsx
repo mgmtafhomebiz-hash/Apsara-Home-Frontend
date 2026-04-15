@@ -15,10 +15,15 @@ import { useGetPublicProductsQuery } from '@/store/api/productsApi'
 import formatPrice from '@/helpers/FormatPrice'
 import { useMeQuery } from '@/store/api/userApi'
 import { useGetCustomerNotificationsQuery } from '@/store/api/customerNotificationsApi'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { useAppDispatch } from '@/store/hooks'
 import { ROOM_OPTIONS } from '@/libs/roomConfig'
 import { useGetPublicProductBrandsQuery } from '@/store/api/productBrandsApi'
+import PrimaryButton from '@/components/ui/buttons/PrimaryButton'
+import OutlineButton from '@/components/ui/buttons/OutlineButton'
+import ThemeToggle from '@/components/ui/buttons/ThemeToggle'
+import Chat from '@/components/chat/Chat'
+import ConversationList from '@/components/chat/ConversationList'
 
 type NavLink = {
   label: string;
@@ -96,12 +101,16 @@ const roomIcons: Record<string, React.ReactNode> = {
 
 export default function Navbar({ initialCategories = [] }: { initialCategories?: Category[] }) {
   const router = useRouter()
+  const pathname = usePathname()
   const [scrolled, setScrolled] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [mobileExpanded, setMobileExpanded] = useState<string | null>(null)
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null)
   const [profileMenuOpen, setProfileMenuOpen] = useState(false)
   const [notifMenuOpen, setNotifMenuOpen] = useState(false)
+  const [isChatOpen, setIsChatOpen] = useState(false)
+  const [chatMode, setChatMode] = useState<'list' | 'chat'>('list')
+  const [selectedConversation, setSelectedConversation] = useState<{ name: string; avatar?: string } | null>(null)
   const [searchModalQuery, setSearchModalQuery] = useState('')
   const [megaSearch, setMegaSearch] = useState('')
   const [mobileSearch, setMobileSearch] = useState('')
@@ -134,6 +143,9 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const profileMenuRef = useRef<HTMLDivElement | null>(null)
   const notifMenuRef = useRef<HTMLDivElement | null>(null)
+  const chatMenuRef = useRef<HTMLDivElement | null>(null)
+  const chatModeRef = useRef<'list' | 'chat'>('list')
+  chatModeRef.current = chatMode
   const searchInputRef = useRef<HTMLInputElement | null>(null)
   const [searchModalOpen, setSearchModalOpen] = useState(false)
 
@@ -275,6 +287,7 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
       const target = event.target as Node
       const clickedOutsideProfile = !profileMenuRef.current || !profileMenuRef.current.contains(target)
       const clickedOutsideNotifications = !notifMenuRef.current || !notifMenuRef.current.contains(target)
+      const clickedOutsideChat = !chatMenuRef.current || !chatMenuRef.current.contains(target)
 
       if (clickedOutsideProfile) {
         setProfileMenuOpen(false)
@@ -282,14 +295,22 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
       if (clickedOutsideNotifications) {
         setNotifMenuOpen(false)
       }
+      if (clickedOutsideChat && chatModeRef.current !== 'chat') {
+        setIsChatOpen(false)
+      }
     }
 
     const onEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') setProfileMenuOpen(false)
       if (event.key === 'Escape') setNotifMenuOpen(false)
+      if (event.key === 'Escape' && chatModeRef.current !== 'chat') setIsChatOpen(false)
       if (event.key === 'Escape') {
         setSearchModalOpen(false)
         setSearchModalQuery('')
+      }
+      if ((event.ctrlKey || event.metaKey) && event.key === 'k') {
+        event.preventDefault()
+        setSearchModalOpen(true)
       }
     }
 
@@ -366,7 +387,8 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
     if (!notifMenuOpen) return
     if (!visibleCustomerNotifications.length) return
     markAllCustomerNotificationsAsRead()
-  }, [notifMenuOpen, visibleCustomerNotifications])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [notifMenuOpen])
 
   const markCustomerNotificationAsRead = (item: { id: string; title: string; description: string; count: number }) => {
     const readKey = getCustomerNotificationReadKey(item)
@@ -484,7 +506,7 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
       initial={{ y: -80 }}
       animate={{ y: 0 }}
       transition={{ duration: 0.5, ease: 'easeOut' }}
-      className={`sticky top-0 z-50 bg-white transition-all duration-300 ${scrolled ? 'shadow-lg shadow-black/5' : 'shadow-sm'}`}
+      className={`sticky top-8 z-50 !bg-white dark:!bg-gray-900 transition-all duration-300 ${scrolled ? 'shadow-lg shadow-black/5 dark:shadow-black/20' : 'shadow-sm'}`}
     >
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16 gap-4">
@@ -501,24 +523,23 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
           </Link>
 
           {/* Search */}
-          <div className="flex-1 max-w-xl hidden md:block">
+          <div className="flex-1 max-w-lg hidden md:block">
             <SearchField aria-label="Open product search" className="w-full">
               <Label className="sr-only">Search</Label>
               <SearchField.Group
-                className="flex h-13 cursor-pointer items-center gap-3 rounded-[26px] border border-slate-200 bg-white px-5 shadow-sm shadow-slate-200/50 transition-all duration-200 hover:border-slate-300 hover:shadow-md"
+                className="flex h-10 cursor-pointer items-center gap-2.5 rounded-full border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 shadow-sm transition-all duration-200 hover:border-slate-300 dark:hover:border-gray-600 hover:shadow-md"
                 onClick={() => setSearchModalOpen(true)}
               >
-                <SearchField.SearchIcon className="h-[18px] w-[18px] text-slate-400" />
+                <SearchField.SearchIcon className="h-4 w-4 text-slate-400 shrink-0" />
                 <SearchField.Input
                   readOnly
-                  placeholder="Search"
+                  placeholder="Search products..."
                   onFocus={() => setSearchModalOpen(true)}
-                  className="flex-1 cursor-pointer border-none bg-transparent p-0 text-sm text-slate-700 outline-none placeholder:text-slate-500"
+                  className="flex-1 cursor-pointer border-none bg-transparent p-0 text-sm text-slate-500 dark:text-gray-300 outline-none placeholder:text-slate-400 dark:placeholder:text-gray-500"
                 />
-                <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-100 px-2.5 py-1 text-[12px] font-medium leading-none text-slate-500">
-                  <span>Ctrl</span>
-                  <span>K</span>
-                </span>
+                <kbd className="hidden lg:inline-flex items-center gap-0.5 rounded border border-slate-200 dark:border-gray-600 bg-slate-50 dark:bg-gray-700 px-1.5 py-0.5 text-[10px] font-medium text-slate-400 dark:text-gray-400 shadow-sm">
+                  Ctrl K
+                </kbd>
               </SearchField.Group>
             </SearchField>
           </div>
@@ -530,7 +551,7 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
               <>
                 <Link
                   href="/wishlist"
-                  className="p-2 rounded-xl hover:bg-gray-100 transition-colors"
+                  className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                   title="Wishlist"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -567,12 +588,12 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 6, scale: 0.98 }}
                         transition={{ duration: 0.15 }}
-                        className="fixed left-2 right-2 top-16 mt-0 w-auto rounded-2xl border border-gray-100 bg-white shadow-xl shadow-black/10 overflow-hidden z-50 sm:absolute sm:right-0 sm:left-auto sm:top-auto sm:mt-2 sm:w-[360px] sm:max-w-[calc(100vw-1rem)]"
+                        className="fixed left-2 right-2 top-16 mt-0 w-auto rounded-2xl border border-gray-100 !bg-white dark:!bg-gray-900 shadow-xl shadow-black/10 overflow-hidden z-50 sm:absolute sm:right-0 sm:left-auto sm:top-auto sm:mt-2 sm:w-[360px] sm:max-w-[calc(100vw-1rem)]"
                       >
                         {/* Header */}
-                        <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-orange-50 to-white border-b border-orange-100/80">
+                        <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-orange-50 to-white dark:from-orange-950/20 dark:to-gray-900 border-b border-orange-100/80 dark:border-orange-800/50">
                           <div className="flex items-center gap-2">
-                            <p className="text-sm font-bold text-gray-900">Notifications</p>
+                            <p className="text-sm font-bold text-gray-900 dark:text-gray-100">Notifications</p>
                             {unreadNotificationCount > 0 && (
                               <span className="bg-orange-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] px-1 flex items-center justify-center leading-none">
                                 {unreadNotificationCount > 99 ? '99+' : unreadNotificationCount}
@@ -588,16 +609,16 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
                         </div>
 
                         {/* List */}
-                        <div className="max-h-[60vh] overflow-y-auto sm:max-h-[52vh] divide-y divide-gray-50">
+                        <div className="max-h-[60vh] overflow-y-auto sm:max-h-[52vh] divide-y divide-gray-50 dark:divide-gray-800">
                           {isNotificationsLoading ? (
                             <div className="flex flex-col items-center justify-center py-10 gap-3">
                               <div className="h-7 w-7 rounded-full border-2 border-orange-200 border-t-orange-500 animate-spin" />
-                              <p className="text-xs text-gray-400">Loading...</p>
+                              <p className="text-xs text-gray-400 dark:text-gray-500">Loading...</p>
                             </div>
                           ) : isNotificationsError ? (
                             <div className="px-4 py-8 text-center">
                               <p className="text-sm text-red-500 font-medium">Failed to load notifications</p>
-                              <p className="text-xs text-gray-400 mt-1">Please try again later.</p>
+                              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Please try again later.</p>
                             </div>
                           ) : visibleCustomerNotifications.length ? (
                             visibleCustomerNotifications.map((item) => {
@@ -613,19 +634,19 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
                                   className={`flex items-start gap-3 px-4 py-3.5 transition-colors hover:bg-orange-50/60 ${!isRead ? 'bg-orange-50/30' : ''}`}
                                 >
                                   <div className={`shrink-0 h-9 w-9 rounded-full flex items-center justify-center text-sm font-bold ${
-                                    !isRead ? 'bg-orange-100 text-orange-600' : 'bg-gray-100 text-gray-400'
+                                    !isRead ? 'bg-orange-100 text-orange-600' : 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500'
                                   }`}>
                                     {item.title.charAt(0).toUpperCase()}
                                   </div>
                                   <div className="flex-1 min-w-0">
                                     <div className="flex items-start justify-between gap-1.5">
-                                      <p className={`text-sm leading-snug ${!isRead ? 'font-semibold text-gray-900' : 'font-medium text-gray-600'}`}>{item.title}</p>
+                                      <p className={`text-sm leading-snug ${!isRead ? 'font-semibold text-gray-900 dark:text-gray-100' : 'font-medium text-gray-600 dark:text-gray-300'}`}>{item.title}</p>
                                       {!isRead && <span className="shrink-0 mt-1 h-2 w-2 bg-orange-500 rounded-full" />}
                                     </div>
-                                    <p className="text-xs text-gray-500 mt-0.5 leading-relaxed line-clamp-2">{item.description}</p>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-relaxed line-clamp-2">{item.description}</p>
                                     <div className="flex items-center gap-2 mt-1.5">
                                       {formatCustomerNotificationTime(item.latest_at) && (
-                                        <span className="text-[11px] text-gray-400">{formatCustomerNotificationTime(item.latest_at)} PHT</span>
+                                        <span className="text-[11px] text-gray-400 dark:text-gray-500">{formatCustomerNotificationTime(item.latest_at)} PHT</span>
                                       )}
                                       {item.count > 1 && (
                                         <span className="text-[11px] bg-orange-100 text-orange-600 font-semibold rounded-full px-1.5 py-0.5 leading-none">×{item.count}</span>
@@ -644,25 +665,50 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
                                 </svg>
                               </div>
                               <div className="text-center">
-                                <p className="text-sm font-medium text-gray-500">You&apos;re all caught up!</p>
-                                <p className="text-xs text-gray-400 mt-0.5">No new notifications</p>
+                                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">You&apos;re all caught up!</p>
+                                <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">No new notifications</p>
                               </div>
                             </div>
                           )}
                         </div>
 
                         {/* Footer */}
-                        <div className="px-4 py-2.5 border-t border-gray-100 bg-gray-50/50 flex items-center gap-1.5">
+                        <div className="px-4 py-2.5 border-t border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/50 flex items-center gap-1.5">
                           <div className="h-1.5 w-1.5 rounded-full bg-green-400" />
-                          <p className="text-[11px] text-gray-400">Auto-refresh every 30 seconds</p>
+                          <p className="text-[11px] text-gray-400 dark:text-gray-500">Auto-refresh every 30 seconds</p>
                         </div>
                       </motion.div>
                     )}
                   </AnimatePresence>
                 </div>
+                <div className="relative" ref={chatMenuRef}>
+                  <button
+                    onClick={() => {
+                      if (chatMode === 'chat' && isChatOpen) return
+                      setIsChatOpen((prev) => !prev)
+                      setChatMode('list')
+                    }}
+                    className={`relative p-2 rounded-xl transition-colors cursor-pointer ${isChatOpen ? 'bg-orange-100 text-orange-600' : 'hover:bg-gray-100'}`}
+                    title="Messages"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                    </svg>
+                  </button>
+                  {chatMode === 'list' && (
+                    <ConversationList
+                      isOpen={isChatOpen}
+                      onClose={() => setIsChatOpen(false)}
+                      onSelectConversation={(conv) => {
+                        setSelectedConversation(conv)
+                        setChatMode('chat')
+                      }}
+                    />
+                  )}
+                </div>
                 <button
                   onClick={() => setIsOpen(true)}
-                  className="relative p-2 rounded-xl hover:bg-gray-100 transition-colors"
+                  className="relative p-2 rounded-xl hover:bg-gray-100 active:bg-gray-200 transition-colors cursor-pointer"
                   title="Cart"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -678,19 +724,17 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
                   )}
                 </button>
 
-                <Link
-                  href="/track-order"
-                  className="hidden lg:flex items-center gap-2 rounded-xl border border-orange-200 bg-orange-50 px-3 py-2 text-sm font-semibold text-orange-700 transition-colors hover:border-orange-300 hover:bg-orange-100"
-                  title="Track Order"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M10 17h4V5H2v12h3" />
-                    <path d="M14 8h4l4 4v5h-4" />
-                    <circle cx="7" cy="17" r="2" />
-                    <circle cx="17" cy="17" r="2" />
-                  </svg>
-                  <span>Track Order</span>
-                </Link>
+                <div className="hidden lg:flex">
+                  <OutlineButton href="/track-order" className="!px-4 !py-2 !text-sm h-10">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M10 17h4V5H2v12h3" />
+                      <path d="M14 8h4l4 4v5h-4" />
+                      <circle cx="7" cy="17" r="2" />
+                      <circle cx="17" cy="17" r="2" />
+                    </svg>
+                    Track Order
+                  </OutlineButton>
+                </div>
 
                 <div className="relative hidden md:block" ref={profileMenuRef}>
                   <button
@@ -721,10 +765,10 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 8, scale: 0.97 }}
                         transition={{ duration: 0.15 }}
-                        className="absolute right-0 mt-2 w-64 rounded-2xl border border-gray-100 bg-white shadow-xl shadow-black/10 overflow-hidden z-50"
+                        className="absolute right-0 mt-2 w-64 rounded-2xl border border-gray-100 !bg-white dark:!bg-gray-900 shadow-xl shadow-black/10 overflow-hidden z-50"
                       >
                         {/* User info header */}
-                        <div className="px-4 py-4 bg-linear-to-br from-orange-50 to-amber-50 border-b border-orange-100">
+                        <div className="px-4 py-4 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-gray-900 border-b border-orange-100 dark:border-orange-800/50">
                           <div className="flex items-center gap-3">
                             {avatarUrl ? (
                               <img
@@ -738,11 +782,11 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
                               </span>
                             )}
                             <div className="min-w-0 flex-1">
-                              <p className="text-sm font-semibold text-gray-900 truncate">
+                              <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
                                 {user?.name ?? 'User'}
                               </p>
                               {user?.email && (
-                                <p className="text-xs text-gray-500 truncate mt-0.5">
+                                <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">
                                   {user.email}
                                 </p>
                               )}
@@ -759,27 +803,27 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
                           <Link
                             href="/profile"
                             onClick={() => setProfileMenuOpen(false)}
-                            className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors group"
+                            className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group"
                           >
                             <span className="flex items-center justify-center h-7 w-7 rounded-lg bg-gray-100 group-hover:bg-orange-100 transition-colors shrink-0">
-                              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-500 group-hover:text-orange-600 transition-colors">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-500 dark:text-gray-400 group-hover:text-orange-600 transition-colors">
                                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                                 <circle cx="12" cy="7" r="4" />
                               </svg>
                             </span>
                             <div>
                               <p className="font-medium">My Profile</p>
-                              <p className="text-xs text-gray-400">View & edit your info</p>
+                              <p className="text-xs text-gray-400 dark:text-gray-500">View & edit your info</p>
                             </div>
                           </Link>
 
                           <Link
                             href="/orders"
                             onClick={() => setProfileMenuOpen(false)}
-                            className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors group"
+                            className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group"
                           >
                             <span className="flex items-center justify-center h-7 w-7 rounded-lg bg-gray-100 group-hover:bg-orange-100 transition-colors shrink-0">
-                              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-500 group-hover:text-orange-600 transition-colors">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-500 dark:text-gray-400 group-hover:text-orange-600 transition-colors">
                                 <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
                                 <line x1="3" y1="6" x2="21" y2="6" />
                                 <path d="M16 10a4 4 0 0 1-8 0" />
@@ -787,29 +831,29 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
                             </span>
                             <div>
                               <p className="font-medium">My Orders</p>
-                              <p className="text-xs text-gray-400">Track your purchases</p>
+                              <p className="text-xs text-gray-400 dark:text-gray-500">Track your purchases</p>
                             </div>
                           </Link>
 
                           <Link
                             href="/wishlist"
                             onClick={() => setProfileMenuOpen(false)}
-                            className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors group"
+                            className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group"
                           >
                             <span className="flex items-center justify-center h-7 w-7 rounded-lg bg-gray-100 group-hover:bg-orange-100 transition-colors shrink-0">
-                              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-500 group-hover:text-orange-600 transition-colors">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-500 dark:text-gray-400 group-hover:text-orange-600 transition-colors">
                                 <path d="m12 21-1.45-1.32C5.4 15.36 2 12.28 2 8.5A4.5 4.5 0 0 1 6.5 4 5 5 0 0 1 12 6.09 5 5 0 0 1 17.5 4 4.5 4.5 0 0 1 22 8.5c0 3.78-3.4 6.86-8.55 11.18z" />
                               </svg>
                             </span>
                             <div>
                               <p className="font-medium">Wishlist</p>
-                              <p className="text-xs text-gray-400">Your saved items</p>
+                              <p className="text-xs text-gray-400 dark:text-gray-500">Your saved items</p>
                             </div>
                           </Link>
                         </div>
 
                         {/* Logout */}
-                        <div className="border-t border-gray-100 py-1.5">
+                        <div className="border-t border-gray-100 dark:border-gray-800 py-1.5">
                           <button
                             onClick={() => handleCustomerLogout('/shop')}
                             disabled={isLoggingOut}
@@ -839,35 +883,32 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
               </>
             ) : (
               <>
-                <Link
-                  href="/track-order"
-                  className="hidden md:flex items-center gap-2 px-3 py-2 rounded-xl border border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-100 transition-colors"
-                  title="Track Order"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M10 17h4V5H2v12h3" />
-                    <path d="M14 8h4l4 4v5h-4" />
-                    <circle cx="7" cy="17" r="2" />
-                    <circle cx="17" cy="17" r="2" />
-                  </svg>
-                  <span className="text-sm font-medium">Track Order</span>
-                </Link>
+                <div className="hidden md:flex">
+                  <OutlineButton href="/track-order" className="!px-4 !py-2 !text-sm h-10">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M10 17h4V5H2v12h3" />
+                      <path d="M14 8h4l4 4v5h-4" />
+                      <circle cx="7" cy="17" r="2" />
+                      <circle cx="17" cy="17" r="2" />
+                    </svg>
+                    Track Order
+                  </OutlineButton>
+                </div>
 
                 <motion.div whileTap={{ scale: 0.96 }} transition={{ duration: 0.12 }}>
-                  <Link
-                    href="/login"
-                    className="flex h-11 min-w-0 items-center gap-2 rounded-[18px] bg-slate-800 px-5 font-semibold text-white shadow-sm transition hover:bg-slate-700"
-                    title="Sign in"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0">
+                  <PrimaryButton href="/login" className="!px-5 !py-2 !text-sm !rounded-full h-10">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0">
                       <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                       <circle cx="12" cy="7" r="4" />
                     </svg>
-                    <span className="text-sm font-medium">Sign in</span>
-                  </Link>
+                    Sign in
+                  </PrimaryButton>
                 </motion.div>
               </>
             )}
+
+            <div className="hidden md:block w-px h-5 bg-gray-200 mx-1" />
+            <ThemeToggle isScrolled={true} />
 
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
@@ -887,27 +928,23 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
           <SearchField aria-label="Open product search" className="w-full">
             <Label className="sr-only">Search</Label>
             <SearchField.Group
-              className="flex h-13 cursor-pointer items-center gap-3 rounded-[26px] border border-slate-200 bg-white px-5 shadow-sm shadow-slate-200/50 transition-all duration-200 hover:border-slate-300 hover:shadow-md"
+              className="flex h-10 cursor-pointer items-center gap-2.5 rounded-full border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 shadow-sm transition-all duration-200 hover:border-slate-300 dark:hover:border-gray-600"
               onClick={() => setSearchModalOpen(true)}
             >
-              <SearchField.SearchIcon className="h-[18px] w-[18px] text-slate-400" />
+              <SearchField.SearchIcon className="h-4 w-4 text-slate-400 shrink-0" />
               <SearchField.Input
                 readOnly
-                placeholder="Search"
+                placeholder="Search products..."
                 onFocus={() => setSearchModalOpen(true)}
-                className="flex-1 cursor-pointer border-none bg-transparent p-0 text-sm text-slate-700 outline-none placeholder:text-slate-500"
+                className="flex-1 cursor-pointer border-none bg-transparent p-0 text-sm text-slate-500 outline-none placeholder:text-slate-400"
               />
-              <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-100 px-2.5 py-1 text-[12px] font-medium leading-none text-slate-500">
-                <span>Ctrl</span>
-                <span>K</span>
-              </span>
             </SearchField.Group>
           </SearchField>
         </div>
       </div>
 
       {/* Desktop nav links */}
-      <div className="hidden md:block border-t border-gray-100">
+      <div className="hidden md:block border-t border-gray-100 dark:border-gray-800">
         <div className="container mx-auto px-4">
           <nav className="flex items-center h-11">
             {navLinks.map((link) => {
@@ -923,10 +960,11 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
                     <button
                       type="button"
                       onClick={() => open(link.label)}
-                      className={`relative px-4 h-full flex items-center text-sm font-medium transition-colors duration-200 group ${activeDropdown === link.label
-                        ? 'text-orange-500'
-                        : 'text-gray-600 hover:text-orange-500'
-                        }`}
+                      className={`relative px-4 h-full flex items-center text-sm font-medium transition-colors duration-200 group ${
+                        pathname.startsWith(link.href) || activeDropdown === link.label
+                          ? 'text-orange-500'
+                          : 'text-gray-600 dark:text-gray-300 hover:text-orange-500'
+                      }`}
                     >
                       {link.label}
                       <motion.svg
@@ -943,18 +981,23 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
                       >
                         <polyline points="6 9 12 15 18 9" />
                       </motion.svg>
-                      <span className="absolute bottom-0 left-4 right-4 h-0.5 bg-orange-500 scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
+                      <span className={`absolute bottom-0 left-4 right-4 h-0.5 bg-orange-500 transition-transform duration-300 origin-left ${
+                        pathname.startsWith(link.href) ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'
+                      }`} />
                     </button>
                   ) : (
                     <Link
                       href={link.href}
-                      className={`relative px-4 h-full flex items-center text-sm font-medium transition-colors duration-200 group ${activeDropdown === link.label
-                        ? 'text-orange-500'
-                        : 'text-gray-600 hover:text-orange-500'
-                        }`}
+                      className={`relative px-4 h-full flex items-center text-sm font-medium transition-colors duration-200 group ${
+                        pathname === link.href
+                          ? 'text-orange-500'
+                          : 'text-gray-600 dark:text-gray-300 hover:text-orange-500'
+                      }`}
                     >
                       {link.label}
-                      <span className="absolute bottom-0 left-4 right-4 h-0.5 bg-orange-500 scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
+                      <span className={`absolute bottom-0 left-4 right-4 h-0.5 bg-orange-500 transition-transform duration-300 origin-left ${
+                        pathname === link.href ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'
+                      }`} />
                     </Link>
                   )}
                 </div>
@@ -972,66 +1015,43 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -4 }}
             transition={{ duration: 0.2, ease: 'easeOut' }}
-            className="absolute left-0 right-0 bg-white border-t border-gray-100 shadow-xl shadow-black/5 hidden md:block"
+            className="absolute left-0 right-0 !bg-white dark:!bg-gray-900 border-t border-gray-100 dark:border-gray-800 shadow-xl shadow-black/5 dark:shadow-black/30 hidden md:block"
             onMouseEnter={() => open(activeLink.label)}
             onMouseLeave={close}
+            style={{ backgroundColor: 'white' }}
           >
-            <div className="container mx-auto px-4 py-4">
+            <div className="!bg-white dark:!bg-gray-900 container mx-auto px-4 py-4"
+                 style={{ backgroundColor: 'white' }}>
               {activeLink.label === 'Shop By Brand' ? (
                 <div className="flex flex-col gap-3">
-                  {/* Brand search */}
-                  <div className="relative max-w-xs">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
-                      <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
-                    </svg>
-                    <input
-                      type="text"
-                      value={brandSearch}
-                      onChange={(e) => setBrandSearch(e.target.value)}
-                      placeholder="Search brands..."
-                      className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-400/50 focus:bg-white transition-all"
-                    />
-                    {brandSearch && (
-                      <button onClick={() => setBrandSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
-                      </button>
-                    )}
-                  </div>
-                  {/* Brand grid with logos */}
-                  <div className="grid grid-cols-4 gap-2">
-                    {(brandSearch
-                      ? shopBrandItems.filter((b) => b.label.toLowerCase().includes(brandSearch.toLowerCase()))
-                      : navbarBrandItems
-                    ).map((item) => (
+                  <div className="grid grid-cols-4 lg:grid-cols-8 gap-1">
+                    {navbarBrandItems.length > 0 ? navbarBrandItems.map((item) => (
                       <Link
                         key={item.id}
                         href={item.href}
-                        className="flex items-center gap-2.5 rounded-xl border border-gray-100 px-3 py-2.5 text-sm text-gray-600 hover:border-orange-200 hover:bg-orange-50 hover:text-orange-600 transition-all duration-200 group"
+                        className="group flex flex-col items-center gap-2 rounded-2xl px-2 py-3 text-center text-gray-600 dark:text-gray-400 transition-all duration-200 hover:bg-orange-50 dark:hover:bg-orange-950/20 hover:text-orange-500"
                       >
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-gray-100">
+                        <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gray-100 dark:bg-gray-800 transition-colors group-hover:bg-orange-100 dark:group-hover:bg-orange-950/30">
                           {item.image ? (
-                            <Image src={item.image} alt={item.label} width={32} height={32} className="h-full w-full object-cover" unoptimized />
+                            <Image src={item.image} alt={item.label} width={44} height={44} className="h-full w-full object-contain p-1" unoptimized />
                           ) : (
-                            <span className="text-[10px] font-bold text-gray-400">
+                            <span className="text-sm font-bold text-gray-500 dark:text-gray-400 group-hover:text-orange-500 transition-colors">
                               {item.label.split(/\s+/).slice(0, 2).map((p) => p[0]?.toUpperCase()).join('')}
                             </span>
                           )}
                         </div>
-                        <span className="truncate text-xs font-medium">{item.label}</span>
+                        <span className="text-xs font-medium leading-tight truncate w-full text-gray-700 dark:text-gray-300">{item.label}</span>
                       </Link>
-                    ))}
-                    {(brandSearch
-                      ? shopBrandItems.filter((b) => b.label.toLowerCase().includes(brandSearch.toLowerCase()))
-                      : navbarBrandItems
-                    ).length === 0 && (
-                      <p className="col-span-full py-4 text-center text-sm text-gray-400">No brands found</p>
+                    )) : (
+                      <p className="col-span-full py-4 text-center text-sm text-gray-400 dark:text-gray-500">No brands available</p>
                     )}
                   </div>
                   <Link
                     href="/by-brand"
-                    className="inline-flex items-center justify-center rounded-xl border border-orange-200 bg-orange-50 px-4 py-2.5 text-sm font-semibold text-orange-600 transition-colors hover:bg-orange-100"
+                    className="self-start inline-flex items-center gap-1.5 rounded-xl border border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-950/20 px-4 py-2 text-sm font-semibold text-orange-600 dark:text-orange-400 transition-colors hover:bg-orange-100 dark:hover:bg-orange-950/30"
                   >
                     View All Brands
+                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
                   </Link>
                 </div>
               ) : (
@@ -1043,16 +1063,25 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
                           label: item,
                           href: `${activeLink.href}/${item.toLowerCase().replace(/\s+/g, '-')}`,
                         }))
-                    return items.map((item) => (
-                      <Link
-                        key={`${activeLink.label}-${item.label}`}
-                        href={item.href}
-                        className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-gray-600 hover:bg-orange-50 hover:text-orange-600 transition-all duration-200 group"
-                      >
-                        <span className="w-1.5 h-1.5 rounded-full bg-gray-300 group-hover:bg-orange-400 transition-colors" />
-                        {item.label}
-                      </Link>
-                    ))
+                    return items.map((item) => {
+                      const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
+                      return (
+                        <Link
+                          key={`${activeLink.label}-${item.label}`}
+                          href={item.href}
+                          className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-all duration-200 group ${
+                            isActive
+                              ? 'bg-orange-50 dark:bg-orange-950/30 text-orange-600 font-medium'
+                              : 'text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-orange-950/20 hover:text-orange-600'
+                          }`}
+                        >
+                          <span className={`w-1.5 h-1.5 rounded-full transition-colors ${
+                            isActive ? 'bg-orange-400' : 'bg-gray-300 dark:bg-gray-600 group-hover:bg-orange-400'
+                          }`} />
+                          {item.label}
+                        </Link>
+                      )
+                    })
                   })()}
                 </div>
               )}
@@ -1068,64 +1097,39 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -4 }}
             transition={{ duration: 0.2, ease: 'easeOut' }}
-            className="absolute left-0 right-0 bg-white border-t border-gray-100 shadow-xl shadow-black/5 hidden md:block"
+            className="absolute left-0 right-0 !bg-white dark:!bg-gray-900 border-t border-gray-100 dark:border-gray-800 shadow-xl shadow-black/5 dark:shadow-black/30 hidden md:block"
             onMouseEnter={() => open(activeLink.label)}
             onMouseLeave={close}
+            style={{ backgroundColor: 'white' }}
           >
-            <div className="container mx-auto px-4 pt-4 pb-5">
-              {/* Search bar */}
-              <div className="relative mb-4 max-w-sm">
-                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
-                  <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
-                </svg>
-                <input
-                  type="text"
-                  value={megaSearch}
-                  onChange={(e) => setMegaSearch(e.target.value)}
-                  placeholder="Search rooms..."
-                  className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-400/50 focus:bg-white transition-all"
-                />
-                {megaSearch && (
-                  <button
-                    onClick={() => setMegaSearch('')}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
-                  </button>
-                )}
+            <div className="!bg-white dark:!bg-gray-900 container mx-auto px-4 py-5"
+                 style={{ backgroundColor: 'white' }}>
+              <div className="grid grid-cols-4 lg:grid-cols-8 gap-1">
+                {Object.keys(activeLink.mega!).map((room) => {
+                  const roomSlug = room.toLowerCase().replace(/\s+/g, '-');
+                  const isActive = pathname.startsWith(`/by-room/${roomSlug}`);
+                  return (
+                    <Link
+                      key={room}
+                      href={`/by-room/${roomSlug}`}
+                      className={`group flex flex-col items-center gap-2 rounded-2xl px-2 py-3 text-center transition-all duration-200 ${
+                        isActive
+                          ? 'bg-orange-50 dark:bg-orange-950/30 text-orange-600'
+                          : 'text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-orange-950/20 hover:text-orange-500'
+                      }`}
+                    >
+                      <div className={`flex h-11 w-11 items-center justify-center rounded-xl transition-colors duration-200 ${
+                        isActive
+                          ? 'bg-orange-100 dark:bg-orange-950/40 text-orange-500'
+                          : 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 group-hover:bg-orange-100 dark:group-hover:bg-orange-950/30 group-hover:text-orange-500'
+                      }`}>
+                        {roomIcons[room] ?? roomIcons.BEDROOM}
+                      </div>
+                      <span className="text-xs font-medium leading-tight text-gray-700 dark:text-gray-300">{room.charAt(0) + room.slice(1).toLowerCase()}</span>
+                    </Link>
+                  );
+                })}
               </div>
-
-              {/* Columns */}
-              {(() => {
-                const q = megaSearch.trim().toLowerCase();
-                const filtered = Object.keys(activeLink.mega!).filter((room) => room.toLowerCase().includes(q));
-
-                if (filtered.length === 0) return (
-                  <div className="py-6 text-center text-sm text-gray-400">
-                    No rooms found for &quot;<span className="text-orange-500">{megaSearch}</span>&quot;
-                  </div>
-                );
-
-                return (
-                  <div className="grid grid-cols-2 gap-5 lg:grid-cols-3">
-                    {filtered.map((room) => {
-                      const roomSlug = room.toLowerCase().replace(/\s+/g, '-');
-                      return (
-                        <Link
-                          key={room}
-                          href={`/by-room/${roomSlug}`}
-                          className="flex items-center gap-3 rounded-2xl border border-gray-200 bg-white px-4 py-4 text-sm font-semibold text-gray-700 shadow-sm transition-all duration-150 hover:border-orange-300 hover:bg-orange-50 hover:text-orange-600"
-                        >
-                          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-50 text-orange-500">
-                            {roomIcons[room] ?? roomIcons.BEDROOM}
-                          </span>
-                          <span className="tracking-wide">{room}</span>
-                        </Link>
-                      );
-                    })}
-                  </div>
-                );
-              })()}
             </div>
           </motion.div>
         )}
@@ -1139,7 +1143,7 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.25, ease: 'easeOut' }}
-            className="md:hidden border-t border-gray-100 bg-white max-h-[70vh] overflow-y-auto"
+            className="md:hidden border-t border-gray-100 dark:border-gray-800 !bg-white dark:!bg-gray-900 max-h-[70vh] overflow-y-auto"
           >
             <nav className="container mx-auto px-4 py-3 flex flex-col gap-0.5">
               {isLoggedIn ? (
@@ -1262,17 +1266,17 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
                   </div>
                   <div className="bg-white px-4 py-3 flex gap-2">
                     <motion.div whileTap={{ scale: 0.97 }} transition={{ duration: 0.12 }} className="flex-1">
-                      <Link
+                      <PrimaryButton
                         href="/login"
                         onClick={() => setMobileOpen(false)}
-                        className="flex h-11 w-full items-center justify-center gap-2 rounded-[18px] bg-slate-800 px-4 text-sm font-semibold text-white transition hover:bg-slate-700"
+                        className="!w-full !px-4 !py-2.5 !text-sm !rounded-[18px]"
                       >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0">
                           <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                           <circle cx="12" cy="7" r="4" />
                         </svg>
-                        <span>Sign In</span>
-                      </Link>
+                        Sign In
+                      </PrimaryButton>
                     </motion.div>
                     <Link
                       href="/track-order"
@@ -1424,14 +1428,14 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
                               <Link
                                 key={item.id}
                                 href={item.href}
-                                className="flex items-center gap-2.5 rounded-xl border border-gray-100 px-3 py-2 text-sm text-gray-500 hover:border-orange-200 hover:bg-orange-50 hover:text-orange-500 transition-colors"
+                                className="flex items-center gap-2.5 rounded-xl border border-gray-100 px-3 py-2 text-sm text-gray-600 hover:border-orange-200 hover:bg-orange-50 hover:text-orange-500 transition-colors"
                                 onClick={() => setMobileOpen(false)}
                               >
                                 <div className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-gray-100">
                                   {item.image ? (
                                     <Image src={item.image} alt={item.label} width={28} height={28} className="h-full w-full object-cover" unoptimized />
                                   ) : (
-                                    <span className="text-[9px] font-bold text-gray-400">
+                                    <span className="text-[9px] font-bold text-gray-500">
                                       {item.label.split(/\s+/).slice(0, 2).map((p) => p[0]?.toUpperCase()).join('')}
                                     </span>
                                   )}
@@ -1454,7 +1458,7 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
                               <Link
                                 key={item.label}
                                 href={item.href}
-                                className="block px-3 py-1.5 text-sm text-gray-500 hover:text-orange-500 rounded-lg transition-colors"
+                                className="block px-3 py-1.5 text-sm text-gray-600 hover:text-orange-500 rounded-lg transition-colors"
                                 onClick={() => setMobileOpen(false)}
                               >
                                 {item.label}
@@ -1617,6 +1621,20 @@ export default function Navbar({ initialCategories = [] }: { initialCategories?:
         )}
       </AnimatePresence>,
       document.body,
+    )}
+    {chatMode === 'chat' && (
+      <Chat
+        isOpen={isChatOpen}
+        onClose={() => {
+          setIsChatOpen(false)
+          setChatMode('list')
+          setSelectedConversation(null)
+        }}
+        brandName={selectedConversation?.name}
+        brandImage={selectedConversation?.avatar}
+        mode="chat"
+        onBackToList={() => setChatMode('list')}
+      />
     )}
     </>
   )

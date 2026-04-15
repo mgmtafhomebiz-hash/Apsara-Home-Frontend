@@ -25,6 +25,7 @@ export default function LandingPage() {
   const [isQuickViewOpen, setIsQuickViewOpen] = useState(false);
   const [cartCount, setCartCount] = useState(0);
 
+
   const handleCloseQuickView = () => {
     setIsQuickViewOpen(false);
     setTimeout(() => setSelectedProduct(null), 300);

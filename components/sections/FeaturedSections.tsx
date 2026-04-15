@@ -13,7 +13,7 @@ const products = [
 
 const FeaturedSections = () => {
     return (
-        <section className="bg-gray-50 py-16">
+        <section className="bg-gray-50 dark:bg-gray-900 py-16">
             <div className="container mx-auto px-4">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
                     <motion.div
@@ -49,7 +49,7 @@ const FeaturedSections = () => {
                         transition={{ duration: 0.7 }}
                     >
                         <p className="text-orange-500 text-sm font-semibold uppercase tracking-wider mb-2">Sale Items</p>
-                        <h2 className="text-2xl font-bold text-slate-900 mb-6">Top Picks This Week</h2>
+                        <h2 className="text-2xl font-bold text-slate-900 dark:text-gray-100 mb-6">Top Picks This Week</h2>
                         <div className="grid grid-cols-2 gap-4">
                             {products.map((product, index) => (
                             <motion.div

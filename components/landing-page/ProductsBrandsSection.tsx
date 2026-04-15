@@ -52,14 +52,22 @@ const brands = [
 
 export default function ProductsBrandsSection() {
   return (
-    <section id="ecosystem" className="py-24 bg-white dark:bg-gray-950 overflow-hidden">
-      <div className="max-w-[1400px] mx-auto px-6 md:px-10 lg:px-20">
-        <div className="text-center max-w-3xl mx-auto mb-16">
+    <section
+      id="ecosystem"
+      className="relative overflow-hidden bg-gradient-to-b from-[#fbf7f2] via-white to-[#f8f3ec] py-24 dark:from-gray-950 dark:via-gray-950 dark:to-gray-900"
+    >
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute -left-24 top-10 h-72 w-72 rounded-full bg-orange-200/30 blur-3xl dark:bg-orange-500/10" />
+        <div className="absolute right-0 top-0 h-80 w-80 rounded-full bg-blue-200/20 blur-3xl dark:bg-blue-500/10" />
+      </div>
+
+      <div className="relative container mx-auto px-4">
+        <div className="mx-auto mb-16 max-w-3xl text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="inline-block px-4 py-1.5 rounded-full bg-orange-100 dark:bg-orange-500/10 text-orange-600 dark:text-orange-300 font-semibold text-sm mb-4"
+            className="mb-4 inline-block rounded-full border border-orange-100 bg-orange-50 px-4 py-1.5 text-sm font-semibold text-orange-600 shadow-sm dark:border-orange-500/20 dark:bg-orange-500/10 dark:text-orange-300"
           >
             PRODUCTS & BRANDS ECOSYSTEM
           </motion.div>
@@ -68,10 +76,10 @@ export default function ProductsBrandsSection() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.1 }}
-            className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-6"
+            className="mb-6 text-4xl font-bold text-gray-900 dark:text-white md:text-5xl"
           >
             One Ecosystem. <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-red-600">
+            <span className="bg-gradient-to-r from-orange-500 to-red-600 bg-clip-text text-transparent">
               Many Trusted Home Brands.
             </span>
           </motion.h2>
@@ -80,7 +88,7 @@ export default function ProductsBrandsSection() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.2 }}
-            className="text-xl text-gray-600 dark:text-gray-400 leading-relaxed"
+            className="text-xl leading-relaxed text-gray-700 dark:text-gray-400"
           >
             AF Home brings together furniture, home essentials, and interior
             solutions under one affiliate-friendly platform, giving you more
@@ -92,19 +100,21 @@ export default function ProductsBrandsSection() {
           <motion.p
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
-            className="text-center text-sm font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-8"
+            viewport={{ once: true }}
+            className="mb-8 text-center text-sm font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500"
           >
             Trusted by Top Brands
           </motion.p>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-8 items-center justify-items-center">
+          <div className="grid grid-cols-2 items-center justify-items-center gap-8 md:grid-cols-4 lg:grid-cols-6">
             {brands.map((brand, index) => (
               <motion.div
                 key={brand.name}
-                initial={{ opacity: 0 }}
-                whileInView={{ opacity: 1 }}
+                initial={{ opacity: 0, y: 10 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
                 transition={{ delay: index * 0.05 }}
-                className="h-16 w-32 md:w-36"
+                className="flex h-16 w-32 items-center justify-center rounded-2xl border border-white/70 bg-white/80 p-3 shadow-sm backdrop-blur-sm dark:border-white/10 dark:bg-white/5 md:w-36"
               >
                 <img
                   src={brand.logo}
@@ -116,7 +126,7 @@ export default function ProductsBrandsSection() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-20">
+        <div className="grid grid-cols-2 gap-4 mb-20 md:grid-cols-3 lg:grid-cols-5">
           {categories.map((cat, index) => (
             <motion.div
               key={cat.title}
@@ -124,15 +134,19 @@ export default function ProductsBrandsSection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: index * 0.1 }}
-                className="h-full rounded-2xl bg-gray-50/50 dark:bg-gray-800 p-6 flex flex-col items-center text-center justify-center shadow-lg hover:shadow-xl transition-shadow duration-300 dark:border dark:border-gray-700"
+              className="flex h-full flex-col items-center justify-center rounded-3xl border border-white/70 bg-white/80 p-6 text-center shadow-[0_16px_45px_rgba(15,23,42,0.06)] backdrop-blur-sm transition-shadow duration-300 hover:shadow-[0_22px_55px_rgba(15,23,42,0.1)] dark:border-white/10 dark:bg-white/5 dark:shadow-none"
             >
               <div
-                className={`p-4 rounded-2xl mb-4 ${cat.color} group-hover:scale-110 transition-transform duration-300`}
+                className={`mb-4 rounded-2xl p-4 ${cat.color} transition-transform duration-300 group-hover:scale-110`}
               >
                 <cat.icon size={32} />
               </div>
-              <h3 className="font-bold text-gray-900 dark:text-white mb-1">{cat.title}</h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400">{cat.description}</p>
+              <h3 className="mb-1 font-bold text-gray-900 dark:text-white">
+                {cat.title}
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                {cat.description}
+              </p>
             </motion.div>
           ))}
         </div>
@@ -140,4 +154,3 @@ export default function ProductsBrandsSection() {
     </section>
   );
 }
-

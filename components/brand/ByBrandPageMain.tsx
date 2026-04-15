@@ -2,11 +2,18 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { useMemo, useState, useRef } from 'react'
+import { useMemo, useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSearchParams } from 'next/navigation'
 import { useGetPublicProductBrandsQuery } from '@/store/api/productBrandsApi'
 import { useGetPublicProductsQuery } from '@/store/api/productsApi'
+import OutlineButton from '@/components/ui/buttons/OutlineButton'
+import PrimaryButton from '@/components/ui/buttons/PrimaryButton'
+import Footer from '@/components/landing-page/Footer'
+import ScrollToTop from '@/components/landing-page/ScrollToTop'
+import ItemCard from '@/components/item/ItemCard'
+import ProductFilter, { FilterState } from '@/components/item/ProductFilter'
+import Chat from '@/components/chat/Chat'
 
 const toSlug = (value: string) =>
   value
@@ -34,29 +41,39 @@ const getBrandGradient = (name: string) => {
   return GRADIENT_PALETTES[Math.abs(hash) % GRADIENT_PALETTES.length]
 }
 
+const highlightText = (text: string, query: string) => {
+  if (!query.trim()) return text
+  const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi')
+  const parts = text.split(regex)
+  return parts.map((part, i) => 
+    regex.test(part) ? (
+      <span key={i} className="bg-yellow-200">
+        {part}
+      </span>
+    ) : (
+      <span key={i}>{part}</span>
+    )
+  )
+}
+
 function BrandCardSkeleton() {
   return (
-    <div className="animate-pulse rounded-2xl border border-gray-100 bg-white p-4">
-      <div className="flex items-center gap-4">
-        <div className="h-14 w-14 shrink-0 rounded-2xl bg-gray-200" />
-        <div className="flex-1 space-y-2">
-          <div className="h-4 w-3/4 rounded-full bg-gray-200" />
-          <div className="h-3 w-1/2 rounded-full bg-gray-100" />
-        </div>
-      </div>
+    <div className="flex flex-col items-center animate-pulse rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+      <div className="h-20 w-20 shrink-0 rounded bg-gray-200 dark:bg-gray-700" />
+      <div className="mt-3 h-4 w-3/4 rounded bg-gray-200 dark:bg-gray-700" />
     </div>
   )
 }
 
 function ProductCardSkeleton() {
   return (
-    <div className="animate-pulse overflow-hidden rounded-2xl border border-gray-100 bg-white">
-      <div className="aspect-[4/3] bg-gray-200" />
+    <div className="animate-pulse overflow-hidden rounded-2xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800">
+      <div className="aspect-[4/3] bg-gray-200 dark:bg-gray-700" />
       <div className="space-y-2 p-4">
-        <div className="h-3 w-1/3 rounded-full bg-gray-200" />
-        <div className="h-4 w-full rounded-full bg-gray-200" />
-        <div className="h-4 w-4/5 rounded-full bg-gray-200" />
-        <div className="h-5 w-1/2 rounded-full bg-gray-200" />
+        <div className="h-3 w-1/3 rounded-full bg-gray-200 dark:bg-gray-700" />
+        <div className="h-4 w-full rounded-full bg-gray-200 dark:bg-gray-700" />
+        <div className="h-4 w-4/5 rounded-full bg-gray-200 dark:bg-gray-700" />
+        <div className="h-5 w-1/2 rounded-full bg-gray-200 dark:bg-gray-700" />
       </div>
     </div>
   )
@@ -65,9 +82,21 @@ function ProductCardSkeleton() {
 export default function ByBrandPageMain() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const brandParam = searchParams.get('brand')
+  const letterFilterParam = searchParams.get('letter')
+  const sortByParam = searchParams.get('sort')
+  const [currentSlide, setCurrentSlide] = useState(0)
   const selectedBrand = searchParams.get('brand')?.trim().toLowerCase() ?? ''
   const [letterFilter, setLetterFilter] = useState<string>('ALL')
   const [searchQuery, setSearchQuery] = useState('')
+  const [sortBy, setSortBy] = useState<'name-asc' | 'name-desc' | 'default'>('default')
+  const [filters, setFilters] = useState<FilterState>({
+    priceRange: [0, 10000],
+    categories: [],
+    ratings: [],
+    inStock: false
+  })
+  const [isChatOpen, setIsChatOpen] = useState(false)
   const { data, isFetching } = useGetPublicProductBrandsQuery()
 
   const allBrands = useMemo(
@@ -86,9 +115,16 @@ export default function ByBrandPageMain() {
     else {
       if (searchQuery.trim()) rows = rows.filter((b) => b.name.toLowerCase().includes(searchQuery.trim().toLowerCase()))
       else if (letterFilter !== 'ALL') rows = rows.filter((b) => b.name.charAt(0).toUpperCase() === letterFilter)
+
+      // Apply sorting
+      if (sortBy === 'name-asc') {
+        rows = [...rows].sort((a, b) => a.name.localeCompare(b.name))
+      } else if (sortBy === 'name-desc') {
+        rows = [...rows].sort((a, b) => b.name.localeCompare(a.name))
+      }
     }
     return rows
-  }, [allBrands, selectedBrand, letterFilter, searchQuery])
+  }, [allBrands, selectedBrand, letterFilter, searchQuery, sortBy])
 
   const [productPage, setProductPage] = useState(1)
   const PER_PAGE = 12
@@ -116,264 +152,472 @@ export default function ByBrandPageMain() {
   const totalPages = productsMeta?.last_page ?? 1
 
   return (
-    <main className="min-h-screen bg-gray-50">
-      {/* Hero Header */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 px-4 py-20">
-        <button
-          onClick={() => router.back()}
-          className="absolute left-4 top-4 z-10 inline-flex items-center gap-1.5 rounded-xl bg-white/10 px-3 py-2 text-xs font-semibold text-white ring-1 ring-white/20 backdrop-blur-sm transition hover:bg-white/20 sm:left-6 sm:top-6"
-        >
-          ← Back
-        </button>
-        <div className="pointer-events-none absolute inset-0 opacity-10"
-          style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, #f97316 0%, transparent 50%), radial-gradient(circle at 80% 20%, #fb923c 0%, transparent 40%)' }}
-        />
-        <div className="relative container mx-auto">
-          <p className="text-xs font-bold uppercase tracking-[0.35em] text-orange-400">Shop by Brand</p>
-          <h1 className="mt-3 text-4xl font-bold text-white sm:text-5xl">
-            {selectedBrand && selectedBrandItem ? selectedBrandItem.name : 'All Brands'}
-          </h1>
-          <p className="mt-3 max-w-xl text-gray-400">
-            Browse featured product brands from the catalog. Pick a brand below to continue exploring.
-          </p>
+    <main className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      {/* Page Header */}
+      <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+        <div className="container mx-auto px-4 py-6">
+          <div className="mt-4">
+            <p className="text-xs font-bold uppercase tracking-[0.35em] text-orange-500 dark:text-orange-400">Shop by Brand</p>
+            <h1 className="mt-2 text-3xl font-bold text-gray-900 dark:text-white sm:text-4xl">
+              {selectedBrand && selectedBrandItem ? selectedBrandItem.name : 'All Brands'}
+            </h1>
+            <p className="mt-2 text-gray-600 dark:text-gray-400">
+              Browse featured product brands from the catalog. Pick a brand below to continue exploring.
+            </p>
+          </div>
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-10 space-y-8">
-        {/* Search + Letter Filter — only when no brand selected */}
-        {!selectedBrand && (
-          <div className="flex flex-col gap-3">
-            {/* Search input */}
-            <div className="relative max-w-sm">
-              <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
-                <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
-              </svg>
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => { setSearchQuery(e.target.value); setLetterFilter('ALL') }}
-                placeholder="Search brands..."
-                className="w-full rounded-xl border border-gray-200 bg-white py-2.5 pl-10 pr-10 text-sm text-gray-700 placeholder:text-gray-400 shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-400/30 transition-all"
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
-                </button>
-              )}
-            </div>
-            {/* Letter filter pills — hidden when searching */}
-            {!searchQuery && (
-              <div className="flex flex-wrap gap-2">
-                {availableLetters.map((letter) => (
-                  <button
-                    key={letter}
-                    onClick={() => setLetterFilter(letter)}
-                    className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition-all ${
-                      letterFilter === letter
-                        ? 'bg-orange-500 text-white shadow-sm shadow-orange-200'
-                        : 'bg-white text-gray-500 ring-1 ring-gray-200 hover:ring-orange-300 hover:text-orange-500'
-                    }`}
-                  >
-                    {letter}
-                  </button>
-                ))}
+      <div className="container mx-auto px-4 py-8 space-y-8">
+        {/* Brand Profile Card — only when brand selected */}
+        {selectedBrandItem && (
+          <>
+            <div className="rounded-lg bg-white dark:bg-gray-800 p-6 border border-gray-200 dark:border-gray-700">
+              <div className="flex items-center gap-6">
+                <div className={`relative flex h-32 w-32 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600`}>
+                  {selectedBrandItem.image ? (
+                    <Image src={selectedBrandItem.image} alt={selectedBrandItem.name} fill className="object-contain p-2" unoptimized />
+                  ) : (
+                    <span className="text-3xl font-extrabold tracking-wider text-gray-400 dark:text-gray-500">
+                      {getBrandInitials(selectedBrandItem.name)}
+                    </span>
+                  )}
+                </div>
+                <div className="flex-1">
+                  <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{selectedBrandItem.name}</h1>
+                  <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                    Browse all products from this brand
+                  </p>
+                  <div className="mt-3 flex items-center gap-4 text-sm">
+                    <div className="flex items-center gap-1 text-gray-600 dark:text-gray-400">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                      </svg>
+                      <span>Chat Performance: 95%</span>
+                    </div>
+                    <div className="flex items-center gap-1 text-gray-600 dark:text-gray-400">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+                      </svg>
+                      <span>Overall Rating: 4.8</span>
+                    </div>
+                    <div className="flex items-center gap-1 text-gray-600 dark:text-gray-400">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
+                        <line x1="3" y1="6" x2="21" y2="6" />
+                        <path d="M16 10a4 4 0 0 1-8 0" />
+                      </svg>
+                      <span>Total Products: {productsMeta?.total ?? brandProducts.length}</span>
+                    </div>
+                    <div className="flex items-center gap-1 text-gray-600 dark:text-gray-400">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                        <line x1="16" y1="2" x2="16" y2="6" />
+                        <line x1="8" y1="2" x2="8" y2="6" />
+                        <line x1="3" y1="10" x2="21" y2="10" />
+                      </svg>
+                      <span>Joined: Jan 2024</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <PrimaryButton onClick={() => setIsChatOpen(true)} className="!rounded-full !px-4 !py-2.5 !text-sm cursor-pointer">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                    </svg>
+                    Chat
+                  </PrimaryButton>
+                  <OutlineButton href="/by-brand" className="shrink-0 !px-4 !py-2.5 !text-sm">
+                    ← Back to All Brands
+                  </OutlineButton>
+                </div>
               </div>
-            )}
+            </div>
+
+            {/* Promotional Banner */}
+            <div className="relative rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 bg-gradient-to-r from-orange-500 to-orange-600 dark:from-orange-600 dark:to-orange-700">
+              <div className="px-6 py-8">
+                <p className="text-xs font-bold uppercase tracking-[0.3em] text-orange-100">Special Offer</p>
+                <h2 className="mt-2 text-2xl font-bold text-white">
+                  Get {selectedBrandItem.name} products at exclusive prices!
+                </h2>
+                <p className="mt-2 text-sm text-orange-100">
+                  Limited time offer - Shop now and save up to 30%
+                </p>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Search + Filters — only when no brand selected */}
+        {!selectedBrand && (
+          <div className="rounded-xl bg-white dark:bg-gray-800 p-6 border border-gray-200 dark:border-gray-700">
+            <div className="flex flex-col gap-6">
+              {/* Search bar */}
+              <div className="relative">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 pointer-events-none">
+                  <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
+                </svg>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => { setSearchQuery(e.target.value); setLetterFilter('ALL') }}
+                  placeholder="Search brands..."
+                  className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 py-3 pl-12 pr-12 text-base text-gray-700 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-orange-400 focus:bg-white dark:focus:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-orange-400/30 transition-all"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400 transition-colors"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                  </button>
+                )}
+              </div>
+
+              {/* Filters row */}
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                {/* Letter filter — hidden when searching */}
+                {!searchQuery && (
+                  <div className="flex flex-wrap gap-2">
+                    <span className="px-3 py-2 text-sm font-semibold text-gray-500 dark:text-gray-400">Filter:</span>
+                    {availableLetters.map((letter) => (
+                      <button
+                        key={letter}
+                        onClick={() => setLetterFilter(letter)}
+                        className={`rounded-lg px-4 py-2 text-sm font-semibold cursor-pointer transition-all ${
+                          letterFilter === letter
+                            ? 'bg-orange-500 text-white'
+                            : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-orange-100 dark:hover:bg-orange-500/20 hover:text-orange-600 dark:hover:text-orange-400'
+                        }`}
+                      >
+                        {letter}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Sort dropdown */}
+                <div className="flex items-center gap-2">
+                  <span className="px-3 py-2 text-sm font-semibold text-gray-500 dark:text-gray-400">Sort:</span>
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value as 'name-asc' | 'name-desc' | 'default')}
+                    className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-700 px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-200 focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-400/30 transition-all"
+                  >
+                    <option value="default">Default</option>
+                    <option value="name-asc">Name: A to Z</option>
+                    <option value="name-desc">Name: Z to A</option>
+                  </select>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
-        {/* Brand Grid */}
-        <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-gray-100">
-          {isFetching ? (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {Array.from({ length: 8 }).map((_, i) => <BrandCardSkeleton key={i} />)}
-            </div>
-          ) : brands.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 text-center">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 text-2xl">🏷️</div>
-              <p className="mt-4 font-semibold text-gray-700">No brands found</p>
-              <p className="mt-1 text-sm text-gray-400">Try a different letter filter</p>
-            </div>
-          ) : (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {brands.map((brand) => {
-                const brandSlug = toSlug(brand.name)
-                const isActive = brandSlug === selectedBrand
-                const gradient = getBrandGradient(brand.name)
-
-                return (
-                  <Link
-                    key={brand.id}
-                    href={`/by-brand?brand=${encodeURIComponent(brandSlug)}`}
-                    className={`group relative overflow-hidden rounded-2xl border p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${
-                      isActive
-                        ? 'border-orange-300 bg-orange-50 shadow-sm shadow-orange-100'
-                        : 'border-gray-100 bg-white hover:border-orange-200'
-                    }`}
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className={`relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl ${brand.image ? 'bg-gray-100' : `bg-gradient-to-br ${gradient}`}`}>
-                        {brand.image ? (
-                          <Image src={brand.image} alt={brand.name} fill className="object-cover" unoptimized />
-                        ) : (
-                          <span className="text-sm font-extrabold tracking-wider text-white">
-                            {getBrandInitials(brand.name)}
-                          </span>
-                        )}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className={`truncate text-sm font-bold ${isActive ? 'text-orange-700' : 'text-gray-900'}`}>
-                          {brand.name}
-                        </p>
-                        <p className={`mt-0.5 text-xs transition-colors ${isActive ? 'text-orange-500' : 'text-gray-400 group-hover:text-orange-500'}`}>
-                          View brand →
-                        </p>
-                      </div>
-                    </div>
-                    {isActive && (
-                      <div className="absolute right-3 top-3 h-2 w-2 rounded-full bg-orange-400" />
-                    )}
-                  </Link>
-                )
-              })}
-            </div>
-          )}
-        </div>
-
-        {/* Brand Products Section */}
-        {selectedBrandItem && (
-          <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-gray-100">
-            <div className="flex flex-col gap-2 border-b border-gray-100 pb-5 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-[0.3em] text-orange-500">Brand Products</p>
-                <h2 className="mt-2 text-2xl font-bold text-gray-900">{selectedBrandItem.name}</h2>
+        {/* Brand Grid — only when no brand selected */}
+        {!selectedBrand && (
+          <>
+            {isFetching ? (
+              <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+                {Array.from({ length: 12 }).map((_, i) => <BrandCardSkeleton key={i} />)}
               </div>
-              <span className="inline-flex items-center rounded-full bg-orange-50 px-3 py-1 text-xs font-semibold text-orange-600 ring-1 ring-orange-200">
-                {isFetchingProducts ? 'Loading…' : `${productsMeta?.total ?? brandProducts.length} product${(productsMeta?.total ?? brandProducts.length) !== 1 ? 's' : ''}`}
-              </span>
-            </div>
-
-            <div className="mt-6">
-              {isFetchingProducts ? (
-                <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-                  {Array.from({ length: 8 }).map((_, i) => <ProductCardSkeleton key={i} />)}
-                </div>
-              ) : brandProducts.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-20 text-center">
-                  <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 text-2xl">📦</div>
-                  <p className="mt-4 font-semibold text-gray-700">No products yet</p>
-                  <p className="mt-1 text-sm text-gray-400">No products assigned to this brand yet.</p>
-                </div>
-              ) : (
-                <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-                  {brandProducts.map((product) => {
-                    const slug = toSlug(product.name)
-                    const href = `/product/${slug}-i${product.id}`
+            ) : brands.length === 0 ? (
+              <div className="flex flex-col items-center justify-center rounded-lg py-16 text-center border border-gray-200 dark:border-gray-700">
+                <p className="text-lg font-medium text-gray-700 dark:text-gray-300">No brands found</p>
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Try adjusting your filters</p>
+              </div>
+            ) : (
+              <>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                  Showing <span className="font-semibold text-gray-700 dark:text-gray-300">{brands.length}</span> brand{brands.length !== 1 ? 's' : ''}
+                  {letterFilter !== 'ALL' && ` starting with "${letterFilter}"`}
+                  {searchQuery && ` matching "${searchQuery}"`}
+                </p>
+                <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+                  {brands.map((brand) => {
+                    const brandSlug = toSlug(brand.name)
 
                     return (
                       <Link
-                        key={product.id}
-                        href={href}
-                        className="group overflow-hidden rounded-2xl border border-gray-100 bg-white transition-all duration-200 hover:-translate-y-1 hover:border-orange-200 hover:shadow-lg"
+                        key={brand.id}
+                        href={`/by-brand?brand=${encodeURIComponent(brandSlug)}`}
+                        className="group flex flex-col items-center rounded-lg border border-gray-200 dark:border-gray-700 p-4 text-center hover:border-orange-500 dark:hover:border-orange-400 transition-colors"
                       >
-                        <div className="relative aspect-[4/3] bg-gray-50">
-                          {product.image ? (
-                            <Image
-                              src={product.image}
-                              alt={product.name}
-                              fill
-                              className="object-cover transition-transform duration-300 group-hover:scale-[1.04]"
-                              unoptimized
-                            />
+                        <div className="relative flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded">
+                          {brand.image ? (
+                            <Image src={brand.image} alt={brand.name} fill className="object-contain p-1" unoptimized />
                           ) : (
-                            <div className="flex h-full items-center justify-center text-sm font-semibold text-gray-300">
-                              No Image
-                            </div>
-                          )}
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 transition-opacity duration-200 group-hover:opacity-100" />
-                        </div>
-                        <div className="space-y-2 p-4">
-                          <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-orange-500">{selectedBrandItem.name}</p>
-                          <h3 className="line-clamp-2 min-h-[2.75rem] text-sm font-semibold text-gray-900 leading-snug">
-                            {product.name}
-                          </h3>
-                          <div className="flex items-end justify-between gap-3 pt-1">
-                            <div>
-                              <p className="text-[10px] text-gray-400 uppercase tracking-wide">Member Price</p>
-                              <p className="text-base font-bold text-orange-600">
-                                {formatPeso(product.priceMember ?? product.priceDp ?? product.priceSrp)}
-                              </p>
-                            </div>
-                            <span className="rounded-lg bg-gray-50 px-2 py-1 text-[10px] font-medium text-gray-400 ring-1 ring-gray-100">
-                              {product.sku || 'N/A'}
+                            <span className="text-lg font-semibold text-gray-400 dark:text-gray-600">
+                              {getBrandInitials(brand.name)}
                             </span>
-                          </div>
+                          )}
                         </div>
+                        <h3 className="mt-3 truncate text-sm font-medium text-gray-900 dark:text-gray-100">
+                          {highlightText(brand.name, searchQuery)}
+                        </h3>
                       </Link>
                     )
                   })}
                 </div>
-              )}
+              </>
+            )}
+          </>
+        )}
+
+        {/* Featured Products Section */}
+        {selectedBrandItem && !isFetchingProducts && brandProducts.length > 0 && (
+          <div className="rounded-lg bg-white dark:bg-gray-800 p-6 border border-gray-200 dark:border-gray-700">
+            <div className="mb-4">
+              <p className="text-xs font-bold uppercase tracking-[0.3em] text-orange-500 dark:text-orange-400">Featured</p>
+              <h3 className="mt-1 text-xl font-bold text-gray-900 dark:text-white">Featured Products</h3>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {brandProducts.slice(0, 4).map((product) => (
+                <ItemCard key={product.id} product={product} brandName={selectedBrandItem.name} />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Hero Banner */}
+        {selectedBrandItem && !isFetchingProducts && brandProducts.length > 0 && (
+          <div className="relative rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 h-64 md:h-80 bg-white dark:bg-gray-800">
+            {/* Subtle Pattern Background */}
+            <div className="absolute inset-0 opacity-5 dark:opacity-10" style={{
+              backgroundImage: 'radial-gradient(circle at 2px 2px, #000 1px, transparent 0)',
+              backgroundSize: '24px 24px'
+            }} />
+
+            {brandProducts.slice(0, 5).map((product, index) => (
+              <div
+                key={product.id}
+                className={`absolute inset-0 transition-opacity duration-500 ${
+                  currentSlide === index ? 'opacity-100' : 'opacity-0'
+                }`}
+              >
+                {product.image ? (
+                  <Image
+                    src={product.image}
+                    alt={product.name}
+                    fill
+                    className="object-contain"
+                    unoptimized
+                  />
+                ) : (
+                  <div className="flex h-full items-center justify-center bg-gray-50 text-gray-400">
+                    No Image
+                  </div>
+                )}
+              </div>
+            ))}
+
+            {/* Left Content Overlay */}
+            <div className="absolute left-0 top-0 bottom-0 w-48 md:w-64 bg-gradient-to-r from-orange-500 to-orange-500/10 flex flex-col justify-center px-6 z-10">
+              <p className="text-xs font-bold uppercase tracking-[0.3em] text-white/90">Featured</p>
+              <h2 className="mt-2 text-xl font-bold text-white">
+                {selectedBrandItem.name}
+              </h2>
+              <p className="mt-1 text-sm text-white/80">
+                Premium quality products
+              </p>
             </div>
 
-            {/* Pagination */}
-            {!isFetchingProducts && totalPages > 1 && (
-              <div className="mt-8 flex items-center justify-between border-t border-gray-100 pt-6">
-                <p className="text-sm text-gray-400">
-                  Page <span className="font-semibold text-gray-700">{productPage}</span> of <span className="font-semibold text-gray-700">{totalPages}</span>
-                </p>
-                <div className="flex items-center gap-1.5">
-                  {/* Prev */}
-                  <button
-                    onClick={() => setProductPage((p) => Math.max(1, p - 1))}
-                    disabled={productPage === 1}
-                    className="flex h-9 w-9 items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-500 transition hover:border-orange-300 hover:text-orange-500 disabled:cursor-not-allowed disabled:opacity-40"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="15 18 9 12 15 6" /></svg>
-                  </button>
+            {/* Right Content Overlay */}
+            <div className="absolute right-0 top-0 bottom-0 w-48 md:w-64 bg-gradient-to-l from-orange-400 to-orange-400/10 flex flex-col justify-center items-end px-6 text-right z-10">
+              <p className="text-xs font-bold uppercase tracking-[0.3em] text-white/90">Exclusive</p>
+              <p className="mt-2 text-sm text-white/80">
+                Limited Edition
+              </p>
+            </div>
 
-                  {/* Page numbers */}
-                  {Array.from({ length: totalPages }, (_, i) => i + 1)
-                    .filter((p) => p === 1 || p === totalPages || Math.abs(p - productPage) <= 1)
-                    .reduce<(number | 'ellipsis')[]>((acc, p, idx, arr) => {
-                      if (idx > 0 && p - (arr[idx - 1] as number) > 1) acc.push('ellipsis')
-                      acc.push(p)
-                      return acc
-                    }, [])
-                    .map((item, idx) =>
-                      item === 'ellipsis' ? (
-                        <span key={`e-${idx}`} className="flex h-9 w-9 items-center justify-center text-sm text-gray-400">…</span>
-                      ) : (
-                        <button
-                          key={item}
-                          onClick={() => setProductPage(item as number)}
-                          className={`flex h-9 w-9 items-center justify-center rounded-xl text-sm font-semibold transition-all ${
-                            productPage === item
-                              ? 'bg-orange-500 text-white shadow-sm shadow-orange-200'
-                              : 'border border-gray-200 bg-white text-gray-600 hover:border-orange-300 hover:text-orange-500'
-                          }`}
-                        >
-                          {item}
-                        </button>
-                      )
-                    )}
-                  {/* Next */}
-                  <button
-                    onClick={() => setProductPage((p) => Math.min(totalPages, p + 1))}
-                    disabled={productPage === totalPages}
-                    className="flex h-9 w-9 items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-500 transition hover:border-orange-300 hover:text-orange-500 disabled:cursor-not-allowed disabled:opacity-40"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6" /></svg>
-                  </button>
+            {/* Navigation Dots */}
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-20">
+              {brandProducts.slice(0, 5).map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => setCurrentSlide(index)}
+                  className={`w-3 h-3 rounded-full transition-colors border-2 cursor-pointer ${
+                    currentSlide === index ? 'bg-orange-500 border-orange-500' : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700'
+                  }`}
+                />
+              ))}
+            </div>
+
+            {/* Navigation Arrows */}
+            <button
+              onClick={() => setCurrentSlide((prev: number) => (prev === 0 ? Math.min(4, brandProducts.length - 1) : prev - 1))}
+              className="absolute left-48 md:left-64 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-full shadow-md transition-colors cursor-pointer z-20"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polyline points="15 18 9 12 15 6" />
+              </svg>
+            </button>
+            <button
+              onClick={() => setCurrentSlide((prev: number) => (prev === Math.min(4, brandProducts.length - 1) ? 0 : prev + 1))}
+              className="absolute right-48 md:right-64 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-full shadow-md transition-colors cursor-pointer z-20"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
+            </button>
+          </div>
+        )}
+
+        {/* Brand Products Section */}
+        {selectedBrandItem && (
+          <div className="flex flex-col gap-6 lg:flex-row">
+            {/* Left Sidebar - Filter */}
+            <div className="lg:w-72 shrink-0">
+              <ProductFilter onFilterChange={setFilters} />
+            </div>
+
+            {/* Right Side - Products */}
+            <div className="flex-1 rounded-lg bg-white dark:bg-gray-800 p-6 border border-gray-200 dark:border-gray-700">
+              <div className="flex flex-col gap-2 border-b border-gray-100 dark:border-gray-700 pb-5 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.3em] text-orange-500 dark:text-orange-400">Brand Products</p>
+                  <h2 className="mt-2 text-2xl font-bold text-gray-900 dark:text-white">{selectedBrandItem.name}</h2>
                 </div>
+                <span className="inline-flex items-center rounded-full bg-orange-50 dark:bg-orange-500/10 px-3 py-1 text-xs font-semibold text-orange-600 dark:text-orange-400 ring-1 ring-orange-200 dark:ring-orange-500/30">
+                  {isFetchingProducts ? 'Loading…' : `${productsMeta?.total ?? brandProducts.length} product${(productsMeta?.total ?? brandProducts.length) !== 1 ? 's' : ''}`}
+                </span>
+              </div>
+
+              <div className="mt-6">
+                {isFetchingProducts ? (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {Array.from({ length: 8 }).map((_, i) => <ProductCardSkeleton key={i} />)}
+                  </div>
+                ) : brandProducts.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-20 text-center">
+                    <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700 text-2xl">📦</div>
+                    <p className="mt-4 font-semibold text-gray-700 dark:text-gray-300">No products yet</p>
+                    <p className="mt-1 text-sm text-gray-400 dark:text-gray-500">No products assigned to this brand yet.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {brandProducts.map((product) => (
+                      <ItemCard key={product.id} product={product} brandName={selectedBrandItem.name} />
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Pagination */}
+              {!isFetchingProducts && totalPages > 1 && (
+                <div className="-mx-6 -mb-6 flex flex-col items-center border-t border-gray-100 dark:border-gray-700 pt-6 gap-4 bg-white dark:bg-gray-800 px-6 pb-6">
+                  <p className="text-sm text-gray-400 dark:text-gray-500">
+                    Page <span className="font-semibold text-gray-700 dark:text-gray-300">{productPage}</span> of <span className="font-semibold text-gray-700 dark:text-gray-300">{totalPages}</span>
+                  </p>
+                  <div className="flex items-center gap-1.5">
+                    {/* Prev */}
+                    <button
+                      onClick={() => setProductPage((p) => Math.max(1, p - 1))}
+                      disabled={productPage === 1}
+                      className="flex h-9 w-9 items-center justify-center rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-700 text-gray-500 dark:text-gray-400 transition hover:border-orange-300 dark:hover:border-orange-500 hover:text-orange-500 dark:hover:text-orange-400 cursor-pointer disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="15 18 9 12 15 6" /></svg>
+                    </button>
+
+                    {/* Page numbers */}
+                    {Array.from({ length: totalPages }, (_, i) => i + 1)
+                      .filter((p) => p === 1 || p === totalPages || Math.abs(p - productPage) <= 1)
+                      .reduce<(number | 'ellipsis')[]>((acc, p, idx, arr) => {
+                        if (idx > 0 && p - (arr[idx - 1] as number) > 1) acc.push('ellipsis')
+                        acc.push(p)
+                        return acc
+                      }, [])
+                      .map((item, idx) =>
+                        item === 'ellipsis' ? (
+                          <span key={`e-${idx}`} className="flex h-9 w-9 items-center justify-center text-sm text-gray-400 dark:text-gray-500">…</span>
+                        ) : (
+                          <button
+                            key={item}
+                            onClick={() => setProductPage(item as number)}
+                            className={`flex h-9 w-9 items-center justify-center rounded-xl text-sm font-semibold transition-all cursor-pointer ${
+                              productPage === item
+                                ? 'bg-orange-500 text-white shadow-sm shadow-orange-200 dark:shadow-orange-900'
+                                : 'border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:border-orange-300 dark:hover:border-orange-500 hover:text-orange-500 dark:hover:text-orange-400'
+                            }`}
+                          >
+                            {item}
+                          </button>
+                        )
+                      )}
+
+                    {/* Next */}
+                    <button
+                      onClick={() => setProductPage((p) => Math.min(totalPages, p + 1))}
+                      disabled={productPage === totalPages}
+                      className="flex h-9 w-9 items-center justify-center rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-700 text-gray-500 dark:text-gray-400 transition hover:border-orange-300 dark:hover:border-orange-500 hover:text-orange-500 dark:hover:text-orange-400 cursor-pointer disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6" /></svg>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* You May Also Like — only when brand selected */}
+        {selectedBrandItem && (
+          <div className="rounded-lg bg-white dark:bg-gray-800 p-6 border border-gray-200 dark:border-gray-700">
+            <div className="mb-6">
+              <p className="text-xs font-bold uppercase tracking-[0.3em] text-orange-500 dark:text-orange-400">You May Also Like</p>
+              <h2 className="mt-2 text-2xl font-bold text-gray-900 dark:text-white">Other Brands</h2>
+            </div>
+            {isFetching ? (
+              <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+                {Array.from({ length: 6 }).map((_, i) => <BrandCardSkeleton key={i} />)}
+              </div>
+            ) : allBrands.filter(b => b.id !== selectedBrandItem.id).length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <p className="text-sm text-gray-500 dark:text-gray-400">No other brands available</p>
+              </div>
+            ) : (
+              <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+                {allBrands
+                  .filter(b => b.id !== selectedBrandItem.id)
+                  .slice(0, 6)
+                  .map((brand) => {
+                    const brandSlug = toSlug(brand.name)
+
+                    return (
+                      <Link
+                        key={brand.id}
+                        href={`/by-brand?brand=${encodeURIComponent(brandSlug)}`}
+                        className="group flex flex-col items-center rounded-lg border border-gray-200 dark:border-gray-700 p-4 text-center hover:border-orange-500 dark:hover:border-orange-400 transition-colors"
+                      >
+                        <div className="relative flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded">
+                          {brand.image ? (
+                            <Image src={brand.image} alt={brand.name} fill className="object-contain p-1" unoptimized />
+                          ) : (
+                            <span className="text-lg font-semibold text-gray-400 dark:text-gray-600">
+                              {getBrandInitials(brand.name)}
+                            </span>
+                          )}
+                        </div>
+                        <h3 className="mt-3 truncate text-sm font-medium text-gray-900 dark:text-gray-100">
+                          {highlightText(brand.name, searchQuery)}
+                        </h3>
+                      </Link>
+                    )
+                  })}
               </div>
             )}
           </div>
         )}
       </div>
+      <Footer />
+      <ScrollToTop />
+      <Chat
+        isOpen={isChatOpen}
+        onClose={() => setIsChatOpen(false)}
+        brandName={selectedBrandItem?.name}
+        brandImage={selectedBrandItem?.image || undefined}
+      />
     </main>
   )
 }

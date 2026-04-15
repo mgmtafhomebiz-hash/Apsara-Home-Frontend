@@ -1,10 +1,14 @@
 @import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,600;9..144,700&family=Manrope:wght@400;500;600;700&display=swap");
 @import "tailwindcss";
-@custom-variant dark (&:where(.dark, .dark *));
 @import "@heroui/styles";
 @plugin "@tailwindcss/typography";
 @source "../node_modules/@heroui/react/dist/**/*.{js,ts,jsx,tsx}";
 @source "../node_modules/@heroui/styles/dist/**/*.{js,ts,jsx,tsx}";
+
+/* Override HeroUI's dark variant — removes the system prefers-color-scheme fallback
+   so dark: classes only apply when the .dark class is explicitly set (via next-themes),
+   not based on the OS dark mode preference. */
+@custom-variant dark (&:where(.dark, .dark *));
 
 :root {
   --af-cream: #faf8f5;
@@ -16,12 +20,12 @@
 
 html {
   scroll-behavior: smooth;
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 body {
   font-family: var(--font-poppins), system-ui, sans-serif;
-  overflow-x: hidden;
+  overflow-x: clip;
   width: 100%;
 }
 
@@ -55,6 +59,12 @@ body {
 
 .font-caveat {
   font-family: "Fraunces", serif;
+}
+
+@utility container {
+  width: 100%;
+  max-width: 87.5rem; /* 1400px — matches landing page max-w-[1400px] */
+  margin-inline: auto;
 }
 
 @keyframes marquee {

@@ -53,14 +53,14 @@ export default function TrainingSupportSection() {
   ];
 
   return (
-    <section id="training" className="py-16 md:py-24 bg-white dark:bg-gray-950 overflow-hidden relative">
+    <section id="training" className="py-16 md:py-24 !bg-white dark:!bg-gray-950 overflow-hidden relative">
       {/* Background Decor */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
         <div className="absolute top-10 sm:top-20 -left-10 sm:-left-20 w-56 h-56 sm:w-72 sm:h-72 md:w-80 md:h-80 bg-orange-50 rounded-full mix-blend-multiply filter blur-3xl opacity-40 sm:opacity-50" />
         <div className="absolute bottom-10 sm:bottom-20 -right-10 sm:-right-20 w-56 h-56 sm:w-72 sm:h-72 md:w-80 md:h-80 bg-blue-50 rounded-full mix-blend-multiply filter blur-3xl opacity-40 sm:opacity-50" />
       </div>
 
-      <div className="max-w-[1400px] mx-auto px-6 md:px-10 lg:px-20 relative z-10">
+      <div className="container mx-auto px-4 relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
           
           {/* Text Content */}
@@ -126,20 +126,20 @@ export default function TrainingSupportSection() {
                 whileInView={{ opacity: 1, x: 0, rotateY: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.8 }}
-                className="relative z-10 bg-gray-900 rounded-3xl shadow-2xl p-6 border border-gray-800"
+                className="relative z-10 bg-white dark:bg-gray-900 rounded-3xl shadow-2xl p-6 border border-gray-100 dark:border-gray-800"
              >
                 <div className="flex items-center justify-between mb-6">
-                   <h3 className="text-white font-bold text-lg flex items-center gap-2">
+                   <h3 className="text-gray-900 dark:text-white font-bold text-lg flex items-center gap-2">
                       <Video size={20} className="text-orange-500" />
                       Training Library
                    </h3>
-                   <span className="text-xs font-medium text-gray-400 bg-gray-800 px-3 py-1 rounded-full">50+ Videos</span>
+                   <span className="text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full">50+ Videos</span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                    {webinars.map((webinar, index) => (
                       <div key={index} className="group cursor-pointer">
-                         <div className="relative rounded-xl overflow-hidden mb-2 aspect-video bg-gray-800">
+                         <div className="relative rounded-xl overflow-hidden mb-2 aspect-video bg-gray-100 dark:bg-gray-800">
                             <img 
                               src={webinar.image} 
                               alt={webinar.title} 
@@ -155,8 +155,8 @@ export default function TrainingSupportSection() {
                                {webinar.duration}
                             </div>
                          </div>
-                         <h4 className="text-white text-sm font-semibold leading-tight mb-1 group-hover:text-orange-400 transition-colors line-clamp-1">{webinar.title}</h4>
-                         <p className="text-gray-500 text-xs">{webinar.category}</p>
+                         <h4 className="text-gray-900 dark:text-white text-sm font-semibold leading-tight mb-1 group-hover:text-orange-400 transition-colors line-clamp-1">{webinar.title}</h4>
+                         <p className="text-gray-500 dark:text-gray-400 text-xs">{webinar.category}</p>
                       </div>
                    ))}
                 </div>
