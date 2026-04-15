@@ -13,7 +13,7 @@ const testimonials = [
   },
   {
     id: 2,
-    name: 'James Rodriguez',
+    name: 'Kurt Rodriguez',
     role: 'Architect',
     image: 'https://t3.ftcdn.net/jpg/06/69/31/58/360_F_669315870_bzhKwzvSERkba6LsjmNh5FhXDtLtM1TS.jpg',
     content:

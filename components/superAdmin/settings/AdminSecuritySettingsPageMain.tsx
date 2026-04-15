@@ -1,13 +1,31 @@
 'use client'
 
-import { useState } from 'react'
-import { showSuccessToast } from '@/libs/toast'
+import { useEffect, useRef, useState } from 'react'
+import { showErrorToast, showSuccessToast } from '@/libs/toast'
+import {
+  useGetAdminSecuritySettingsQuery,
+  useUpdateAdminSecuritySettingsMutation,
+} from '@/store/api/adminSettingsApi'
 
 export default function AdminSecuritySettingsPageMain() {
-  const [sessionTimeout, setSessionTimeout] = useState('30')
+  const { data, isFetching } = useGetAdminSecuritySettingsQuery()
+  const [saveSettings, { isLoading: isSaving }] = useUpdateAdminSecuritySettingsMutation()
+  const hasHydrated = useRef(false)
+
+  const [sessionTimeout, setSessionTimeout] = useState('60')
   const [maxLoginAttempts, setMaxLoginAttempts] = useState('5')
   const [passwordMinLength, setPasswordMinLength] = useState('8')
   const [enable2fa, setEnable2fa] = useState(false)
+
+  useEffect(() => {
+    if (!data?.settings || hasHydrated.current) return
+    const settings = data.settings
+    setSessionTimeout(String(settings.session_timeout_minutes ?? 60))
+    setMaxLoginAttempts(String(settings.max_login_attempts ?? 5))
+    setPasswordMinLength(String(settings.password_min_length ?? 8))
+    setEnable2fa(Boolean(settings.enable_2fa))
+    hasHydrated.current = true
+  }, [data])
 
   return (
     <div className="space-y-8">
@@ -84,10 +102,46 @@ export default function AdminSecuritySettingsPageMain() {
       <div className="flex flex-wrap items-center justify-end gap-3">
         <button
           type="button"
-          onClick={() => showSuccessToast('Security settings saved (UI only).')}
+          onClick={async () => {
+            const sessionTimeoutValue = Number.parseInt(sessionTimeout, 10)
+            const maxLoginAttemptsValue = Number.parseInt(maxLoginAttempts, 10)
+            const passwordMinLengthValue = Number.parseInt(passwordMinLength, 10)
+
+            if (!Number.isFinite(sessionTimeoutValue) || sessionTimeoutValue < 5 || sessionTimeoutValue > 1440) {
+              showErrorToast('Session timeout must be between 5 and 1440 minutes.')
+              return
+            }
+            if (!Number.isFinite(maxLoginAttemptsValue) || maxLoginAttemptsValue < 1 || maxLoginAttemptsValue > 20) {
+              showErrorToast('Max login attempts must be between 1 and 20.')
+              return
+            }
+            if (!Number.isFinite(passwordMinLengthValue) || passwordMinLengthValue < 6 || passwordMinLengthValue > 64) {
+              showErrorToast('Password minimum length must be between 6 and 64.')
+              return
+            }
+
+            try {
+              const response = await saveSettings({
+                session_timeout_minutes: sessionTimeoutValue,
+                max_login_attempts: maxLoginAttemptsValue,
+                password_min_length: passwordMinLengthValue,
+                enable_2fa: enable2fa,
+              }).unwrap()
+
+              setSessionTimeout(String(response.settings.session_timeout_minutes))
+              setMaxLoginAttempts(String(response.settings.max_login_attempts))
+              setPasswordMinLength(String(response.settings.password_min_length))
+              setEnable2fa(Boolean(response.settings.enable_2fa))
+              showSuccessToast(response.message || 'Security settings saved.')
+            } catch (error) {
+              console.error(error)
+              showErrorToast('Failed to save security settings. Please try again.')
+            }
+          }}
+          disabled={isSaving || isFetching}
           className="rounded-full bg-gradient-to-r from-cyan-600 to-sky-500 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:shadow-md"
         >
-          Save Settings
+          {isSaving ? 'Saving...' : 'Save Settings'}
         </button>
       </div>
     </div>

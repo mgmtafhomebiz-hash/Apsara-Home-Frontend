@@ -1,7 +1,9 @@
 'use client'
 
-import { ReactNode } from 'react'
+import { ReactNode, useEffect } from 'react'
+import { useSession } from 'next-auth/react'
 import { useAppDispatch, useAppSelector } from '@/store/hooks'
+import { useGetCartQuery } from '@/store/api/cartApi'
 import {
   addToCart as addToCartAction,
   removeFromCart as removeFromCartAction,
@@ -9,6 +11,7 @@ import {
   setCartOpen,
   toggleCartItemSelected as toggleCartItemSelectedAction,
   setCartSelection as setCartSelectionAction,
+  setCartItems,
 } from '@/store/slices/cartSlice'
 
 export interface CartItem {
@@ -53,7 +56,34 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
 export function useCart(): CartContextType {
   const dispatch = useAppDispatch()
+  const { data: session } = useSession()
+  const isLoggedIn = Boolean(session?.user)
   const { items, isOpen, selectedIds } = useAppSelector((state) => state.cart)
+  const { data: cartData, isLoading: isCartLoading } = useGetCartQuery(undefined, {
+    skip: !isLoggedIn,
+  })
+
+  // Sync cart items from backend when logged in
+  useEffect(() => {
+    if (isLoggedIn && cartData?.cart_items) {
+      const backendItems: CartItem[] = cartData.cart_items.map((item) => ({
+        id: String(item.crt_product_id),
+        name: item.product_name || `Product ${item.crt_product_id}`,
+        price: Number(item.crt_unit_price),
+        originalPrice: item.product_price_srp ? Number(item.product_price_srp) : null,
+        image: item.product_image || '',
+        quantity: item.crt_quantity,
+        prodpv: item.product_prodpv ? Number(item.product_prodpv) : null,
+        brand: item.brand_name || null,
+        selectedColor: item.crt_selected_color || null,
+        selectedStyle: item.crt_selected_type || null,
+        selectedSize: item.crt_selected_size || null,
+        selectedType: item.crt_selected_type || null,
+        selectedSku: null,
+      }))
+      dispatch(setCartItems(backendItems))
+    }
+  }, [isLoggedIn, cartData, dispatch])
 
   const addToCart = (item: Omit<CartItem, 'quantity'>) => {
     dispatch(addToCartAction(item))

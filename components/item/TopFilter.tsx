@@ -1,0 +1,192 @@
+'use client'
+
+import { useState } from 'react'
+
+interface TopFilterProps {
+  onSearchChange?: (search: string) => void
+  onViewTypeChange?: (viewType: 'grid' | 'list') => void
+  onShowNumberChange?: (showNumber: number | 'all') => void
+  onSortChange?: (sort: string) => void
+  searchValue?: string
+  viewType?: 'grid' | 'list'
+  showNumber?: number | 'all'
+  sortValue?: string
+  className?: string
+}
+
+const SHOW_NUMBER_OPTIONS = ['All', 12, 24, 48, 96]
+const SORT_OPTIONS = [
+  { value: 'default', label: 'Default' },
+  { value: 'name-asc', label: 'Name: A to Z' },
+  { value: 'name-desc', label: 'Name: Z to A' },
+  { value: 'price-asc', label: 'Price: Low to High' },
+  { value: 'price-desc', label: 'Price: High to Low' }
+]
+
+export default function TopFilter({
+  onSearchChange,
+  onViewTypeChange,
+  onShowNumberChange,
+  onSortChange,
+  searchValue = '',
+  viewType = 'grid',
+  showNumber = 12,
+  sortValue = 'default',
+  className = ''
+}: TopFilterProps) {
+  const [search, setSearch] = useState(searchValue)
+  const [currentViewType, setCurrentViewType] = useState<'grid' | 'list'>(viewType)
+  const [currentShowNumber, setCurrentShowNumber] = useState<number | 'all'>(showNumber)
+  const [currentSort, setCurrentSort] = useState(sortValue)
+  const [showGridTooltip, setShowGridTooltip] = useState(false)
+  const [showListTooltip, setShowListTooltip] = useState(false)
+
+  const handleSearchChange = (value: string) => {
+    setSearch(value)
+    onSearchChange?.(value)
+  }
+
+  const handleViewTypeChange = (type: 'grid' | 'list') => {
+    setCurrentViewType(type)
+    onViewTypeChange?.(type)
+  }
+
+  const handleShowNumberChange = (number: number | 'all') => {
+    setCurrentShowNumber(number)
+    onShowNumberChange?.(number)
+  }
+
+  const handleSortChange = (sort: string) => {
+    setCurrentSort(sort)
+    onSortChange?.(sort)
+  }
+
+  return (
+    <div className={`bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 ${className}`}>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        {/* Search bar */}
+        <div className="relative flex-1">
+          <svg 
+            xmlns="http://www.w3.org/2000/svg" 
+            width="18" 
+            height="18" 
+            viewBox="0 0 24 24" 
+            fill="none" 
+            stroke="currentColor" 
+            strokeWidth="2" 
+            className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 pointer-events-none"
+          >
+            <circle cx="11" cy="11" r="8" />
+            <path d="m21 21-4.35-4.35" />
+          </svg>
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => handleSearchChange(e.target.value)}
+            placeholder="Search products..."
+            className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 py-3 pl-12 pr-12 text-base text-gray-700 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-orange-400 focus:bg-white dark:focus:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-orange-400/30 transition-all"
+          />
+          {search && (
+            <button
+              onClick={() => handleSearchChange('')}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400 transition-colors"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+          )}
+        </div>
+
+        {/* Right side controls */}
+        <div className="flex items-center gap-4">
+          {/* Sort dropdown */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Sort:</span>
+            <select
+              value={currentSort}
+              onChange={(e) => handleSortChange(e.target.value)}
+              className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-700 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-400/30 transition-all cursor-pointer hover:border-orange-300"
+            >
+              {SORT_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Show number dropdown */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Show:</span>
+            <select
+              value={currentShowNumber}
+              onChange={(e) => handleShowNumberChange(e.target.value === 'All' ? 'all' : Number(e.target.value))}
+              className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-700 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-400/30 transition-all cursor-pointer hover:border-orange-300"
+            >
+              {SHOW_NUMBER_OPTIONS.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* View toggle */}
+          <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+            <div className="relative">
+              <button
+                onClick={() => handleViewTypeChange('grid')}
+                className={`p-2 rounded-md transition-colors cursor-pointer hover:scale-105 ${
+                  currentViewType === 'grid'
+                    ? 'bg-white dark:bg-gray-600 text-orange-500 shadow-sm'
+                    : 'text-gray-600 dark:text-gray-300 hover:text-orange-500 dark:hover:text-orange-400'
+                }`}
+                onMouseEnter={() => setShowGridTooltip(true)}
+                onMouseLeave={() => setShowGridTooltip(false)}
+                title="Grid View"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="3" y="3" width="7" height="7" />
+                  <rect x="14" y="3" width="7" height="7" />
+                  <rect x="14" y="14" width="7" height="7" />
+                  <rect x="3" y="14" width="7" height="7" />
+                </svg>
+              </button>
+              {showGridTooltip && (
+                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 px-2 py-1 bg-gray-900 dark:bg-gray-700 text-white text-xs rounded whitespace-nowrap z-10">
+                  Grid View
+                </div>
+              )}
+            </div>
+            <div className="relative">
+              <button
+                onClick={() => handleViewTypeChange('list')}
+                className={`p-2 rounded-md transition-colors cursor-pointer hover:scale-105 ${
+                  currentViewType === 'list'
+                    ? 'bg-white dark:bg-gray-600 text-orange-500 shadow-sm'
+                    : 'text-gray-600 dark:text-gray-300 hover:text-orange-500 dark:hover:text-orange-400'
+                }`}
+                onMouseEnter={() => setShowListTooltip(true)}
+                onMouseLeave={() => setShowListTooltip(false)}
+                title="List View"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                  <line x1="3" y1="9" x2="21" y2="9" />
+                  <line x1="3" y1="15" x2="21" y2="15" />
+                </svg>
+              </button>
+              {showListTooltip && (
+                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 px-2 py-1 bg-gray-900 dark:bg-gray-700 text-white text-xs rounded whitespace-nowrap z-10">
+                  List View
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
