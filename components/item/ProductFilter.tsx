@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import type { Category } from '@/store/api/categoriesApi'
 
 export interface FilterState {
   priceRange: [number, number]
@@ -18,9 +19,11 @@ interface ProductFilterProps {
   className?: string
   pvRange?: [number, number]
   search?: string
+  categories?: Category[]
+  currentCategory?: string
 }
 
-export default function ProductFilter({ onFilterChange, className = '', pvRange: propPvRange = [0, 5000], search: propSearch = '' }: ProductFilterProps) {
+export default function ProductFilter({ onFilterChange, className = '', pvRange: propPvRange = [0, 5000], search: propSearch = '', categories = [], currentCategory }: ProductFilterProps) {
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 10000])
   const [sortBy, setSortBy] = useState<'default' | 'asc' | 'desc'>('default')
   const [inStockOnly, setInStockOnly] = useState(false)
@@ -215,6 +218,34 @@ export default function ProductFilter({ onFilterChange, className = '', pvRange:
   return (
     <div className={`bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 ${className}`}>
       <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-6">Filters</h3>
+      
+      {/* Category Filter for Category Page Only */}
+      <div className="mb-6">
+        <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">Shop Category</h4>
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => onFilterChange({ ...{ priceRange, sortBy, inStock: inStockOnly, discountOnly, minDiscount, pvRange, search: '', hasPvOnly } })}
+            className={`px-3 py-1 rounded-full text-sm font-medium transition-colors cursor-pointer ${
+              !currentCategory && !propSearch ? 'bg-orange-100 text-orange-600' : 'bg-gray-100 text-gray-600'
+            }`}
+          >
+            All Products
+          </button>
+          {categories.map((category) => (
+            <button
+              key={category.id}
+              onClick={() => onFilterChange({ ...{ priceRange, sortBy, inStock: inStockOnly, discountOnly, minDiscount, pvRange, search: category.name, hasPvOnly } })}
+              className={`px-3 py-1 rounded-full text-sm font-medium transition-colors cursor-pointer ${
+                currentCategory === category.name || propSearch === category.name
+                  ? 'bg-orange-100 text-orange-600'
+                  : 'bg-gray-100 text-gray-600'
+              }`}
+            >
+              {category.name}
+            </button>
+          ))}
+        </div>
+      </div>
 
       {/* Price Range Filter */}
       <div className="mb-6">
