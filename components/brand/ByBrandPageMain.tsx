@@ -107,7 +107,7 @@ export default function ByBrandPageMain() {
   const selectedBrand = searchParams.get('brand')?.trim().toLowerCase() ?? ''
   const [letterFilter, setLetterFilter] = useState<string>('ALL')
   const [searchQuery, setSearchQuery] = useState('')
-  const [sortBy, setSortBy] = useState<'name-asc' | 'name-desc' | 'default'>('default')
+  const [sortBy, setSortBy] = useState<'name-asc' | 'name-desc' | 'price-asc' | 'price-desc' | 'default'>('default')
   const [filters, setFilters] = useState<FilterState>({
     priceRange: [0, 10000],
     sortBy: 'default',

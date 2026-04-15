@@ -306,7 +306,7 @@ export default function CategoryListProductMain({
                                         ? 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4'
                                         : 'flex flex-col gap-3'
                                 }>
-                                    {paginatedProducts.map((product, i) => (
+                                    {paginatedProducts.filter((product): product is CategoryProduct & { id: number } => product.id !== undefined).map((product, i) => (
                                         <motion.div
                                             key={`${product.name}-${i}`}
                                             initial={{ opacity: 0, y: 14 }}
