@@ -285,15 +285,17 @@ function CampaignBannersSection({
               transition={{ duration: 0.42, delay: index * 0.08 }}
             >
               <Link href={banner.link} className="group relative block overflow-hidden rounded-3xl border border-slate-200 dark:border-gray-700 bg-slate-200 dark:bg-gray-800 p-5">
-            <Image src={banner.image} alt={banner.title} fill className="object-cover transition-transform duration-700 group-hover:scale-105" unoptimized />
-            <div className="absolute inset-0 bg-gradient-to-r from-slate-950/75 to-slate-900/20" />
-            <div className="relative flex min-h-[170px] flex-col justify-end text-white">
-              <p className="text-xl font-bold">{banner.title}</p>
-              <p className="mt-1 max-w-[240px] text-sm text-white/80">{banner.subtitle}</p>
-            </div>
-          </div>
-        </Link>
-      </motion.div>
+                <Image src={banner.image} alt={banner.title} fill className="object-cover transition-transform duration-700 group-hover:scale-105" unoptimized />
+                <div className="absolute inset-0 bg-gradient-to-r from-slate-950/75 to-slate-900/20"></div>
+                <div className="relative flex min-h-[170px] flex-col justify-end text-white">
+                  <p className="text-xl font-bold">{banner.title}</p>
+                  <p className="mt-1 max-w-[240px] text-sm text-white/80">{banner.subtitle}</p>
+                </div>
+              </Link>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </div>
     </motion.section>
   )
 }
@@ -382,28 +384,28 @@ function FeaturedCollectionSection({
             transition={{ duration: 0.55 }}
           >
             <Link href={buttonLink} className="group relative block aspect-[4/5] overflow-hidden rounded-3xl">
-            <Image
-              src={getField(section, 'lead_image') || '/Images/FeaturedSection/home_living.jpg'}
-              alt={getField(section, 'left_heading') || 'Featured collection'}
-              fill
-              className="object-cover transition-transform duration-700 group-hover:scale-105"
-              unoptimized
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-            <div className="absolute bottom-8 left-8 right-8">
-              <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-orange-300">
-                {getField(section, 'left_eyebrow') || 'Featured'}
-              </p>
-              <h2 className="mb-3 text-3xl font-bold leading-tight text-white">
-                {getField(section, 'left_heading') || 'Minimal & Simple Design'}
-              </h2>
-              <p className="mb-5 text-sm text-white/60">
-                {getField(section, 'left_description') || 'Crafted for the modern home.'}
-              </p>
-              <span className="inline-flex rounded-xl bg-orange-500 px-6 py-3 text-sm font-semibold text-white">
-                {buttonText}
-              </span>
-            </div>
+              <Image
+                src={getField(section, 'lead_image') || '/Images/FeaturedSection/home_living.jpg'}
+                alt={getField(section, 'left_heading') || 'Featured collection'}
+                fill
+                className="object-cover transition-transform duration-700 group-hover:scale-105"
+                unoptimized
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
+              <div className="absolute bottom-8 left-8 right-8">
+                <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-orange-300">
+                  {getField(section, 'left_eyebrow') || 'Featured'}
+                </p>
+                <h2 className="mb-3 text-3xl font-bold leading-tight text-white">
+                  {getField(section, 'left_heading') || 'Minimal & Simple Design'}
+                </h2>
+                <p className="mb-5 text-sm text-white/60">
+                  {getField(section, 'left_description') || 'Crafted for the modern home.'}
+                </p>
+                <span className="inline-flex rounded-xl bg-orange-500 px-6 py-3 text-sm font-semibold text-white">
+                  {buttonText}
+                </span>
+              </div>
             </Link>
           </motion.div>
 
@@ -505,17 +507,17 @@ function PromoPairSection({ section, partnerSlug }: { section: WebPageItem; part
               transition={{ duration: 0.42, delay: index * 0.08 }}
             >
               <Link href={promo.link} className="group relative block h-96 overflow-hidden rounded-3xl">
-            <Image src={promo.image} alt={promo.heading} fill className="object-cover transition-transform duration-700 group-hover:scale-105" unoptimized />
-            <div className={`absolute inset-0 bg-gradient-to-t ${promo.tone}`} />
-            <div className="absolute inset-0 p-8">
-              <div className="flex h-full flex-col justify-end">
-                <p className={`mb-2 text-xs font-semibold uppercase tracking-widest ${promo.badge}`}>{promo.eyebrow}</p>
-                <h3 className="mb-5 text-2xl font-bold leading-tight text-white">{promo.heading}</h3>
-                <span className="inline-flex w-fit rounded-xl bg-white/15 px-5 py-2.5 text-sm font-semibold text-white backdrop-blur-sm">
-                  {promo.button}
-                </span>
-              </div>
-            </div>
+                <Image src={promo.image} alt={promo.heading} fill className="object-cover transition-transform duration-700 group-hover:scale-105" unoptimized />
+                <div className={`absolute inset-0 bg-gradient-to-t ${promo.tone}`}></div>
+                <div className="absolute inset-0 p-8">
+                  <div className="flex h-full flex-col justify-end">
+                    <p className={`mb-2 text-xs font-semibold uppercase tracking-widest ${promo.badge}`}>{promo.eyebrow}</p>
+                    <h3 className="mb-5 text-2xl font-bold leading-tight text-white">{promo.heading}</h3>
+                    <span className="inline-flex w-fit rounded-xl bg-white/15 px-5 py-2.5 text-sm font-semibold text-white backdrop-blur-sm">
+                      {promo.button}
+                    </span>
+                  </div>
+                </div>
               </Link>
             </motion.div>
           ))}
