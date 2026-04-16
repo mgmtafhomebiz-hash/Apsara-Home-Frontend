@@ -27,6 +27,24 @@ export interface MembersStatsResponse {
   totalReferrals: number
 }
 
+export type MemberStatKey =
+  | 'total_members'
+  | 'active'
+  | 'pending'
+  | 'blocked'
+  | 'new_members'
+  | 'total_spent'
+  | 'total_earnings'
+  | 'total_referrals'
+
+export interface MemberStatDetailsResponse {
+  stat: MemberStatKey
+  title: string
+  metricLabel: string
+  members: Array<Member & { metricValue: string }>
+  meta: MembersMeta
+}
+
 export type ReferralAdminStatus = 'active' | 'pending' | 'blocked' | 'kyc_review'
 
 export interface AdminReferralNode {
@@ -170,6 +188,18 @@ export const membersApi = baseApi.injectEndpoints({
       keepUnusedDataFor: 300,
       providesTags: ['Members'],
     }),
+    getMemberStatDetails: builder.query<MemberStatDetailsResponse, { stat: MemberStatKey; page?: number; perPage?: number }>({
+      query: ({ stat, page = 1, perPage = 25 }) => ({
+        url: `/api/admin/members/stats/${stat}`,
+        method: 'GET',
+        params: {
+          page,
+          per_page: perPage,
+        },
+      }),
+      keepUnusedDataFor: 120,
+      providesTags: ['Members'],
+    }),
     getMembersReferralTree: builder.query<AdminReferralTreeResponse, void>({
       query: () => '/api/admin/members/referrals',
       keepUnusedDataFor: 120,
@@ -234,6 +264,7 @@ export const {
   useGetMembersQuery,
   useLazyGetMembersQuery,
   useGetMembersStatsQuery,
+  useLazyGetMemberStatDetailsQuery,
   useGetMembersReferralTreeQuery,
   useGetMembersKycQuery,
   useUpdateMemberMutation,
