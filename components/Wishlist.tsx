@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
@@ -31,10 +31,19 @@ const CartIcon = () => (
 export default function Wishlist() {
   const router = useRouter();
   const pathname = usePathname();
-  const { data: session, status } = useSession();
+  const { data: session, status, update: updateSession } = useSession();
   const isAuthenticated = Boolean(session?.user);
   const [pendingRemoveId, setPendingRemoveId] = useState<number | null>(null);
   const [search, setSearch] = useState('');
+  const [hasRefreshedSession, setHasRefreshedSession] = useState(false);
+
+  // Refresh session once on component mount to handle login redirects
+  useEffect(() => {
+    if (!hasRefreshedSession && updateSession && !isAuthenticated) {
+      updateSession();
+      setHasRefreshedSession(true);
+    }
+  }, []);
 
   const {
     data: items = [],
