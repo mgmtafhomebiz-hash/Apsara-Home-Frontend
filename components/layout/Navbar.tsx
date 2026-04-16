@@ -847,27 +847,55 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                           <Link
                             href="/profile"
                             onClick={() => setProfileMenuOpen(false)}
-                            className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group"
+                            className={`flex items-center gap-3 px-4 py-2.5 text-sm transition-colors group ${
+                              pathname === '/profile'
+                                ? 'bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400'
+                                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
+                            }`}
                           >
-                            <span className="flex items-center justify-center h-7 w-7 rounded-lg bg-gray-100 dark:bg-gray-700 group-hover:bg-orange-100 dark:group-hover:bg-orange-900/30 transition-colors shrink-0">
-                              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-500 dark:text-gray-400 group-hover:text-orange-600 transition-colors">
+                            <span className={`flex items-center justify-center h-7 w-7 rounded-lg transition-colors shrink-0 ${
+                              pathname === '/profile'
+                                ? 'bg-orange-100 dark:bg-orange-900/40'
+                                : 'bg-gray-100 dark:bg-gray-700 group-hover:bg-orange-100 dark:group-hover:bg-orange-900/30'
+                            }`}>
+                              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={`transition-colors ${
+                                pathname === '/profile'
+                                  ? 'text-orange-600 dark:text-orange-400'
+                                  : 'text-gray-500 dark:text-gray-400 group-hover:text-orange-600'
+                              }`}>
                                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                                 <circle cx="12" cy="7" r="4" />
                               </svg>
                             </span>
                             <div>
                               <p className="font-medium">My Profile</p>
-                              <p className="text-xs text-gray-400 dark:text-gray-500">View & edit your info</p>
+                              <p className={`text-xs ${
+                                pathname === '/profile'
+                                  ? 'text-orange-600 dark:text-orange-500'
+                                  : 'text-gray-400 dark:text-gray-500'
+                              }`}>View & edit your info</p>
                             </div>
                           </Link>
 
                           <Link
                             href="/orders"
                             onClick={() => setProfileMenuOpen(false)}
-                            className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group"
+                            className={`flex items-center gap-3 px-4 py-2.5 text-sm transition-colors group ${
+                              pathname === '/orders'
+                                ? 'bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400'
+                                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
+                            }`}
                           >
-                            <span className="flex items-center justify-center h-7 w-7 rounded-lg bg-gray-100 dark:bg-gray-700 group-hover:bg-orange-100 dark:group-hover:bg-orange-900/30 transition-colors shrink-0">
-                              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-500 dark:text-gray-400 group-hover:text-orange-600 transition-colors">
+                            <span className={`flex items-center justify-center h-7 w-7 rounded-lg transition-colors shrink-0 ${
+                              pathname === '/orders'
+                                ? 'bg-orange-100 dark:bg-orange-900/40'
+                                : 'bg-gray-100 dark:bg-gray-700 group-hover:bg-orange-100 dark:group-hover:bg-orange-900/30'
+                            }`}>
+                              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={`transition-colors ${
+                                pathname === '/orders'
+                                  ? 'text-orange-600 dark:text-orange-400'
+                                  : 'text-gray-500 dark:text-gray-400 group-hover:text-orange-600'
+                              }`}>
                                 <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
                                 <line x1="3" y1="6" x2="21" y2="6" />
                                 <path d="M16 10a4 4 0 0 1-8 0" />
@@ -875,23 +903,43 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                             </span>
                             <div>
                               <p className="font-medium">My Orders</p>
-                              <p className="text-xs text-gray-400 dark:text-gray-500">Track your purchases</p>
+                              <p className={`text-xs ${
+                                pathname === '/orders'
+                                  ? 'text-orange-600 dark:text-orange-500'
+                                  : 'text-gray-400 dark:text-gray-500'
+                              }`}>Track your purchases</p>
                             </div>
                           </Link>
 
                           <Link
                             href="/wishlist"
                             onClick={() => setProfileMenuOpen(false)}
-                            className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group"
+                            className={`flex items-center gap-3 px-4 py-2.5 text-sm transition-colors group ${
+                              pathname === '/wishlist'
+                                ? 'bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400'
+                                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
+                            }`}
                           >
-                            <span className="flex items-center justify-center h-7 w-7 rounded-lg bg-gray-100 dark:bg-gray-700 group-hover:bg-orange-100 dark:group-hover:bg-orange-900/30 transition-colors shrink-0">
-                              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-500 dark:text-gray-400 group-hover:text-orange-600 transition-colors">
+                            <span className={`flex items-center justify-center h-7 w-7 rounded-lg transition-colors shrink-0 ${
+                              pathname === '/wishlist'
+                                ? 'bg-orange-100 dark:bg-orange-900/40'
+                                : 'bg-gray-100 dark:bg-gray-700 group-hover:bg-orange-100 dark:group-hover:bg-orange-900/30'
+                            }`}>
+                              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={`transition-colors ${
+                                pathname === '/wishlist'
+                                  ? 'text-orange-600 dark:text-orange-400'
+                                  : 'text-gray-500 dark:text-gray-400 group-hover:text-orange-600'
+                              }`}>
                                 <path d="m12 21-1.45-1.32C5.4 15.36 2 12.28 2 8.5A4.5 4.5 0 0 1 6.5 4 5 5 0 0 1 12 6.09 5 5 0 0 1 17.5 4 4.5 4.5 0 0 1 22 8.5c0 3.78-3.4 6.86-8.55 11.18z" />
                               </svg>
                             </span>
                             <div>
                               <p className="font-medium">Wishlist</p>
-                              <p className="text-xs text-gray-400 dark:text-gray-500">Your saved items</p>
+                              <p className={`text-xs ${
+                                pathname === '/wishlist'
+                                  ? 'text-orange-600 dark:text-orange-500'
+                                  : 'text-gray-400 dark:text-gray-500'
+                              }`}>Your saved items</p>
                             </div>
                           </Link>
                         </div>
