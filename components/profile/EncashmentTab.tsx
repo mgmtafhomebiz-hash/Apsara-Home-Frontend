@@ -50,10 +50,10 @@ const formatCooldownRemaining = (minutes: number) => {
 };
 
 const statusStyle: Record<string, string> = {
-  pending: 'bg-amber-50 text-amber-700 border-amber-200',
-  approved: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-  rejected: 'bg-red-50 text-red-700 border-red-200',
-  released: 'bg-blue-50 text-blue-700 border-blue-200',
+  pending: 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800',
+  approved: 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800',
+  rejected: 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800',
+  released: 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800',
 };
 
 type FormState = {
@@ -131,12 +131,12 @@ function VerificationField({
 }) {
   return (
     <label className="space-y-1.5">
-      <span className={`block text-xs font-semibold ${error ? 'text-red-700' : 'text-amber-900'}`}>
+      <span className={`block text-xs font-semibold ${error ? 'text-red-700 dark:text-red-400' : 'text-amber-900 dark:text-amber-300'}`}>
         {label}
-        {required ? <span className="ml-1 text-red-500">*</span> : null}
+        {required ? <span className="ml-1 text-red-500 dark:text-red-400">*</span> : null}
       </span>
       {children}
-      {error ? <span className="block text-[11px] font-medium text-red-600">{error}</span> : null}
+      {error ? <span className="block text-[11px] font-medium text-red-600 dark:text-red-400">{error}</span> : null}
     </label>
   );
 }
@@ -397,10 +397,10 @@ const EncashmentTab = () => {
 
   const verificationInputClass = (field: VerificationFieldKey, extra = '') =>
     [
-      'w-full rounded-xl px-3.5 py-2.5 text-sm bg-white/90 focus:outline-none focus:ring-2 transition-colors',
+      'w-full rounded-xl px-3.5 py-2.5 text-sm bg-white/90 dark:bg-gray-900/90 focus:outline-none focus:ring-2 transition-colors',
       verificationErrors[field]
-        ? 'border border-red-300 text-red-900 placeholder:text-red-300 focus:ring-red-200'
-        : 'border border-amber-200 text-amber-900 focus:ring-amber-200',
+        ? 'border border-red-300 dark:border-red-800 text-red-900 dark:text-red-300 placeholder:text-red-300 dark:placeholder:text-red-700 focus:ring-red-200 dark:focus:ring-red-900/50'
+        : 'border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-100 dark:placeholder:text-amber-700 focus:ring-amber-200 dark:focus:ring-amber-900/50',
       extra,
     ].join(' ');
 
@@ -794,17 +794,17 @@ const EncashmentTab = () => {
   return (
     <div className="space-y-5">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <div className="rounded-xl border border-gray-200 bg-white p-4">
-          <p className="text-xs uppercase tracking-wide text-gray-500">Total Requested</p>
-          <p className="mt-1 text-lg font-bold text-gray-900">{money.format(summary.total)}</p>
+        <div className="rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-800 p-4">
+          <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Total Requested</p>
+          <p className="mt-1 text-lg font-bold text-gray-900 dark:text-white">{money.format(summary.total)}</p>
         </div>
-        <div className="rounded-xl border border-gray-200 bg-white p-4">
-          <p className="text-xs uppercase tracking-wide text-gray-500">Pending Requests</p>
-          <p className="mt-1 text-lg font-bold text-amber-700">{summary.pending}</p>
+        <div className="rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-800 p-4">
+          <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Pending Requests</p>
+          <p className="mt-1 text-lg font-bold text-amber-700 dark:text-amber-400">{summary.pending}</p>
         </div>
-        <div className="rounded-xl border border-gray-200 bg-white p-4">
-          <p className="text-xs uppercase tracking-wide text-gray-500">Total Released</p>
-          <p className="mt-1 text-lg font-bold text-emerald-700">{money.format(summary.released)}</p>
+        <div className="rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-800 p-4">
+          <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Total Released</p>
+          <p className="mt-1 text-lg font-bold text-emerald-700 dark:text-emerald-400">{money.format(summary.released)}</p>
         </div>
       </div>
 
@@ -812,8 +812,8 @@ const EncashmentTab = () => {
         <div
           className={`rounded-xl border px-4 py-3 text-sm ${
             message.type === 'success'
-              ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
-              : 'bg-red-50 text-red-700 border-red-100'
+              ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-100 dark:border-emerald-800'
+              : 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-100 dark:border-red-800'
           }`}
         >
           {message.text}
@@ -821,86 +821,86 @@ const EncashmentTab = () => {
       )}
 
       {isCustomerSession && policy && eligibility && (
-        <div className="rounded-2xl border border-gray-200 bg-white p-5 md:p-6">
+        <div className="rounded-2xl border border-gray-200 dark:border-slate-700 dark:bg-gray-800 p-5 md:p-6">
           <div className="mb-3">
-            <h3 className="text-base font-bold text-gray-900">Encashment Requirements</h3>
-            <p className="text-xs text-gray-500 mt-0.5">Rules before you can submit a payout request.</p>
+            <h3 className="text-base font-bold text-gray-900 dark:text-white">Encashment Requirements</h3>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Rules before you can submit a payout request.</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
-            <div className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5">
-              <p className="text-xs uppercase tracking-wide text-slate-500">Minimum Amount</p>
-              <p className="mt-1 font-semibold text-slate-800">{money.format(policy.min_amount || 0)}</p>
+            <div className="rounded-xl border border-slate-100 dark:border-slate-700 dark:bg-gray-900/30 px-3 py-2.5">
+              <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-gray-400">Minimum Amount</p>
+              <p className="mt-1 font-semibold text-slate-800 dark:text-gray-300">{money.format(policy.min_amount || 0)}</p>
             </div>
-            <div className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5">
-              <p className="text-xs uppercase tracking-wide text-slate-500">Minimum Points</p>
-              <p className="mt-1 font-semibold text-slate-800">{(policy.min_points || 0).toLocaleString()}</p>
+            <div className="rounded-xl border border-slate-100 dark:border-slate-700 dark:bg-gray-900/30 px-3 py-2.5">
+              <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-gray-400">Minimum Points</p>
+              <p className="mt-1 font-semibold text-slate-800 dark:text-gray-300">{(policy.min_points || 0).toLocaleString()}</p>
             </div>
-            <div className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5">
-              <p className="text-xs uppercase tracking-wide text-slate-500">Cooldown</p>
-              <p className="mt-1 font-semibold text-slate-800">
+            <div className="rounded-xl border border-slate-100 dark:border-slate-700 dark:bg-gray-900/30 px-3 py-2.5">
+              <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-gray-400">Cooldown</p>
+              <p className="mt-1 font-semibold text-slate-800 dark:text-gray-300">
                 {policy.cooldown_hours > 0 ? `${policy.cooldown_hours} hour(s)` : 'No cooldown'}
               </p>
             </div>
           </div>
           <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-            <div className="rounded-xl border border-slate-100 px-3 py-2.5">
-              <p className="text-xs uppercase tracking-wide text-slate-500">Available Balance</p>
-              <p className="mt-1 font-semibold text-slate-800">{money.format(eligibility.available_amount || 0)}</p>
-              <p className="text-xs text-slate-500 mt-0.5">Locked in active requests: {money.format(eligibility.locked_amount || 0)}</p>
+            <div className="rounded-xl border border-slate-100 dark:border-slate-700 dark:bg-gray-900/30 px-3 py-2.5">
+              <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-gray-400">Available Balance</p>
+              <p className="mt-1 font-semibold text-slate-800 dark:text-gray-300">{money.format(eligibility.available_amount || 0)}</p>
+              <p className="text-xs text-slate-500 dark:text-gray-400 mt-0.5">Locked in active requests: {money.format(eligibility.locked_amount || 0)}</p>
             </div>
-            <div className="rounded-xl border border-slate-100 px-3 py-2.5">
-              <p className="text-xs uppercase tracking-wide text-slate-500">Eligibility Status</p>
-              <p className={`mt-1 font-semibold ${eligibility.eligible ? 'text-emerald-700' : 'text-red-700'}`}>
+            <div className="rounded-xl border border-slate-100 dark:border-slate-700 dark:bg-gray-900/30 px-3 py-2.5">
+              <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-gray-400">Eligibility Status</p>
+              <p className={`mt-1 font-semibold ${eligibility.eligible ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-700 dark:text-red-400'}`}>
                 {eligibility.eligible ? 'Eligible' : 'Not Eligible'}
               </p>
               {!eligibility.eligible && (
-                <p className="text-xs text-red-700 mt-0.5">{eligibility.message}</p>
+                <p className="text-xs text-red-700 dark:text-red-400 mt-0.5">{eligibility.message}</p>
               )}
               {eligibility.remaining_cooldown_minutes > 0 && (
-                <p className="text-xs text-amber-700 mt-0.5">
+                <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">
                   Cooldown remaining: {formatCooldownRemaining(eligibility.remaining_cooldown_minutes)}
                 </p>
               )}
             </div>
           </div>
           <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
-            <div className="rounded-xl border border-slate-100 px-3 py-2.5">
-              <p className="text-xs uppercase tracking-wide text-slate-500">Account Verification</p>
-              <p className={`mt-1 font-semibold ${eligibility.has_active_account ? 'text-emerald-700' : 'text-red-700'}`}>
+            <div className="rounded-xl border border-slate-100 dark:border-slate-700 dark:bg-gray-900/30 px-3 py-2.5">
+              <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-gray-400">Account Verification</p>
+              <p className={`mt-1 font-semibold ${eligibility.has_active_account ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-700 dark:text-red-400'}`}>
                 {eligibility.has_active_account ? 'Verified / Active' : 'Not Verified'}
               </p>
-              <p className="text-xs text-slate-500 mt-0.5">Required before encashment request.</p>
+              <p className="text-xs text-slate-500 dark:text-gray-400 mt-0.5">Required before encashment request.</p>
             </div>
-            <div className="rounded-xl border border-slate-100 px-3 py-2.5">
-              <p className="text-xs uppercase tracking-wide text-slate-500">Current Points</p>
-              <p className="mt-1 font-semibold text-slate-800">{(eligibility.current_points || 0).toLocaleString()}</p>
-              <p className="text-xs text-slate-500 mt-0.5">Minimum required: {(policy.min_points || 0).toLocaleString()}</p>
+            <div className="rounded-xl border border-slate-100 dark:border-slate-700 dark:bg-gray-900/30 px-3 py-2.5">
+              <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-gray-400">Current Points</p>
+              <p className="mt-1 font-semibold text-slate-800 dark:text-gray-300">{(eligibility.current_points || 0).toLocaleString()}</p>
+              <p className="text-xs text-slate-500 dark:text-gray-400 mt-0.5">Minimum required: {(policy.min_points || 0).toLocaleString()}</p>
             </div>
-            <div className="rounded-xl border border-slate-100 px-3 py-2.5">
-              <p className="text-xs uppercase tracking-wide text-slate-500">Request Eligibility</p>
-              <p className={`mt-1 font-semibold ${eligibility.eligible ? 'text-emerald-700' : 'text-red-700'}`}>
+            <div className="rounded-xl border border-slate-100 dark:border-slate-700 dark:bg-gray-900/30 px-3 py-2.5">
+              <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-gray-400">Request Eligibility</p>
+              <p className={`mt-1 font-semibold ${eligibility.eligible ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-700 dark:text-red-400'}`}>
                 {eligibility.eligible ? 'Can Submit Request' : 'Cannot Submit Yet'}
               </p>
-              <p className="text-xs text-slate-500 mt-0.5">Cooldown and policy checks apply.</p>
+              <p className="text-xs text-slate-500 dark:text-gray-400 mt-0.5">Cooldown and policy checks apply.</p>
             </div>
           </div>
         </div>
       )}
 
       {isCustomerSession && isEligibleByPolicy && (
-        <div className="rounded-2xl border border-gray-200 bg-white p-5 md:p-6 space-y-4">
+        <div className="rounded-2xl border border-gray-200 dark:border-slate-700 dark:bg-gray-800 p-5 md:p-6 space-y-4">
           <div>
-            <h3 className="text-base font-bold text-gray-900">Saved Payment Methods</h3>
-            <p className="text-xs text-gray-500 mt-0.5">Add and select your payout accounts (GCash/Maya/Bank) before requesting encashment.</p>
+            <h3 className="text-base font-bold text-gray-900 dark:text-white">Saved Payment Methods</h3>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Add and select your payout accounts (GCash/Maya/Bank) before requesting encashment.</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Select Saved Method</label>
+              <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Select Saved Method</label>
               <select
                 value={selectedMethodId}
                 onChange={(e) => applyMethodToForm(e.target.value)}
-                className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300"
+                className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-900/50 focus:border-orange-300"
               >
                 <option value="">Manual entry (no saved method)</option>
                 {methods.map((method) => (
@@ -914,7 +914,7 @@ const EncashmentTab = () => {
               <button
                 type="button"
                 onClick={() => applyMethodToForm('')}
-                className="rounded-xl border border-gray-200 px-3 py-2.5 text-xs font-semibold text-gray-600 hover:bg-gray-50"
+                className="rounded-xl border border-gray-200 dark:border-slate-700 dark:text-gray-300 dark:hover:bg-gray-700 px-3 py-2.5 text-xs font-semibold text-gray-600 hover:bg-gray-50"
               >
                 Clear Selection
               </button>
@@ -922,7 +922,7 @@ const EncashmentTab = () => {
                 type="button"
                 onClick={() => void removeSelectedMethod()}
                 disabled={!selectedMethodId || isDeletingPayoutMethod}
-                className="rounded-xl border border-red-200 px-3 py-2.5 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:opacity-60"
+                className="rounded-xl border border-red-200 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/30 px-3 py-2.5 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:opacity-60"
               >
                 {isDeletingPayoutMethod ? 'Deleting...' : 'Delete Selected'}
               </button>
@@ -934,7 +934,7 @@ const EncashmentTab = () => {
               type="text"
               value={methodForm.label}
               onChange={(e) => setMethodForm((prev) => ({ ...prev, label: e.target.value }))}
-              className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300"
+              className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-900/50 focus:border-orange-300"
               placeholder="Label (ex: Main GCash / Payroll Bank)"
             />
             <select
@@ -947,7 +947,7 @@ const EncashmentTab = () => {
                   channel: mapMethodTypeToChannel(methodType),
                 }));
               }}
-              className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300"
+              className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-900/50 focus:border-orange-300"
             >
               <option value="gcash">GCash</option>
               <option value="maya">Maya</option>
@@ -962,21 +962,21 @@ const EncashmentTab = () => {
                 type="text"
                 value={methodForm.accountName}
                 onChange={(e) => setMethodForm((prev) => ({ ...prev, accountName: e.target.value }))}
-                className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300"
+                className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-900/50 focus:border-orange-300"
                 placeholder="Account Name"
               />
               <input
                 type="text"
                 value={methodForm.mobileNumber}
                 onChange={(e) => setMethodForm((prev) => ({ ...prev, mobileNumber: e.target.value }))}
-                className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300"
+                className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-900/50 focus:border-orange-300"
                 placeholder="Mobile Number (09xxxxxxxxx)"
               />
               <input
                 type="email"
                 value={methodForm.emailAddress}
                 onChange={(e) => setMethodForm((prev) => ({ ...prev, emailAddress: e.target.value }))}
-                className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300"
+                className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-900/50 focus:border-orange-300"
                 placeholder="Email (optional)"
               />
             </div>
@@ -988,34 +988,34 @@ const EncashmentTab = () => {
                 type="text"
                 value={methodForm.bankName}
                 onChange={(e) => setMethodForm((prev) => ({ ...prev, bankName: e.target.value }))}
-                className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300"
+                className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-900/50 focus:border-orange-300"
                 placeholder="Bank Name"
               />
               <input
                 type="text"
                 value={methodForm.bankCode}
                 onChange={(e) => setMethodForm((prev) => ({ ...prev, bankCode: e.target.value }))}
-                className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300"
+                className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-900/50 focus:border-orange-300"
                 placeholder="Bank Code (optional)"
               />
               <input
                 type="text"
                 value={methodForm.accountName}
                 onChange={(e) => setMethodForm((prev) => ({ ...prev, accountName: e.target.value }))}
-                className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300"
+                className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-900/50 focus:border-orange-300"
                 placeholder="Account Name"
               />
               <input
                 type="text"
                 value={methodForm.accountNumber}
                 onChange={(e) => setMethodForm((prev) => ({ ...prev, accountNumber: e.target.value }))}
-                className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300"
+                className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-900/50 focus:border-orange-300"
                 placeholder="Account Number"
               />
               <select
                 value={methodForm.accountType}
                 onChange={(e) => setMethodForm((prev) => ({ ...prev, accountType: e.target.value as '' | 'savings' | 'checking' }))}
-                className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300"
+                className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-900/50 focus:border-orange-300"
               >
                 <option value="">Account Type</option>
                 <option value="savings">Savings</option>
@@ -1030,13 +1030,13 @@ const EncashmentTab = () => {
                 type="text"
                 value={methodForm.cardHolderName}
                 onChange={(e) => setMethodForm((prev) => ({ ...prev, cardHolderName: e.target.value }))}
-                className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300"
+                className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-900/50 focus:border-orange-300"
                 placeholder="Card Holder Name"
               />
               <select
                 value={methodForm.cardBrand}
                 onChange={(e) => setMethodForm((prev) => ({ ...prev, cardBrand: e.target.value as FormState['cardBrand'] }))}
-                className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300"
+                className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-900/50 focus:border-orange-300"
               >
                 <option value="">Card Brand</option>
                 <option value="visa">VISA</option>
@@ -1051,14 +1051,14 @@ const EncashmentTab = () => {
                 maxLength={4}
                 value={methodForm.cardLast4}
                 onChange={(e) => setMethodForm((prev) => ({ ...prev, cardLast4: e.target.value.replace(/\D/g, '').slice(0, 4) }))}
-                className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300"
+                className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-900/50 focus:border-orange-300"
                 placeholder="Last 4 Digits"
               />
               <input
                 type="text"
                 value={methodForm.accountNumber}
                 onChange={(e) => setMethodForm((prev) => ({ ...prev, accountNumber: e.target.value }))}
-                className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300"
+                className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-900/50 focus:border-orange-300"
                 placeholder="Reference Token (optional)"
               />
             </div>
@@ -1069,29 +1069,29 @@ const EncashmentTab = () => {
               type="button"
               onClick={() => void addMethod()}
               disabled={isSavingPayoutMethod}
-              className="rounded-xl border border-orange-200 px-3 py-2.5 text-xs font-semibold text-orange-700 hover:bg-orange-50 disabled:opacity-60"
+              className="rounded-xl border border-orange-200 dark:border-orange-800 dark:text-orange-400 dark:hover:bg-orange-900/30 px-3 py-2.5 text-xs font-semibold text-orange-700 hover:bg-orange-50 disabled:opacity-60"
             >
               {isSavingPayoutMethod ? 'Saving...' : 'Add Method'}
             </button>
           </div>
-          <p className="text-[11px] text-gray-500">
+          <p className="text-[11px] text-gray-500 dark:text-gray-400">
             Online Banking and Card are mapped to BANK channel in backend, with extra details saved in request notes.
           </p>
       </div>
       )}
 
       {isCustomerSession && needsVerification && !isVerificationPending && !canSubmitVerification && (
-        <div className="rounded-2xl border border-blue-200 bg-blue-50 p-5 md:p-6">
+        <div className="rounded-2xl border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/30 p-5 md:p-6">
           <div className="flex items-start gap-3">
-            <div className="mt-0.5 h-8 w-8 shrink-0 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-bold">
+            <div className="mt-0.5 h-8 w-8 shrink-0 rounded-full bg-blue-600 dark:bg-blue-700 text-white flex items-center justify-center text-sm font-bold">
               i
             </div>
             <div>
-              <h3 className="text-base font-bold text-blue-900">Verification Unlocks at the Minimum Threshold</h3>
-              <p className="mt-1 text-sm text-blue-800">
+              <h3 className="text-base font-bold text-blue-900 dark:text-blue-300">Verification Unlocks at the Minimum Threshold</h3>
+              <p className="mt-1 text-sm text-blue-800 dark:text-blue-200">
                 Your KYC verification form will appear once your available encashment balance reaches {money.format(policy?.min_amount || 0)}.
               </p>
-              <div className="mt-2 text-xs text-blue-900/80 space-y-1">
+              <div className="mt-2 text-xs text-blue-900/80 dark:text-blue-200/80 space-y-1">
                 <p>Available now: <span className="font-semibold">{money.format(eligibility?.available_amount || 0)}</span></p>
                 <p>Required minimum: <span className="font-semibold">{money.format(policy?.min_amount || 0)}</span></p>
               </div>
@@ -1118,20 +1118,20 @@ const EncashmentTab = () => {
               : '0 0 0 rgba(245,158,11,0)',
           }}
           transition={{ duration: 0.45, ease: 'easeOut' }}
-          className={`scroll-mt-28 rounded-2xl border bg-amber-50 p-5 md:p-6 transition-all duration-500 ${
-            isVerificationSpotlightActive ? 'border-amber-400 ring-4 ring-amber-200/70' : 'border-amber-200'
+          className={`scroll-mt-28 rounded-2xl border bg-amber-50 dark:bg-amber-900/20 p-5 md:p-6 transition-all duration-500 ${
+            isVerificationSpotlightActive ? 'border-amber-400 dark:border-amber-700 ring-4 ring-amber-200/70 dark:ring-amber-900/50' : 'border-amber-200 dark:border-amber-800'
           }`}
         >
-          <h3 className="text-base font-bold text-amber-900">Verification Required</h3>
-          <p className="mt-1 text-sm text-amber-800">
+          <h3 className="text-base font-bold text-amber-900 dark:text-amber-300">Verification Required</h3>
+          <p className="mt-1 text-sm text-amber-800 dark:text-amber-200">
             To submit an encashment request, your account must be verified and active first. Complete the form and required documents for Admin/KYC review.
           </p>
           {message && showMessageInVerificationCard && (
             <div
               className={`mt-4 rounded-xl border px-4 py-3 text-sm ${
                 message.type === 'success'
-                  ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
-                  : 'bg-red-50 text-red-700 border-red-100'
+                  ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-100 dark:border-emerald-800'
+                  : 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-100 dark:border-red-800'
               }`}
             >
               {message.text}
@@ -1330,7 +1330,7 @@ const EncashmentTab = () => {
           </div>
           <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3">
             <VerificationField label="ID Front" required error={verificationErrors.idFrontUrl}>
-              <span data-verification-field="idFrontUrl" className={`block rounded-xl bg-white/90 px-3.5 py-2.5 text-xs ${verificationErrors.idFrontUrl ? 'border border-red-300 text-red-900' : 'border border-amber-200 text-amber-900'}`}>
+              <span data-verification-field="idFrontUrl" className={`block rounded-xl bg-white/90 dark:bg-gray-900/90 px-3.5 py-2.5 text-xs ${verificationErrors.idFrontUrl ? 'border border-red-300 dark:border-red-800 text-red-900 dark:text-red-300' : 'border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-100'}`}>
               <input
                 type="file"
                 accept="image/png,image/jpeg,image/webp,image/gif"
@@ -1341,7 +1341,7 @@ const EncashmentTab = () => {
                   void handleVerificationImageUpload('idFrontUrl', file);
                 }}
               />
-              <span className="mt-1 block text-[11px] text-amber-700">{verificationUploadState.idFront ? 'Uploading...' : verificationForm.idFrontUrl ? 'Uploaded' : 'Not uploaded'}</span>
+              <span className="mt-1 block text-[11px] text-amber-700 dark:text-amber-400">{verificationUploadState.idFront ? 'Uploading...' : verificationForm.idFrontUrl ? 'Uploaded' : 'Not uploaded'}</span>
               </span>
             </VerificationField>
             <VerificationField label="ID Back" required error={verificationErrors.idBackUrl}>
@@ -1382,29 +1382,29 @@ const EncashmentTab = () => {
               disabled={isSubmittingVerification || verificationUploadState.idFront || verificationUploadState.idBack || verificationUploadState.selfie}
               whileHover={{ scale: 1.01 }}
               whileTap={{ scale: 0.98 }}
-              className="inline-flex items-center gap-2 rounded-xl bg-amber-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-amber-700 disabled:opacity-60"
+              className="inline-flex items-center gap-2 rounded-xl bg-amber-600 dark:bg-amber-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-amber-700 dark:hover:bg-amber-800 disabled:opacity-60"
             >
               {isSubmittingVerification ? 'Submitting...' : 'Submit for Verification Approval'}
             </motion.button>
           </div>
-          <p className="mt-2 text-xs text-amber-800/80">
+          <p className="mt-2 text-xs text-amber-800/80 dark:text-amber-300/60">
             Verification requests are reviewed by the Admin/KYC team.
           </p>
         </motion.div>
       )}
 
       {isCustomerSession && needsVerification && isVerificationPending && (
-        <div className="rounded-2xl border border-blue-200 bg-blue-50 p-5 md:p-6">
+        <div className="rounded-2xl border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/30 p-5 md:p-6">
           <div className="flex items-start gap-3">
-            <div className="mt-0.5 h-8 w-8 shrink-0 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-bold">
+            <div className="mt-0.5 h-8 w-8 shrink-0 rounded-full bg-blue-600 dark:bg-blue-700 text-white flex items-center justify-center text-sm font-bold">
               i
             </div>
             <div>
-              <h3 className="text-base font-bold text-blue-900">Approval Pending</h3>
-              <p className="mt-1 text-sm text-blue-800">
+              <h3 className="text-base font-bold text-blue-900 dark:text-blue-300">Approval Pending</h3>
+              <p className="mt-1 text-sm text-blue-800 dark:text-blue-200">
                 Your verification request has been submitted and is currently under Admin/KYC review.
               </p>
-              <div className="mt-2 text-xs text-blue-900/80 space-y-1">
+              <div className="mt-2 text-xs text-blue-900/80 dark:text-blue-200/80 space-y-1">
                 <p>Reference: <span className="font-semibold">{verification?.reference_no || 'N/A'}</span></p>
                 <p>Submitted: <span className="font-semibold">{formatPhilippineDateTime(verification?.submitted_at)}</span></p>
                 <p>Status: <span className="font-semibold uppercase">Pending Review</span></p>
@@ -1415,15 +1415,15 @@ const EncashmentTab = () => {
       )}
 
       {isCustomerSession && isEligibleByPolicy && (
-      <form onSubmit={handleSubmit} className="rounded-2xl border border-gray-200 bg-white p-5 md:p-6">
+      <form onSubmit={handleSubmit} className="rounded-2xl border border-gray-200 dark:border-slate-700 dark:bg-gray-800 p-5 md:p-6">
         <div className="mb-5">
-          <h3 className="text-base font-bold text-gray-900">Request Encashment</h3>
-          <p className="text-xs text-gray-500 mt-0.5">Submit payout request from your available earnings.</p>
+          <h3 className="text-base font-bold text-gray-900 dark:text-white">Request Encashment</h3>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Submit payout request from your available earnings.</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Amount (PHP)</label>
+            <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Amount (PHP)</label>
             <input
               type="number"
               min={1}
@@ -1431,13 +1431,13 @@ const EncashmentTab = () => {
               required
               value={form.amount}
               onChange={(e) => setForm((prev) => ({ ...prev, amount: e.target.value }))}
-              className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300"
+              className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-900/50 focus:border-orange-300"
               placeholder="e.g. 1500"
             />
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Payout Method</label>
+            <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Payout Method</label>
             <select
               required
               value={form.methodType}
@@ -1449,7 +1449,7 @@ const EncashmentTab = () => {
                   channel: mapMethodTypeToChannel(methodType),
                 }));
               }}
-              className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300"
+              className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-900/50 focus:border-orange-300"
             >
               <option value="gcash">GCash</option>
               <option value="maya">Maya</option>
@@ -1462,32 +1462,32 @@ const EncashmentTab = () => {
         {(form.methodType === 'gcash' || form.methodType === 'maya') && (
           <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Account Name</label>
+              <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Account Name</label>
               <input
                 type="text"
                 value={form.accountName}
                 onChange={(e) => setForm((prev) => ({ ...prev, accountName: e.target.value }))}
-                className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300"
+                className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-900/50 focus:border-orange-300"
                 placeholder="E-wallet owner name"
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Mobile Number</label>
+              <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Mobile Number</label>
               <input
                 type="text"
                 value={form.mobileNumber}
                 onChange={(e) => setForm((prev) => ({ ...prev, mobileNumber: e.target.value }))}
-                className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300"
+                className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-900/50 focus:border-orange-300"
                 placeholder="09xxxxxxxxx"
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Email (optional)</label>
+              <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Email (optional)</label>
               <input
                 type="email"
                 value={form.emailAddress}
                 onChange={(e) => setForm((prev) => ({ ...prev, emailAddress: e.target.value }))}
-                className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300"
+                className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-900/50 focus:border-orange-300"
                 placeholder="you@email.com"
               />
             </div>
@@ -1497,51 +1497,51 @@ const EncashmentTab = () => {
         {form.methodType === 'online_banking' && (
           <div className="mt-4 grid grid-cols-1 md:grid-cols-5 gap-4">
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Bank Name</label>
+              <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Bank Name</label>
               <input
                 type="text"
                 value={form.bankName}
                 onChange={(e) => setForm((prev) => ({ ...prev, bankName: e.target.value }))}
-                className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300"
+                className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-900/50 focus:border-orange-300"
                 placeholder="Bank of example"
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Bank Code (optional)</label>
+              <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Bank Code (optional)</label>
               <input
                 type="text"
                 value={form.bankCode}
                 onChange={(e) => setForm((prev) => ({ ...prev, bankCode: e.target.value }))}
-                className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300"
+                className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-900/50 focus:border-orange-300"
                 placeholder="BPI / BDO / PNB"
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Account Name</label>
+              <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Account Name</label>
               <input
                 type="text"
                 value={form.accountName}
                 onChange={(e) => setForm((prev) => ({ ...prev, accountName: e.target.value }))}
-                className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300"
+                className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-900/50 focus:border-orange-300"
                 placeholder="Account holder name"
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Account Number</label>
+              <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Account Number</label>
               <input
                 type="text"
                 value={form.accountNumber}
                 onChange={(e) => setForm((prev) => ({ ...prev, accountNumber: e.target.value }))}
-                className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300"
+                className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-900/50 focus:border-orange-300"
                 placeholder="Bank account number"
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Account Type</label>
+              <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Account Type</label>
               <select
                 value={form.accountType}
                 onChange={(e) => setForm((prev) => ({ ...prev, accountType: e.target.value as '' | 'savings' | 'checking' }))}
-                className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300"
+                className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-900/50 focus:border-orange-300"
               >
                 <option value="">Select type</option>
                 <option value="savings">Savings</option>
@@ -1554,21 +1554,21 @@ const EncashmentTab = () => {
         {form.methodType === 'card' && (
           <div className="mt-4 grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Card Holder Name</label>
+              <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Card Holder Name</label>
               <input
                 type="text"
                 value={form.cardHolderName}
                 onChange={(e) => setForm((prev) => ({ ...prev, cardHolderName: e.target.value }))}
-                className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300"
+                className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-900/50 focus:border-orange-300"
                 placeholder="Name on card"
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Card Brand</label>
+              <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Card Brand</label>
               <select
                 value={form.cardBrand}
                 onChange={(e) => setForm((prev) => ({ ...prev, cardBrand: e.target.value as FormState['cardBrand'] }))}
-                className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300"
+                className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-900/50 focus:border-orange-300"
               >
                 <option value="">Select brand</option>
                 <option value="visa">VISA</option>
@@ -1579,24 +1579,24 @@ const EncashmentTab = () => {
               </select>
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Last 4 Digits</label>
+              <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Last 4 Digits</label>
               <input
                 type="text"
                 inputMode="numeric"
                 maxLength={4}
                 value={form.cardLast4}
                 onChange={(e) => setForm((prev) => ({ ...prev, cardLast4: e.target.value.replace(/\D/g, '').slice(0, 4) }))}
-                className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300"
+                className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-900/50 focus:border-orange-300"
                 placeholder="1234"
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Reference Token (optional)</label>
+              <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Reference Token (optional)</label>
               <input
                 type="text"
                 value={form.accountNumber}
                 onChange={(e) => setForm((prev) => ({ ...prev, accountNumber: e.target.value }))}
-                className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300"
+                className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-900/50 focus:border-orange-300"
                 placeholder="Processor token/ref"
               />
             </div>
@@ -1618,7 +1618,7 @@ const EncashmentTab = () => {
           <button
             type="submit"
             disabled={isSubmitting || !isCustomerSession}
-            className="inline-flex items-center gap-2 rounded-xl bg-orange-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-orange-600 disabled:opacity-60 disabled:cursor-not-allowed transition-colors shadow-sm shadow-orange-200"
+            className="inline-flex items-center gap-2 rounded-xl bg-orange-500 dark:bg-orange-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-orange-600 dark:hover:bg-orange-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
           >
             {isSubmitting ? 'Submitting...' : 'Submit Request'}
           </button>
@@ -1626,40 +1626,40 @@ const EncashmentTab = () => {
       </form>
       )}
 
-      <div className="rounded-2xl border border-gray-200 bg-white p-5 md:p-6">
+      <div className="rounded-2xl border border-gray-200 dark:border-slate-700 dark:bg-gray-800 p-5 md:p-6">
         <div className="flex items-center justify-between gap-3 mb-4">
           <div>
-            <h3 className="text-base font-bold text-gray-900">Encashment History</h3>
-            <p className="text-xs text-gray-500 mt-0.5">Track approval and release status for each request.</p>
+            <h3 className="text-base font-bold text-gray-900 dark:text-white">Encashment History</h3>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Track approval and release status for each request.</p>
           </div>
           <button
             type="button"
             onClick={() => refetch()}
             disabled={isFetching}
-            className="inline-flex items-center rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-600 hover:border-orange-200 hover:text-orange-600 disabled:opacity-60"
+            className="inline-flex items-center rounded-lg border border-gray-200 dark:border-slate-700 dark:text-gray-300 dark:hover:bg-gray-700 px-3 py-1.5 text-xs font-semibold text-gray-600 hover:border-orange-200 hover:text-orange-600 disabled:opacity-60"
           >
             {isFetching ? 'Refreshing...' : 'Refresh'}
           </button>
         </div>
 
         {!isCustomerSession && (
-          <div className="rounded-xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+          <div className="rounded-xl border border-amber-100 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/30 px-4 py-3 text-sm text-amber-700 dark:text-amber-400">
             You are currently signed in with an admin account. Please sign in as customer/affiliate to view encashment history.
           </div>
         )}
 
         {isCustomerSession && isError && (
-          <div className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <div className="rounded-xl border border-red-100 dark:border-red-800 bg-red-50 dark:bg-red-900/30 px-4 py-3 text-sm text-red-700 dark:text-red-400">
             {(error as { data?: { message?: string } } | undefined)?.data?.message || 'Failed to load encashment history.'}
           </div>
         )}
 
         {isCustomerSession && !isError && isLoading && (
-          <div className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-3 text-sm text-gray-500">Loading requests...</div>
+          <div className="rounded-xl border border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-gray-700/30 px-4 py-3 text-sm text-gray-500 dark:text-gray-400">Loading requests...</div>
         )}
 
         {isCustomerSession && !isError && !isLoading && rows.length === 0 && (
-          <div className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-3 text-sm text-gray-500">
+          <div className="rounded-xl border border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-gray-700/30 px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
             No encashment requests yet.
           </div>
         )}
@@ -1668,7 +1668,7 @@ const EncashmentTab = () => {
           <div className="overflow-x-auto">
             <table className="min-w-full text-sm">
               <thead>
-                <tr className="text-left text-xs uppercase tracking-wide text-gray-500 border-b border-gray-100">
+                <tr className="text-left text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-slate-700">
                   <th className="py-2 pr-4 font-semibold">Reference</th>
                   <th className="py-2 pr-4 font-semibold">Amount</th>
                   <th className="py-2 pr-4 font-semibold">Channel</th>
@@ -1680,32 +1680,32 @@ const EncashmentTab = () => {
               </thead>
               <tbody>
                 {rows.map((row) => (
-                  <tr key={row.id} className="border-b border-gray-50 last:border-b-0">
-                    <td className="py-2.5 pr-4 font-medium text-gray-800">{row.reference_no}</td>
-                    <td className="py-2.5 pr-4 text-gray-700">{money.format(row.amount)}</td>
-                    <td className="py-2.5 pr-4 text-gray-700 uppercase">{row.channel}</td>
+                  <tr key={row.id} className="border-b border-gray-50 dark:border-slate-700 last:border-b-0">
+                    <td className="py-2.5 pr-4 font-medium text-gray-800 dark:text-white">{row.reference_no}</td>
+                    <td className="py-2.5 pr-4 text-gray-700 dark:text-gray-300">{money.format(row.amount)}</td>
+                    <td className="py-2.5 pr-4 text-gray-700 dark:text-gray-300 uppercase">{row.channel}</td>
                     <td className="py-2.5 pr-4">
                       <span
-                        className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold ${statusStyle[row.status] || 'bg-gray-50 text-gray-700 border-gray-200'
+                        className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold ${statusStyle[row.status] || 'bg-gray-50 dark:bg-gray-700/30 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-slate-700'
                           }`}
                       >
                         {row.status}
                       </span>
                     </td>
-                    <td className="py-2.5 pr-4 text-gray-700">{row.invoice_no || '-'}</td>
-                    <td className="py-2.5 pr-4 text-gray-700">
+                    <td className="py-2.5 pr-4 text-gray-700 dark:text-gray-300">{row.invoice_no || '-'}</td>
+                    <td className="py-2.5 pr-4 text-gray-700 dark:text-gray-300">
                       {row.proof_url ? (
                         <a
                           href={row.proof_url}
                           target="_blank"
                           rel="noreferrer"
-                          className="inline-flex items-center rounded-full border border-emerald-200 px-2.5 py-1 text-xs font-semibold text-emerald-700 hover:bg-emerald-50"
+                          className="inline-flex items-center rounded-full border border-emerald-200 dark:border-emerald-800 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30"
                         >
                           View
                         </a>
                       ) : '-'}
                     </td>
-                    <td className="py-2.5 pr-0 text-gray-500">{row.created_at ? new Date(row.created_at).toLocaleString() : '-'}</td>
+                    <td className="py-2.5 pr-0 text-gray-500 dark:text-gray-400">{row.created_at ? new Date(row.created_at).toLocaleString() : '-'}</td>
                   </tr>
                 ))}
               </tbody>
