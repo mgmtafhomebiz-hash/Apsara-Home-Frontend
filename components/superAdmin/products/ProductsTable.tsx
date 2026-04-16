@@ -22,6 +22,7 @@ interface ProductsTableProps {
   selectedIds: number[]
   onToggleSelect: (id: number) => void
   onToggleSelectAll: () => void
+  onViewManualCheckout: (product: Product) => void
 }
 
 type SortableProductColumn =
@@ -41,19 +42,6 @@ const formatPrice = (value: number) =>
   new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', maximumFractionDigits: 2 }).format(value)
 
 const NEW_BADGE_DAYS = 7
-
-const slugify = (value: string) =>
-  value
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-
-const buildProductPath = (product: Product) => {
-  const safeName = (product.name || 'product').trim()
-  const slug = slugify(safeName)
-  return product.id > 0 ? `/product/${slug}-i${product.id}` : `/product/${slug}`
-}
 
 const normalizeVariantLabel = (value?: string | null) => (value ?? '').trim().replace(/\s+/g, ' ').toLowerCase()
 
@@ -258,6 +246,7 @@ export default function ProductsTable({
   selectedIds,
   onToggleSelect,
   onToggleSelectAll,
+  onViewManualCheckout,
 }: ProductsTableProps) {
   const [confirmId, setConfirmId] = useState<number | null>(null)
   const [sortDescriptor, setSortDescriptor] = useState<SortDescriptor>({
@@ -519,8 +508,11 @@ export default function ProductsTable({
                             isIconOnly
                             size="sm"
                             variant="tertiary"
-                            aria-label={`Preview ${product.name}`}
-                            onPress={() => window.open(buildProductPath(product), '_blank', 'noopener,noreferrer')}
+                            aria-label={`View ${product.name} for manual checkout`}
+                            onPress={() => {
+                              setConfirmId(null)
+                              onViewManualCheckout(product)
+                            }}
                           >
                             <Eye className="h-4 w-4" />
                           </Button>

@@ -291,6 +291,7 @@ const toCategoryProduct = (row: LooseRecord, apiUrl?: string): CategoryProduct =
     badge,
     brand: resolveBrand(),
     verified: Boolean(row.verified ?? row.pd_verified),
+    manualCheckoutEnabled: Boolean(row.manualCheckoutEnabled ?? row.pd_manual_checkout_enabled),
   };
 };
 

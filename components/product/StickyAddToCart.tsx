@@ -7,6 +7,7 @@ import { useSession } from 'next-auth/react';
 import { useCart } from '@/context/CartContext';
 import { CategoryProduct } from '@/libs/CategoryData';
 import { displayColorName } from '@/libs/colorUtils';
+import { useGetPublicGeneralSettingsQuery } from '@/store/api/adminSettingsApi';
 
 interface StickyAddToCartProps {
   product: CategoryProduct;
@@ -32,6 +33,7 @@ const StickyAddToCart = ({ product, selectedVariant }: StickyAddToCartProps) => 
   const [visible, setVisible] = useState(false);
   const { addToCart } = useCart();
   const { data: session } = useSession();
+  const { data: publicSettingsData } = useGetPublicGeneralSettingsQuery();
   const isLoggedIn = Boolean(session?.user);
   const role = String((session?.user as { role?: string } | undefined)?.role ?? '').toLowerCase();
   const canUseMemberPrice = isLoggedIn;
@@ -65,6 +67,7 @@ const StickyAddToCart = ({ product, selectedVariant }: StickyAddToCartProps) => 
     ? selectedVariant.qty
     : (typeof totalVariantStock === 'number' ? totalVariantStock : Number(product.stock ?? 0));
   const isInStock = stock > 0;
+  const isCheckoutAvailable = !(Boolean(publicSettingsData?.settings?.enable_manual_checkout_mode) && !Boolean(product.manualCheckoutEnabled));
 
   useEffect(() => {
     const handler = () => setVisible(window.scrollY > 500);
@@ -73,7 +76,7 @@ const StickyAddToCart = ({ product, selectedVariant }: StickyAddToCartProps) => 
   }, []);
 
   const handleAddToCart = () => {
-    if (!isInStock) return;
+    if (!isInStock || !isCheckoutAvailable) return;
 
     const variantLabel = [
       selectedVariant?.name?.trim(),
@@ -128,9 +131,9 @@ const StickyAddToCart = ({ product, selectedVariant }: StickyAddToCartProps) => 
             <div className="flex shrink-0 gap-2">
               <button
                 onClick={handleAddToCart}
-                disabled={!isInStock}
+                disabled={!isInStock || !isCheckoutAvailable}
                 className={`rounded-xl px-3 py-2 text-xs font-semibold transition-colors sm:px-5 sm:text-sm ${
-                  isInStock
+                  isInStock && isCheckoutAvailable
                     ? 'bg-orange-500 text-white hover:bg-orange-600 active:bg-orange-700'
                     : 'bg-slate-200 text-slate-500 cursor-not-allowed'
                 }`}
@@ -139,9 +142,9 @@ const StickyAddToCart = ({ product, selectedVariant }: StickyAddToCartProps) => 
                 <span className="sm:hidden">Cart</span>
               </button>
               <button
-                disabled={!isInStock}
+                disabled={!isInStock || !isCheckoutAvailable}
                 className={`rounded-xl px-3 py-2 text-xs font-semibold transition-colors sm:px-5 sm:text-sm ${
-                  isInStock
+                  isInStock && isCheckoutAvailable
                     ? 'bg-slate-900 text-white hover:bg-slate-800'
                     : 'bg-slate-200 text-slate-500 cursor-not-allowed'
                 }`}

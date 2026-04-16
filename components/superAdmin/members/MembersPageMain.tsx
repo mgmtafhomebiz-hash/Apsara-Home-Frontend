@@ -6,7 +6,7 @@ import MembersToolbar from "./MembersToolbar"
 import MembersStats from "./MembersStats"
 import type { MembersStatCardKey } from "./MembersStats"
 import MembersTable from "./MembersTable"
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Member, MemberStatus, MemberTier } from "@/types/members/types"
 import AddMemberModal from "./AddMemberModal"
 import {
@@ -56,7 +56,19 @@ const csvEscape = (value: unknown) => {
     return text
 }
 
-type ModalMember = Member & { metricValue?: string }
+type ModalMember = Member & {
+    metricValue?: string
+    referralChildren?: Array<{
+        id: number
+        name: string
+        username: string
+        email: string
+        contactNumber: string
+        status: MemberStatus
+        tier: MemberTier
+        joinedAt: string
+    }>
+}
 
 const modalDescriptions: Record<MembersStatCardKey, { intro: string; emptyTitle: string; emptyDescription: string }> = {
     total_members: {
@@ -115,16 +127,21 @@ const MembersPageMain = ({ initialData = null, initialStats = null }: MembersPag
     const [showModal, setShowModal] = useState(false)
     const [selectedStatCard, setSelectedStatCard] = useState<MembersStatCardKey | null>(null)
     const [statModalMembers, setStatModalMembers] = useState<ModalMember[]>([])
+    const [expandedReferralMembers, setExpandedReferralMembers] = useState<number[]>([])
+    const [statModalSearch, setStatModalSearch] = useState('')
+    const [debouncedStatModalSearch, setDebouncedStatModalSearch] = useState('')
     const [statModalMeta, setStatModalMeta] = useState<MembersMeta | null>(null)
     const [statModalTitle, setStatModalTitle] = useState('Member Details')
     const [statModalMetricLabel, setStatModalMetricLabel] = useState('Metric')
     const [statModalError, setStatModalError] = useState<string | null>(null)
     const [isStatModalLoading, setIsStatModalLoading] = useState(false)
     const [isStatModalLoadingMore, setIsStatModalLoadingMore] = useState(false)
+    const [statModalPage, setStatModalPage] = useState(1)
     const [isExporting, setIsExporting] = useState(false)
     const [page, setPage] = useState(1)
     const [stableData, setStableData] = useState<MembersResponse | null>(initialData)
     const [stableStats, setStableStats] = useState<MembersStatsResponse | null>(initialStats)
+    const statModalRequestIdRef = useRef(0)
     const perPage = 7
     const statPageSize = 30
     const urlSearch = (searchParams.get('q') ?? '').trim()
@@ -148,6 +165,14 @@ const MembersPageMain = ({ initialData = null, initialStats = null }: MembersPag
 
         return () => clearTimeout(timeout)
     }, [search])
+
+    useEffect(() => {
+        const timeout = setTimeout(() => {
+            setDebouncedStatModalSearch(statModalSearch.trim())
+        }, 300)
+
+        return () => clearTimeout(timeout)
+    }, [statModalSearch])
 
     const isUsingDefaultView =
         page === 1 &&
@@ -217,7 +242,10 @@ const MembersPageMain = ({ initialData = null, initialStats = null }: MembersPag
     }, [members, sort])
     const meta = effectiveData?.meta
 
-    const loadStatPage = useCallback(async (stat: MembersStatCardKey, nextPage: number, append: boolean) => {
+    const loadStatPage = useCallback(async (stat: MembersStatCardKey, nextPage: number, append: boolean, searchValue?: string) => {
+        const requestId = ++statModalRequestIdRef.current
+        const normalizedSearch = (searchValue ?? '').trim()
+
         try {
             if (append) {
                 setIsStatModalLoadingMore(true)
@@ -230,13 +258,22 @@ const MembersPageMain = ({ initialData = null, initialStats = null }: MembersPag
                 stat,
                 page: nextPage,
                 perPage: statPageSize,
+                search: normalizedSearch,
             }).unwrap()
+
+            if (requestId !== statModalRequestIdRef.current) {
+                return
+            }
 
             setStatModalTitle(response.title)
             setStatModalMetricLabel(response.metricLabel)
             setStatModalMeta(response.meta)
             setStatModalMembers((prev) => append ? [...prev, ...response.members] : response.members)
         } catch (error) {
+            if (requestId !== statModalRequestIdRef.current) {
+                return
+            }
+
             console.error('Failed to load member stat details', error)
             setStatModalError('Failed to load live member records for this stat.')
             if (!append) {
@@ -244,24 +281,47 @@ const MembersPageMain = ({ initialData = null, initialStats = null }: MembersPag
                 setStatModalMeta(null)
             }
         } finally {
-            setIsStatModalLoading(false)
-            setIsStatModalLoadingMore(false)
+            if (requestId === statModalRequestIdRef.current) {
+                setIsStatModalLoading(false)
+                setIsStatModalLoadingMore(false)
+            }
         }
     }, [triggerStatDetails])
 
     useEffect(() => {
         if (!selectedStatCard) {
             setStatModalMembers([])
+            setExpandedReferralMembers([])
+            setStatModalSearch('')
+            setDebouncedStatModalSearch('')
+            setStatModalPage(1)
             setStatModalMeta(null)
             setStatModalError(null)
             return
         }
 
         setStatModalMembers([])
+        setExpandedReferralMembers([])
+        setStatModalSearch('')
+        setDebouncedStatModalSearch('')
+        setStatModalPage(1)
         setStatModalMeta(null)
         setStatModalError(null)
-        loadStatPage(selectedStatCard, 1, false)
+        loadStatPage(selectedStatCard, 1, false, '')
     }, [loadStatPage, selectedStatCard])
+
+    useEffect(() => {
+        if (!selectedStatCard) {
+            return
+        }
+
+        setExpandedReferralMembers([])
+        setStatModalPage(1)
+        setStatModalMembers([])
+        setStatModalMeta(null)
+        setStatModalError(null)
+        loadStatPage(selectedStatCard, 1, false, debouncedStatModalSearch)
+    }, [debouncedStatModalSearch, loadStatPage, selectedStatCard])
 
     const handleSearch = (value: string) => {
         setSearch(value)
@@ -413,6 +473,7 @@ const MembersPageMain = ({ initialData = null, initialStats = null }: MembersPag
         statModalMeta &&
         statModalMeta.current_page < statModalMeta.last_page
     )
+    const usePaginationControls = selectedStatCard === 'total_members'
 
     return (
         <div className="space-y-5">
@@ -515,12 +576,19 @@ const MembersPageMain = ({ initialData = null, initialStats = null }: MembersPag
                                 <p className="mt-0.5 text-xs text-slate-500">
                                     {selectedStatMeta?.intro ?? 'Live records loaded from the database.'}
                                 </p>
-                                {statModalMeta && (
-                                    <p className="mt-1 text-[11px] font-medium text-teal-600">
-                                        Showing {statModalMembers.length.toLocaleString()} of {statModalMeta.total.toLocaleString()} database records
-                                    </p>
-                                )}
-                            </div>
+                                        {statModalMeta && (
+                                            <p className="mt-1 text-[11px] font-medium text-teal-600">
+                                                {usePaginationControls
+                                                    ? `Page ${statModalMeta.current_page.toLocaleString()} of ${statModalMeta.last_page.toLocaleString()} for ${statModalMeta.total.toLocaleString()} database records`
+                                                    : `Showing ${statModalMembers.length.toLocaleString()} of ${statModalMeta.total.toLocaleString()} database records`}
+                                            </p>
+                                        )}
+                                        {debouncedStatModalSearch !== '' ? (
+                                            <p className="mt-1 text-[11px] text-slate-400">
+                                                Search results for &quot;{debouncedStatModalSearch}&quot;
+                                            </p>
+                                        ) : null}
+                                    </div>
                             <button
                                 onClick={() => setSelectedStatCard(null)}
                                 className="h-9 w-9 rounded-xl border border-slate-200 text-slate-500 transition hover:bg-slate-50 hover:text-slate-700"
@@ -545,28 +613,102 @@ const MembersPageMain = ({ initialData = null, initialStats = null }: MembersPag
                                     <p className="mt-1 text-xs text-slate-400">Try reopening the modal to fetch the live records again.</p>
                                 </div>
                             ) : statModalMembers.length > 0 ? (
-                                <div className="divide-y divide-slate-100 dark:divide-slate-800/70">
+                                <div>
+                                    <div className="border-b border-slate-100 px-5 py-4">
+                                        <div className="relative">
+                                            <svg
+                                                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                viewBox="0 0 24 24"
+                                            >
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                            </svg>
+                                            <input
+                                                type="text"
+                                                value={statModalSearch}
+                                                onChange={(event) => setStatModalSearch(event.target.value)}
+                                                placeholder="Search member, email, address, tier..."
+                                                className="w-full rounded-2xl border border-slate-200 bg-white py-3 pl-10 pr-4 text-sm text-slate-800 outline-none transition focus:border-teal-400 focus:ring-2 focus:ring-teal-100"
+                                            />
+                                        </div>
+                                        {debouncedStatModalSearch !== '' ? (
+                                            <p className="mt-2 text-[11px] text-slate-400">
+                                                Full database search is active for this modal
+                                            </p>
+                                        ) : null}
+                                    </div>
+                                    <div className="divide-y divide-slate-100 dark:divide-slate-800/70">
                                     {statModalMembers.map((member, index) => (
                                         <motion.div
                                             key={`${member.id}-${index}`}
                                             initial={{ opacity: 0, y: 8 }}
                                             animate={{ opacity: 1, y: 0 }}
                                             transition={{ duration: 0.18, delay: Math.min(index * 0.015, 0.18) }}
-                                            className="flex items-center justify-between gap-4 px-5 py-4"
+                                            className="px-5 py-4"
                                         >
-                                            <div className="min-w-0">
-                                                <p className="truncate text-sm font-semibold text-slate-800">{member.name}</p>
-                                                <p className="truncate text-xs text-slate-500">{member.email}</p>
-                                                <p className="mt-1 truncate text-[11px] text-slate-400">
-                                                    {member.fullAddress || member.referredByName || member.status}
-                                                </p>
+                                            <div className="flex items-center justify-between gap-4">
+                                                <div className="min-w-0">
+                                                    <p className="truncate text-sm font-semibold text-slate-800">{member.name}</p>
+                                                    <p className="truncate text-xs text-slate-500">{member.email}</p>
+                                                    <p className="mt-1 truncate text-[11px] text-slate-400">
+                                                        {member.fullAddress || member.referredByName || member.status}
+                                                    </p>
+                                                </div>
+                                                <div className="flex shrink-0 items-center gap-3">
+                                                    {selectedStatCard === 'total_referrals' && (member.referralChildren?.length ?? 0) > 0 ? (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() =>
+                                                                setExpandedReferralMembers((prev) =>
+                                                                    prev.includes(member.id)
+                                                                        ? prev.filter((id) => id !== member.id)
+                                                                        : [...prev, member.id]
+                                                                )
+                                                            }
+                                                            className="rounded-xl border border-teal-200 bg-teal-50 px-3 py-2 text-[11px] font-semibold text-teal-700 transition hover:bg-teal-100"
+                                                        >
+                                                            {expandedReferralMembers.includes(member.id)
+                                                                ? 'Hide Under'
+                                                                : `View Under (${member.referralChildren?.length ?? 0})`}
+                                                        </button>
+                                                    ) : null}
+                                                    <div className="text-right">
+                                                        <p className="text-sm font-bold text-teal-700">{member.metricValue ?? '-'}</p>
+                                                        <p className="text-[11px] text-slate-400">{statModalMetricLabel}</p>
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <div className="shrink-0 text-right">
-                                                <p className="text-sm font-bold text-teal-700">{member.metricValue ?? '-'}</p>
-                                                <p className="text-[11px] text-slate-400">{statModalMetricLabel}</p>
-                                            </div>
+
+                                            {selectedStatCard === 'total_referrals' &&
+                                            expandedReferralMembers.includes(member.id) &&
+                                            (member.referralChildren?.length ?? 0) > 0 ? (
+                                                <div className="mt-3 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2">
+                                                    <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                                                        Direct Members Under {member.name}
+                                                    </p>
+                                                    <div className="space-y-2">
+                                                        {member.referralChildren?.map((child) => (
+                                                            <div
+                                                                key={child.id}
+                                                                className="flex items-center justify-between gap-3 rounded-xl bg-white px-3 py-2"
+                                                            >
+                                                                <div className="min-w-0">
+                                                                    <p className="truncate text-xs font-semibold text-slate-800">{child.name}</p>
+                                                                    <p className="truncate text-[11px] text-slate-500">{child.email || child.username}</p>
+                                                                </div>
+                                                                <div className="shrink-0 text-right">
+                                                                    <p className="text-[11px] font-semibold text-slate-700">{child.tier}</p>
+                                                                    <p className="text-[10px] text-slate-400">{child.joinedAt || child.status}</p>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            ) : null}
                                         </motion.div>
                                     ))}
+                                    </div>
                                 </div>
                             ) : (
                                 <div className="px-5 py-12 text-center">
@@ -579,11 +721,41 @@ const MembersPageMain = ({ initialData = null, initialStats = null }: MembersPag
                         <div className="border-t border-slate-100 px-5 py-4 dark:border-slate-800">
                             <div className="flex items-center justify-between gap-3">
                                 <p className="text-xs text-slate-400">
-                                    Scroll to inspect records. Use load more to fetch the next batch from the database.
+                                    {usePaginationControls
+                                        ? 'Browse the full member database using the pagination controls below.'
+                                        : 'Scroll to inspect records. Search queries now run against the full database.'}
                                 </p>
-                                {canLoadMoreStatMembers && selectedStatCard ? (
+                                {usePaginationControls && selectedStatCard && statModalMeta ? (
+                                    <div className="flex items-center gap-2">
+                                        <Button
+                                            onPress={() => {
+                                                const nextPage = Math.max(1, (statModalMeta.current_page ?? statModalPage) - 1)
+                                                setStatModalPage(nextPage)
+                                                loadStatPage(selectedStatCard, nextPage, false, debouncedStatModalSearch)
+                                            }}
+                                            isDisabled={isStatModalLoading || statModalMeta.current_page <= 1}
+                                            className="rounded-xl border border-slate-200 bg-white text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+                                        >
+                                            Prev
+                                        </Button>
+                                        <span className="min-w-[72px] text-center text-sm font-semibold text-slate-600">
+                                            {statModalMeta.current_page} / {statModalMeta.last_page}
+                                        </span>
+                                        <Button
+                                            onPress={() => {
+                                                const nextPage = Math.min(statModalMeta.last_page, (statModalMeta.current_page ?? statModalPage) + 1)
+                                                setStatModalPage(nextPage)
+                                                loadStatPage(selectedStatCard, nextPage, false, debouncedStatModalSearch)
+                                            }}
+                                            isDisabled={isStatModalLoading || statModalMeta.current_page >= statModalMeta.last_page}
+                                            className="rounded-xl border border-slate-200 bg-white text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+                                        >
+                                            Next
+                                        </Button>
+                                    </div>
+                                ) : canLoadMoreStatMembers && selectedStatCard ? (
                                     <Button
-                                        onPress={() => loadStatPage(selectedStatCard, (statModalMeta?.current_page ?? 1) + 1, true)}
+                                        onPress={() => loadStatPage(selectedStatCard, (statModalMeta?.current_page ?? 1) + 1, true, debouncedStatModalSearch)}
                                         isDisabled={isStatModalLoadingMore}
                                         className="rounded-xl bg-teal-600 text-white transition hover:bg-teal-700 disabled:bg-teal-300"
                                     >
