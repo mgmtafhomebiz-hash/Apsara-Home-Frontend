@@ -143,8 +143,8 @@ const ProductImageGallery = ({ product, selectedVariantImages, preferredActiveIm
                 <button
                   key={index}
                   onClick={() => goToImage(index)}
-                  className={`relative w-16 h-16 rounded-lg overflow-hidden border-2 bg-gray-100 transition-all ${
-                    safeActiveImage === index ? 'border-orange-400' : 'border-transparent hover:border-gray-300'
+                  className={`relative w-16 h-16 rounded-lg overflow-hidden border-2 bg-gray-100 dark:bg-gray-800 transition-all ${
+                    safeActiveImage === index ? 'border-orange-400 dark:border-orange-500' : 'border-transparent hover:border-gray-300 dark:hover:border-gray-600'
                   }`}
                 >
                   <Image src={image.enhanced || image.original} alt={`View ${index + 1}`} fill className="object-cover" />
@@ -154,7 +154,7 @@ const ProductImageGallery = ({ product, selectedVariantImages, preferredActiveIm
           )}
 
           <div
-            className="relative flex-1 aspect-square rounded-2xl sm:rounded-3xl overflow-hidden bg-[#ececec] shadow-sm cursor-zoom-in group"
+            className="relative flex-1 aspect-square rounded-2xl sm:rounded-3xl overflow-hidden bg-[#ececec] dark:bg-gray-800 shadow-sm cursor-zoom-in group"
             onClick={() => setIsZoomed(true)}
           >
             <AnimatePresence mode="wait">
@@ -177,7 +177,7 @@ const ProductImageGallery = ({ product, selectedVariantImages, preferredActiveIm
                     e.stopPropagation();
                     goPrev();
                   }}
-                  className="h-11 w-11 rounded-full bg-white/95 hover:bg-white text-slate-700 shadow-md transition-colors flex items-center justify-center"
+                  className="h-11 w-11 rounded-full bg-white/95 dark:bg-gray-700/95 hover:bg-white dark:hover:bg-gray-700 text-slate-700 dark:text-gray-200 shadow-md transition-colors flex items-center justify-center"
                   aria-label="Previous image"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
@@ -189,7 +189,7 @@ const ProductImageGallery = ({ product, selectedVariantImages, preferredActiveIm
                     e.stopPropagation();
                     goNext();
                   }}
-                  className="h-11 w-11 rounded-full bg-white/95 hover:bg-white text-slate-700 shadow-md transition-colors flex items-center justify-center"
+                  className="h-11 w-11 rounded-full bg-white/95 dark:bg-gray-700/95 hover:bg-white dark:hover:bg-gray-700 text-slate-700 dark:text-gray-200 shadow-md transition-colors flex items-center justify-center"
                   aria-label="Next image"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
@@ -207,8 +207,8 @@ const ProductImageGallery = ({ product, selectedVariantImages, preferredActiveIm
               <button
                 key={index}
                 onClick={() => goToImage(index)}
-                className={`relative shrink-0 w-16 h-16 rounded-xl overflow-hidden bg-gray-50 border-2 transition-all duration-200 ${
-                  activeImage === index ? 'border-orange-400' : 'border-gray-100'
+                className={`relative shrink-0 w-16 h-16 rounded-xl overflow-hidden bg-gray-50 dark:bg-gray-800 border-2 transition-all duration-200 ${
+                  activeImage === index ? 'border-orange-400 dark:border-orange-500' : 'border-gray-100 dark:border-gray-700'
                 }`}
               >
                 <Image src={image.enhanced || image.original} alt={`View ${index + 1}`} fill className="object-cover" />
