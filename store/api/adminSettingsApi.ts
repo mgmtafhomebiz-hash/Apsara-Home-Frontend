@@ -13,6 +13,7 @@ export interface AdminGeneralSettings {
   currency: string
   date_format: string
   language: string
+  enable_test_payments: boolean
   updated_at?: string | null
 }
 

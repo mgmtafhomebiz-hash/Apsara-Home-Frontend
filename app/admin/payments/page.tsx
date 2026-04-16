@@ -1,5 +1,5 @@
 import { buildPageMetadata } from '@/app/seo'
-import UnderMaintenancePage from '@/components/superAdmin/UnderMaintenancePage'
+import PaymentsPageMain from '@/components/superAdmin/payments/PaymentsPageMain'
 
 export const metadata = buildPageMetadata({
   title: 'Admin Payments',
@@ -9,10 +9,5 @@ export const metadata = buildPageMetadata({
 })
 
 export default function AdminPaymentsPage() {
-  return (
-    <UnderMaintenancePage
-      title="Payments"
-      description="Payment transaction tools are still under maintenance."
-    />
-  )
+  return <PaymentsPageMain />
 }

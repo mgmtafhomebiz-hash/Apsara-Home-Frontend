@@ -30,7 +30,9 @@ export default function AdminGeneralSettingsPageMain() {
   const [currency, setCurrency] = useState('PHP')
   const [dateFormat, setDateFormat] = useState('MM/DD/YYYY')
   const [language, setLanguage] = useState('English')
+  const [enableTestPayments, setEnableTestPayments] = useState(false)
 
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (!data?.settings || hasHydrated.current) return
     const settings = data.settings
@@ -51,8 +53,10 @@ export default function AdminGeneralSettingsPageMain() {
     setCurrency(settings.currency || 'PHP')
     setDateFormat(settings.date_format || 'MM/DD/YYYY')
     setLanguage(settings.language || 'English')
+    setEnableTestPayments(Boolean(settings.enable_test_payments))
     hasHydrated.current = true
   }, [data])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   return (
     <div className="space-y-8">
@@ -271,6 +275,53 @@ export default function AdminGeneralSettingsPageMain() {
         </div>
       </div>
 
+      <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Checkout Payments</p>
+            <h2 className="mt-2 text-lg font-bold text-slate-900">Test Payment Visibility</h2>
+            <p className="mt-2 max-w-3xl text-sm leading-relaxed text-slate-600">
+              When enabled, customers on the live website can see the test/live payment mode switch during checkout.
+            </p>
+          </div>
+          <span className={`rounded-full border px-3 py-1 text-[11px] font-semibold uppercase ${
+            enableTestPayments
+              ? 'border-amber-200 bg-amber-50 text-amber-700'
+              : 'border-emerald-200 bg-emerald-50 text-emerald-700'
+          }`}>
+            {enableTestPayments ? 'Test visible on checkout' : 'Live only'}
+          </span>
+        </div>
+
+        <div className="mt-6 rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-5">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="max-w-2xl">
+              <p className="text-sm font-semibold text-slate-800">Enable Test Payments on Customer Checkout</p>
+              <p className="mt-1 text-sm text-slate-500">
+                Recommended to keep this off in production unless you intentionally want customers to access PayMongo test mode.
+              </p>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={enableTestPayments}
+              onClick={() => setEnableTestPayments((prev) => !prev)}
+              className={`relative inline-flex h-8 w-15 shrink-0 items-center rounded-full border transition-all ${
+                enableTestPayments
+                  ? 'border-orange-300 bg-orange-500'
+                  : 'border-slate-300 bg-slate-200'
+              }`}
+            >
+              <span
+                className={`inline-block h-6 w-6 rounded-full bg-white shadow-sm transition-transform ${
+                  enableTestPayments ? 'translate-x-8' : 'translate-x-1'
+                }`}
+              />
+            </button>
+          </div>
+        </div>
+      </div>
+
       <div className="flex flex-wrap items-center justify-end gap-3">
         <button
           type="button"
@@ -286,6 +337,7 @@ export default function AdminGeneralSettingsPageMain() {
             payload.append('currency', currency)
             payload.append('date_format', dateFormat)
             payload.append('language', language)
+            payload.append('enable_test_payments', enableTestPayments ? '1' : '0')
 
             if (logoFile) {
               payload.append('logo', logoFile)
