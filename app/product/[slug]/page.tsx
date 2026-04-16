@@ -269,6 +269,7 @@ const toCategoryProduct = (row: LooseRecord, apiUrl?: string): CategoryProduct =
     name,
     type: toNumber(row.type ?? row.pd_type),
     price,
+    priceSrp: srp > 0 ? srp : undefined,
     priceMember: member > 0 ? member : undefined,
     prodpv,
     originalPrice: undefined,
