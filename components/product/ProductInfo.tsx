@@ -13,83 +13,10 @@ import BuyNowOptionsModal from "./BuyNowOptionsModal";
 import { useSession } from "next-auth/react";
 import { useMeQuery } from "@/store/api/userApi";
 import type { ProductReviewSummary } from "@/store/api/productsApi";
+import { useGetProductBrandQuery } from "@/store/api/productsApi";
 import OutlineButton from "@/components/ui/buttons/OutlineButton";
 import PrimaryButton from "@/components/ui/buttons/PrimaryButton";
 
-// Brand Profile Component
-const BrandProfile = ({ product }: { product: CategoryProduct }) => {
-    if (!product.brand) return null;
-    
-    return (
-        <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-4 shadow-lg">
-            <div className="flex items-center gap-4">
-                <div className={`relative h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-gray-200 dark:border-gray-600`}>
-                    <span className="text-3xl font-bold text-gray-400 dark:text-gray-500">
-                        {product.brand.charAt(0).toUpperCase()}
-                    </span>
-                </div>
-                <div className="flex-1">
-                    <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">{product.brand}</h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">Official {product.brand} Store</p>
-                    <div className="space-y-2">
-                        <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                                <line x1="16" y1="2" x2="16" y2="6" />
-                                <line x1="16" y1="10" x2="21" y2="10" />
-                            </svg>
-                            <span>Chat Performance: 95%</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <path d="M12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
-                            </svg>
-                            <span>Overall Rating: 4.8</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                                <line x1="16" y1="2" x2="16" y2="6" />
-                                <line x1="16" y1="10" x2="21" y2="10" />
-                                <line x1="3" y1="2" x2="3" y2="6" />
-                            </svg>
-                            <span>Total Products: 24</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <path d="M6 2L3 6v14a2 2 0 0 1 2 2h14a2 2 0 0 1 2 2V6l-3-4z" />
-                                <line x1="16" y1="2" x2="16" y2="6" />
-                                <line x1="8" y1="2" x2="16" y2="6" />
-                                <line x1="3" y1="10" x2="21" y2="10" />
-                            </svg>
-                            <span>Joined: Jan 2024</span>
-                        </div>
-                    </div>
-                    <button
-                        onClick={() => {
-                            const brandUrl = window.location.href;
-                            navigator.clipboard.writeText(brandUrl).then(() => {
-                                // Success feedback could be added here
-                            }).catch(() => {
-                                // Error feedback could be added here
-                            })
-                        }}
-                        className="absolute top-4 right-4 p-2 rounded-full border border-gray-200 dark:border-gray-600 hover:bg-orange-500 hover:border-orange-500 dark:hover:bg-orange-500 dark:hover:border-orange-500 hover:text-white transition-all duration-200 cursor-pointer"
-                        title="Share Brand"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-700 dark:text-gray-300 hover:text-white transition-colors">
-                            <circle cx="18" cy="5" r="3" />
-                            <circle cx="6" cy="12" r="3" />
-                            <circle cx="18" cy="19" r="3" />
-                            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
-                            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
-                        </svg>
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
-};
 
 const CartIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -253,10 +180,19 @@ const buildVariantTitleParts = (variant?: NonNullable<CategoryProduct['variants'
 
 const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, reviewSummary }: ProductInfoProps) => {
     const { addToCart } = useCart();
-    const { data: session } = useSession();
+    const { data: session, status, update: updateSession } = useSession();
     const isLoggedIn = Boolean(session?.user);
     const { data: me } = useMeQuery(undefined, { skip: !isLoggedIn });
-    const canUseMemberPrice = isLoggedIn;
+    const canUseMemberPrice = isLoggedIn && status === 'authenticated';
+    const [hasRefreshedSession, setHasRefreshedSession] = useState(false);
+
+    // Refresh session once on component mount to handle login redirects
+    useEffect(() => {
+        if (!hasRefreshedSession && updateSession && !isLoggedIn) {
+            updateSession();
+            setHasRefreshedSession(true);
+        }
+    }, []);
     const basePv = toPositiveNumber(product.prodpv) ?? 0;
     const [quantity, setQuantity] = useState(1);
     const [selectedColor, setSelectedColor] = useState('');
@@ -533,10 +469,9 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, 
     const variantMember = toPositiveNumber(selectedVariant?.priceMember) ?? toPositiveNumber(product.priceMember) ?? 0;
     const hasMemberPrice = variantMember > 0 && variantMember < variantSrp;
 
-    const displayPrice = canUseMemberPrice && hasMemberPrice ? variantMember : variantSrp;
-    const displayOriginalPrice = canUseMemberPrice
-        ? (hasMemberPrice ? variantSrp : undefined)
-        : (product.originalPrice && product.originalPrice > variantSrp ? product.originalPrice : undefined);
+    // Always display member price if available, regardless of login status
+    const displayPrice = hasMemberPrice ? variantMember : variantSrp;
+    const displayOriginalPrice = hasMemberPrice ? variantSrp : (product.originalPrice && product.originalPrice > variantSrp ? product.originalPrice : undefined);
     const totalVariantStock = getEffectiveVariantStock(variantOptions);
     const displayStock = typeof selectedVariant?.qty === 'number'
         ? selectedVariant.qty
@@ -772,12 +707,24 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, 
                             ✓ Member Price Applied
                         </span>
                     )}
+                    {!canUseMemberPrice && hasMemberPrice && (
+                        <span className="inline-flex items-center rounded-full border border-orange-200 bg-orange-50 px-3 py-1 text-[11px] font-semibold text-orange-700">
+                            ✨ Sign in or Register to claim {Math.round(((variantSrp - variantMember) / variantSrp) * 100)}% savings!
+                        </span>
+                    )}
                     {variantPv > 0 && (
                         <span className="inline-flex items-center rounded-full border border-blue-200 px-3 py-1 text-xs font-semibold text-blue-700">
                             PV {variantPv.toLocaleString()}
                         </span>
                     )}
                 </div>
+                {hasMemberPrice && (
+                    <div className="mt-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                        <p className="text-xs text-amber-800 dark:text-amber-700">
+                            <span className="font-semibold">💡 Note:</span> The price shown above is our member discount price. {!canUseMemberPrice ? 'Sign in or create an account to enjoy this price at checkout.' : 'You\'re enjoying this exclusive member price!'}
+                        </p>
+                    </div>
+                )}
             </div>
 
             {/* Product Details */}
@@ -846,17 +793,29 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, 
 
                     {hasColorSelector && colorOptions.length > 0 && (
                         <div>
-                            <span className="text-sm font-semibold text-slate-700 mb-2 block">Color</span>
+                            <span className="text-sm font-semibold text-slate-700 block mb-2">
+                                Color{effectiveSelectedColor && ': '}
+                                {effectiveSelectedColor && (
+                                    <span className="text-slate-600 dark:text-gray-400 capitalize">{effectiveSelectedColor}</span>
+                                )}
+                            </span>
                             <div className="flex gap-2">
                                 {colorOptions.map(c => (
                                     <button
                                         key={c.name}
                                         title={c.name}
                                         onClick={() => setSelectedColor(c.name)}
-                                        className={`w-10 h-10 rounded-full border-2 border-white shadow-md hover:scale-110 transition-all duration-200 ${
-                                            effectiveSelectedColor === c.name ? 'ring-2 ring-orange-400 ring-offset-2' : ''
+                                        className={`w-10 h-10 rounded-full transition-all duration-200 hover:scale-110 ${
+                                            effectiveSelectedColor === c.name ? 'ring-2 ring-offset-2' : ''
                                         }`}
-                                        style={{ backgroundColor: c.hex ?? '#E5E7EB' }}
+                                        style={{
+                                            backgroundColor: c.hex ?? '#E5E7EB',
+                                            borderWidth: '3px',
+                                            borderColor: effectiveSelectedColor === c.name ? (c.hex ?? '#E5E7EB') : '#D1D5DB',
+                                            boxShadow: effectiveSelectedColor === c.name
+                                                ? `0 0 0 2px white, 0 0 0 5px ${c.hex ?? '#E5E7EB'}, inset 0 0 0 1px rgba(0,0,0,0.1)`
+                                                : 'none'
+                                        }}
                                     />
                                 ))}
                             </div>
@@ -1051,7 +1010,7 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, 
                         initial={{ opacity: 0, y: 30, scale: 0.98 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         transition={{ duration: 0.2 }}
-                        className="relative w-full max-w-xl rounded-3xl shadow-2xl border border-gray-100 p-5 sm:p-6"
+                        className="relative w-full max-w-xl rounded-3xl border border-gray-100 p-5 sm:p-6"
                     >
                         <div className="flex items-center justify-between">
                             <div>
@@ -1083,7 +1042,7 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, 
                                     className="flex flex-col items-center gap-2 text-center text-xs font-semibold text-slate-600 hover:text-orange-600 transition-colors"
                                     type="button"
                                 >
-                                    <span className="flex h-14 w-14 items-center justify-center rounded-full border border-gray-200 text-slate-600 shadow-sm">
+                                    <span className="flex h-14 w-14 items-center justify-center rounded-full border border-gray-200 text-slate-600">
                                         {hasShareIconSrc(item) ? (
                                             <Image
                                                 src={item.iconSrc}
@@ -1118,6 +1077,7 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, 
                     </motion.div>
                 </div>
             )}
+
         </motion.div>
     );
 };
