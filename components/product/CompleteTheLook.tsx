@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { useCart } from '@/context/CartContext';
 import { useGetPublicProductsQuery } from '@/store/api/productsApi';
+import PrimaryButton from '@/components/ui/buttons/PrimaryButton';
 
 interface CompleteTheLookProps {
   currentCategory: string;
@@ -174,15 +175,15 @@ const CompleteTheLook = ({ currentCategory, currentCategoryId, currentCategoryLa
     >
       <div className="flex items-center justify-between gap-3 mb-6">
         <div>
-          <h2 className="text-xl font-bold text-slate-900">{title}</h2>
-          <p className="text-sm text-gray-400 mt-0.5">{subtitle}</p>
+          <h2 className="text-xl font-bold text-slate-900 dark:text-gray-100">{title}</h2>
+          <p className="text-sm text-gray-400 dark:text-gray-500 mt-0.5">{subtitle}</p>
         </div>
-        {isFetching ? <p className="text-xs text-slate-400">Loading...</p> : null}
-        {isError ? <p className="text-xs text-red-500">Failed to load.</p> : null}
+        {isFetching ? <p className="text-xs text-slate-400 dark:text-gray-500">Loading...</p> : null}
+        {isError ? <p className="text-xs text-red-500 dark:text-red-400">Failed to load.</p> : null}
       </div>
 
-      <div className="border border-gray-100 rounded-2xl overflow-hidden">
-        <div className="divide-y divide-gray-100">
+      <div className="border border-gray-100 dark:border-gray-700 rounded-2xl overflow-hidden">
+        <div className="divide-y divide-gray-100 dark:divide-gray-700">
           {bundleItems.map((item, index) => {
             const isSelected = selected.has(item.id);
             const productPath = buildProductPath(item.name, item.id);
@@ -193,13 +194,13 @@ const CompleteTheLook = ({ currentCategory, currentCategoryId, currentCategoryLa
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.1 + index * 0.07 }}
-                className={`flex items-center gap-4 p-4 transition-colors ${isSelected ? 'bg-white' : 'bg-gray-50/50'}`}
+                className={`flex items-center gap-4 p-4 transition-colors ${isSelected ? 'bg-white dark:bg-gray-800' : 'bg-gray-50/50 dark:bg-gray-800/50'}`}
               >
                 <button
                   type="button"
                   onClick={() => toggleItem(item.id)}
                   className={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-all ${
-                    isSelected ? 'bg-orange-500 border-orange-500' : 'border-gray-300 hover:border-orange-300'
+                    isSelected ? 'bg-orange-500 border-orange-500' : 'border-gray-300 dark:border-gray-600 hover:border-orange-300 dark:hover:border-orange-400'
                   }`}
                 >
                   {isSelected ? (
@@ -209,24 +210,24 @@ const CompleteTheLook = ({ currentCategory, currentCategoryId, currentCategoryLa
                   ) : null}
                 </button>
 
-                <Link href={productPath} className="relative w-16 h-16 rounded-xl overflow-hidden bg-gray-100 shrink-0">
+                <Link href={productPath} className="relative w-16 h-16 rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-700 shrink-0">
                   <Image src={item.image} alt={item.name} fill className="object-cover" unoptimized />
                 </Link>
 
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs text-orange-500 font-semibold uppercase tracking-wide mb-0.5">
+                  <p className="text-xs text-orange-500 dark:text-orange-400 font-semibold uppercase tracking-wide mb-0.5">
                     {currentCategoryLabel || 'Recommended'}
                   </p>
-                  <Link href={productPath} className="text-sm font-semibold text-slate-800 hover:text-orange-500 transition-colors line-clamp-1">
+                  <Link href={productPath} className="text-sm font-semibold text-slate-800 dark:text-gray-200 hover:text-orange-500 dark:hover:text-orange-400 transition-colors line-clamp-1">
                     {item.name}
                   </Link>
-                  {item.brand ? <p className="text-xs text-gray-400 mt-0.5">{item.brand}</p> : null}
+                  {item.brand ? <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{item.brand}</p> : null}
                 </div>
 
                 <div className="text-right shrink-0">
-                  <p className="text-sm font-bold text-slate-800">{formatMoney(item.price)}</p>
+                  <p className="text-sm font-bold text-slate-800 dark:text-gray-200">{formatMoney(item.price)}</p>
                   {typeof item.originalPrice === 'number' && item.originalPrice > item.price ? (
-                    <p className="text-xs text-gray-400 line-through">{formatMoney(item.originalPrice)}</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500 line-through">{formatMoney(item.originalPrice)}</p>
                   ) : null}
                 </div>
               </motion.div>
@@ -234,24 +235,23 @@ const CompleteTheLook = ({ currentCategory, currentCategoryId, currentCategoryLa
           })}
         </div>
 
-        <div className="bg-gray-50 px-4 py-4 flex items-center justify-between gap-4 flex-wrap">
+        <div className="bg-gray-50 dark:bg-gray-800 px-4 py-4 flex items-center justify-between gap-4 flex-wrap">
           <div>
-            <p className="text-xs text-gray-400">
+            <p className="text-xs text-gray-400 dark:text-gray-500">
               {selected.size} item{selected.size !== 1 ? 's' : ''} selected
             </p>
-            <p className="text-lg font-bold text-slate-900">
-              Total: <span className="text-orange-500">{formatMoney(total)}</span>
+            <p className="text-lg font-bold text-slate-900 dark:text-gray-100">
+              Total: <span className="text-orange-500 dark:text-orange-400">{formatMoney(total)}</span>
             </p>
           </div>
-          <motion.button
-            whileTap={{ scale: 0.97 }}
+          <PrimaryButton
             onClick={handleAddAll}
             disabled={selected.size === 0}
-            className="flex items-center gap-2 bg-slate-900 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed text-white px-6 py-2.5 rounded-xl font-semibold text-sm transition-colors"
+            className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm"
           >
             <CartIcon />
             Add {selected.size > 0 ? `${selected.size} Items` : 'Items'} to Cart
-          </motion.button>
+          </PrimaryButton>
         </div>
       </div>
     </motion.div>

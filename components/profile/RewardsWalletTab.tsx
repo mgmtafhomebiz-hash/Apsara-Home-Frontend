@@ -47,22 +47,22 @@ const formatDate = (value?: string | null) => {
 const STATUS_CONFIG: Record<string, { label: string; cls: string; dot: string }> = {
   active: {
     label: 'Active',
-    cls: 'bg-sky-50 text-sky-700 ring-1 ring-sky-200',
+    cls: 'bg-sky-50 dark:bg-sky-900/30 text-sky-700 dark:text-sky-400 ring-1 ring-sky-200 dark:ring-sky-800',
     dot: 'bg-sky-500',
   },
   redeemed: {
     label: 'Redeemed',
-    cls: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200',
+    cls: 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 ring-1 ring-emerald-200 dark:ring-emerald-800',
     dot: 'bg-emerald-500',
   },
   cancelled: {
     label: 'Cancelled',
-    cls: 'bg-rose-50 text-rose-700 ring-1 ring-rose-200',
+    cls: 'bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 ring-1 ring-rose-200 dark:ring-rose-800',
     dot: 'bg-rose-500',
   },
   expired: {
     label: 'Expired',
-    cls: 'bg-amber-50 text-amber-700 ring-1 ring-amber-200',
+    cls: 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 ring-1 ring-amber-200 dark:ring-amber-800',
     dot: 'bg-amber-500',
   },
 };
@@ -99,8 +99,8 @@ function CopyButton({ text }: { text: string }) {
       title="Copy code"
       className={`ml-2 inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-semibold transition-all ${
         copied
-          ? 'bg-emerald-100 text-emerald-700'
-          : 'bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700'
+          ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
+          : 'border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-gray-900 text-slate-500 dark:text-gray-400 hover:bg-slate-100 dark:hover:bg-gray-800 hover:text-slate-700 dark:hover:text-gray-300'
       }`}
     >
       {copied ? (
@@ -216,55 +216,55 @@ export default function RewardsWalletTab({
       </div>
 
       <div className="grid gap-5 lg:grid-cols-[1fr_300px]">
-        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="rounded-3xl border border-slate-200 dark:border-slate-700 dark:bg-gray-800 p-6">
           <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-400">Voucher Studio</p>
-              <h3 className="mt-1 text-lg font-bold text-slate-900">Create Affiliate Voucher</h3>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">Voucher Studio</p>
+              <h3 className="mt-1 text-lg font-bold text-slate-900 dark:text-white">Create Affiliate Voucher</h3>
             </div>
             <div className="flex items-center gap-2">
               {isVerified ? (
-                <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700">
+                <span className="rounded-full bg-emerald-100 dark:bg-emerald-900/30 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700 dark:text-emerald-400">
                   Verified
                 </span>
               ) : null}
-              <div className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-2 text-center">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Active Coupon</p>
-                <p className="mt-0.5 text-xl font-bold text-slate-900">{activeVoucherCount}</p>
+              <div className="rounded-2xl border border-slate-200 dark:border-slate-700 dark:bg-gray-900 px-4 py-2 text-center">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-gray-500">Active Coupon</p>
+                <p className="mt-0.5 text-xl font-bold text-slate-900 dark:text-white">{activeVoucherCount}</p>
               </div>
             </div>
           </div>
 
           <div className="mb-5 grid gap-2.5 sm:grid-cols-3">
-            <div className="rounded-2xl border border-orange-100 bg-orange-50 px-4 py-3.5">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-orange-600">Cashback Source</p>
-              <p className="mt-1.5 text-lg font-bold text-slate-900">{peso(cashbackSourceBalance)}</p>
+            <div className="rounded-2xl border border-orange-200 dark:border-orange-800 dark:bg-orange-900/30 px-4 py-3.5">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-orange-600 dark:text-orange-400">Cashback Source</p>
+              <p className="mt-1.5 text-lg font-bold text-slate-900 dark:text-white">{peso(cashbackSourceBalance)}</p>
             </div>
-            <div className="rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3.5">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-amber-600">Cashback Reserved</p>
-              <p className="mt-1.5 text-lg font-bold text-slate-900">{peso(cashbackReservedBalance)}</p>
+            <div className="rounded-2xl border border-amber-200 dark:border-amber-800 dark:bg-amber-900/30 px-4 py-3.5">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-amber-600 dark:text-amber-400">Cashback Reserved</p>
+              <p className="mt-1.5 text-lg font-bold text-slate-900 dark:text-white">{peso(cashbackReservedBalance)}</p>
             </div>
-            <div className="rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3.5">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-600">Cashback Available</p>
-              <p className="mt-1.5 text-lg font-bold text-slate-900">{peso(cashbackBalance)}</p>
+            <div className="rounded-2xl border border-emerald-200 dark:border-emerald-800 dark:bg-emerald-900/30 px-4 py-3.5">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-600 dark:text-emerald-400">Cashback Available</p>
+              <p className="mt-1.5 text-lg font-bold text-slate-900 dark:text-white">{peso(cashbackBalance)}</p>
             </div>
           </div>
 
           {isVerified ? (
             <form className="space-y-4" onSubmit={handleCreateVoucher}>
               <div>
-                <label className="mb-1.5 block text-sm font-semibold text-slate-700">
+                <label className="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-gray-300">
                   Voucher Amount <span className="text-rose-500">*</span>
                 </label>
                 <div className="relative">
-                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-semibold text-slate-400">P</span>
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-semibold text-slate-400 dark:text-gray-500">P</span>
                   <input
                     type="number"
                     min="1"
                     step="0.01"
                     value={voucherAmount}
                     onChange={(e) => setVoucherAmount(e.target.value)}
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-2.5 pl-8 pr-4 text-sm text-slate-900 outline-none transition focus:border-orange-400 focus:bg-white focus:ring-2 focus:ring-orange-100"
+                    className="w-full rounded-2xl border border-slate-200 dark:border-slate-700 dark:bg-gray-900 py-2.5 pl-8 pr-4 text-sm text-slate-900 dark:text-white outline-none transition focus:border-orange-400 dark:focus:border-orange-600 focus:dark:bg-gray-800 focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-800/50"
                     placeholder="0.00"
                     required
                   />
@@ -273,23 +273,23 @@ export default function RewardsWalletTab({
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <label className="mb-1.5 block text-sm font-semibold text-slate-700">
+                  <label className="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-gray-300">
                     Valid Until
-                    <span className="ml-1 text-[10px] font-normal text-slate-400">(optional)</span>
+                    <span className="ml-1 text-[10px] font-normal text-slate-400 dark:text-gray-500">(optional)</span>
                   </label>
                   <input
                     type="date"
                     min={todayStr}
                     value={expiresAt}
                     onChange={(e) => setExpiresAt(e.target.value)}
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-orange-400 focus:bg-white focus:ring-2 focus:ring-orange-100"
+                    className="w-full rounded-2xl border border-slate-200 dark:border-slate-700 dark:bg-gray-900 px-3.5 py-2.5 text-sm text-slate-900 dark:text-white outline-none transition focus:border-orange-400 dark:focus:border-orange-600 focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-800/50"
                   />
-                  <p className="mt-1 text-[11px] text-slate-400">Leave blank for no expiry.</p>
+                  <p className="mt-1 text-[11px] text-slate-400 dark:text-gray-500">Leave blank for no expiry.</p>
                 </div>
                 <div>
-                  <label className="mb-1.5 block text-sm font-semibold text-slate-700">
+                  <label className="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-gray-300">
                     Max Uses
-                    <span className="ml-1 text-[10px] font-normal text-slate-400">(optional)</span>
+                    <span className="ml-1 text-[10px] font-normal text-slate-400 dark:text-gray-500">(optional)</span>
                   </label>
                   <input
                     type="number"
@@ -297,10 +297,10 @@ export default function RewardsWalletTab({
                     step="1"
                     value={maxUses}
                     onChange={(e) => setMaxUses(e.target.value)}
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-orange-400 focus:bg-white focus:ring-2 focus:ring-orange-100"
+                    className="w-full rounded-2xl border border-slate-200 dark:border-slate-700 dark:bg-gray-900 px-3.5 py-2.5 text-sm text-slate-900 dark:text-white outline-none transition focus:border-orange-400 dark:focus:border-orange-600 focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-800/50"
                     placeholder="e.g. 1"
                   />
-                  <p className="mt-1 text-[11px] text-slate-400">Leave blank for unlimited uses.</p>
+                  <p className="mt-1 text-[11px] text-slate-400 dark:text-gray-500">Leave blank for unlimited uses.</p>
                 </div>
               </div>
 
@@ -308,8 +308,8 @@ export default function RewardsWalletTab({
                 <div
                   className={`rounded-2xl px-4 py-3 text-sm font-medium ${
                     message.type === 'success'
-                      ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200'
-                      : 'bg-rose-50 text-rose-700 ring-1 ring-rose-200'
+                      ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 ring-1 ring-emerald-200 dark:ring-emerald-800'
+                      : 'bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 ring-1 ring-rose-200 dark:ring-rose-800'
                   }`}
                 >
                   {message.text}
@@ -319,19 +319,19 @@ export default function RewardsWalletTab({
               <button
                 type="submit"
                 disabled={isCreatingVoucher}
-                className="w-full rounded-2xl bg-orange-500 py-3 text-sm font-bold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
+                className="w-full rounded-2xl bg-orange-500 py-3 text-sm font-bold text-white transition hover:bg-orange-600 dark:hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {isCreatingVoucher ? 'Creating...' : 'Create Voucher'}
               </button>
 
-              <p className="text-[11px] leading-5 text-slate-400">
+              <p className="text-[11px] leading-5 text-slate-400 dark:text-gray-500">
                 The reserved amount is deducted from your available cashback balance immediately and returned if the code is cancelled.
               </p>
             </form>
           ) : (
-            <div className="rounded-2xl border border-dashed border-amber-200 bg-amber-50 px-5 py-5">
+            <div className="rounded-2xl border border-dashed border-amber-200 dark:border-amber-800 dark:bg-amber-900/20 px-5 py-5">
               <div className="mb-2 flex items-center gap-3">
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-600">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400">
                   <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path
                       strokeLinecap="round"
@@ -341,50 +341,50 @@ export default function RewardsWalletTab({
                     />
                   </svg>
                 </span>
-                <h4 className="text-sm font-bold text-slate-900">Verification required</h4>
+                <h4 className="text-sm font-bold text-slate-900 dark:text-white">Verification required</h4>
               </div>
-              <p className="text-sm leading-6 text-slate-600">
+              <p className="text-sm leading-6 text-slate-600 dark:text-gray-400">
                 Only verified affiliate accounts can create customer voucher codes. Complete your AF Home verification to unlock this feature.
               </p>
             </div>
           )}
         </div>
 
-        <div className="space-y-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-400">Program Notes</p>
+        <div className="space-y-4 rounded-3xl border border-slate-200 dark:border-slate-700 dark:bg-gray-800 p-6">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">Program Notes</p>
 
-          <div className="rounded-2xl bg-slate-50 px-4 py-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Cashback Rate</p>
-            <p className="mt-1.5 text-2xl font-bold text-slate-900">
+          <div className="rounded-2xl border border-slate-200 dark:border-slate-700 dark:bg-gray-900 px-4 py-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-gray-400">Cashback Rate</p>
+            <p className="mt-1.5 text-2xl font-bold text-slate-900 dark:text-white">
               {displayCashbackRate.toLocaleString('en-PH', {
                 minimumFractionDigits: displayCashbackRate % 1 === 0 ? 0 : 2,
                 maximumFractionDigits: 2,
               })}
               %
             </p>
-            <p className="mt-1.5 text-xs leading-5 text-slate-500">
+            <p className="mt-1.5 text-xs leading-5 text-slate-500 dark:text-gray-400">
               Current program cashback percentage from migrated rewards settings.
             </p>
           </div>
 
-          <div className="rounded-2xl bg-slate-50 px-4 py-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">AF Voucher Pool</p>
-            <p className="mt-1.5 text-2xl font-bold text-slate-900">{peso(afVoucherSourceBalance)}</p>
-            <p className="mt-1.5 text-xs leading-5 text-slate-500">
+          <div className="rounded-2xl border border-slate-200 dark:border-slate-700 dark:bg-gray-900 px-4 py-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-gray-400">AF Voucher Pool</p>
+            <p className="mt-1.5 text-2xl font-bold text-slate-900 dark:text-white">{peso(afVoucherSourceBalance)}</p>
+            <p className="mt-1.5 text-xs leading-5 text-slate-500 dark:text-gray-400">
               Existing AF Voucher rewards in your account, separate from cashback-backed shareable voucher creation.
             </p>
           </div>
 
-          <div className="rounded-2xl border border-dashed border-slate-200 px-4 py-4 space-y-2.5">
-            <p className="text-xs font-semibold text-slate-700">How voucher creation works</p>
+          <div className="rounded-2xl border border-dashed border-slate-200 dark:border-slate-700 px-4 py-4 space-y-2.5">
+            <p className="text-xs font-semibold text-slate-700 dark:text-gray-300">How voucher creation works</p>
             {[
               'Create a voucher from your available cashback balance.',
               'Set an optional expiry date and usage limit.',
               'Share the generated code with your customer.',
               'The amount stays reserved until redeemed, cancelled, or expired.',
             ].map((step, index) => (
-              <div key={index} className="flex items-start gap-2.5 text-xs leading-5 text-slate-500">
-                <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-teal-100 text-[10px] font-bold text-teal-700">
+              <div key={index} className="flex items-start gap-2.5 text-xs leading-5 text-slate-500 dark:text-gray-400">
+                <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-teal-100 dark:bg-teal-900/30 text-[10px] font-bold text-teal-700 dark:text-teal-400">
                   {index + 1}
                 </span>
                 {step}
@@ -394,20 +394,20 @@ export default function RewardsWalletTab({
         </div>
       </div>
 
-      <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div className="rounded-3xl border border-slate-200 dark:border-slate-700 dark:bg-gray-800 p-6">
         <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-400">Issued Vouchers</p>
-            <h3 className="mt-1 text-lg font-bold text-slate-900">Your shareable codes</h3>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">Issued Vouchers</p>
+            <h3 className="mt-1 text-lg font-bold text-slate-900 dark:text-white">Your shareable codes</h3>
           </div>
-          <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+          <span className="rounded-full border border-slate-200 dark:border-slate-700 dark:bg-gray-900 px-3 py-1 text-xs font-semibold text-slate-600 dark:text-gray-400">
             {vouchers.length} total · {activeVoucherCount} active
           </span>
         </div>
 
         {vouchers.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-slate-200 px-6 py-12 text-center">
-            <svg className="mx-auto mb-3 h-8 w-8 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="rounded-2xl border border-dashed border-slate-200 dark:border-slate-700 px-6 py-12 text-center">
+            <svg className="mx-auto mb-3 h-8 w-8 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -415,41 +415,41 @@ export default function RewardsWalletTab({
                 d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"
               />
             </svg>
-            <p className="text-sm font-semibold text-slate-600">No vouchers yet</p>
-            <p className="mt-1 text-xs text-slate-400">Once you create an affiliate voucher, it will appear here.</p>
+            <p className="text-sm font-semibold text-slate-600 dark:text-gray-400">No vouchers yet</p>
+            <p className="mt-1 text-xs text-slate-400 dark:text-gray-500">Once you create an affiliate voucher, it will appear here.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full">
               <thead>
-                <tr className="border-b border-slate-100">
+                <tr className="border-b border-slate-100 dark:border-slate-700">
                   {['Voucher Code', 'Amount', 'Valid Until', 'Uses', 'Created', 'Status'].map((heading) => (
                     <th
                       key={heading}
-                      className="pb-3 pr-4 text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400 last:pr-0"
+                      className="pb-3 pr-4 text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-gray-500 last:pr-0"
                     >
                       {heading}
                     </th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-50">
+              <tbody className="divide-y divide-slate-50 dark:divide-slate-700">
                 {vouchers.map((voucher) => (
-                  <tr key={voucher.id} className="transition-colors hover:bg-slate-50/60">
+                  <tr key={voucher.id} className="transition-colors hover:bg-slate-50/60 dark:hover:bg-gray-700/50">
                     <td className="py-3.5 pr-4">
                       <div className="flex items-center">
-                        <span className="font-mono text-sm font-bold text-slate-800">{voucher.code}</span>
+                        <span className="font-mono text-sm font-bold text-slate-800 dark:text-white">{voucher.code}</span>
                         {voucher.status === 'active' ? <CopyButton text={voucher.code} /> : null}
                       </div>
                     </td>
-                    <td className="py-3.5 pr-4 text-sm font-semibold text-slate-800">{peso(voucher.amount)}</td>
-                    <td className="py-3.5 pr-4 whitespace-nowrap text-xs text-slate-500">
-                      {voucher.expires_at ? formatDate(voucher.expires_at) : <span className="text-slate-300">No expiry</span>}
+                    <td className="py-3.5 pr-4 text-sm font-semibold text-slate-800 dark:text-white">{peso(voucher.amount)}</td>
+                    <td className="py-3.5 pr-4 whitespace-nowrap text-xs text-slate-500 dark:text-gray-400">
+                      {voucher.expires_at ? formatDate(voucher.expires_at) : <span className="text-slate-300 dark:text-gray-600">No expiry</span>}
                     </td>
-                    <td className="py-3.5 pr-4 text-xs text-slate-500">
-                      {voucher.max_uses != null ? `${voucher.used_count ?? 0} / ${voucher.max_uses}` : <span className="text-slate-300">Unlimited</span>}
+                    <td className="py-3.5 pr-4 text-xs text-slate-500 dark:text-gray-400">
+                      {voucher.max_uses != null ? `${voucher.used_count ?? 0} / ${voucher.max_uses}` : <span className="text-slate-300 dark:text-gray-600">Unlimited</span>}
                     </td>
-                    <td className="py-3.5 pr-4 whitespace-nowrap text-xs text-slate-500">{formatDate(voucher.created_at)}</td>
+                    <td className="py-3.5 pr-4 whitespace-nowrap text-xs text-slate-500 dark:text-gray-400">{formatDate(voucher.created_at)}</td>
                     <td className="py-3.5">
                       <StatusBadge status={voucher.status} />
                     </td>

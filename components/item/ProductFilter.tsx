@@ -226,7 +226,7 @@ export default function ProductFilter({ onFilterChange, className = '', pvRange:
           <button
             onClick={() => onFilterChange({ ...{ priceRange, sortBy, inStock: inStockOnly, discountOnly, minDiscount, pvRange, search: '', hasPvOnly } })}
             className={`px-3 py-1 rounded-full text-sm font-medium transition-colors cursor-pointer ${
-              !currentCategory && !propSearch ? 'bg-orange-100 text-orange-600' : 'bg-gray-100 text-gray-600'
+              !currentCategory && !propSearch ? 'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
             }`}
           >
             All Products
@@ -237,8 +237,8 @@ export default function ProductFilter({ onFilterChange, className = '', pvRange:
               onClick={() => onFilterChange({ ...{ priceRange, sortBy, inStock: inStockOnly, discountOnly, minDiscount, pvRange, search: category.name, hasPvOnly } })}
               className={`px-3 py-1 rounded-full text-sm font-medium transition-colors cursor-pointer ${
                 currentCategory === category.name || propSearch === category.name
-                  ? 'bg-orange-100 text-orange-600'
-                  : 'bg-gray-100 text-gray-600'
+                  ? 'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400'
+                  : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
               }`}
             >
               {category.name}
@@ -338,7 +338,7 @@ export default function ProductFilter({ onFilterChange, className = '', pvRange:
             type="checkbox"
             checked={discountOnly}
             onChange={handleDiscountToggle}
-            className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-orange-500 focus:ring-orange-500"
+            className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-orange-500 focus:ring-orange-500"
           />
           <span className="text-sm text-gray-700 dark:text-gray-300">Discounted Items Only</span>
         </label>
@@ -373,7 +373,7 @@ export default function ProductFilter({ onFilterChange, className = '', pvRange:
             type="checkbox"
             checked={hasPvOnly}
             onChange={handleHasPvOnlyToggle}
-            className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-orange-500 focus:ring-orange-500"
+            className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-orange-500 focus:ring-orange-500"
           />
           <span className="text-sm text-gray-700 dark:text-gray-300">Has Performance Value</span>
           <div className="relative group flex items-center">
@@ -427,7 +427,7 @@ export default function ProductFilter({ onFilterChange, className = '', pvRange:
             type="checkbox"
             checked={inStockOnly}
             onChange={handleInStockToggle}
-            className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-orange-500 focus:ring-orange-500"
+            className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-orange-500 focus:ring-orange-500"
           />
           <span className="text-sm text-gray-700 dark:text-gray-300">In Stock Only</span>
         </label>
@@ -454,7 +454,7 @@ export default function ProductFilter({ onFilterChange, className = '', pvRange:
             hasPvOnly: false
           })
         }}
-        className="w-full rounded-lg border border-gray-300 dark:border-gray-600 py-2 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+        className="w-full rounded-lg py-2 text-sm font-semibold transition-colors cursor-pointer bg-orange-500 text-white hover:bg-orange-600 dark:hover:bg-orange-600"
       >
         Clear Filters
       </button>

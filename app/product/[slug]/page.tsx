@@ -2,12 +2,11 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { redirect } from 'next/navigation';
 import type { Metadata } from 'next';
-import TopBar from '@/components/layout/TopBar';
-import Navbar from '@/components/layout/Navbar';
 import Footer from "@/components/landing-page/Footer";
 import ScrollToTop from "@/components/landing-page/ScrollToTop";
 import ProductPageClient from '@/components/product/ProductPageClient';
 import ProductTabs from '@/components/product/ProductTabs';
+import ProductPageWrapper from '@/components/product/ProductPageWrapper';
 import { categoryMeta, type CategoryProduct } from '@/libs/CategoryData';
 import RelatedProducts from '@/components/product/RelatedProduct';
 import ProductQA from '@/components/product/ProductQA';
@@ -270,6 +269,7 @@ const toCategoryProduct = (row: LooseRecord, apiUrl?: string): CategoryProduct =
     name,
     type: toNumber(row.type ?? row.pd_type),
     price,
+    priceSrp: srp > 0 ? srp : undefined,
     priceMember: member > 0 ? member : undefined,
     prodpv,
     originalPrice: undefined,
@@ -415,20 +415,18 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
   }
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
-      <TopBar />
-      <Navbar initialCategories={navbarCategories} />
-      <main className="flex-1">
-        <div className="bg-gray-50 border-b border-gray-100">
+    <ProductPageWrapper initialCategories={navbarCategories}>
+      <main className="flex-1 bg-white dark:bg-gray-900">
+        <div className="bg-gray-50 dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800">
           <div className="container mx-auto px-4 py-3">
-            <nav className="flex items-center gap-1.5 text-xs text-gray-400">
-              <Link href="/" className="hover:text-orange-500 transition-colors font-medium">Home</Link>
+            <nav className="flex items-center gap-1.5 text-xs text-gray-400 dark:text-gray-500">
+              <Link href="/" className="hover:text-orange-500 dark:hover:text-orange-400 transition-colors font-medium">Home</Link>
               <ChevronRight />
-              <Link href={`/category/${dynamicData.categorySlug}`} className="hover:text-orange-500 transition-colors">
+              <Link href={`/category/${dynamicData.categorySlug}`} className="hover:text-orange-500 dark:hover:text-orange-400 transition-colors">
                 {dynamicData.categoryLabel}
               </Link>
               <ChevronRight />
-              <span className="text-slate-600 font-semibold truncate max-w-48">{dynamicData.product.name}</span>
+              <span className="text-slate-600 dark:text-gray-300 font-semibold truncate max-w-48">{dynamicData.product.name}</span>
             </nav>
           </div>
         </div>
@@ -455,6 +453,6 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
       </main>
       <Footer />
       <ScrollToTop />
-    </div>
+    </ProductPageWrapper>
   );
 }

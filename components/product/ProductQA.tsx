@@ -57,19 +57,19 @@ const ProductQA = () => {
             transition={{ duration: 0.5, delay: 0.35 }}
             className="mt-12 sm:mt-16"
         >
-            <h2 className="text-xl font-bold text-slate-900 mb-6">Frequently Asked Questions</h2>
+            <h2 className="text-xl font-bold text-slate-900 dark:text-gray-100 mb-6">Frequently Asked Questions</h2>
 
-            <div className="divide-y divide-gray-100 border border-gray-100 rounded-2xl overflow-hidden">
+            <div className="divide-y divide-gray-100 dark:divide-gray-700 border border-gray-100 dark:border-gray-700 rounded-2xl overflow-hidden">
                 {faqs.map((faq, i) => (
                     <div key={faq.q}>
                         <button
                             onClick={() => toggle(i)}
-                            className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left hover:bg-gray-50/60 transition-colors"
+                            className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left hover:bg-gray-50/60 dark:hover:bg-gray-800/60 transition-colors"
                         >
-                            <span className={`text-sm font-semibold transition-colors ${openIndex === i ? 'text-orange-500' : 'text-slate-800'}`}>
+                            <span className={`text-sm font-semibold transition-colors ${openIndex === i ? 'text-orange-500 dark:text-orange-400' : 'text-slate-800 dark:text-gray-200'}`}>
                                 {faq.q}
                             </span>
-                            <span className={`shrink-0 transition-colors ${openIndex === i ? 'text-orange-400' : 'text-gray-400'}`}>
+                            <span className={`shrink-0 transition-colors ${openIndex === i ? 'text-orange-400 dark:text-orange-300' : 'text-gray-400 dark:text-gray-500'}`}>
                                 <ChevronIcon open={openIndex === i} />
                             </span>
                         </button>
@@ -84,7 +84,7 @@ const ProductQA = () => {
                                     transition={{ duration: 0.25, ease: 'easeInOut' }}
                                     className="overflow-hidden"
                                 >
-                                    <p className="px-5 pb-4 text-sm text-gray-500 leading-relaxed">
+                                    <p className="px-5 pb-4 text-sm text-gray-500 dark:text-gray-300 leading-relaxed">
                                         {faq.a}
                                     </p>
                                 </motion.div>

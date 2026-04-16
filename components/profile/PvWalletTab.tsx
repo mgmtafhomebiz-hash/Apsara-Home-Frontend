@@ -32,13 +32,13 @@ interface PvWalletTabProps {
 function statusClasses(status: PvHistoryItem['status']) {
   switch (status) {
     case 'approved':
-      return 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200'
+      return 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 ring-1 ring-emerald-200 dark:ring-emerald-800'
     case 'pending':
-      return 'bg-amber-50 text-amber-700 ring-1 ring-amber-200'
+      return 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 ring-1 ring-amber-200 dark:ring-amber-800'
     case 'cancelled':
-      return 'bg-rose-50 text-rose-700 ring-1 ring-rose-200'
+      return 'bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 ring-1 ring-rose-200 dark:ring-rose-800'
     default:
-      return 'bg-slate-50 text-slate-700 ring-1 ring-slate-200'
+      return 'bg-slate-50 dark:bg-gray-700 text-slate-700 dark:text-gray-300 ring-1 ring-slate-200 dark:ring-gray-600'
   }
 }
 
@@ -128,58 +128,58 @@ const PvWalletTab = ({
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[1.4fr_0.8fr]">
-        <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <section className="rounded-3xl border border-slate-200 dark:border-slate-700 dark:bg-gray-800 p-6">
             <div className="flex items-start justify-between gap-4">
                 <div>
-                    <p className="text-sm font-medium uppercase tracking-[0.18em] text-slate-400">
+                    <p className="text-sm font-medium uppercase tracking-[0.18em] text-slate-400 dark:text-gray-500">
                         Performance Value Goal
                     </p>
-                    <h3 className="mt-2 text-2xl font-semibold text-slate-900">
+                    <h3 className="mt-2 text-2xl font-semibold text-slate-900 dark:text-white">
                         {goalCurrent.toLocaleString()} / {goalPv.toLocaleString()} PV
                     </h3>
-                    <p className="mt-2 text-sm text-slate-500">
+                    <p className="mt-2 text-sm text-slate-500 dark:text-gray-400">
                         Track your direct referral PV progress toward your next target.
                     </p>
                 </div>
 
-                <div className="rounded-full bg-slate-100 px-3 py-1 text-sm font-medium text-slate-700">
+                <div className="rounded-full border border-slate-200 dark:border-slate-700 dark:bg-gray-900 px-3 py-1 text-sm font-medium text-slate-700 dark:text-gray-300">
                     {progress.toFixed(1)}%
                 </div>
             </div>
 
-            <div className="mt-6 h-4 overflow-hidden rounded-full bg-slate-100">
-                <div 
+            <div className="mt-6 h-4 overflow-hidden rounded-full bg-slate-100 dark:bg-gray-700">
+                <div
                     className="h-full rounded-full bg-gradient-to-br from-sky-500 to-cyan-400 transition-all duration-500"
                     style={{ width: `${progress}%`}}
                 />
             </div>
 
-            <div className="mt-4 flex justify-between text-xs text-slate-400">
+            <div className="mt-4 flex justify-between text-xs text-slate-400 dark:text-gray-500">
                 <span>0 PV</span>
                 <span>{goalPv.toLocaleString()}</span>
             </div>
         </section>
 
-        <aside className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <p className="text-sm font-medium uppercase tracking-[0.18em] text-slate-400">
+        <aside className="rounded-3xl border border-slate-200 dark:border-slate-700 dark:bg-gray-800 p-6">
+            <p className="text-sm font-medium uppercase tracking-[0.18em] text-slate-400 dark:text-gray-500">
                 Referral Summary
             </p>
             <div className="mt-4 space-y-4">
-                <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3">
-                    <span className="text-sm text-slate-600">Total Referrals</span>
-                    <span className="text-lg font-semibold text-slate-900">
+                <div className="flex items-center justify-between rounded-2xl border border-slate-200 dark:border-slate-700 dark:bg-gray-900 px-4 py-3">
+                    <span className="text-sm text-slate-600 dark:text-gray-400">Total Referrals</span>
+                    <span className="text-lg font-semibold text-slate-900 dark:text-white">
                         {totalReferrals}
                     </span>
                 </div>
-                <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3">
-                    <span className="text-sm text-slate-600">Verified Referrals</span>
-                    <span className="text-lg font-semibold text-slate-900">
+                <div className="flex items-center justify-between rounded-2xl border border-slate-200 dark:border-slate-700 dark:bg-gray-900 px-4 py-3">
+                    <span className="text-sm text-slate-600 dark:text-gray-400">Verified Referrals</span>
+                    <span className="text-lg font-semibold text-slate-900 dark:text-white">
                         {verifiedReferrals}
                     </span>
                 </div>
-                <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3">
-                    <span className="text-sm text-slate-600">Active Referrals</span>
-                    <span className="text-lg font-semibold text-slate-900">
+                <div className="flex items-center justify-between rounded-2xl border border-slate-200 dark:border-slate-700 dark:bg-gray-900 px-4 py-3">
+                    <span className="text-sm text-slate-600 dark:text-gray-400">Active Referrals</span>
+                    <span className="text-lg font-semibold text-slate-900 dark:text-white">
                         {activeReferrals}
                     </span>
                 </div>
@@ -187,13 +187,13 @@ const PvWalletTab = ({
         </aside>
       </div>
 
-      <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+      <section className="rounded-3xl border border-slate-200 dark:border-slate-700 dark:bg-gray-800 p-6">
         <div className="flex items-center justify-between gap-4">
             <div>
-                <p className="text-sm font-medium uppercase tracking-[0.18em] text-slate-400">
+                <p className="text-sm font-medium uppercase tracking-[0.18em] text-slate-400 dark:text-gray-500">
                     Transaction History
                 </p>
-                <h3 className="mt-2 text-2xl font-semibold text-slate-900">
+                <h3 className="mt-2 text-2xl font-semibold text-slate-900 dark:text-white">
                     PV History
                 </h3>
             </div>
@@ -201,18 +201,18 @@ const PvWalletTab = ({
 
         <div className="mt-6 overflow-x-auto">
             {history.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-slate-200 px-6 py-12 text-center">
-                    <p className="text-sm font-medium text-slate-700">
+                <div className="rounded-2xl border border-dashed border-slate-200 dark:border-slate-700 px-6 py-12 text-center">
+                    <p className="text-sm font-medium text-slate-700 dark:text-gray-300">
                         No PV transactions yet
                     </p>
-                    <p className="mt-2 text-sm text-slate-500">
+                    <p className="mt-2 text-sm text-slate-500 dark:text-gray-400">
                         Approved referral purchases and future PV credits will appear here.
                     </p>
                 </div>
             ): (
-                <table className="min-w-full divide-y divide-slate-200">
+                <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
               <thead>
-                <tr className="text-left text-xs uppercase tracking-[0.18em] text-slate-400">
+                <tr className="text-left text-xs uppercase tracking-[0.18em] text-slate-400 dark:text-gray-500">
                   <th className="pb-3 pr-4">Description</th>
                   <th className="pb-3 pr-4">Source</th>
                   <th className="pb-3 pr-4">Date</th>
@@ -220,14 +220,14 @@ const PvWalletTab = ({
                   <th className="pb-3 text-right">PV</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                 {history.map((item) => (
                   <tr key={item.id}>
                     <td className="py-4 pr-4">
-                      <p className="font-medium text-slate-900">{item.description}</p>
+                      <p className="font-medium text-slate-900 dark:text-white">{item.description}</p>
                     </td>
-                    <td className="py-4 pr-4 text-sm text-slate-600">{item.source}</td>
-                    <td className="py-4 pr-4 text-sm text-slate-500">
+                    <td className="py-4 pr-4 text-sm text-slate-600 dark:text-gray-400">{item.source}</td>
+                    <td className="py-4 pr-4 text-sm text-slate-500 dark:text-gray-400">
                       {new Date(item.created_at).toLocaleString('en-PH', {
                         timeZone: 'Asia/Manila',
                         year: 'numeric',
@@ -244,7 +244,7 @@ const PvWalletTab = ({
                         {item.status}
                       </span>
                     </td>
-                    <td className="py-4 text-right text-sm font-semibold text-slate-900">
+                    <td className="py-4 text-right text-sm font-semibold text-slate-900 dark:text-white">
                       +{item.amount.toLocaleString()} PV
                     </td>
                   </tr>

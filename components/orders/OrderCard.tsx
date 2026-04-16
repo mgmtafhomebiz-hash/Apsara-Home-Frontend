@@ -73,14 +73,14 @@ const buildProductHref = (item: OrderItem) => {
 };
 
 const STATUS_CONFIG: Record<OrderStatus, { label: string; badge: string; dot: string; step: number }> = {
-    pending: { label: 'Pending', badge: 'bg-amber-50 text-amber-700 border-amber-200', dot: 'bg-amber-400', step: 1 },
-    processing: { label: 'Processing', badge: 'bg-blue-50 text-blue-700 border-blue-200', dot: 'bg-blue-500', step: 2 },
-    packed: { label: 'Packed', badge: 'bg-indigo-50 text-indigo-700 border-indigo-200', dot: 'bg-indigo-500', step: 3 },
-    shipped: { label: 'Shipped', badge: 'bg-violet-50 text-violet-700 border-violet-200', dot: 'bg-violet-500', step: 3 },
-    out_for_delivery: { label: 'Out for Delivery', badge: 'bg-orange-50 text-orange-700 border-orange-200', dot: 'bg-orange-500', step: 4 },
-    delivered: { label: 'Delivered', badge: 'bg-emerald-50 text-emerald-700 border-emerald-200', dot: 'bg-emerald-500', step: 5 },
-    cancelled: { label: 'Cancelled', badge: 'bg-red-50 text-red-600 border-red-200', dot: 'bg-red-400', step: 0 },
-    refunded: { label: 'Refunded', badge: 'bg-gray-100 text-gray-600 border-gray-300', dot: 'bg-gray-400', step: 0 },
+    pending: { label: 'Pending', badge: 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800', dot: 'bg-amber-400 dark:bg-amber-500', step: 1 },
+    processing: { label: 'Processing', badge: 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800', dot: 'bg-blue-500 dark:bg-blue-600', step: 2 },
+    packed: { label: 'Packed', badge: 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800', dot: 'bg-indigo-500 dark:bg-indigo-600', step: 3 },
+    shipped: { label: 'Shipped', badge: 'bg-violet-50 dark:bg-violet-900/30 text-violet-700 dark:text-violet-400 border-violet-200 dark:border-violet-800', dot: 'bg-violet-500 dark:bg-violet-600', step: 3 },
+    out_for_delivery: { label: 'Out for Delivery', badge: 'bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 border-orange-200 dark:border-orange-800', dot: 'bg-orange-500 dark:bg-orange-600', step: 4 },
+    delivered: { label: 'Delivered', badge: 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800', dot: 'bg-emerald-500 dark:bg-emerald-600', step: 5 },
+    cancelled: { label: 'Cancelled', badge: 'bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 border-red-200 dark:border-red-800', dot: 'bg-red-400 dark:bg-red-500', step: 0 },
+    refunded: { label: 'Refunded', badge: 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-300 dark:border-gray-700', dot: 'bg-gray-400 dark:bg-gray-600', step: 0 },
 }
 
 interface OrderCardProps {
@@ -112,17 +112,17 @@ const OrderCard = ({ order }: OrderCardProps) => {
   return (
     <motion.div
       layout
-      className="rounded-2xl border border-gray-200 bg-white overflow-hidden hover:border-orange-200 hover:shadow-md transition-all duration-200"
+      className="rounded-2xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-gray-800 overflow-hidden hover:border-orange-200 dark:hover:border-orange-700 transition-all duration-200"
     >
       {/* Card header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-5 py-4 border-b border-gray-100">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-5 py-4 border-b border-gray-100 dark:border-slate-700">
         <div className="flex items-center gap-3">
-          <div className="h-9 w-9 rounded-xl bg-orange-50 text-orange-500 flex items-center justify-center shrink-0">
+          <div className="h-9 w-9 rounded-xl bg-orange-50 dark:bg-orange-900/30 text-orange-500 dark:text-orange-400 flex items-center justify-center shrink-0">
             <Icon.Package className="h-4 w-4" />
           </div>
           <div>
-            <p className="text-sm font-bold text-gray-900">Order #{order.order_number}</p>
-            <p className="text-xs text-gray-400 mt-0.5">{formatDate(order.created_at)}</p>
+            <p className="text-sm font-bold text-gray-900 dark:text-white">Order #{order.order_number}</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{formatDate(order.created_at)}</p>
           </div>
         </div>
         <div className="flex items-center gap-2.5">
@@ -131,15 +131,15 @@ const OrderCard = ({ order }: OrderCardProps) => {
             {cfg.label}
           </span>
           {isShipmentCancelled && (
-            <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full border bg-red-50 text-red-600 border-red-200">
-              <span className="h-1.5 w-1.5 rounded-full bg-red-400" />
+            <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full border bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 border-red-200 dark:border-red-800">
+              <span className="h-1.5 w-1.5 rounded-full bg-red-400 dark:bg-red-500" />
               Shipment Cancelled
             </span>
           )}
           <button
             type="button"
             onClick={() => setExpanded((p) => !p)}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400 transition-colors"
           >
             <Icon.ChevronDown className={`h-4 w-4 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`} />
           </button>
@@ -152,7 +152,7 @@ const OrderCard = ({ order }: OrderCardProps) => {
           <div className="flex -space-x-2">
             {previewItems.map((item) => {
               const href = buildProductHref(item);
-              const imageClassName = `h-10 w-10 rounded-lg border-2 border-white overflow-hidden bg-gray-100 shrink-0 ${
+              const imageClassName = `h-10 w-10 rounded-lg border-2 border-white dark:border-gray-700 overflow-hidden bg-gray-100 dark:bg-gray-700 shrink-0 ${
                 href ? 'transition-transform hover:scale-105' : ''
               }`;
 
@@ -174,8 +174,8 @@ const OrderCard = ({ order }: OrderCardProps) => {
               );
             })}
             {extraCount > 0 && (
-              <div className="h-10 w-10 rounded-lg border-2 border-white bg-gray-100 flex items-center justify-center shrink-0">
-                <span className="text-[11px] font-bold text-gray-500">+{extraCount}</span>
+              <div className="h-10 w-10 rounded-lg border-2 border-white dark:border-gray-700 bg-gray-100 dark:bg-gray-700 flex items-center justify-center shrink-0">
+                <span className="text-[11px] font-bold text-gray-500 dark:text-gray-400">+{extraCount}</span>
               </div>
             )}
           </div>
@@ -184,11 +184,11 @@ const OrderCard = ({ order }: OrderCardProps) => {
               const firstItem = order.items[0];
               const href = firstItem ? buildProductHref(firstItem) : null;
               return (
-                <p className="text-sm text-gray-700 truncate">
+                <p className="text-sm text-gray-700 dark:text-gray-200 truncate">
                   {href ? (
                     <Link
                       href={href}
-                      className="font-semibold text-slate-800 hover:text-orange-500 transition-colors"
+                      className="font-semibold text-slate-800 dark:text-gray-100 hover:text-orange-500 dark:hover:text-orange-400 transition-colors"
                     >
                       {firstItem?.name}
                     </Link>
@@ -196,18 +196,18 @@ const OrderCard = ({ order }: OrderCardProps) => {
                     <span>{firstItem?.name}</span>
                   )}
                   {order.items.length > 1 && (
-                    <span className="text-gray-400"> +{order.items.length - 1} more item{order.items.length > 2 ? 's' : ''}</span>
+                    <span className="text-gray-400 dark:text-gray-500"> +{order.items.length - 1} more item{order.items.length > 2 ? 's' : ''}</span>
                   )}
                 </p>
               );
             })()}
-            <p className="text-xs text-gray-400 mt-0.5">{order.items.reduce((s, i) => s + i.quantity, 0)} item(s)</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{order.items.reduce((s, i) => s + i.quantity, 0)} item(s)</p>
           </div>
           <div className="text-right shrink-0">
-            <p className="text-sm font-bold text-gray-900">{formatPrice(order.total)}</p>
+            <p className="text-sm font-bold text-gray-900 dark:text-white">{formatPrice(order.total)}</p>
             {order.shipping_fee === 0
-              ? <p className="text-[11px] text-emerald-600 font-medium">Free shipping</p>
-              : <p className="text-[11px] text-gray-400">+{formatPrice(order.shipping_fee)} shipping</p>
+              ? <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">Free shipping</p>
+              : <p className="text-[11px] text-gray-400 dark:text-gray-500">+{formatPrice(order.shipping_fee)} shipping</p>
             }
           </div>
         </div>
@@ -215,7 +215,7 @@ const OrderCard = ({ order }: OrderCardProps) => {
         {/* Action buttons */}
         <div className="flex flex-wrap items-center gap-2 mt-4">
           {order.status === 'delivered' && (
-            <button type="button" className="inline-flex items-center gap-1.5 rounded-xl bg-orange-500 hover:bg-orange-600 px-3.5 py-2 text-xs font-semibold text-white transition-colors">
+            <button type="button" className="inline-flex items-center gap-1.5 rounded-xl bg-orange-500 dark:bg-orange-600 hover:bg-orange-600 dark:hover:bg-orange-700 px-3.5 py-2 text-xs font-semibold text-white transition-colors">
               <Icon.RefreshCw className="h-3.5 w-3.5" /> Reorder
             </button>
           )}
@@ -223,7 +223,7 @@ const OrderCard = ({ order }: OrderCardProps) => {
             <button
               type="button"
               onClick={() => setConfirmOpen(true)}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 px-3.5 py-2 text-xs font-semibold text-white transition-colors"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-500 dark:bg-emerald-600 hover:bg-emerald-600 dark:hover:bg-emerald-700 px-3.5 py-2 text-xs font-semibold text-white transition-colors"
             >
               <Icon.Check className="h-3.5 w-3.5" /> Confirm Order
             </button>
@@ -231,12 +231,12 @@ const OrderCard = ({ order }: OrderCardProps) => {
           <button
             type="button"
             onClick={() => setExpanded((p) => !p)}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 hover:border-orange-200 hover:bg-orange-50 hover:text-orange-600 px-3.5 py-2 text-xs font-semibold text-gray-600 transition-colors"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 dark:border-slate-700 hover:border-orange-200 dark:hover:border-orange-700 hover:bg-orange-50 dark:hover:bg-orange-900/20 hover:text-orange-600 dark:hover:text-orange-400 px-3.5 py-2 text-xs font-semibold text-gray-600 dark:text-gray-400 transition-colors"
           >
             View Details <Icon.ChevronRight className="h-3.5 w-3.5" />
           </button>
           {order.status === 'pending' && (
-            <button type="button" className="inline-flex items-center gap-1.5 rounded-xl border border-red-200 hover:bg-red-50 px-3.5 py-2 text-xs font-semibold text-red-500 transition-colors">
+            <button type="button" className="inline-flex items-center gap-1.5 rounded-xl border border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-900/20 px-3.5 py-2 text-xs font-semibold text-red-500 dark:text-red-400 transition-colors">
               <Icon.X className="h-3.5 w-3.5" /> Cancel
             </button>
           )}
@@ -253,20 +253,20 @@ const OrderCard = ({ order }: OrderCardProps) => {
             transition={{ duration: 0.25, ease: 'easeInOut' }}
             className="overflow-hidden"
           >
-            <div className="border-t border-gray-100 px-5 py-4 space-y-4 bg-gray-50/50">
+            <div className="border-t border-gray-100 dark:border-slate-700 px-5 py-4 space-y-4 bg-gray-50/50 dark:bg-gray-700/40">
 
               {/* Tracking steps */}
               {isShipmentCancelled ? (
-                <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3">
-                  <p className="text-xs font-bold uppercase tracking-widest text-red-600">Shipment Update</p>
-                  <p className="mt-1 text-sm font-semibold text-red-700">Courier booking was cancelled.</p>
-                  <p className="mt-1 text-xs text-red-600">
+                <div className="rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/30 px-4 py-3">
+                  <p className="text-xs font-bold uppercase tracking-widest text-red-600 dark:text-red-400">Shipment Update</p>
+                  <p className="mt-1 text-sm font-semibold text-red-700 dark:text-red-300">Courier booking was cancelled.</p>
+                  <p className="mt-1 text-xs text-red-600 dark:text-red-400">
                     Your order is still in the system, but the courier shipment was cancelled and may need to be rebooked by the seller.
                   </p>
                 </div>
               ) : order.status !== 'cancelled' && order.status !== 'refunded' && (
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-3">Order Tracking</p>
+                  <p className="text-xs font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-3">Order Tracking</p>
                   <div className="relative flex items-start justify-between gap-1">
                     {TRACK_STEPS.map((step, i) => {
                       const stepNum = i + 1;
@@ -276,19 +276,19 @@ const OrderCard = ({ order }: OrderCardProps) => {
                       return (
                         <div key={step} className="flex-1 flex flex-col items-center gap-1.5 relative">
                           {i < TRACK_STEPS.length - 1 && (
-                            <div className={`absolute top-3 left-1/2 w-full h-0.5 ${done ? 'bg-orange-400' : 'bg-gray-200'}`} />
+                            <div className={`absolute top-3 left-1/2 w-full h-0.5 ${done ? 'bg-orange-400 dark:bg-orange-500' : 'bg-gray-200 dark:bg-gray-600'}`} />
                           )}
                           <div className={`relative z-10 h-6 w-6 rounded-full border-2 flex items-center justify-center transition-all ${
                             done
-                              ? 'bg-orange-500 border-orange-500'
-                              : 'bg-white border-gray-200'
-                          } ${active ? 'ring-2 ring-orange-200 ring-offset-1' : ''}`}>
+                              ? 'bg-orange-500 dark:bg-orange-600 border-orange-500 dark:border-orange-600'
+                              : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600'
+                          } ${active ? 'ring-2 ring-orange-200 dark:ring-orange-900/50 ring-offset-1' : ''}`}>
                             {done
                               ? <Icon.Check className="h-3 w-3 text-white" />
-                              : <span className="h-1.5 w-1.5 rounded-full bg-gray-300" />
+                              : <span className="h-1.5 w-1.5 rounded-full bg-gray-300 dark:bg-gray-600" />
                             }
                           </div>
-                          <p className={`text-center text-[10px] font-medium leading-tight ${done ? 'text-orange-600' : 'text-gray-400'}`}>
+                          <p className={`text-center text-[10px] font-medium leading-tight ${done ? 'text-orange-600 dark:text-orange-400' : 'text-gray-400 dark:text-gray-500'}`}>
                             {step}
                           </p>
                         </div>
@@ -296,14 +296,14 @@ const OrderCard = ({ order }: OrderCardProps) => {
                     })}
                   </div>
                   {order.estimated_delivery && (
-                    <p className="mt-3 text-xs text-gray-500">
-                      Estimated delivery: <span className="font-semibold text-gray-700">{formatDate(order.estimated_delivery)}</span>
+                    <p className="mt-3 text-xs text-gray-500 dark:text-gray-400">
+                      Estimated delivery: <span className="font-semibold text-gray-700 dark:text-gray-300">{formatDate(order.estimated_delivery)}</span>
                     </p>
                   )}
                   {order.status === 'out_for_delivery' && (
                     <button
                       type="button"
-                      className="mt-3 inline-flex items-center gap-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 px-3.5 py-2 text-xs font-semibold text-white transition-colors"
+                      className="mt-3 inline-flex items-center gap-2 rounded-xl bg-emerald-500 dark:bg-emerald-600 hover:bg-emerald-600 dark:hover:bg-emerald-700 px-3.5 py-2 text-xs font-semibold text-white transition-colors"
                     >
                       Confirm Order
                     </button>
@@ -313,16 +313,16 @@ const OrderCard = ({ order }: OrderCardProps) => {
 
               {/* All items */}
               <div>
-                <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-2">Items Ordered</p>
+                <p className="text-xs font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-2">Items Ordered</p>
                 <div className="space-y-2">
                   {order.items.map((item) => {
                     const href = buildProductHref(item);
-                    const imageClassName = `h-12 w-12 rounded-lg overflow-hidden bg-gray-100 shrink-0 ${
+                    const imageClassName = `h-12 w-12 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 shrink-0 ${
                       href ? 'transition-transform hover:scale-105' : ''
                     }`;
 
                     return (
-                      <div key={item.id} className="flex items-center gap-3 rounded-xl border border-gray-100 bg-white px-3 py-2.5">
+                      <div key={item.id} className="flex items-center gap-3 rounded-xl border border-gray-100 dark:border-slate-700 bg-white dark:bg-gray-900/50 px-3 py-2.5">
                         {href ? (
                           <Link
                             href={href}
@@ -336,11 +336,11 @@ const OrderCard = ({ order }: OrderCardProps) => {
                           </div>
                         )}
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-800 truncate">
+                          <p className="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">
                             {href ? (
                               <Link
                                 href={href}
-                                className="hover:text-orange-500 transition-colors"
+                                className="hover:text-orange-500 dark:hover:text-orange-400 transition-colors"
                               >
                                 {item.name}
                               </Link>
@@ -348,13 +348,13 @@ const OrderCard = ({ order }: OrderCardProps) => {
                               <span>{item.name}</span>
                             )}
                           </p>
-                          <p className="text-xs text-gray-400">Qty: {item.quantity}</p>
+                          <p className="text-xs text-gray-400 dark:text-gray-500">Qty: {item.quantity}</p>
                         {getSelectedOptions(item).length > 0 && (
                           <div className="mt-2 flex flex-wrap gap-1.5">
                             {getSelectedOptions(item).map((option) => (
                               <span
                                 key={option}
-                                className="inline-flex items-center rounded-full border border-orange-200 bg-orange-50 px-2.5 py-1 text-[11px] font-medium text-orange-700"
+                                className="inline-flex items-center rounded-full border border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-900/30 px-2.5 py-1 text-[11px] font-medium text-orange-700 dark:text-orange-400"
                               >
                                 {option}
                               </span>
@@ -362,7 +362,7 @@ const OrderCard = ({ order }: OrderCardProps) => {
                           </div>
                         )}
                         </div>
-                        <p className="text-sm font-semibold text-gray-800 shrink-0">{formatPrice(item.price * item.quantity)}</p>
+                        <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 shrink-0">{formatPrice(item.price * item.quantity)}</p>
                       </div>
                     );
                   })}
@@ -371,55 +371,55 @@ const OrderCard = ({ order }: OrderCardProps) => {
 
               {/* Order summary */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="rounded-xl border border-gray-100 bg-white px-4 py-3 space-y-1.5">
-                  <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Order Summary</p>
-                  <div className="flex justify-between text-xs text-gray-600">
+                <div className="rounded-xl border border-gray-100 dark:border-slate-700 bg-white dark:bg-gray-900/50 px-4 py-3 space-y-1.5">
+                  <p className="text-xs font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500">Order Summary</p>
+                  <div className="flex justify-between text-xs text-gray-600 dark:text-gray-400">
                     <span>Subtotal</span>
                     <span>{formatPrice(order.total - order.shipping_fee)}</span>
                   </div>
-                  <div className="flex justify-between text-xs text-gray-600">
+                  <div className="flex justify-between text-xs text-gray-600 dark:text-gray-400">
                     <span>Shipping</span>
-                    <span className={order.shipping_fee === 0 ? 'text-emerald-600 font-medium' : ''}>
+                    <span className={order.shipping_fee === 0 ? 'text-emerald-600 dark:text-emerald-400 font-medium' : ''}>
                       {order.shipping_fee === 0 ? 'Free' : formatPrice(order.shipping_fee)}
                     </span>
                   </div>
-                  <div className="flex justify-between text-sm font-bold text-gray-900 pt-1 border-t border-gray-100">
+                  <div className="flex justify-between text-sm font-bold text-gray-900 dark:text-white pt-1 border-t border-gray-100 dark:border-slate-700">
                     <span>Total</span>
-                    <span className="text-orange-600">{formatPrice(order.total)}</span>
+                    <span className="text-orange-600 dark:text-orange-400">{formatPrice(order.total)}</span>
                   </div>
                 </div>
 
-                <div className="rounded-xl border border-gray-100 bg-white px-4 py-3 space-y-2.5">
-                  <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Delivery Info</p>
-                  <div className="flex items-start gap-2 text-xs text-gray-600">
-                    <Icon.MapPin className="h-3.5 w-3.5 text-gray-400 mt-0.5 shrink-0" />
+                <div className="rounded-xl border border-gray-100 dark:border-slate-700 bg-white dark:bg-gray-900/50 px-4 py-3 space-y-2.5">
+                  <p className="text-xs font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500">Delivery Info</p>
+                  <div className="flex items-start gap-2 text-xs text-gray-600 dark:text-gray-400">
+                    <Icon.MapPin className="h-3.5 w-3.5 text-gray-400 dark:text-gray-500 mt-0.5 shrink-0" />
                     <span className="leading-relaxed">{order.shipping_address}</span>
                   </div>
-                  <div className="flex items-center gap-2 text-xs text-gray-600">
-                    <Icon.CreditCard className="h-3.5 w-3.5 text-gray-400 shrink-0" />
+                  <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
+                    <Icon.CreditCard className="h-3.5 w-3.5 text-gray-400 dark:text-gray-500 shrink-0" />
                     <span>{order.payment_method}</span>
                   </div>
                 </div>
               </div>
 
               {hasShipmentInfo && (
-                <div className="rounded-xl border border-teal-100 bg-teal-50/60 px-4 py-3 space-y-2.5">
-                  <p className="text-xs font-bold uppercase tracking-widest text-teal-700">Shipment Details</p>
+                <div className="rounded-xl border border-teal-200 dark:border-teal-800 bg-teal-50/60 dark:bg-teal-900/20 px-4 py-3 space-y-2.5">
+                  <p className="text-xs font-bold uppercase tracking-widest text-teal-700 dark:text-teal-400">Shipment Details</p>
                   {order.courier && (
-                    <p className="text-xs text-gray-700">
+                    <p className="text-xs text-gray-700 dark:text-gray-300">
                       Courier: <span className="font-semibold">{formatCourierLabel(order.courier)}</span>
                     </p>
                   )}
                   {order.shipment_status && (
-                    <p className="text-xs text-gray-700">
+                    <p className="text-xs text-gray-700 dark:text-gray-300">
                       Shipment Status: <span className="font-semibold capitalize">{order.shipment_status.replace(/_/g, ' ')}</span>
                     </p>
                   )}
                   {order.tracking_no && (
-                    <div className="rounded-xl border border-teal-200 bg-white px-3 py-2.5">
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-teal-700">Tracking Number</p>
+                    <div className="rounded-xl border border-teal-200 dark:border-teal-800 bg-white dark:bg-gray-900/50 px-3 py-2.5">
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-teal-700 dark:text-teal-400">Tracking Number</p>
                       <div className="mt-1.5 flex items-center gap-2">
-                        <p className="min-w-0 flex-1 break-all font-mono text-sm font-semibold text-gray-900">{order.tracking_no}</p>
+                        <p className="min-w-0 flex-1 break-all font-mono text-sm font-semibold text-gray-900 dark:text-gray-200">{order.tracking_no}</p>
                         <button
                           type="button"
                           onClick={async () => {
@@ -429,7 +429,7 @@ const OrderCard = ({ order }: OrderCardProps) => {
                               return;
                             }
                           }}
-                          className="shrink-0 rounded-lg border border-teal-200 bg-teal-50 px-2.5 py-1 text-[11px] font-semibold text-teal-700 transition hover:bg-teal-100"
+                          className="shrink-0 rounded-lg border border-teal-200 dark:border-teal-800 bg-teal-50 dark:bg-teal-900/30 px-2.5 py-1 text-[11px] font-semibold text-teal-700 dark:text-teal-400 transition hover:bg-teal-100 dark:hover:bg-teal-900/50"
                         >
                           Copy
                         </button>
@@ -437,8 +437,8 @@ const OrderCard = ({ order }: OrderCardProps) => {
                     </div>
                   )}
                   {order.shipped_at && (
-                    <p className="text-xs text-gray-500">
-                      Shipped at: <span className="font-medium text-gray-700">{formatDate(order.shipped_at)}</span>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      Shipped at: <span className="font-medium text-gray-700 dark:text-gray-300">{formatDate(order.shipped_at)}</span>
                     </p>
                   )}
                 </div>
@@ -451,17 +451,17 @@ const OrderCard = ({ order }: OrderCardProps) => {
       {confirmOpen && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 p-4">
           <div className="absolute inset-0" onClick={() => setConfirmOpen(false)} />
-          <div className="relative z-[71] w-full max-w-lg rounded-3xl border border-slate-200 bg-white p-6 shadow-xl">
+          <div className="relative z-[71] w-full max-w-lg rounded-3xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-gray-800 p-6">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-xs font-bold uppercase tracking-[0.22em] text-emerald-600">Confirm Delivery</p>
-                <h3 className="mt-2 text-xl font-bold text-slate-900">Rate your order</h3>
-                <p className="mt-1 text-sm text-slate-500">Please rate and review this product before confirming.</p>
+                <p className="text-xs font-bold uppercase tracking-[0.22em] text-emerald-600 dark:text-emerald-400">Confirm Delivery</p>
+                <h3 className="mt-2 text-xl font-bold text-slate-900 dark:text-white">Rate your order</h3>
+                <p className="mt-1 text-sm text-slate-500 dark:text-gray-400">Please rate and review this product before confirming.</p>
               </div>
               <button
                 type="button"
                 onClick={() => setConfirmOpen(false)}
-                className="rounded-full border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:border-emerald-200 hover:text-emerald-700"
+                className="rounded-full border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-xs font-semibold text-slate-600 dark:text-gray-400 hover:border-emerald-200 dark:hover:border-emerald-700 hover:text-emerald-700 dark:hover:text-emerald-400"
               >
                 Close
               </button>
@@ -471,14 +471,14 @@ const OrderCard = ({ order }: OrderCardProps) => {
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.25, ease: 'easeOut' }}
-              className="mt-5 rounded-3xl border border-slate-200 bg-gradient-to-br from-amber-50 via-white to-white p-4"
+              className="mt-5 rounded-3xl border border-slate-200 dark:border-slate-700 bg-gradient-to-br from-amber-50 dark:from-amber-900/20 via-white dark:via-gray-800 to-white dark:to-gray-800 p-4"
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-semibold text-slate-600">Rating</p>
-                  <p className="text-[11px] text-slate-400">Tap a star to rate</p>
+                  <p className="text-xs font-semibold text-slate-600 dark:text-gray-400">Rating</p>
+                  <p className="text-[11px] text-slate-400 dark:text-gray-500">Tap a star to rate</p>
                 </div>
-                <div className="text-[11px] font-semibold text-amber-600">
+                <div className="text-[11px] font-semibold text-amber-600 dark:text-amber-400">
                   {rating > 0 ? `${rating}/5` : 'No rating'}
                 </div>
               </div>
@@ -495,20 +495,20 @@ const OrderCard = ({ order }: OrderCardProps) => {
                       whileTap={{ scale: 0.96 }}
                       className={`group relative flex h-11 w-11 items-center justify-center rounded-2xl border transition ${
                         active
-                          ? 'border-amber-300 bg-amber-100 text-amber-600 shadow-[0_10px_25px_-18px_rgba(251,191,36,0.85)]'
-                          : 'border-slate-200 bg-white text-slate-300'
+                          ? 'border-amber-300 dark:border-amber-700 bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400'
+                          : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-gray-700 text-slate-300 dark:text-gray-600'
                       }`}
                       aria-label={`Rate ${value} star`}
                     >
                       <span
                         className={`absolute inset-0 rounded-2xl opacity-0 transition ${
-                          active ? 'bg-amber-200/60 blur-md opacity-70' : ''
+                          active ? 'bg-amber-200/60 dark:bg-amber-500/30 blur-md opacity-70' : ''
                         }`}
                       />
                       <svg
                         viewBox="0 0 24 24"
                         className={`relative h-5 w-5 transition-transform duration-200 group-hover:scale-110 ${
-                          active ? 'text-amber-500 drop-shadow-[0_0_8px_rgba(251,191,36,0.7)]' : 'text-slate-300'
+                          active ? 'text-amber-500 dark:text-amber-400' : 'text-slate-300 dark:text-gray-600'
                         }`}
                         fill="currentColor"
                         aria-hidden
@@ -522,13 +522,13 @@ const OrderCard = ({ order }: OrderCardProps) => {
             </motion.div>
 
             <div className="mt-4">
-              <p className="text-xs font-semibold text-slate-600">Review</p>
+              <p className="text-xs font-semibold text-slate-600 dark:text-gray-400">Review</p>
               <textarea
                 value={review}
                 onChange={(e) => setReview(e.target.value)}
                 rows={4}
                 placeholder="Share your experience..."
-                className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+                className="mt-2 w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-slate-700 dark:text-gray-100 placeholder:text-slate-400 dark:placeholder:text-gray-500 focus:border-emerald-300 dark:focus:border-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-100 dark:focus:ring-emerald-900/50"
               />
             </div>
 
@@ -536,7 +536,7 @@ const OrderCard = ({ order }: OrderCardProps) => {
               <button
                 type="button"
                 onClick={() => setConfirmOpen(false)}
-                className="rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:border-emerald-200 hover:text-emerald-700"
+                className="rounded-full border border-slate-200 dark:border-slate-700 px-4 py-2 text-sm font-semibold text-slate-600 dark:text-gray-400 hover:border-emerald-200 dark:hover:border-emerald-700 hover:text-emerald-700 dark:hover:text-emerald-400"
               >
                 Cancel
               </button>
@@ -553,7 +553,7 @@ const OrderCard = ({ order }: OrderCardProps) => {
                     return;
                   }
                 }}
-                className="rounded-full bg-emerald-500 px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-600 disabled:opacity-60"
+                className="rounded-full bg-emerald-500 dark:bg-emerald-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-emerald-600 dark:hover:bg-emerald-700 disabled:opacity-60"
               >
                 {isConfirming ? 'Submitting...' : 'Order Completed'}
               </button>

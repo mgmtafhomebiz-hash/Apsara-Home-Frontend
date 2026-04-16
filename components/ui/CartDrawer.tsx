@@ -6,30 +6,11 @@ import Link from 'next/link'
 import { useCart } from '@/context/CartContext'
 import { useRouter } from 'next/navigation'
 import type { CustomerCheckoutLineItem } from '@/types/CustomerCheckout/types'
-import { useLazyGetPublicProductQuery } from '@/store/api/productsApi'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import PrimaryButton from '@/components/ui/buttons/PrimaryButton'
-
-type ProductSearchBrand = {
-  pb_name?: string | null
-  name?: string | null
-}
-
-type ProductSearchItem = {
-  brand?: string | ProductSearchBrand | null
-  brand_name?: string | null
-}
-
-type ProductSearchResponse = {
-  products?: ProductSearchItem[]
-}
 
 export default function CartDrawer() {
   const router = useRouter()
-  const [brandByBaseId, setBrandByBaseId] = useState<Record<string, string>>({})
-  const [brandBySku, setBrandBySku] = useState<Record<string, string>>({})
-  const [brandByName, setBrandByName] = useState<Record<string, string>>({})
-  const [fetchPublicProduct] = useLazyGetPublicProductQuery()
   const {
     items,
     selectedIds,
@@ -47,108 +28,15 @@ export default function CartDrawer() {
     cartCount,
   } = useCart()
 
-  const parseBaseId = (id: string) => id.split('::')[0] ?? id
-  const resolveProductBrand = (product?: ProductSearchItem) => {
-    if (!product) return null
-
-    const brand = product.brand
-    if (typeof brand === 'string') return brand
-    if (brand && typeof brand === 'object') {
-      return brand.pb_name ?? brand.name ?? null
-    }
-
-    return product.brand_name ?? null
-  }
-
-  useEffect(() => {
-    const missing = items.filter((item) => !item.brand)
-    if (missing.length === 0) return
-
-    missing.forEach(async (item) => {
-      const baseId = parseBaseId(item.id)
-      if (!baseId || brandByBaseId[baseId]) return
-      if (!/^\d+$/.test(baseId)) return
-      try {
-        const product = await fetchPublicProduct(Number(baseId)).unwrap()
-        const brand = (product?.brand ?? '').trim()
-        if (brand) {
-          setBrandByBaseId((prev) => ({ ...prev, [baseId]: brand }))
-        }
-      } catch {
-        return
-      }
-    })
-  }, [items, brandByBaseId, fetchPublicProduct])
-
-  useEffect(() => {
-    const apiBase = process.env.NEXT_PUBLIC_LARAVEL_API_URL
-    if (!apiBase) return
-
-    const missing = items.filter((item) => !item.brand && item.selectedSku)
-    if (missing.length === 0) return
-
-    missing.forEach(async (item) => {
-      const sku = String(item.selectedSku ?? '').trim()
-      if (!sku || brandBySku[sku]) return
-      try {
-        const res = await fetch(`${apiBase}/api/products?q=${encodeURIComponent(sku)}&per_page=1`, {
-          method: 'GET',
-          headers: { Accept: 'application/json' },
-          cache: 'no-store',
-        })
-        if (!res.ok) return
-        const json = (await res.json()) as ProductSearchResponse
-        const product = (json.products ?? [])[0]
-        const brand = resolveProductBrand(product)
-        if (brand && typeof brand === 'string') {
-          setBrandBySku((prev) => ({ ...prev, [sku]: brand }))
-        }
-      } catch {
-        return
-      }
-    })
-  }, [items, brandBySku])
-
-  useEffect(() => {
-    const apiBase = process.env.NEXT_PUBLIC_LARAVEL_API_URL
-    if (!apiBase) return
-
-    const missing = items.filter((item) => !item.brand && !item.selectedSku)
-    if (missing.length === 0) return
-
-    missing.forEach(async (item) => {
-      const nameKey = String(item.name ?? '').trim()
-      if (!nameKey || brandByName[nameKey]) return
-      try {
-        const res = await fetch(`${apiBase}/api/products?q=${encodeURIComponent(nameKey)}&per_page=1`, {
-          method: 'GET',
-          headers: { Accept: 'application/json' },
-          cache: 'no-store',
-        })
-        if (!res.ok) return
-        const json = (await res.json()) as ProductSearchResponse
-        const product = (json.products ?? [])[0]
-        const brand = resolveProductBrand(product)
-        if (brand && typeof brand === 'string') {
-          setBrandByName((prev) => ({ ...prev, [nameKey]: brand }))
-        }
-      } catch {
-        return
-      }
-    })
-  }, [items, brandByName])
-
   const groupedItems = useMemo(() => items.reduce((map, item) => {
-    const baseId = parseBaseId(item.id)
-    const sku = String(item.selectedSku ?? '').trim()
-    const resolvedBrand = (item.brand ?? brandByBaseId[baseId] ?? brandBySku[sku] ?? brandByName[item.name] ?? '').trim()
-    const key = resolvedBrand || 'Unbranded'
+    const resolvedBrand = (item.brand ?? '').trim()
+    const key = resolvedBrand || 'Other'
     if (!map.has(key)) {
       map.set(key, [])
     }
     map.get(key)?.push(item)
     return map
-  }, new Map<string, typeof items>()), [items, brandByBaseId, brandBySku, brandByName])
+  }, new Map<string, typeof items>()), [items])
   const checkoutItems: CustomerCheckoutLineItem[] = selectedItems.map((item) => ({
     id: item.id,
     name: item.name,
@@ -211,11 +99,11 @@ export default function CartDrawer() {
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 28, stiffness: 300 }}
-            className="fixed right-0 top-0 bottom-0 z-[60] flex w-full max-w-md flex-col bg-white shadow-2xl"
+            className="fixed right-0 top-0 bottom-0 z-[60] flex w-full max-w-md flex-col bg-white dark:bg-gray-800 shadow-2xl"
           >
-            <div className="flex items-center justify-between border-b border-gray-100 p-5">
+            <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-700 p-5">
               <div className="flex items-center gap-3">
-                <h2 className="text-lg font-bold text-slate-900">Your Cart</h2>
+                <h2 className="text-lg font-bold text-slate-900 dark:text-white">Your Cart</h2>
                 {cartCount > 0 && (
                   <span className="rounded-full bg-orange-500 px-2 py-0.5 text-xs font-bold text-white">
                     {cartCount}
@@ -224,7 +112,7 @@ export default function CartDrawer() {
               </div>
               <button
                 onClick={() => setIsOpen(false)}
-                className="rounded-xl p-2 transition-colors hover:bg-gray-100 active:bg-gray-200 cursor-pointer"
+                className="rounded-xl p-2 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 active:bg-gray-200 dark:active:bg-gray-600 cursor-pointer text-slate-600 dark:text-gray-300"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <line x1="18" y1="6" x2="6" y2="18" />
@@ -236,16 +124,16 @@ export default function CartDrawer() {
             <div className="flex-1 overflow-y-auto p-5">
               {items.length === 0 ? (
                 <div className="flex h-full flex-col items-center justify-center gap-4 text-center">
-                  <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gray-100">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-gray-400">
+                  <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-gray-400 dark:text-gray-500">
                       <circle cx="9" cy="21" r="1" />
                       <circle cx="20" cy="21" r="1" />
                       <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
                     </svg>
                   </div>
                   <div>
-                    <p className="font-semibold text-gray-800">Your cart is empty</p>
-                    <p className="mt-1 text-sm text-gray-400">Add some items to get started</p>
+                    <p className="font-semibold text-gray-800 dark:text-gray-200">Your cart is empty</p>
+                    <p className="mt-1 text-sm text-gray-400 dark:text-gray-500">Add some items to get started</p>
                   </div>
                   <PrimaryButton onClick={() => setIsOpen(false)} className="!px-6 !py-2.5 !text-sm">
                     Continue Shopping
@@ -256,8 +144,8 @@ export default function CartDrawer() {
                   <AnimatePresence>
                     {Array.from(groupedItems.entries()).map(([brandName, brandItems]) => (
                       <div key={brandName} className="space-y-3">
-                        <div className="flex items-center justify-between rounded-2xl border border-gray-200 bg-white px-3 py-2">
-                          <label className="flex items-center gap-2 text-xs font-semibold text-gray-700 cursor-pointer">
+                        <div className="flex items-center justify-between rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-700/50 px-3 py-2">
+                          <label className="flex items-center gap-2 text-xs font-semibold text-gray-700 dark:text-gray-300 cursor-pointer">
                             <input
                               type="checkbox"
                               checked={brandItems.every((item) => selectedIds.includes(item.id))}
@@ -274,28 +162,11 @@ export default function CartDrawer() {
                               className="h-4 w-4 rounded border-gray-300 text-orange-500 focus:ring-orange-200 cursor-pointer"
                               style={{ cursor: 'pointer' }}
                             />
-                            <Link
-                              href={`/by-brand/${brandName.toLowerCase().replace(/\s+/g, '-')}`}
-                              className="flex items-center gap-1.5 font-bold uppercase tracking-[0.2em] hover:text-orange-600 transition-colors group"
-                            >
+                            <span className="flex items-center gap-1.5 font-bold uppercase tracking-[0.2em] text-slate-700 dark:text-gray-300">
                               {brandName}
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                width="12"
-                                height="12"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                className="opacity-0 group-hover:opacity-100 transition-opacity"
-                              >
-                                <polyline points="9 18 15 12 9 6" />
-                              </svg>
-                            </Link>
+                            </span>
                           </label>
-                          <span className="text-[11px] text-slate-400">
+                          <span className="text-[11px] text-slate-400 dark:text-gray-500">
                             {brandItems.length} item{brandItems.length === 1 ? '' : 's'}
                           </span>
                         </div>
@@ -307,7 +178,7 @@ export default function CartDrawer() {
     animate={{ opacity: 1, y: 0 }}
     exit={{ opacity: 0, x: 60 }}
     transition={{ duration: 0.2 }}
-    className="flex gap-3 rounded-2xl bg-gray-50 p-3"
+    className="flex gap-3 rounded-2xl bg-gray-50 dark:bg-gray-700/50 p-3"
   >
                             <label className="mt-1 flex items-start cursor-pointer">
                               <input
@@ -318,12 +189,12 @@ export default function CartDrawer() {
                                 style={{ cursor: 'pointer' }}
                               />
                             </label>
-    <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl">
+    <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-gray-200 dark:bg-gray-600">
       {item.image ? (
         <Image src={item.image} alt={item.name} fill className="object-cover" />
       ) : (
-        <div className="h-full w-full bg-gray-200 flex items-center justify-center">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-gray-400">
+        <div className="h-full w-full flex items-center justify-center">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-gray-400 dark:text-gray-500">
             <path d="M21 8v13H3V8" />
             <path d="M1 3h22v5H1z" />
             <path d="M10 12h4" />
@@ -333,27 +204,27 @@ export default function CartDrawer() {
     </div>
 
     <div className="min-w-0 flex-1">
-      <p className="truncate text-sm font-semibold text-gray-800">{item.name}</p>
+      <p className="truncate text-sm font-semibold text-gray-800 dark:text-gray-200">{item.name}</p>
       {(item.selectedColor || item.selectedStyle || item.selectedSize || item.selectedType || item.selectedSku) ? (
         <div className="mt-1 flex flex-wrap gap-1">
-          {item.selectedColor ? <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600">{item.selectedColor}</span> : null}
-          {item.selectedStyle ? <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600">{item.selectedStyle}</span> : null}
-          {item.selectedSize ? <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600">{item.selectedSize}</span> : null}
-          {item.selectedType ? <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600">{item.selectedType}</span> : null}
-          {item.selectedSku ? <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600">{item.selectedSku}</span> : null}
+          {item.selectedColor ? <span className="rounded-full bg-slate-100 dark:bg-gray-600 px-2 py-0.5 text-[10px] font-medium text-slate-600 dark:text-gray-300">{item.selectedColor}</span> : null}
+          {item.selectedStyle ? <span className="rounded-full bg-slate-100 dark:bg-gray-600 px-2 py-0.5 text-[10px] font-medium text-slate-600 dark:text-gray-300">{item.selectedStyle}</span> : null}
+          {item.selectedSize ? <span className="rounded-full bg-slate-100 dark:bg-gray-600 px-2 py-0.5 text-[10px] font-medium text-slate-600 dark:text-gray-300">{item.selectedSize}</span> : null}
+          {item.selectedType ? <span className="rounded-full bg-slate-100 dark:bg-gray-600 px-2 py-0.5 text-[10px] font-medium text-slate-600 dark:text-gray-300">{item.selectedType}</span> : null}
+          {item.selectedSku ? <span className="rounded-full bg-slate-100 dark:bg-gray-600 px-2 py-0.5 text-[10px] font-medium text-slate-600 dark:text-gray-300">{item.selectedSku}</span> : null}
         </div>
       ) : null}
       <div className="mt-0.5 flex flex-wrap items-center gap-2">
-        <p className="text-sm font-bold text-orange-500">
+        <p className="text-sm font-bold text-orange-500 dark:text-orange-400">
           {'₱'}{item.price.toLocaleString()}
         </p>
         {typeof item.originalPrice === 'number' && item.originalPrice > item.price && (
-          <p className="text-xs font-semibold text-slate-400 line-through">
+          <p className="text-xs font-semibold text-slate-400 dark:text-gray-500 line-through">
             {'₱'}{item.originalPrice.toLocaleString()}
           </p>
         )}
         {typeof item.prodpv === 'number' && item.prodpv > 0 && (
-          <span className="rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-[10px] font-semibold text-blue-700">
+          <span className="rounded-full border border-blue-200 dark:border-blue-900/30 bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 text-[10px] font-semibold text-blue-700 dark:text-blue-400">
             PV {item.prodpv.toLocaleString()}
           </span>
         )}
@@ -361,14 +232,14 @@ export default function CartDrawer() {
       <div className="mt-2 flex items-center gap-2">
         <button
           onClick={() => updateQuantity(item.id, item.quantity - 1)}
-          className="flex h-7 w-7 items-center justify-center rounded-lg border border-gray-200 bg-white text-lg font-bold leading-none transition-colors hover:border-orange-400 hover:text-orange-500"
+          className="flex h-7 w-7 items-center justify-center rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-lg font-bold leading-none transition-colors hover:border-orange-400 hover:text-orange-500 dark:hover:border-orange-500 dark:hover:text-orange-400 text-slate-700 dark:text-gray-300"
         >
           −
         </button>
-        <span className="w-5 text-center text-sm font-semibold">{item.quantity}</span>
+        <span className="w-5 text-center text-sm font-semibold text-slate-700 dark:text-gray-300">{item.quantity}</span>
         <button
           onClick={() => updateQuantity(item.id, item.quantity + 1)}
-          className="flex h-7 w-7 items-center justify-center rounded-lg border border-gray-200 bg-white text-lg font-bold leading-none transition-colors hover:border-orange-400 hover:text-orange-500"
+          className="flex h-7 w-7 items-center justify-center rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-lg font-bold leading-none transition-colors hover:border-orange-400 hover:text-orange-500 dark:hover:border-orange-500 dark:hover:text-orange-400 text-slate-700 dark:text-gray-300"
         >
           +
         </button>
@@ -378,7 +249,7 @@ export default function CartDrawer() {
     <div className="flex flex-col items-end justify-between">
       <button
         onClick={() => removeFromCart(item.id)}
-        className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-500 cursor-pointer"
+        className="rounded-lg p-1.5 text-gray-400 dark:text-gray-500 transition-colors hover:bg-red-50 dark:hover:bg-red-900/30 hover:text-red-500 dark:hover:text-red-400 cursor-pointer"
       >
         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <polyline points="3 6 5 6 21 6" />
@@ -388,7 +259,7 @@ export default function CartDrawer() {
           <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
         </svg>
       </button>
-      <p className="text-sm font-bold text-slate-900">
+      <p className="text-sm font-bold text-slate-900 dark:text-white">
         {'₱'}{(item.price * item.quantity).toLocaleString()}
       </p>
     </div>
@@ -402,12 +273,12 @@ export default function CartDrawer() {
             </div>
 
             {items.length > 0 && (
-              <div className="space-y-3 border-t border-gray-100 p-5">
+              <div className="space-y-3 border-t border-gray-100 dark:border-gray-700 p-5">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-500">Subtotal</span>
-                  <span className="text-xl font-bold text-slate-900">{'\u20b1'}{selectedTotal.toLocaleString()}</span>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">Subtotal</span>
+                  <span className="text-xl font-bold text-slate-900 dark:text-white">{'\u20b1'}{selectedTotal.toLocaleString()}</span>
                 </div>
-                <p className="text-xs text-gray-400">Shipping calculated at checkout</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500">Shipping calculated at checkout</p>
                 <PrimaryButton
                   onClick={handleCustomerCheckout}
                   disabled={checkoutItems.length === 0}

@@ -3,6 +3,7 @@ import ProfilePage from "@/components/profile/ProfilePage";
 import { authOptions } from '@/libs/auth';
 import type { MeResponse } from '@/store/api/userApi';
 import { getServerSession } from 'next-auth';
+import { getNavbarCategories } from '@/libs/serverStorefront';
 
 export const metadata = buildPageMetadata({ title: 'Profile', description: 'Browse the Profile page on AF Home.', path: '/profile', noIndex: true });
 export const dynamic = 'force-dynamic';
@@ -36,6 +37,7 @@ async function getInitialProfile(): Promise<MeResponse | null> {
 
 export default async function Page() {
   const initialProfile = await getInitialProfile();
+  const initialCategories = await getNavbarCategories();
 
-  return <ProfilePage initialProfile={initialProfile} />
+  return <ProfilePage initialProfile={initialProfile} initialCategories={initialCategories} />
 }

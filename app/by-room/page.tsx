@@ -4,9 +4,26 @@ export const metadata = buildPageMetadata({ title: 'By Room', description: 'Brow
 
 export default function ByRoomPage() {
   return (
-    <main className="container mx-auto px-4 py-16">
-      <h1 className="text-3xl font-semibold text-gray-900">Shop By Room</h1>
-      <p className="mt-3 text-gray-600">Choose a room from the navigation dropdown to browse products.</p>
-    </main>
+    <>
+      <div 
+        className="fixed inset-0 -z-50 by-room-background"
+        style={{ 
+          backgroundColor: '#faf8f5',
+          background: '#faf8f5'
+        } as React.CSSProperties}
+      />
+      <style dangerouslySetInnerHTML={{
+        __html: `
+          html.dark .by-room-background {
+            background-color: #030712 !important;
+            background: #030712 !important;
+          }
+        `
+      }} />
+      <main className="relative container mx-auto px-4 py-16 min-h-screen">
+        <h1 className="text-3xl font-semibold text-gray-900 dark:text-white">Shop By Room</h1>
+        <p className="mt-3 text-gray-600 dark:text-gray-300">Choose a room from the navigation dropdown to browse products.</p>
+      </main>
+    </>
   )
 }

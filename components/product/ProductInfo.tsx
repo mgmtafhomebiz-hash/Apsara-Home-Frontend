@@ -14,83 +14,12 @@ import { useSession } from "next-auth/react";
 import { useMeQuery } from "@/store/api/userApi";
 import { useGetPublicGeneralSettingsQuery } from "@/store/api/adminSettingsApi";
 import type { ProductReviewSummary } from "@/store/api/productsApi";
+import { useGetProductBrandQuery } from "@/store/api/productsApi";
+import { useGetWishlistQuery, useAddWishlistMutation, useRemoveWishlistMutation, type WishlistItem } from "@/store/api/wishlistApi";
 import OutlineButton from "@/components/ui/buttons/OutlineButton";
 import PrimaryButton from "@/components/ui/buttons/PrimaryButton";
+import { Package, Truck, CheckCircle } from "lucide-react";
 
-// Brand Profile Component
-const BrandProfile = ({ product }: { product: CategoryProduct }) => {
-    if (!product.brand) return null;
-    
-    return (
-        <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-4 shadow-lg">
-            <div className="flex items-center gap-4">
-                <div className={`relative h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-gray-200 dark:border-gray-600`}>
-                    <span className="text-3xl font-bold text-gray-400 dark:text-gray-500">
-                        {product.brand.charAt(0).toUpperCase()}
-                    </span>
-                </div>
-                <div className="flex-1">
-                    <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">{product.brand}</h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">Official {product.brand} Store</p>
-                    <div className="space-y-2">
-                        <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                                <line x1="16" y1="2" x2="16" y2="6" />
-                                <line x1="16" y1="10" x2="21" y2="10" />
-                            </svg>
-                            <span>Chat Performance: 95%</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <path d="M12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
-                            </svg>
-                            <span>Overall Rating: 4.8</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                                <line x1="16" y1="2" x2="16" y2="6" />
-                                <line x1="16" y1="10" x2="21" y2="10" />
-                                <line x1="3" y1="2" x2="3" y2="6" />
-                            </svg>
-                            <span>Total Products: 24</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <path d="M6 2L3 6v14a2 2 0 0 1 2 2h14a2 2 0 0 1 2 2V6l-3-4z" />
-                                <line x1="16" y1="2" x2="16" y2="6" />
-                                <line x1="8" y1="2" x2="16" y2="6" />
-                                <line x1="3" y1="10" x2="21" y2="10" />
-                            </svg>
-                            <span>Joined: Jan 2024</span>
-                        </div>
-                    </div>
-                    <button
-                        onClick={() => {
-                            const brandUrl = window.location.href;
-                            navigator.clipboard.writeText(brandUrl).then(() => {
-                                // Success feedback could be added here
-                            }).catch(() => {
-                                // Error feedback could be added here
-                            })
-                        }}
-                        className="absolute top-4 right-4 p-2 rounded-full border border-gray-200 dark:border-gray-600 hover:bg-orange-500 hover:border-orange-500 dark:hover:bg-orange-500 dark:hover:border-orange-500 hover:text-white transition-all duration-200 cursor-pointer"
-                        title="Share Brand"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-700 dark:text-gray-300 hover:text-white transition-colors">
-                            <circle cx="18" cy="5" r="3" />
-                            <circle cx="6" cy="12" r="3" />
-                            <circle cx="18" cy="19" r="3" />
-                            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
-                            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
-                        </svg>
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
-};
 
 const CartIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -254,11 +183,23 @@ const buildVariantTitleParts = (variant?: NonNullable<CategoryProduct['variants'
 
 const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, reviewSummary }: ProductInfoProps) => {
     const { addToCart } = useCart();
-    const { data: session } = useSession();
+    const { data: session, status, update: updateSession } = useSession();
     const isLoggedIn = Boolean(session?.user);
     const { data: me } = useMeQuery(undefined, { skip: !isLoggedIn });
+    const { data: wishlist = [] } = useGetWishlistQuery(undefined, { skip: !isLoggedIn });
+    const [addWishlist] = useAddWishlistMutation();
+    const [removeWishlist] = useRemoveWishlistMutation();
     const { data: publicSettingsData } = useGetPublicGeneralSettingsQuery();
-    const canUseMemberPrice = isLoggedIn;
+    const canUseMemberPrice = isLoggedIn && status === 'authenticated';
+    const [hasRefreshedSession, setHasRefreshedSession] = useState(false);
+
+    // Refresh session once on component mount to handle login redirects
+    useEffect(() => {
+        if (!hasRefreshedSession && updateSession && !isLoggedIn) {
+            updateSession();
+            setHasRefreshedSession(true);
+        }
+    }, []);
     const basePv = toPositiveNumber(product.prodpv) ?? 0;
     const [quantity, setQuantity] = useState(1);
     const [selectedColor, setSelectedColor] = useState('');
@@ -266,11 +207,49 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, 
     const [selectedStyle, setSelectedStyle] = useState('');
     const [selectedSize, setSelectedSize] = useState('');
     const [wishlisted, setWishlisted] = useState(false);
+    const [isWishlistLoading, setIsWishlistLoading] = useState(false);
     const [buyOptionsOpen, setBuyOptionsOpen] = useState(false);
     const [paymentLogoMissing, setPaymentLogoMissing] = useState(false);
     const [isShareOpen, setIsShareOpen] = useState(false);
     const [shareCopied, setShareCopied] = useState(false);
     const optionLabels = useMemo(() => extractVariantOptionLabels(product.specifications), [product.specifications]);
+
+    // Check if product is in wishlist and update wishlisted state
+    useEffect(() => {
+        const isInWishlist = wishlist.some((item: WishlistItem) => item.productId === product.id);
+        setWishlisted(isInWishlist);
+    }, [wishlist, product.id]);
+
+    // Handle wishlist add/remove
+    const handleWishlistToggle = async () => {
+        if (!isLoggedIn) {
+            // Redirect to login if not logged in
+            window.location.href = '/login';
+            return;
+        }
+
+        if (!product.id) {
+            console.error('Product ID is missing');
+            return;
+        }
+
+        setIsWishlistLoading(true);
+        try {
+            if (wishlisted) {
+                // Remove from wishlist
+                await removeWishlist(product.id).unwrap();
+                setWishlisted(false);
+            } else {
+                // Add to wishlist
+                await addWishlist({ product_id: product.id, product_name: product.name }).unwrap();
+                setWishlisted(true);
+            }
+        } catch (error) {
+            console.error('Wishlist error:', error);
+        } finally {
+            setIsWishlistLoading(false);
+        }
+    };
 
     const variantOptions = useMemo(
         () =>
@@ -535,10 +514,9 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, 
     const variantMember = toPositiveNumber(selectedVariant?.priceMember) ?? toPositiveNumber(product.priceMember) ?? 0;
     const hasMemberPrice = variantMember > 0 && variantMember < variantSrp;
 
-    const displayPrice = canUseMemberPrice && hasMemberPrice ? variantMember : variantSrp;
-    const displayOriginalPrice = canUseMemberPrice
-        ? (hasMemberPrice ? variantSrp : undefined)
-        : (product.originalPrice && product.originalPrice > variantSrp ? product.originalPrice : undefined);
+    // Always display member price if available, regardless of login status
+    const displayPrice = hasMemberPrice ? variantMember : variantSrp;
+    const displayOriginalPrice = hasMemberPrice ? variantSrp : (product.originalPrice && product.originalPrice > variantSrp ? product.originalPrice : undefined);
     const totalVariantStock = getEffectiveVariantStock(variantOptions);
     const displayStock = typeof selectedVariant?.qty === 'number'
         ? selectedVariant.qty
@@ -682,23 +660,28 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, 
                     {product.brand && (
                         <span className="text-xs font-bold text-orange-500 uppercase tracking-wider">{product.brand}</span>
                     )}
-                    <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 leading-tight mt-1">{displayTitle}</h1>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white leading-tight mt-1">{displayTitle}</h1>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                     <motion.button
-                        onClick={() => setWishlisted(w => !w)}
+                        onClick={handleWishlistToggle}
+                        disabled={isWishlistLoading}
                         whileTap={{ scale: 0.8 }}
                         className={`p-2 rounded-xl border transition-all cursor-pointer ${
-                            wishlisted 
-                                ? 'border-orange-200 text-orange-500' 
-                                : 'border-gray-200 text-gray-400 hover:border-orange-200 hover:text-orange-500'
-                        }`}
+                            wishlisted
+                                ? 'border-orange-200 text-orange-500 dark:border-orange-900/50 dark:text-orange-400'
+                                : 'border-gray-200 text-gray-400 dark:border-gray-700 dark:text-gray-500 hover:border-orange-200 hover:text-orange-500 dark:hover:border-orange-900/50 dark:hover:text-orange-400'
+                        } ${isWishlistLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                         title={wishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
                     >
-                        <HeartIcon filled={wishlisted} />
+                        {isWishlistLoading ? (
+                            <svg className="animate-spin" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+                            </svg>
+                        ) : <HeartIcon filled={wishlisted} />}
                     </motion.button>
                     <button
-                        className="p-2 rounded-xl border border-gray-200 text-gray-400 hover:border-orange-200 hover:text-orange-500 transition-all cursor-pointer"
+                        className="p-2 rounded-xl border border-gray-200 text-gray-400 dark:border-gray-700 dark:text-gray-500 hover:border-orange-200 hover:text-orange-500 dark:hover:border-orange-900/50 dark:hover:text-orange-400 transition-all cursor-pointer"
                         onClick={() => setIsShareOpen(true)}
                         type="button"
                     >
@@ -710,10 +693,10 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, 
             <div className="flex flex-wrap items-center gap-3">
                 <div className="flex items-center gap-2">
                     <StarRating rating={Math.round(avgRatingValue)} size={16} />
-                    <span className="text-sm font-bold text-slate-700">{avgRating}</span>
+                    <span className="text-sm font-bold text-slate-700 dark:text-gray-300">{avgRating}</span>
                     <button
                         onClick={() => onReviewsClick?.()}
-                        className="text-sm text-gray-400 hover:text-orange-500 transition-colors"
+                        className="text-sm text-gray-400 dark:text-gray-500 hover:text-orange-500 dark:hover:text-orange-400 transition-colors"
                     >
                         ({reviewCount} review{reviewCount === 1 ? '' : 's'})
                     </button>
@@ -730,7 +713,7 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, 
                         </span>
                     )}
                     {categoryLabel && (
-                        <span className="rounded-full border border-orange-200 px-2.5 py-1 text-[11px] font-semibold text-orange-600">
+                        <span className="rounded-full border border-orange-200 dark:border-orange-900/50 px-2.5 py-1 text-[11px] font-semibold text-orange-600 dark:text-orange-400">
                             {categoryLabel}
                         </span>
                     )}
@@ -758,13 +741,13 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, 
             )}
 
             {/* Price Section */}
-            <div className="bg-gradient-to-r from-orange-50 to-amber-50 rounded-2xl p-6 border border-orange-100">
+            <div className="bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 rounded-2xl p-6 border border-orange-100 dark:border-orange-900/30">
                 <div className="flex items-baseline gap-3 flex-wrap mb-3">
-                    <span className="text-3xl sm:text-4xl font-bold text-orange-600">₱{displayPrice.toLocaleString()}</span>
+                    <span className="text-3xl sm:text-4xl font-bold text-orange-600 dark:text-orange-400">₱{displayPrice.toLocaleString()}</span>
                     {displayOriginalPrice && (
                         <>
-                            <span className="text-lg text-gray-400 line-through">₱{displayOriginalPrice.toLocaleString()}</span>
-                            <span className="text-sm font-semibold text-green-600 border border-green-200 px-3 py-1 rounded-full">
+                            <span className="text-lg text-gray-400 dark:text-gray-500 line-through">₱{displayOriginalPrice.toLocaleString()}</span>
+                            <span className="text-sm font-semibold text-green-600 dark:text-green-400 border border-green-200 dark:border-green-900/50 px-3 py-1 rounded-full">
                                 Save ₱{(displayOriginalPrice - displayPrice).toLocaleString()}
                             </span>
                         </>
@@ -776,43 +759,55 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, 
                             ✓ Member Price Applied
                         </span>
                     )}
+                    {!canUseMemberPrice && hasMemberPrice && (
+                        <span className="inline-flex items-center rounded-full border border-orange-200 dark:border-orange-900/50 bg-orange-50 dark:bg-orange-900/20 px-3 py-1 text-[11px] font-semibold text-orange-700 dark:text-orange-400">
+                            ✨ Sign in or Register to claim {Math.round(((variantSrp - variantMember) / variantSrp) * 100)}% savings!
+                        </span>
+                    )}
                     {variantPv > 0 && (
-                        <span className="inline-flex items-center rounded-full border border-blue-200 px-3 py-1 text-xs font-semibold text-blue-700">
+                        <span className="inline-flex items-center rounded-full border border-blue-200 dark:border-blue-900/30 bg-blue-50 dark:bg-blue-900/20 px-3 py-1 text-xs font-semibold text-blue-700 dark:text-blue-400">
                             PV {variantPv.toLocaleString()}
                         </span>
                     )}
                 </div>
+                {hasMemberPrice && (
+                    <div className="mt-2 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-900/50 rounded-lg">
+                        <p className="text-xs text-amber-800 dark:text-amber-700">
+                            <span className="font-semibold">💡 Note:</span> The price shown above is our member discount price. {!canUseMemberPrice ? 'Sign in or create an account to enjoy this price at checkout.' : 'You\'re enjoying this exclusive member price!'}
+                        </p>
+                    </div>
+                )}
             </div>
 
             {/* Product Details */}
-            <div className="rounded-2xl border border-gray-200 p-4 space-y-3">
+            <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-700/50 p-4 space-y-3">
                 {(displaySku || typeof displayStock === 'number') && (
                     <div className="flex flex-wrap items-center gap-4 text-sm">
                         {displaySku && (
                             <div className="flex items-center gap-1">
-                                <span className="text-gray-500">SKU:</span>
-                                <span className="font-semibold text-slate-800">{displaySku}</span>
+                                <span className="text-gray-500 dark:text-gray-400">SKU:</span>
+                                <span className="font-semibold text-slate-800 dark:text-gray-200">{displaySku}</span>
                             </div>
                         )}
                         {typeof displayStock === 'number' && (
                             <div className="flex items-center gap-1">
-                                <span className="text-gray-500">Stock:</span>
-                                <span className="font-semibold text-slate-800">{displayStock}</span>
+                                <span className="text-gray-500 dark:text-gray-400">Stock:</span>
+                                <span className="font-semibold text-slate-800 dark:text-gray-200">{displayStock}</span>
                             </div>
                         )}
                         <div className="flex items-center gap-1">
-                            <span className="text-gray-500">Type:</span>
-                            <span className="font-semibold text-orange-500">{productTypeLabel}</span>
+                            <span className="text-gray-500 dark:text-gray-400">Type:</span>
+                            <span className="font-semibold text-orange-500 dark:text-orange-400">{productTypeLabel}</span>
                         </div>
                     </div>
                 )}
                 <div className="flex items-center gap-2">
                     <div className={`w-2 h-2 rounded-full border ${isInStock ? 'border-green-500 bg-green-500 animate-pulse' : 'border-red-400 bg-red-400'}`} />
-                    <span className={`text-sm font-semibold ${isInStock ? 'text-green-600' : 'text-red-500'}`}>
+                    <span className={`text-sm font-semibold ${isInStock ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400'}`}>
                         {isInStock ? 'In Stock' : 'Out of Stock'}
                     </span>
                     {isInStock && typeof displayStock === 'number' && displayStock <= 10 && (
-                        <span className="text-sm text-orange-600 font-medium">Only {displayStock} left</span>
+                        <span className="text-sm text-orange-600 dark:text-orange-400 font-medium">Only {displayStock} left</span>
                     )}
                 </div>
             </div>
@@ -821,9 +816,9 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, 
             {hasRealVariants && (
                 <div className="space-y-4">
                     {selectedVariantLabel || hasDisplayDimensions || selectedVariantImage ? (
-                        <div className="flex items-center gap-3 rounded-xl border border-orange-200 p-3">
+                        <div className="flex items-center gap-3 rounded-xl border border-orange-200 dark:border-orange-900/50 bg-orange-50 dark:bg-orange-900/20 p-3">
                             {selectedVariantImage ? (
-                                <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg border border-orange-200">
+                                <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg border border-orange-200 dark:border-orange-900/50">
                                     <Image
                                         src={selectedVariantImage}
                                         alt={selectedVariantLabel || product.name}
@@ -835,12 +830,12 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, 
                             ) : null}
                             <div className="flex min-w-0 flex-col gap-1">
                                 {selectedVariantLabel && (
-                                    <span className="text-sm font-semibold text-slate-700">
-                                        Selected: <span className="text-orange-600">{selectedVariantLabel}</span>
+                                    <span className="text-sm font-semibold text-slate-700 dark:text-gray-300">
+                                        Selected: <span className="text-orange-600 dark:text-orange-400">{selectedVariantLabel}</span>
                                     </span>
                                 )}
                                 {hasDisplayDimensions && (
-                                    <span className="text-xs text-slate-600">
+                                    <span className="text-xs text-slate-600 dark:text-gray-400">
                                         {displayWidth ? `W ${displayWidth} cm` : 'W -'} × {displayDimension ? `D ${displayDimension} cm` : 'D -'} × {displayHeight ? `H ${displayHeight} cm` : 'H -'}
                                     </span>
                                 )}
@@ -850,17 +845,26 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, 
 
                     {hasColorSelector && colorOptions.length > 0 && (
                         <div>
-                            <span className="text-sm font-semibold text-slate-700 mb-2 block">Color</span>
+                            <span className="text-sm font-semibold text-slate-700 dark:text-gray-300 block mb-2">
+                                Color{effectiveSelectedColor && ': '}
+                                {effectiveSelectedColor && (
+                                    <span className="text-slate-600 dark:text-gray-400 capitalize">{effectiveSelectedColor}</span>
+                                )}
+                            </span>
                             <div className="flex gap-2">
                                 {colorOptions.map(c => (
                                     <button
                                         key={c.name}
                                         title={c.name}
                                         onClick={() => setSelectedColor(c.name)}
-                                        className={`w-10 h-10 rounded-full border-2 border-white shadow-md hover:scale-110 transition-all duration-200 ${
-                                            effectiveSelectedColor === c.name ? 'ring-2 ring-orange-400 ring-offset-2' : ''
+                                        className={`w-10 h-10 rounded-full transition-all duration-200 hover:scale-110 ${
+                                            effectiveSelectedColor === c.name ? 'ring-4 ring-orange-400 dark:ring-orange-500' : 'ring-2 ring-transparent'
                                         }`}
-                                        style={{ backgroundColor: c.hex ?? '#E5E7EB' }}
+                                        style={{
+                                            backgroundColor: c.hex ?? '#E5E7EB',
+                                            borderWidth: '2px',
+                                            borderColor: '#D1D5DB'
+                                        }}
                                     />
                                 ))}
                             </div>
@@ -877,8 +881,8 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, 
                                         onClick={() => setSelectedVariantName(variantOption.name)}
                                         className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg border-2 font-medium transition-all ${
                                             effectiveSelectedPrimaryName === variantOption.name
-                                                ? 'border-orange-400 text-orange-600'
-                                                : 'border-gray-200 text-slate-600 hover:border-orange-200'
+                                                ? 'border-orange-400 text-orange-600 dark:border-orange-500 dark:text-orange-400'
+                                                : 'border-gray-200 text-slate-600 dark:border-gray-700 dark:text-gray-300 hover:border-orange-200 dark:hover:border-orange-900/50'
                                         }`}
                                     >
                                         {variantOption.image && (
@@ -912,8 +916,8 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, 
                                         }}
                                         className={`rounded-lg border-2 px-3 py-2 text-left transition-all ${
                                             effectiveSelectedSizeKey === sizeChoice.key
-                                                ? 'border-orange-400 text-orange-600'
-                                                : 'border-gray-200 text-slate-600 hover:border-orange-200'
+                                                ? 'border-orange-400 text-orange-600 dark:border-orange-500 dark:text-orange-400'
+                                                : 'border-gray-200 text-slate-600 dark:border-gray-700 dark:text-gray-300 hover:border-orange-200 dark:hover:border-orange-900/50'
                                         }`}
                                     >
                                         <span className="block text-sm font-medium">{sizeChoice.label}</span>
@@ -931,25 +935,25 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, 
             )}
 
             {/* Shipping & Payment Info */}
-            <div className="bg-gradient-to-br from-slate-50 to-gray-50 rounded-2xl p-5 space-y-4">
+            <div className="bg-gradient-to-br from-slate-50 to-gray-50 dark:from-gray-800 dark:to-gray-800/50 rounded-2xl p-5 space-y-4">
                 <div>
-                    <h4 className="text-sm font-semibold text-slate-700 mb-3">Shipping & Delivery</h4>
+                    <h4 className="text-sm font-semibold text-slate-700 dark:text-gray-200 mb-3">Shipping & Delivery</h4>
                     <div className="space-y-2">
                         {[
-                            { icon: '📦', text: 'Ships within 1–3 business days' },
-                            { icon: '🏙️', text: 'Nationwide delivery via LBC / J&T' },
-                            { icon: '✅', text: 'Free assembly for Metro Manila orders' },
+                            { icon: <Package size={16} className="text-orange-500" />, text: 'Ships within 1–3 business days' },
+                            { icon: <Truck size={16} className="text-orange-500" />, text: 'Nationwide delivery via LBC / J&T' },
+                            { icon: <CheckCircle size={16} className="text-green-500" />, text: 'Free assembly for Metro Manila orders' },
                         ].map(item => (
-                            <div key={item.text} className="flex items-center gap-3 text-sm text-gray-600">
-                                <span className="text-base">{item.icon}</span>
+                            <div key={item.text} className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300">
+                                {item.icon}
                                 <span>{item.text}</span>
                             </div>
                         ))}
                     </div>
                 </div>
 
-                <div className="border-t border-gray-200 pt-4">
-                    <p className="text-xs text-gray-500 mb-3 font-medium">We accept:</p>
+                <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-3 font-medium">We accept:</p>
                     <div className="flex items-center">
                         {!paymentLogoMissing ? (
                             <img
@@ -991,20 +995,20 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, 
             {/* Quantity & Actions */}
             <div className="space-y-4">
                 <div className="flex items-center justify-between gap-4">
-                    <span className="text-sm font-semibold text-slate-700">Quantity:</span>
-                    <div className="flex items-center border border-gray-200 rounded-xl overflow-hidden">
-                        <button 
-                            onClick={() => setQuantity(qty => Math.max(1, qty - 1))} 
-                            className="px-4 py-2.5 text-gray-500 hover:text-orange-500 transition-colors text-lg font-medium"
+                    <span className="text-sm font-semibold text-slate-700 dark:text-gray-300">Quantity:</span>
+                    <div className="flex items-center border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+                        <button
+                            onClick={() => setQuantity(qty => Math.max(1, qty - 1))}
+                            className="px-4 py-2.5 text-gray-500 dark:text-gray-400 hover:text-orange-500 dark:hover:text-orange-400 transition-colors text-lg font-medium"
                         >
                             −
                         </button>
-                        <span className="px-5 py-2.5 text-sm font-bold text-slate-800 min-w-12 text-center border-x border-gray-200">
+                        <span className="px-5 py-2.5 text-sm font-bold text-slate-800 dark:text-gray-200 min-w-12 text-center border-x border-gray-200 dark:border-gray-700">
                             {quantity}
                         </span>
-                        <button 
-                            onClick={() => setQuantity(qty => qty + 1)} 
-                            className="px-4 py-2.5 text-gray-500 hover:text-orange-500 transition-colors text-lg font-medium"
+                        <button
+                            onClick={() => setQuantity(qty => qty + 1)}
+                            className="px-4 py-2.5 text-gray-500 dark:text-gray-400 hover:text-orange-500 dark:hover:text-orange-400 transition-colors text-lg font-medium"
                         >
                             +
                         </button>
@@ -1060,16 +1064,16 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, 
                         initial={{ opacity: 0, y: 30, scale: 0.98 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         transition={{ duration: 0.2 }}
-                        className="relative w-full max-w-xl rounded-3xl shadow-2xl border border-gray-100 p-5 sm:p-6"
+                        className="relative w-full max-w-xl rounded-3xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 p-5 sm:p-6"
                     >
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-xs font-semibold uppercase tracking-widest text-gray-400">Share to</p>
-                                <h3 className="text-lg font-bold text-slate-800">Send this product</h3>
+                                <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500">Share to</p>
+                                <h3 className="text-lg font-bold text-slate-800 dark:text-gray-200">Send this product</h3>
                             </div>
                             <button
                                 onClick={() => setIsShareOpen(false)}
-                                className="h-9 w-9 rounded-full border border-gray-200 text-gray-500 hover:text-orange-600 hover:border-orange-200 transition-colors"
+                                className="h-9 w-9 rounded-full border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:text-orange-600 dark:hover:text-orange-400 hover:border-orange-200 dark:hover:border-orange-900/50 transition-colors"
                                 type="button"
                             >
                                 <span className="sr-only">Close</span>
@@ -1089,10 +1093,10 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, 
                                 <button
                                     key={item.id}
                                     onClick={item.action}
-                                    className="flex flex-col items-center gap-2 text-center text-xs font-semibold text-slate-600 hover:text-orange-600 transition-colors"
+                                    className="flex flex-col items-center gap-2 text-center text-xs font-semibold text-slate-600 dark:text-gray-400 hover:text-orange-600 dark:hover:text-orange-400 transition-colors"
                                     type="button"
                                 >
-                                    <span className="flex h-14 w-14 items-center justify-center rounded-full border border-gray-200 text-slate-600 shadow-sm">
+                                    <span className="flex h-14 w-14 items-center justify-center rounded-full border border-gray-200 dark:border-gray-600 text-slate-600 dark:text-gray-400">
                                         {hasShareIconSrc(item) ? (
                                             <Image
                                                 src={item.iconSrc}
@@ -1110,13 +1114,13 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, 
                             ))}
                         </div>
 
-                        <div className="mt-4 rounded-2xl border border-gray-100 px-4 py-3">
-                            <p className="text-xs font-semibold text-slate-500">Product share link</p>
+                        <div className="mt-4 rounded-2xl border border-gray-100 dark:border-gray-700 px-4 py-3">
+                            <p className="text-xs font-semibold text-slate-500 dark:text-gray-400">Product share link</p>
                             <div className="mt-1 flex items-center justify-between gap-3">
-                                <span className="text-xs text-slate-600 truncate">{shareUrl}</span>
+                                <span className="text-xs text-slate-600 dark:text-gray-400 truncate">{shareUrl}</span>
                                 <button
                                     onClick={handleCopyShareLink}
-                                    className="text-xs font-semibold text-orange-600 hover:text-orange-700"
+                                    className="text-xs font-semibold text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300"
                                     type="button"
                                 >
                                     {shareCopied ? 'Copied' : 'Copy'}
@@ -1127,6 +1131,7 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, 
                     </motion.div>
                 </div>
             )}
+
         </motion.div>
     );
 };
