@@ -1084,10 +1084,10 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, 
                                 <button
                                     key={item.id}
                                     onClick={item.action}
-                                    className="flex flex-col items-center gap-2 text-center text-xs font-semibold text-slate-600 hover:text-orange-600 transition-colors"
+                                    className="flex flex-col items-center gap-2 text-center text-xs font-semibold text-slate-600 dark:text-gray-400 hover:text-orange-600 dark:hover:text-orange-400 transition-colors"
                                     type="button"
                                 >
-                                    <span className="flex h-14 w-14 items-center justify-center rounded-full border border-gray-200 text-slate-600">
+                                    <span className="flex h-14 w-14 items-center justify-center rounded-full border border-gray-200 dark:border-gray-600 text-slate-600 dark:text-gray-400">
                                         {hasShareIconSrc(item) ? (
                                             <Image
                                                 src={item.iconSrc}
@@ -1105,13 +1105,13 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, 
                             ))}
                         </div>
 
-                        <div className="mt-4 rounded-2xl border border-gray-100 px-4 py-3">
-                            <p className="text-xs font-semibold text-slate-500">Product share link</p>
+                        <div className="mt-4 rounded-2xl border border-gray-100 dark:border-gray-700 px-4 py-3">
+                            <p className="text-xs font-semibold text-slate-500 dark:text-gray-400">Product share link</p>
                             <div className="mt-1 flex items-center justify-between gap-3">
-                                <span className="text-xs text-slate-600 truncate">{shareUrl}</span>
+                                <span className="text-xs text-slate-600 dark:text-gray-400 truncate">{shareUrl}</span>
                                 <button
                                     onClick={handleCopyShareLink}
-                                    className="text-xs font-semibold text-orange-600 hover:text-orange-700"
+                                    className="text-xs font-semibold text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300"
                                     type="button"
                                 >
                                     {shareCopied ? 'Copied' : 'Copy'}
