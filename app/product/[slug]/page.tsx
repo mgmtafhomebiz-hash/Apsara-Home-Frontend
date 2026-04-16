@@ -2,12 +2,11 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { redirect } from 'next/navigation';
 import type { Metadata } from 'next';
-import TopBar from '@/components/layout/TopBar';
-import Navbar from '@/components/layout/Navbar';
 import Footer from "@/components/landing-page/Footer";
 import ScrollToTop from "@/components/landing-page/ScrollToTop";
 import ProductPageClient from '@/components/product/ProductPageClient';
 import ProductTabs from '@/components/product/ProductTabs';
+import ProductPageWrapper from '@/components/product/ProductPageWrapper';
 import { categoryMeta, type CategoryProduct } from '@/libs/CategoryData';
 import RelatedProducts from '@/components/product/RelatedProduct';
 import ProductQA from '@/components/product/ProductQA';
@@ -414,9 +413,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
   }
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
-      <TopBar />
-      <Navbar initialCategories={navbarCategories} />
+    <ProductPageWrapper initialCategories={navbarCategories}>
       <main className="flex-1">
         <div className="bg-gray-50 border-b border-gray-100">
           <div className="container mx-auto px-4 py-3">
@@ -454,6 +451,6 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
       </main>
       <Footer />
       <ScrollToTop />
-    </div>
+    </ProductPageWrapper>
   );
 }
