@@ -67,6 +67,14 @@ export interface SupplierPortalUser {
   role_label?: string
 }
 
+export interface UpdateSupplierUserPayload {
+  id: number
+  fullname: string
+  username: string
+  email?: string
+  password?: string
+}
+
 export const suppliersApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getSuppliers: builder.query<{ suppliers: SupplierItem[] }, void>({
@@ -137,6 +145,14 @@ export const suppliersApi = baseApi.injectEndpoints({
       }),
       providesTags: ['Suppliers'],
     }),
+    updateSupplierUser: builder.mutation<{ message: string; user: SupplierPortalUser }, UpdateSupplierUserPayload>({
+      query: ({ id, ...body }) => ({
+        url: `/api/admin/supplier-users/${id}`,
+        method: 'PUT',
+        body,
+      }),
+      invalidatesTags: ['Suppliers'],
+    }),
     deleteSupplierUser: builder.mutation<{ message: string }, number>({
       query: (id) => ({
         url: `/api/admin/supplier-users/${id}`,
@@ -155,6 +171,7 @@ export const {
   useInviteSupplierUserMutation,
   useGetSupplierCategoriesQuery,
   useGetSupplierUsersQuery,
+  useUpdateSupplierUserMutation,
   useUpdateSupplierCategoriesMutation,
   useDeleteSupplierUserMutation,
 } = suppliersApi
