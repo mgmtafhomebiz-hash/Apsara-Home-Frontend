@@ -23,8 +23,10 @@ export default function AdminGeneralSettingsPageMain() {
   const [branchDraftAddress, setBranchDraftAddress] = useState('')
   const [logoFile, setLogoFile] = useState<File | null>(null)
   const [faviconFile, setFaviconFile] = useState<File | null>(null)
+  const [websiteQrCodeFile, setWebsiteQrCodeFile] = useState<File | null>(null)
   const [logoUrl, setLogoUrl] = useState<string | null>(null)
   const [faviconUrl, setFaviconUrl] = useState<string | null>(null)
+  const [websiteQrCodeUrl, setWebsiteQrCodeUrl] = useState<string | null>(null)
 
   const [timezone, setTimezone] = useState('Asia/Manila')
   const [currency, setCurrency] = useState('PHP')
@@ -49,6 +51,7 @@ export default function AdminGeneralSettingsPageMain() {
     }
     setLogoUrl(settings.logo_url ?? null)
     setFaviconUrl(settings.favicon_url ?? null)
+    setWebsiteQrCodeUrl(settings.website_qr_code_url ?? null)
     setTimezone(settings.timezone || 'Asia/Manila')
     setCurrency(settings.currency || 'PHP')
     setDateFormat(settings.date_format || 'MM/DD/YYYY')
@@ -212,6 +215,34 @@ export default function AdminGeneralSettingsPageMain() {
               </div>
             ) : null}
           </div>
+
+          <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-4 md:col-span-2">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Upload Website QR Code</p>
+            <p className="mt-1 text-sm text-slate-600">Shown on the website for customers to scan.</p>
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+              <label className="inline-flex cursor-pointer items-center gap-2 rounded-full bg-white px-3 py-2 text-xs font-semibold text-cyan-700 shadow-sm ring-1 ring-cyan-100 transition hover:shadow-md">
+                <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-cyan-50 text-cyan-600">
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M3 16.5V5a2 2 0 012-2h6l2 2h6a2 2 0 012 2v9.5a2.5 2.5 0 01-2.5 2.5h-13A2.5 2.5 0 013 16.5z" />
+                  </svg>
+                </span>
+                Upload QR Code
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(event) => setWebsiteQrCodeFile(event.target.files?.[0] ?? null)}
+                  className="sr-only"
+                />
+              </label>
+              <span className="text-xs text-slate-500">{websiteQrCodeFile ? websiteQrCodeFile.name : 'No file selected'}</span>
+            </div>
+            {websiteQrCodeUrl ? (
+              <div className="mt-3 flex items-center gap-3 rounded-2xl border border-dashed border-slate-200 bg-white/80 px-3 py-2 text-xs text-slate-500">
+                <img src={websiteQrCodeUrl} alt="Current website QR code" className="h-16 w-16 rounded-md object-contain" />
+                <span>Current QR code uploaded.</span>
+              </div>
+            ) : null}
+          </div>
         </div>
       </div>
 
@@ -345,13 +376,18 @@ export default function AdminGeneralSettingsPageMain() {
             if (faviconFile) {
               payload.append('favicon', faviconFile)
             }
+            if (websiteQrCodeFile) {
+              payload.append('website_qr_code', websiteQrCodeFile)
+            }
 
             try {
               const response = await saveSettings(payload).unwrap()
               setLogoUrl(response.settings.logo_url ?? null)
               setFaviconUrl(response.settings.favicon_url ?? null)
+              setWebsiteQrCodeUrl(response.settings.website_qr_code_url ?? null)
               setLogoFile(null)
               setFaviconFile(null)
+              setWebsiteQrCodeFile(null)
               showSuccessToast(response.message || 'Settings saved.')
             } catch (error) {
               console.error(error)

@@ -1,7 +1,8 @@
-'use client';
+﻿'use client';
 
 import { motion } from 'framer-motion';
 import Link from 'next/link';
+import { useGetPublicGeneralSettingsQuery } from '@/store/api/adminSettingsApi';
 import {
   Facebook,
   Instagram,
@@ -50,6 +51,14 @@ const socialLinks = [
 ];
 
 export default function Footer() {
+  const { data } = useGetPublicGeneralSettingsQuery();
+  const settings = data?.settings;
+  const websiteQrCodeUrl = settings?.website_qr_code_url ?? null;
+  const logoUrl = settings?.logo_url ?? '/af_home_logo.png';
+  const address = settings?.address ?? '88 Calavite St., Brgy Paang Bundok, La Loma, Quezon City, Philippines';
+  const contactNumber = settings?.contact_number ?? '02-840 0290';
+  const supportEmail = settings?.support_email ?? 'info@afhome.biz';
+
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -85,16 +94,24 @@ export default function Footer() {
         >
           {/* Brand Column */}
           <motion.div variants={itemVariants} className="col-span-2 lg:col-span-1">
-            <Link href="/" className="inline-block mb-6">
+            <Link href="/" className="inline-flex items-start gap-5 mb-6">
               {/* Logo Image */}
                 <img
-                  src="/af_home_logo.png"
+                  src={logoUrl}
                 alt="AFhome Logo"
                 className="w-32 h-auto" // Adjust the width/height as needed
               />
+              {websiteQrCodeUrl ? (
+                <img
+                  src={websiteQrCodeUrl}
+                  alt="AF Home website QR code"
+                  className="h-20 w-20 rounded-md object-contain"
+                  loading="lazy"
+                />
+              ) : null}
             </Link>
             <p className="text-gray-600 dark:text-white/70 text-sm leading-relaxed mb-6">
-              AF Home is not just a store. It’s a home ecosystem built to grow with you.
+              AF Home is not just a store. Itâ€™s a home ecosystem built to grow with you.
             </p>
             <div className="flex gap-3">
               {socialLinks.map((social) => (
@@ -174,29 +191,30 @@ export default function Footer() {
               <li className="flex items-start gap-3">
                 <MapPin size={18} className="text-orange-500 flex-shrink-0 mt-1" />
                 <span className="text-gray-600 dark:text-white/70 text-sm">
-                  88 Calavite St., Brgy Paang Bundok, La Loma, Quezon City, Philippines
+                  {address}
                 </span>
               </li>
               <li className="flex items-center gap-3">
                 <Phone size={18} className="text-orange-500 flex-shrink-0" />
                 <a
-                  href="tel:+02-840 0290"
+                  href={`tel:${contactNumber}`}
                   className="text-gray-600 dark:text-white/70 hover:text-orange-500 dark:hover:text-orange-400 transition-colors text-sm"
                 >
-                  02-840 0290
+                  {contactNumber}
                 </a>
               </li>
               <li className="flex items-center gap-3">
                 <Mail size={18} className="text-orange-500 flex-shrink-0" />
                 <a
-                  href="mailto:info@afhome.biz"
+                  href={`mailto:${supportEmail}`}
                   className="text-gray-600 dark:text-white/70 hover:text-orange-500 dark:hover:text-orange-400 transition-colors text-sm"
                 >
 
-                  info@afhome.biz
+                  {supportEmail}
                 </a>
               </li>
             </ul>
+
           </motion.div>
         </motion.div>
 
@@ -209,7 +227,7 @@ export default function Footer() {
           className="mt-10 pt-6 border-t border-gray-300 dark:border-white/10 flex flex-col md:flex-row justify-between items-center gap-4"
         >
           <p className="text-gray-500 dark:text-white/50 text-sm">
-            © {new Date().getFullYear()} AFhome. All rights reserved.
+            Â© {new Date().getFullYear()} AFhome. All rights reserved.
           </p>
           <div className="flex gap-6">
             <a
