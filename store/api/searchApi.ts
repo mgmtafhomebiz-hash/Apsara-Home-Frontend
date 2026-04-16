@@ -36,8 +36,16 @@ export const searchApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['SearchHistory'],
     }),
+
+    deleteSearchHistoryItem: builder.mutation<{ message: string }, { id: number }>({
+      query: ({ id }) => ({
+        url: `/api/search/history/${id}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['SearchHistory'],
+    }),
   }),
   overrideExisting: true,
 })
 
-export const { useSaveSearchHistoryMutation, useGetSearchHistoryQuery, useClearSearchHistoryMutation } = searchApi
+export const { useSaveSearchHistoryMutation, useGetSearchHistoryQuery, useClearSearchHistoryMutation, useDeleteSearchHistoryItemMutation } = searchApi
