@@ -6,6 +6,7 @@ export interface CategoryProduct {
     price: number;
     priceDp?: number;
     priceMember?: number;
+    priceSrp?: number;
     prodpv?: number;
     originalPrice?: number;
     image: string;
