@@ -1,7 +1,7 @@
 'use client'
 
 import { useSearchParams, useRouter } from 'next/navigation'
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import { useSession } from 'next-auth/react'
 import TopBar from '@/components/layout/TopBar'
@@ -165,6 +165,7 @@ export default function SearchPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const query = searchParams.get('q') || ''
+  const listingTopRef = useRef<HTMLDivElement | null>(null)
 
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [showCount, setShowCount] = useState(16)
@@ -269,8 +270,29 @@ export default function SearchPage() {
     boundedCurrentPage * showCount
   )
 
+  useEffect(() => {
+    if (boundedCurrentPage <= 1) return
+    listingTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, [boundedCurrentPage])
+
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-900 flex flex-col">
+    <>
+      <div 
+        className="fixed inset-0 -z-50 search-background"
+        style={{ 
+          backgroundColor: '#faf8f5',
+          background: '#faf8f5'
+        } as React.CSSProperties}
+      />
+      <style dangerouslySetInnerHTML={{
+        __html: `
+          html.dark .search-background {
+            background-color: #030712 !important;
+            background: #030712 !important;
+          }
+        `
+      }} />
+      <div className="relative min-h-screen text-slate-900 dark:text-white flex flex-col">
       <TopBar />
       <Navbar />
 
@@ -326,7 +348,7 @@ export default function SearchPage() {
               {/* Right Side - Products */}
               <div className="flex-1 min-w-0">
                 {/* Top Filter */}
-                <div className="mb-6">
+                <div ref={listingTopRef} className="mb-6">
                   <TopFilter
                     onSearchChange={() => {}}
                     onViewTypeChange={setViewMode}
@@ -403,5 +425,6 @@ export default function SearchPage() {
 
       <Footer />
     </div>
+    </>
   )
-}
+} 
