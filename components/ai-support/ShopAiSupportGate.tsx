@@ -21,13 +21,15 @@ const extractPartnerSlug = (pathname: string) => {
 
 export default function ShopAiSupportGate() {
   const pathname = usePathname()
-  if (pathname.startsWith('/admin') || pathname.startsWith('/partner')) {
-    return null
-  }
+  const shouldHide =
+    pathname.startsWith('/admin') ||
+    pathname.startsWith('/partner') ||
+    pathname.endsWith('-setup')
   const partnerSlug = useMemo(() => extractPartnerSlug(pathname), [pathname])
   const [partnerAiVisible, setPartnerAiVisible] = useState(false)
 
   useEffect(() => {
+    if (shouldHide) return
     if (!partnerSlug) return
 
     let cancelled = false
@@ -69,8 +71,11 @@ export default function ShopAiSupportGate() {
     return () => {
       cancelled = true
     }
-  }, [partnerSlug])
+  }, [partnerSlug, shouldHide])
 
+  if (shouldHide) {
+    return null
+  }
   if (!partnerSlug) return <AiSupport />
   if (!partnerAiVisible) return null
   return <AiSupport />

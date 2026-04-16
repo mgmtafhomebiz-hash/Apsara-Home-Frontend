@@ -37,6 +37,7 @@ const footerLinks = {
   ],
   support: [
     { name: 'Contact Us', href: '#contact' },
+    { name: 'Our Branches', href: '/branches' },
     { name: 'FAQs', href: '#' },
     { name: 'Shipping Info', href: '#' },
     { name: 'Returns', href: '#' },
@@ -58,6 +59,22 @@ export default function Footer() {
   const address = settings?.address ?? '88 Calavite St., Brgy Paang Bundok, La Loma, Quezon City, Philippines';
   const contactNumber = settings?.contact_number ?? '02-840 0290';
   const supportEmail = settings?.support_email ?? 'info@afhome.biz';
+  const branches = (() => {
+    const raw = settings?.branches;
+    if (!raw) return [] as { name: string; address: string }[];
+    try {
+      const parsed = JSON.parse(raw) as unknown;
+      if (!Array.isArray(parsed)) return [];
+      return parsed
+        .map((item) => ({
+          name: typeof item?.name === 'string' ? item.name : '',
+          address: typeof item?.address === 'string' ? item.address : '',
+        }))
+        .filter((item) => item.name.trim() || item.address.trim());
+    } catch {
+      return [];
+    }
+  })();
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -111,7 +128,7 @@ export default function Footer() {
               ) : null}
             </Link>
             <p className="text-gray-600 dark:text-white/70 text-sm leading-relaxed mb-6">
-              AF Home is not just a store. Itâ€™s a home ecosystem built to grow with you.
+              AF Home is not just a store. It&apos;s a home ecosystem built to grow with you.
             </p>
             <div className="flex gap-3">
               {socialLinks.map((social) => (
@@ -171,12 +188,21 @@ export default function Footer() {
             <ul className="space-y-3">
               {footerLinks.support.map((link) => (
                 <li key={link.name}>
-                  <a
-                    href={link.href}
-                    className="text-gray-600 dark:text-white/70 hover:text-orange-500 dark:hover:text-orange-400 transition-colors text-sm"
-                  >
-                    {link.name}
-                  </a>
+                  {link.href.startsWith('/') ? (
+                    <Link
+                      href={link.href}
+                      className="text-gray-600 dark:text-white/70 hover:text-orange-500 dark:hover:text-orange-400 transition-colors text-sm"
+                    >
+                      {link.name}
+                    </Link>
+                  ) : (
+                    <a
+                      href={link.href}
+                      className="text-gray-600 dark:text-white/70 hover:text-orange-500 dark:hover:text-orange-400 transition-colors text-sm"
+                    >
+                      {link.name}
+                    </a>
+                  )}
                 </li>
               ))}
             </ul>
@@ -214,7 +240,6 @@ export default function Footer() {
                 </a>
               </li>
             </ul>
-
           </motion.div>
         </motion.div>
 
