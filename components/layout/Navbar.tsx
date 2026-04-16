@@ -12,6 +12,7 @@ import { useLogoutMutation } from '@/store/api/authApi'
 import { baseApi, clearAccessTokenCache } from '@/store/api/baseApi'
 import type { Category } from '@/store/api/categoriesApi'
 import { useGetPublicProductsQuery } from '@/store/api/productsApi'
+import { useSaveSearchHistoryMutation, useGetSearchHistoryQuery } from '@/store/api/searchApi'
 import formatPrice from '@/helpers/FormatPrice'
 import { useMeQuery } from '@/store/api/userApi'
 import { useGetCustomerNotificationsQuery } from '@/store/api/customerNotificationsApi'
@@ -99,6 +100,18 @@ const roomIcons: Record<string, React.ReactNode> = {
   ),
 }
 
+// Helper function to highlight search term in text
+const highlightText = (text: string, searchTerm: string) => {
+  if (!searchTerm.trim()) return text
+
+  const regex = new RegExp(`(${searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi')
+  const parts = text.split(regex)
+
+  return parts.map((part, i) =>
+    regex.test(part) ? { type: 'highlight', text: part } : { type: 'normal', text: part }
+  )
+}
+
 function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[] }) {
   const router = useRouter()
   const pathname = usePathname()
@@ -170,6 +183,12 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
     },
   )
 
+  // Search history hooks
+  const [saveSearchHistory] = useSaveSearchHistoryMutation()
+  const { data: searchHistoryData, refetch: refetchSearchHistory } = useGetSearchHistoryQuery(undefined, {
+    skip: !searchModalOpen,
+  })
+
   const searchedProducts = useMemo(() => {
     const rows = searchedProductsData?.products ?? []
     const normalizedQuery = debouncedSearchQuery.trim().toLowerCase()
@@ -187,6 +206,7 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
         const image = product.image || imageFromArray || null
         const slug = toSlug(name)
         const id = typeof product.id === 'number' ? product.id : null
+        const priceMember = typeof product.priceMember === 'number' ? product.priceMember : null
         const priceDp = typeof product.priceDp === 'number' ? product.priceDp : null
         const priceSrp = typeof product.priceSrp === 'number' ? product.priceSrp : null
         const prodpv = typeof product.prodpv === 'number' ? product.prodpv : null
@@ -195,6 +215,7 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
           name,
           image,
           path: id ? `/product/${slug}-i${id}` : `/product/${slug}`,
+          priceMember,
           priceDp,
           priceSrp,
           prodpv,
@@ -208,6 +229,7 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
           name: string
           image: string | null
           path: string
+          priceMember: number | null
           priceDp: number | null
           priceSrp: number | null
           prodpv: number | null
@@ -238,8 +260,11 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
       searchInputRef.current?.focus()
     }, 80)
 
+    // Refetch search history when modal opens
+    refetchSearchHistory()
+
     return () => window.clearTimeout(timeoutId)
-  }, [searchModalOpen])
+  }, [searchModalOpen, refetchSearchHistory])
 
   useEffect(() => {
     if (typeof document === 'undefined') return
@@ -253,6 +278,26 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
     return () => {
       document.body.style.overflow = originalOverflow
     }
+  }, [searchModalOpen])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Check for Ctrl+K (or Cmd+K on Mac)
+      if ((event.ctrlKey || event.metaKey) && event.key === 'k') {
+        event.preventDefault()
+        setSearchModalOpen(true)
+      }
+      // Check for Escape to close
+      if (event.key === 'Escape' && searchModalOpen) {
+        setSearchModalOpen(false)
+        setSearchModalQuery('')
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
   }, [searchModalOpen])
 
   useEffect(() => {
@@ -453,17 +498,22 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
   //   await signOut({ callbackUrl: '/' })
   // }
 
-  const handleProductSearchSubmit = (query: string) => {
-    const q = query.trim().toLowerCase()
+  const handleProductSearchSubmit = async (query: string) => {
+    const q = query.trim()
     if (!q) return
 
-    const exactMatch = searchedProducts.find((p) => p.name.toLowerCase() === q)
-    const firstMatch = exactMatch ?? searchedProducts.find((p) => p.name.toLowerCase().includes(q))
-    if (!firstMatch) return
+    // Save search to history
+    try {
+      await saveSearchHistory({ query: q }).unwrap()
+    } catch (error) {
+      console.error('Failed to save search history:', error)
+    }
 
-    router.push(firstMatch.path)
+    // Navigate to search results page with the query
+    router.push(`/search?q=${encodeURIComponent(q)}`)
     setSearchModalQuery('')
     setSearchModalOpen(false)
+    setMobileOpen(false)
   }
 
   const handleCustomerLogout = async (callbackUrl: string) => {
@@ -1459,31 +1509,32 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[120] bg-white/45 backdrop-blur-md"
+            transition={{ duration: 0.15 }}
+            className="fixed inset-0 z-[120] bg-slate-900/50 backdrop-blur-sm dark:bg-slate-950/60"
             onClick={() => {
               setSearchModalOpen(false)
               setSearchModalQuery('')
             }}
           >
-            <div className="flex min-h-screen items-start justify-center px-4 pt-16 sm:px-6 sm:pt-24">
+            <div className="flex min-h-screen items-start justify-center px-3 pt-12 sm:px-6 sm:pt-20 md:pt-24">
               <motion.div
-                initial={{ opacity: 0, y: 18, scale: 0.98 }}
+                initial={{ opacity: 0, y: 20, scale: 0.95 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 16, scale: 0.98 }}
-                transition={{ duration: 0.18, ease: 'easeOut' }}
-                className="w-full max-w-3xl"
+                exit={{ opacity: 0, y: 16, scale: 0.95 }}
+                transition={{ duration: 0.2, ease: 'easeOut' }}
+                className="w-full max-w-2xl"
                 onClick={(event) => event.stopPropagation()}
               >
-                <Card variant="default" className="overflow-hidden rounded-[28px] border-white/70 bg-white shadow-2xl shadow-black/20">
+                <Card variant="default" className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl shadow-black/15 dark:border-gray-700 dark:bg-gray-800">
                   <Card.Content className="space-y-0 px-0 py-0">
                     <form
-                      className="border-b border-slate-100 px-4 py-4 sm:px-5"
+                      className="border-b border-slate-200 px-4 py-5 sm:px-6 dark:border-gray-700"
                       onSubmit={(event) => {
                         event.preventDefault()
                         handleProductSearchSubmit(searchModalQuery)
                       }}
                     >
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2">
                         <SearchField
                           aria-label="Search products"
                           value={searchModalQuery}
@@ -1492,100 +1543,241 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                           className="w-full"
                         >
                           <Label className="sr-only">Search products</Label>
-                          <SearchField.Group className="flex min-h-13 items-center gap-3 rounded-[26px] border border-slate-200 bg-slate-50 px-5 transition-all duration-200 focus-within:border-orange-300 focus-within:bg-white">
-                            <SearchField.SearchIcon className="h-[18px] w-[18px] text-slate-400" />
+                          <SearchField.Group className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-3 transition-all duration-200 focus-within:border-orange-400 focus-within:ring-2 focus-within:ring-orange-100 dark:border-gray-700 dark:bg-gray-700/50 dark:focus-within:border-orange-500 dark:focus-within:ring-orange-900/50">
+                            <SearchField.SearchIcon className="h-5 w-5 shrink-0 text-slate-400 dark:text-gray-400" />
                             <SearchField.Input
                               ref={searchInputRef}
                               autoFocus
-                              placeholder="What are you searching for?"
-                              className="flex-1 border-none bg-transparent p-0 text-base text-slate-700 outline-none placeholder:text-slate-400"
+                              placeholder="Search products by name..."
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault()
+                                  handleProductSearchSubmit(searchModalQuery)
+                                }
+                              }}
+                              className="flex-1 border-none bg-transparent p-0 text-base text-slate-900 outline-none placeholder:text-slate-500 dark:text-gray-100 dark:placeholder:text-gray-400"
                             />
-                            {searchModalQuery ? <SearchField.ClearButton className="text-slate-400 transition hover:text-slate-600" /> : null}
+                            {searchModalQuery && (
+                              <>
+                                <motion.button
+                                  type="button"
+                                  onClick={() => setSearchModalQuery('')}
+                                  initial={{ opacity: 0, scale: 0.8 }}
+                                  animate={{ opacity: 1, scale: 1 }}
+                                  exit={{ opacity: 0, scale: 0.8 }}
+                                  transition={{ duration: 0.1 }}
+                                  className="shrink-0 rounded-md p-1 text-slate-400 transition hover:bg-slate-200 hover:text-slate-600 dark:text-gray-400 dark:hover:bg-gray-600 dark:hover:text-gray-200"
+                                  title="Clear search"
+                                >
+                                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                  </svg>
+                                </motion.button>
+                                <div className="w-px h-6 bg-slate-200 dark:bg-gray-600" />
+                                <motion.button
+                                  type="button"
+                                  onClick={() => handleProductSearchSubmit(searchModalQuery)}
+                                  initial={{ opacity: 0, scale: 0.8 }}
+                                  animate={{ opacity: 1, scale: 1 }}
+                                  exit={{ opacity: 0, scale: 0.8 }}
+                                  transition={{ duration: 0.1 }}
+                                  whileHover={{ scale: 1.05 }}
+                                  whileTap={{ scale: 0.95 }}
+                                  className="shrink-0 inline-flex cursor-pointer items-center gap-1 rounded-md bg-orange-500 hover:bg-orange-600 px-2.5 py-1.5 text-xs font-semibold text-white transition"
+                                  title="Search (Enter)"
+                                >
+                                  <span>ENTER</span>
+                                </motion.button>
+                              </>
+                            )}
                           </SearchField.Group>
                         </SearchField>
-                        <button
+                        <motion.button
                           type="button"
                           onClick={() => {
                             setSearchModalQuery('')
                             setSearchModalOpen(false)
                           }}
-                          className="shrink-0 rounded-xl bg-slate-100 px-2.5 py-1 text-xs font-semibold tracking-wide text-slate-500 transition hover:bg-slate-200"
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          className="shrink-0 inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-100 px-2.5 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-200 dark:border-gray-700 dark:bg-gray-700 dark:text-gray-400 dark:hover:bg-gray-600"
+                          title="Close search (Esc)"
                         >
-                          ESC
-                        </button>
+                          <span>ESC</span>
+                        </motion.button>
                       </div>
                     </form>
 
-                    <div className="max-h-[60vh] overflow-y-auto px-3 py-3 sm:max-h-[65vh] sm:px-4">
+                    <div className="max-h-[calc(100vh-180px)] overflow-y-auto px-3 py-4 sm:px-4 sm:py-5">
                       {activeSearchQuery.length < 2 ? (
-                        <div className="px-2 py-2">
-                          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Start typing</p>
-                          <p className="mt-2 text-sm text-slate-500">Search products by name and open the result directly from this modal.</p>
-                        </div>
-                      ) : showSearchSearching ? (
-                        <div className="flex items-center gap-3 px-3 py-4 text-sm text-slate-500">
-                          <div className="h-4 w-4 animate-spin rounded-full border-2 border-orange-200 border-t-orange-500" />
-                          Searching products...
-                        </div>
-                      ) : showSearchNotFound ? (
-                        <div className="px-3 py-4">
-                          <p className="text-sm font-medium text-slate-700">No products found</p>
-                          <p className="mt-1 text-sm text-slate-500">No matches for &quot;{searchModalQuery.trim()}&quot;.</p>
-                        </div>
-                      ) : (
-                        <div className="space-y-2">
-                          {searchedProducts.map((product) => (
-                            <Link
-                              key={product.id}
-                              href={product.path}
-                              onClick={() => {
-                                setSearchModalQuery('')
-                                setSearchModalOpen(false)
-                                setMobileOpen(false)
-                              }}
-                              className="block rounded-3xl border border-orange-200/60 bg-white p-4 shadow-sm transition hover:border-orange-300 hover:bg-orange-50/40"
+                        <>
+                          {searchHistoryData?.history && searchHistoryData.history.length > 0 ? (
+                            <motion.div
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              className="space-y-3"
                             >
-                              <div className="flex items-center gap-4">
-                                <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-2xl bg-slate-100">
+                              <div className="flex items-center justify-between px-2 mb-3">
+                                <p className="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-gray-400">Recent Searches</p>
+                              </div>
+                              {searchHistoryData.history.map((item, index) => (
+                                <motion.button
+                                  key={item.id}
+                                  onClick={() => {
+                                    setSearchModalQuery(item.query)
+                                  }}
+                                  initial={{ opacity: 0, x: -10 }}
+                                  animate={{ opacity: 1, x: 0 }}
+                                  transition={{ delay: index * 0.05 }}
+                                  className="group relative w-full flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-3 text-left transition-all hover:border-orange-300 hover:bg-orange-50 dark:border-gray-700 dark:bg-gray-700/50 dark:hover:border-orange-500/50 dark:hover:bg-gray-700"
+                                >
+                                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-600 dark:bg-gray-600 dark:text-gray-300">
+                                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="truncate text-sm text-slate-900 dark:text-gray-100">{item.query}</p>
+                                    <p className="text-xs text-slate-500 dark:text-gray-400 mt-0.5">
+                                      {new Date(item.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                    </p>
+                                  </div>
+                                  <svg className="h-4 w-4 shrink-0 text-slate-300 transition group-hover:translate-x-1 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                  </svg>
+                                </motion.button>
+                              ))}
+                            </motion.div>
+                          ) : (
+                            <motion.div
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              className="rounded-lg border border-slate-100 bg-gradient-to-br from-slate-50 to-slate-100/50 px-4 py-6 text-center dark:border-gray-700 dark:from-gray-700/50 dark:to-gray-800/30"
+                            >
+                              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-lg bg-slate-200 dark:bg-gray-700">
+                                <svg className="h-6 w-6 text-slate-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                </svg>
+                              </div>
+                              <p className="mt-3 text-sm font-medium text-slate-900 dark:text-gray-200">Start searching</p>
+                              <p className="mt-1 text-xs text-slate-600 dark:text-gray-400">Type at least 2 characters to search products</p>
+                            </motion.div>
+                          )}
+                        </>
+                      ) : showSearchSearching ? (
+                        <motion.div
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          className="flex flex-col items-center gap-3 py-8"
+                        >
+                          <div className="relative h-8 w-8">
+                            <div className="absolute inset-0 rounded-full border-2 border-orange-200 dark:border-orange-900" />
+                            <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-orange-500 dark:border-t-orange-400 animate-spin" />
+                          </div>
+                          <p className="text-sm text-slate-600 dark:text-gray-400">Searching products...</p>
+                        </motion.div>
+                      ) : showSearchNotFound ? (
+                        <motion.div
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="rounded-lg border border-slate-100 bg-slate-50 px-4 py-6 text-center dark:border-gray-700 dark:bg-gray-700/50"
+                        >
+                          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-lg bg-slate-200 dark:bg-gray-700">
+                            <svg className="h-6 w-6 text-slate-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                          </div>
+                          <p className="mt-2 text-sm font-medium text-slate-900 dark:text-gray-200">No products found</p>
+                          <p className="mt-1 text-xs text-slate-600 dark:text-gray-400">No matches for &quot;<span className="font-semibold">{searchModalQuery.trim()}</span>&quot;</p>
+                        </motion.div>
+                      ) : (
+                        <motion.div
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ staggerChildren: 0.05 }}
+                          className="space-y-3"
+                        >
+                          {searchedProducts.map((product, index) => (
+                            <motion.div
+                              key={product.id}
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ delay: index * 0.03 }}
+                            >
+                              <Link
+                                href={product.path}
+                                onClick={() => {
+                                  setSearchModalQuery('')
+                                  setSearchModalOpen(false)
+                                  setMobileOpen(false)
+                                }}
+                                className="group relative flex items-center gap-4 rounded-xl border border-slate-200 bg-white p-3 transition-all hover:border-orange-300 hover:bg-orange-50 dark:border-gray-700 dark:bg-gray-700/50 dark:hover:border-orange-500/50 dark:hover:bg-gray-700"
+                              >
+                                <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-slate-100 dark:bg-gray-700">
                                   {product.image ? (
-                                    <Image src={product.image} alt={product.name} fill className="object-cover" />
+                                    <Image src={product.image} alt={product.name} fill className="object-cover transition group-hover:scale-110" />
                                   ) : (
-                                    <span className="flex h-full w-full items-center justify-center text-[11px] font-semibold text-slate-400">
+                                    <span className="flex h-full w-full items-center justify-center text-xs font-bold text-slate-400 dark:text-gray-600">
                                       AF
                                     </span>
                                   )}
                                 </div>
                                 <div className="min-w-0 flex-1">
-                                  <p className="truncate text-sm font-semibold uppercase tracking-wide text-slate-800">
-                                    {product.name}
+                                  <p className="truncate text-sm font-semibold text-slate-900 dark:text-gray-100">
+                                    {highlightText(product.name, searchModalQuery).map((part, i) =>
+                                      part.type === 'highlight' ? (
+                                        <span key={i} className="bg-yellow-200 dark:bg-yellow-700 rounded px-0.5">{part.text}</span>
+                                      ) : (
+                                        <span key={i}>{part.text}</span>
+                                      )
+                                    )}
                                   </p>
-                                  <p className="mt-1 text-xs text-slate-500">Search match for &quot;{searchModalQuery.trim()}&quot;</p>
-                                  {(product.priceDp ?? product.priceSrp ?? product.prodpv) && (
-                                    <div className="mt-2 flex flex-wrap items-center gap-2">
-                                      {product.priceDp !== null && (
-                                        <span className="text-sm font-semibold text-orange-600">
-                                          {formatPrice(product.priceDp)}
-                                        </span>
-                                      )}
-                                      {product.priceSrp !== null &&
-                                        product.priceDp !== null &&
-                                        product.priceSrp > product.priceDp && (
-                                          <span className="text-xs text-slate-400 line-through">
-                                            {formatPrice(product.priceSrp)}
+                                  <p className="mt-0.5 text-xs text-slate-500 dark:text-gray-400">Match for &quot;{searchModalQuery.trim()}&quot;</p>
+                                  {(product.priceMember ?? product.priceSrp ?? product.prodpv) && (
+                                    <div className="mt-2 space-y-1.5">
+                                      {product.priceMember !== null && product.priceMember > 0 && product.priceMember < (product.priceSrp ?? product.price ?? 0) ? (
+                                        <>
+                                          <div className="flex flex-wrap items-center gap-2">
+                                            <span className="text-sm font-bold text-orange-600 dark:text-orange-400">
+                                              {formatPrice(product.priceMember)}
+                                            </span>
+                                            {product.priceSrp && product.priceSrp > product.priceMember && (
+                                              <>
+                                                <span className="text-xs text-slate-400 line-through dark:text-gray-500">
+                                                  {formatPrice(product.priceSrp)}
+                                                </span>
+                                                <span className="inline-flex items-center rounded-full border border-green-200 bg-green-50 px-2 py-0.5 text-[10px] font-semibold text-green-700 dark:border-green-900/50 dark:bg-green-900/30 dark:text-green-300">
+                                                  Save {formatPrice(product.priceSrp - product.priceMember)}
+                                                </span>
+                                              </>
+                                            )}
+                                          </div>
+                                          <span className="inline-flex items-center rounded-full border border-orange-200 bg-orange-50 px-2.5 py-1 text-[11px] font-semibold text-orange-700 dark:border-orange-900/50 dark:bg-orange-900/30 dark:text-orange-300">
+                                            ✨ Sign in or Register to claim {Math.round(((((product.priceSrp ?? product.price ?? 0) - (product.priceMember ?? 0)) / (product.priceSrp ?? product.price ?? 1)) * 100))}% savings!
                                           </span>
-                                        )}
+                                        </>
+                                      ) : (
+                                        <div className="flex flex-wrap items-center gap-2">
+                                          <span className="text-sm font-bold text-orange-600 dark:text-orange-400">
+                                            {formatPrice(product.priceSrp ?? product.price ?? 0)}
+                                          </span>
+                                        </div>
+                                      )}
                                       {product.prodpv !== null && product.prodpv > 0 && (
-                                        <span className="rounded-full border border-blue-100 bg-blue-50 px-2 py-0.5 text-[11px] font-semibold text-blue-600">
+                                        <span className="inline-flex items-center rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-[11px] font-semibold text-blue-700 dark:border-blue-900/50 dark:bg-blue-900/30 dark:text-blue-300">
                                           PV {product.prodpv.toLocaleString('en-PH', { maximumFractionDigits: 2 })}
                                         </span>
                                       )}
                                     </div>
                                   )}
                                 </div>
-                              </div>
-                            </Link>
+                                <svg className="h-5 w-5 shrink-0 text-slate-300 transition group-hover:translate-x-1 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                </svg>
+                              </Link>
+                            </motion.div>
                           ))}
-                        </div>
+                        </motion.div>
                       )}
                     </div>
                   </Card.Content>
