@@ -12,7 +12,7 @@ import { useLogoutMutation } from '@/store/api/authApi'
 import { baseApi, clearAccessTokenCache } from '@/store/api/baseApi'
 import type { Category } from '@/store/api/categoriesApi'
 import { useGetPublicProductsQuery } from '@/store/api/productsApi'
-import { useSaveSearchHistoryMutation, useGetSearchHistoryQuery } from '@/store/api/searchApi'
+import { useSaveSearchHistoryMutation, useGetSearchHistoryQuery, useClearSearchHistoryMutation } from '@/store/api/searchApi'
 import formatPrice from '@/helpers/FormatPrice'
 import { useMeQuery } from '@/store/api/userApi'
 import { useGetCustomerNotificationsQuery } from '@/store/api/customerNotificationsApi'
@@ -101,8 +101,8 @@ const roomIcons: Record<string, React.ReactNode> = {
 }
 
 // Helper function to highlight search term in text
-const highlightText = (text: string, searchTerm: string) => {
-  if (!searchTerm.trim()) return text
+const highlightText = (text: string, searchTerm: string): Array<{ type: 'highlight' | 'normal'; text: string }> => {
+  if (!searchTerm.trim()) return [{ type: 'normal', text }]
 
   const regex = new RegExp(`(${searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi')
   const parts = text.split(regex)
@@ -164,6 +164,7 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
 
   const activeSearchQuery = searchModalQuery.trim()
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(activeSearchQuery)
+  const [isSubmittingSearch, setIsSubmittingSearch] = useState(false)
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -183,10 +184,11 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
     },
   )
 
-  // Search history hooks
+  // Search history hooks - only fetch if user is authenticated
   const [saveSearchHistory] = useSaveSearchHistoryMutation()
-  const { data: searchHistoryData, refetch: refetchSearchHistory } = useGetSearchHistoryQuery(undefined, {
-    skip: !searchModalOpen,
+  const [clearSearchHistory] = useClearSearchHistoryMutation()
+  const { data: searchHistoryData, isLoading: isLoadingSearchHistory, refetch: refetchSearchHistory } = useGetSearchHistoryQuery(undefined, {
+    skip: !searchModalOpen || status !== 'authenticated',
   })
 
   const searchedProducts = useMemo(() => {
@@ -260,11 +262,13 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
       searchInputRef.current?.focus()
     }, 80)
 
-    // Refetch search history when modal opens
-    refetchSearchHistory()
+    // Refetch search history when modal opens (if authenticated)
+    if (status === 'authenticated') {
+      refetchSearchHistory()
+    }
 
     return () => window.clearTimeout(timeoutId)
-  }, [searchModalOpen, refetchSearchHistory])
+  }, [searchModalOpen, status, refetchSearchHistory])
 
   useEffect(() => {
     if (typeof document === 'undefined') return
@@ -500,20 +504,27 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
 
   const handleProductSearchSubmit = async (query: string) => {
     const q = query.trim()
-    if (!q) return
+    if (!q || isSubmittingSearch) return
 
-    // Save search to history
+    // Prevent multiple submissions
+    setIsSubmittingSearch(true)
+
     try {
-      await saveSearchHistory({ query: q }).unwrap()
-    } catch (error) {
-      console.error('Failed to save search history:', error)
-    }
+      // Save search to history
+      try {
+        await saveSearchHistory({ query: q }).unwrap()
+      } catch (error) {
+        console.error('Failed to save search history:', error)
+      }
 
-    // Navigate to search results page with the query
-    router.push(`/search?q=${encodeURIComponent(q)}`)
-    setSearchModalQuery('')
-    setSearchModalOpen(false)
-    setMobileOpen(false)
+      // Navigate to search results page with the query
+      router.push(`/search?q=${encodeURIComponent(q)}`)
+      setSearchModalQuery('')
+      setSearchModalOpen(false)
+      setMobileOpen(false)
+    } finally {
+      setIsSubmittingSearch(false)
+    }
   }
 
   const handleCustomerLogout = async (callbackUrl: string) => {
@@ -1525,130 +1536,67 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                 className="w-full max-w-2xl"
                 onClick={(event) => event.stopPropagation()}
               >
-                <Card variant="default" className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl shadow-black/15 dark:border-gray-700 dark:bg-gray-800">
+                <Card variant="default" className="overflow-hidden rounded-2xl border border-slate-200 dark:border-gray-700 bg-white shadow-xl shadow-black/15 dark:bg-gray-800">
                   <Card.Content className="space-y-0 px-0 py-0">
                     <form
-                      className="border-b border-slate-200 px-4 py-5 sm:px-6 dark:border-gray-700"
+                      className="border-b border-slate-200 px-6 py-5 dark:border-gray-700"
                       onSubmit={(event) => {
                         event.preventDefault()
                         handleProductSearchSubmit(searchModalQuery)
                       }}
                     >
-                      <div className="flex items-center gap-2">
-                        <SearchField
-                          aria-label="Search products"
-                          value={searchModalQuery}
-                          onChange={setSearchModalQuery}
-                          onSubmit={() => handleProductSearchSubmit(searchModalQuery)}
-                          className="w-full"
-                        >
-                          <Label className="sr-only">Search products</Label>
-                          <SearchField.Group className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-3 transition-all duration-200 focus-within:border-orange-400 focus-within:ring-2 focus-within:ring-orange-100 dark:border-gray-700 dark:bg-gray-700/50 dark:focus-within:border-orange-500 dark:focus-within:ring-orange-900/50">
-                            <SearchField.SearchIcon className="h-5 w-5 shrink-0 text-slate-400 dark:text-gray-400" />
-                            <SearchField.Input
-                              ref={searchInputRef}
-                              autoFocus
-                              placeholder="Search products by name..."
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                  e.preventDefault()
-                                  handleProductSearchSubmit(searchModalQuery)
-                                }
-                              }}
-                              className="flex-1 border-none bg-transparent p-0 text-base text-slate-900 outline-none placeholder:text-slate-500 dark:text-gray-100 dark:placeholder:text-gray-400"
-                            />
-                            {searchModalQuery && (
-                              <>
-                                <motion.button
-                                  type="button"
-                                  onClick={() => setSearchModalQuery('')}
-                                  initial={{ opacity: 0, scale: 0.8 }}
-                                  animate={{ opacity: 1, scale: 1 }}
-                                  exit={{ opacity: 0, scale: 0.8 }}
-                                  transition={{ duration: 0.1 }}
-                                  className="shrink-0 rounded-md p-1 text-slate-400 transition hover:bg-slate-200 hover:text-slate-600 dark:text-gray-400 dark:hover:bg-gray-600 dark:hover:text-gray-200"
-                                  title="Clear search"
-                                >
-                                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                  </svg>
-                                </motion.button>
-                                <div className="w-px h-6 bg-slate-200 dark:bg-gray-600" />
-                                <motion.button
-                                  type="button"
-                                  onClick={() => handleProductSearchSubmit(searchModalQuery)}
-                                  initial={{ opacity: 0, scale: 0.8 }}
-                                  animate={{ opacity: 1, scale: 1 }}
-                                  exit={{ opacity: 0, scale: 0.8 }}
-                                  transition={{ duration: 0.1 }}
-                                  whileHover={{ scale: 1.05 }}
-                                  whileTap={{ scale: 0.95 }}
-                                  className="shrink-0 inline-flex cursor-pointer items-center gap-1 rounded-md bg-orange-500 hover:bg-orange-600 px-2.5 py-1.5 text-xs font-semibold text-white transition"
-                                  title="Search (Enter)"
-                                >
-                                  <span>ENTER</span>
-                                </motion.button>
-                              </>
-                            )}
-                          </SearchField.Group>
-                        </SearchField>
-                        <motion.button
-                          type="button"
-                          onClick={() => {
-                            setSearchModalQuery('')
-                            setSearchModalOpen(false)
-                          }}
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          className="shrink-0 inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-100 px-2.5 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-200 dark:border-gray-700 dark:bg-gray-700 dark:text-gray-400 dark:hover:bg-gray-600"
-                          title="Close search (Esc)"
-                        >
-                          <span>ESC</span>
-                        </motion.button>
-                      </div>
-                    </form>
-
-                    <div className="max-h-[calc(100vh-180px)] overflow-y-auto px-3 py-4 sm:px-4 sm:py-5">
-                      {activeSearchQuery.length < 2 ? (
-                        <>
-                          {searchHistoryData?.history && searchHistoryData.history.length > 0 ? (
-                            <motion.div
-                              initial={{ opacity: 0, y: 10 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              className="space-y-3"
+                      <SearchField
+                        aria-label="Search products"
+                        value={searchModalQuery}
+                        onChange={setSearchModalQuery}
+                        className="w-full"
+                      >
+                        <Label className="sr-only">Search products</Label>
+                        <SearchField.Group className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-5 py-3.5 transition-all duration-200 focus-within:border-orange-400 focus-within:ring-2 focus-within:ring-orange-100 dark:border-gray-700 dark:bg-gray-800 dark:focus-within:border-orange-500 dark:focus-within:ring-orange-900/50">
+                          <SearchField.SearchIcon className="h-5 w-5 shrink-0 text-slate-400 dark:text-gray-400" />
+                          <SearchField.Input
+                            ref={searchInputRef}
+                            autoFocus
+                            placeholder="Search..."
+                            className="flex-1 border-none bg-transparent p-0 text-base text-slate-900 outline-none placeholder:text-slate-400 dark:text-gray-100 dark:placeholder:text-gray-500"
+                          />
+                          {searchModalQuery && (
+                            <motion.button
+                              type="button"
+                              onClick={() => setSearchModalQuery('')}
+                              initial={{ opacity: 0, scale: 0.8 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              exit={{ opacity: 0, scale: 0.8 }}
+                              transition={{ duration: 0.1 }}
+                              className="shrink-0 rounded-md p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
+                              title="Clear search"
                             >
-                              <div className="flex items-center justify-between px-2 mb-3">
-                                <p className="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-gray-400">Recent Searches</p>
-                              </div>
-                              {searchHistoryData.history.map((item, index) => (
-                                <motion.button
-                                  key={item.id}
-                                  onClick={() => {
-                                    setSearchModalQuery(item.query)
-                                  }}
-                                  initial={{ opacity: 0, x: -10 }}
-                                  animate={{ opacity: 1, x: 0 }}
-                                  transition={{ delay: index * 0.05 }}
-                                  className="group relative w-full flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-3 text-left transition-all hover:border-orange-300 hover:bg-orange-50 dark:border-gray-700 dark:bg-gray-700/50 dark:hover:border-orange-500/50 dark:hover:bg-gray-700"
-                                >
-                                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-600 dark:bg-gray-600 dark:text-gray-300">
-                                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                  </div>
-                                  <div className="flex-1 min-w-0">
-                                    <p className="truncate text-sm text-slate-900 dark:text-gray-100">{item.query}</p>
-                                    <p className="text-xs text-slate-500 dark:text-gray-400 mt-0.5">
-                                      {new Date(item.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                                    </p>
-                                  </div>
-                                  <svg className="h-4 w-4 shrink-0 text-slate-300 transition group-hover:translate-x-1 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                  </svg>
-                                </motion.button>
-                              ))}
-                            </motion.div>
-                          ) : (
+                              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </motion.button>
+                          )}
+                          <motion.button
+                            type="button"
+                            onClick={() => {
+                              setSearchModalQuery('')
+                              setSearchModalOpen(false)
+                            }}
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            className="shrink-0 inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 dark:border-gray-700 dark:bg-gray-700 dark:text-gray-400 dark:hover:bg-gray-600"
+                            title="Close search (Esc)"
+                          >
+                            <span>ESC</span>
+                          </motion.button>
+                        </SearchField.Group>
+                      </SearchField>
+                    </form>
+                    <div className="max-h-[calc(100vh-180px)] overflow-y-auto px-3 py-4 sm:px-4 sm:py-5">
+                      {/* Show recent searches when query is empty OR still loading search results */}
+                      {debouncedSearchQuery.length < 2 ? (
+                        <>
+                          {!isLoggedIn ? (
                             <motion.div
                               initial={{ opacity: 0, y: 10 }}
                               animate={{ opacity: 1, y: 0 }}
@@ -1659,8 +1607,101 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                                 </svg>
                               </div>
-                              <p className="mt-3 text-sm font-medium text-slate-900 dark:text-gray-200">Start searching</p>
-                              <p className="mt-1 text-xs text-slate-600 dark:text-gray-400">Type at least 2 characters to search products</p>
+                              <p className="mt-3 text-sm font-medium text-slate-900 dark:text-gray-200">Sign in to save searches</p>
+                              <p className="mt-1 text-xs text-slate-600 dark:text-gray-400">Your search history will appear here once you sign in</p>
+                            </motion.div>
+                          ) : isLoadingSearchHistory ? (
+                            <motion.div
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              className="space-y-3"
+                            >
+                              <div className="flex items-center justify-between px-2 mb-3">
+                                <p className="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-gray-400">Recent Searches</p>
+                              </div>
+                              {Array.from({ length: 4 }).map((_, i) => (
+                                <div key={i} className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-700/50 animate-pulse">
+                                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-200 dark:bg-gray-600" />
+                                  <div className="flex-1 space-y-2">
+                                    <div className="h-4 bg-slate-200 rounded w-32 dark:bg-gray-600" />
+                                    <div className="h-3 bg-slate-200 rounded w-24 dark:bg-gray-600" />
+                                  </div>
+                                </div>
+                              ))}
+                            </motion.div>
+                          ) : !searchHistoryData?.data || searchHistoryData.data.length === 0 ? (
+                            <motion.div
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              className="rounded-lg border border-slate-100 bg-gradient-to-br from-slate-50 to-slate-100/50 px-4 py-8 text-center dark:border-gray-700 dark:from-gray-700/50 dark:to-gray-800/30"
+                            >
+                              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-lg bg-slate-200 dark:bg-gray-700">
+                                <svg className="h-6 w-6 text-slate-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                </svg>
+                              </div>
+                              <p className="mt-3 text-sm font-medium text-slate-900 dark:text-gray-200">No search history yet</p>
+                              <p className="mt-1 text-xs text-slate-600 dark:text-gray-400">Your searches will appear here</p>
+                            </motion.div>
+                          ) : (
+                            <motion.div
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              className="space-y-4"
+                            >
+                              <div className="flex items-center justify-between px-1">
+                                <p className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-gray-300">Recent Searches</p>
+                                <button
+                                  type="button"
+                                  onClick={async () => {
+                                    try {
+                                      await clearSearchHistory().unwrap()
+                                      refetchSearchHistory()
+                                    } catch (error) {
+                                      console.error('Failed to clear search history:', error)
+                                    }
+                                  }}
+                                  className="text-xs font-medium text-slate-500 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-400 transition-colors"
+                                  title="Clear all search history"
+                                >
+                                  Clear all
+                                </button>
+                              </div>
+                              <div className="flex flex-wrap gap-2">
+                                {searchHistoryData?.data?.map((item, index) => (
+                                  <motion.button
+                                    key={item.id}
+                                    onClick={() => {
+                                      setSearchModalQuery(item.query)
+                                    }}
+                                    initial={{ opacity: 0, scale: 0.9 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    transition={{ delay: index * 0.03 }}
+                                    className="group relative inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 transition-all hover:border-orange-400 hover:bg-orange-50 dark:border-gray-700 dark:bg-gray-700/50 dark:text-gray-200 dark:hover:border-orange-500/50 dark:hover:bg-gray-700"
+                                  >
+                                    <svg className="h-3.5 w-3.5 shrink-0 text-slate-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <span className="truncate font-medium">{item.query}</span>
+                                    <div
+                                      onClick={(e) => {
+                                        e.preventDefault()
+                                        e.stopPropagation()
+                                        setSearchModalQuery('')
+                                        refetchSearchHistory()
+                                      }}
+                                      className="ml-1 cursor-pointer opacity-0 transition-opacity group-hover:opacity-100"
+                                      title="Remove this search"
+                                      role="button"
+                                      tabIndex={0}
+                                    >
+                                      <svg className="h-3.5 w-3.5 text-slate-400 hover:text-red-500 dark:text-gray-500 dark:hover:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                                      </svg>
+                                    </div>
+                                  </motion.button>
+                                ))}
+                              </div>
                             </motion.div>
                           )}
                         </>
