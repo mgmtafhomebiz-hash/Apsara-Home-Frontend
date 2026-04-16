@@ -2,9 +2,9 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
-import { Button, Card, Chip, Label, ListBox, ListBoxItem, Pagination, SearchField, Select, Table } from '@heroui/react'
+import { Button, Card, Chip, Label, ListBox, ListBoxItem, Pagination, SearchField, Select } from '@heroui/react'
 import { useSession } from 'next-auth/react'
-import { useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import {
   AdminCourier,
   AdminShipmentStatus,
@@ -42,6 +42,17 @@ const FILTER_LABELS: Record<string, string> = {
   order_history:     'Order History',
   completed:         'Completed',
 }
+
+const ORDER_FILTER_OPTIONS: Array<{ value: string; label: string }> = [
+  { value: 'all', label: 'All Orders' },
+  { value: 'pending', label: 'Needs Approval' },
+  { value: 'processing', label: 'Ready to Process' },
+  { value: 'shipped', label: 'In Fulfillment' },
+  { value: 'out_for_delivery', label: 'In Transit' },
+  { value: 'completed', label: 'Completed' },
+  { value: 'returned_refunded', label: 'Returns / Refunds' },
+  { value: 'failed_payments', label: 'Issues (Failed/Cancelled)' },
+]
 
 const SHIPMENT_STATUS_OPTIONS: Array<{ value: AdminShipmentStatus; label: string }> = [
   { value: 'for_pickup', label: 'For Pickup' },
@@ -95,19 +106,6 @@ const ZQ_STATUS_STYLES: Record<string, string> = {
 
 const formatMoney = (value: number) =>
   new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', maximumFractionDigits: 2 }).format(value || 0)
-
-const formatDateTime = (value?: string | null) => {
-  if (!value) return 'N/A'
-  const hasTimeZone = /([zZ]|[+-]\d{2}:\d{2})$/.test(value.trim())
-  const normalized = value.includes('T') ? value.trim() : value.trim().replace(' ', 'T')
-  const date = new Date(hasTimeZone ? normalized : `${normalized}Z`)
-  if (Number.isNaN(date.getTime())) return 'N/A'
-  return new Intl.DateTimeFormat('en-PH', {
-    timeZone: 'Asia/Manila',
-    year: 'numeric', month: 'short', day: 'numeric',
-    hour: 'numeric', minute: '2-digit',
-  }).format(date)
-}
 
 const formatDateOnly = (value?: string | null) => {
   if (!value) return 'N/A'
@@ -258,14 +256,14 @@ function StatCard({ label, value, bg, text, border, icon }: {
 
 function EmptyOrdersState() {
   return (
-    <div className="flex flex-col items-center gap-2 py-16 text-center">
-      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100">
-        <svg className="h-7 w-7 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <div className="flex flex-col items-center gap-3 py-16 text-center">
+      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 dark:bg-slate-800/60">
+        <svg className="h-7 w-7 text-slate-400 dark:text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
         </svg>
       </div>
-      <p className="text-sm font-semibold text-slate-500">No orders found</p>
-      <p className="text-xs text-slate-400">Try adjusting your search or filter.</p>
+      <p className="text-sm font-semibold text-slate-600 dark:text-slate-200">No orders found</p>
+      <p className="text-xs text-slate-400 dark:text-slate-500">Try adjusting your search or filter.</p>
     </div>
   )
 }
@@ -352,6 +350,7 @@ interface Props { initialFilter?: string }
 
 export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
   const { data: session } = useSession()
+  const router = useRouter()
   const searchParams = useSearchParams()
   const [search,      setSearch]      = useState('')
   const [page,        setPage]        = useState(1)
@@ -381,6 +380,10 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
   const { data, isLoading, isError, isFetching } = useGetAdminOrdersQuery({
     filter: effectiveFilter, search: search.trim() || undefined, page, perPage: 20,
   })
+
+  useEffect(() => {
+    setPage(1)
+  }, [effectiveFilter])
 
   const [approveOrder] = useApproveAdminOrderMutation()
   const [rejectOrder]  = useRejectAdminOrderMutation()
@@ -674,6 +677,10 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
   const currentPage = data?.meta?.current_page ?? 1
   const totalPages = data?.meta?.last_page ?? 1
   const paginationPages = useMemo(() => getPaginationPages(currentPage, totalPages), [currentPage, totalPages])
+  const handleFilterChange = (value: string) => {
+    if (value === effectiveFilter) return
+    router.push(value === 'all' ? '/admin/orders' : `/admin/orders/${value}`)
+  }
 
   return (
     <div className="space-y-6">
@@ -804,6 +811,15 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            <div className="min-w-[220px]">
+              <AdminOrderSelect
+                ariaLabel="Filter admin orders by status"
+                value={effectiveFilter}
+                options={ORDER_FILTER_OPTIONS}
+                onChange={handleFilterChange}
+              />
+            </div>
+
             <div className="min-w-[190px]">
               <AdminOrderSelect
                 ariaLabel="Sort admin orders"
@@ -876,32 +892,30 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
             <div className="google-loading-bar" />
           )}
 
-          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 px-5 py-4 dark:border-slate-800">
+          <div className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-none dark:border-[#24324a] dark:bg-[#121a2b]">
+            <div className="flex items-center justify-between border-b border-slate-100 bg-white px-5 py-4 dark:border-[#24324a] dark:bg-[#121a2b]">
               <h2 className="text-sm font-bold text-slate-800 dark:text-white">Order Queue</h2>
-              <Chip size="sm" variant="soft" className="border border-slate-100 bg-slate-50 text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+              <Chip size="sm" variant="soft" className="border border-slate-100 bg-slate-50 text-slate-500 dark:border-[#31405f] dark:bg-[#1c2740] dark:text-slate-200">
                 {visibleOrders.length} orders
               </Chip>
             </div>
 
-            <Table className="w-full">
-              <Table.ScrollContainer className="overflow-x-auto overflow-y-visible">
-                <Table.Content
-                  aria-label="Admin orders table"
-                  className="min-w-370 text-sm dark:bg-slate-900"
-                >
-                  <Table.Header className="border-b border-slate-100 dark:border-slate-800 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60/80 dark:border-slate-800 dark:bg-slate-800/60">
-                    <Table.Column className="min-w-[220px] px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-400">Product</Table.Column>
-                    <Table.Column className="min-w-[150px] px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-400">Checkout</Table.Column>
-                    <Table.Column className="min-w-[140px] px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-400">Date</Table.Column>
-                    <Table.Column className="min-w-[200px] px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-400">Customer</Table.Column>
-                    <Table.Column className="min-w-[120px] px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-400">Amount</Table.Column>
-                    <Table.Column className="min-w-[110px] px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-400">Approval</Table.Column>
-                    <Table.Column className="min-w-[110px] px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-400">SLA</Table.Column>
-                    <Table.Column className="min-w-[340px] px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-400">Tracking</Table.Column>
-                    <Table.Column className="min-w-[200px] px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-400">Actions</Table.Column>
-                  </Table.Header>
-                  <Table.Body className="divide-y divide-slate-100 dark:divide-slate-800/70 dark:divide-slate-800/70">
+            <div className="overflow-x-auto overflow-y-visible">
+              <table aria-label="Admin orders table" className="min-w-full text-sm">
+                <thead>
+                  <tr className="border-b border-slate-100 bg-slate-50 dark:border-[#24324a] dark:bg-[#1d2840]">
+                    <th className="min-w-[220px] px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-300">Product</th>
+                    <th className="min-w-[150px] px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-300">Checkout</th>
+                    <th className="min-w-[140px] px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-300">Date</th>
+                    <th className="min-w-[200px] px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-300">Customer</th>
+                    <th className="min-w-[120px] px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-300">Amount</th>
+                    <th className="min-w-[110px] px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-300">Approval</th>
+                    <th className="min-w-[110px] px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-300">SLA</th>
+                    <th className="min-w-[340px] px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-300">Tracking</th>
+                    <th className="min-w-[200px] px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-300">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/70">
                     {visibleOrders.length ? (
                       visibleOrders.map(order => {
                       const isBusy             = busyId === order.id
@@ -937,26 +951,25 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                       const createdDate = formatDateOnly(order.created_at)
                       const createdTime = formatTimeOnly(order.created_at)
                       const paidDate = order.paid_at ? formatDateOnly(order.paid_at) : null
-                      const paidTime = order.paid_at ? formatTimeOnly(order.paid_at) : null
                       const isCourierCancelled =
                         order.shipment_status === 'cancelled'
                         || rawCourierStatus === 'package_cancelled'
                         || rawCourierStatus === 'package cancelled'
 
                       return (
-                        <Table.Row
+                        <tr
                           id={`admin-order-row-${order.id}`}
                           key={order.id}
-                          className={`border-b border-slate-100 dark:border-slate-800 transition-colors dark:border-slate-800/60 ${
+                          className={`group border-b border-slate-100 transition-colors dark:border-[#24324a] ${
                             highlightedOrderId === order.id
                               ? 'bg-teal-50/80 ring-1 ring-inset ring-teal-200 animate-pulse dark:bg-teal-500/10 dark:ring-teal-500/30'
-                              : 'bg-white hover:bg-slate-50/60 dark:bg-slate-900 dark:hover:bg-slate-800/40'
+                              : 'bg-white hover:bg-slate-50/60 dark:bg-[#121a2b] dark:hover:bg-[#18233a]'
                           }`}
                         >
                           {/* Product */}
-                          <Table.Cell className="px-4 py-2 align-middle">
-                            <div className="flex items-center gap-2.5">
-                              <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-100 dark:border-slate-700 dark:bg-slate-800">
+                          <td className="px-5 py-3.5 align-middle">
+                            <div className="flex items-center gap-3">
+                              <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-100 dark:border-[#31405f] dark:bg-[#1b2640]">
                                 {order.product_image ? (
                                   // eslint-disable-next-line @next/next/no-img-element
                                   <img
@@ -972,72 +985,72 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                                   </div>
                                 )}
                               </div>
-                              <div className="min-w-0">
+                              <div className="min-w-0 space-y-1">
                                 <div className="flex items-center gap-1.5">
-                                  <p className="line-clamp-1 text-sm font-medium leading-snug text-slate-800 dark:text-slate-100">{order.product_name}</p>
+                                  <p className="line-clamp-1 text-[15px] font-semibold leading-5 text-slate-800 dark:text-slate-100">{order.product_name}</p>
                                   {showNewBadge ? (
                                     <Chip size="sm" variant="soft" className="shrink-0 border border-sky-200 bg-sky-50 text-[10px] font-bold uppercase tracking-wide text-sky-700">
                                       New
                                     </Chip>
                                   ) : null}
                                 </div>
-                                <p className="mt-0.5 text-[11px] text-slate-400 dark:text-slate-500">
+                                <p className="text-[12px] leading-4 text-slate-400 dark:text-slate-500">
                                   Qty {order.quantity}
                                 </p>
                               </div>
                             </div>
-                          </Table.Cell>
+                          </td>
 
                           {/* Checkout */}
-                          <Table.Cell className="px-4 py-2 align-middle">
+                          <td className="px-5 py-3.5 align-middle">
                             <p className="font-mono text-xs font-medium text-slate-800 dark:text-slate-100">{order.checkout_id}</p>
-                            <p className="mt-0.5 text-[10px] uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                            <p className="mt-0.5 text-[11px] uppercase tracking-wide text-slate-400 dark:text-slate-500">
                               {order.payment_status}
                             </p>
-                          </Table.Cell>
+                          </td>
 
                           {/* Date */}
-                          <Table.Cell className="px-4 py-2 align-middle whitespace-nowrap">
-                            <p className="text-xs font-medium text-slate-800 dark:text-slate-100">{createdDate}</p>
-                            <p className="mt-0.5 text-[10px] text-slate-400 dark:text-slate-500">{createdTime}</p>
+                          <td className="px-5 py-3.5 align-middle whitespace-nowrap">
+                            <p className="text-[12px] font-medium text-slate-700 dark:text-slate-200">{createdDate}</p>
+                            <p className="mt-0.5 text-[11px] text-slate-400 dark:text-slate-400">{createdTime} PH</p>
                             {order.paid_at && (
                               <div className="mt-1.5 border-t border-slate-100 pt-1.5 dark:border-slate-700/60">
                                 <p className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">Paid · {paidDate}</p>
                               </div>
                             )}
-                          </Table.Cell>
+                          </td>
 
                           {/* Customer */}
-                          <Table.Cell className="px-4 py-2 align-middle">
-                            <div className="flex items-center gap-2.5">
+                          <td className="px-5 py-3.5 align-middle">
+                            <div className="flex items-center gap-3">
                               <div className="h-7 w-7 rounded-full bg-linear-to-br from-teal-400 to-teal-600 flex items-center justify-center text-white text-[10px] font-bold shrink-0">
                                 {getInitials(order.customer_name)}
                               </div>
-                              <div className="min-w-0">
-                                <p className="line-clamp-1 text-sm font-medium text-slate-800 dark:text-slate-100">{order.customer_name || 'N/A'}</p>
-                                <p className="line-clamp-1 text-[11px] text-slate-400 dark:text-slate-500">{order.customer_email || ''}</p>
+                              <div className="min-w-0 space-y-1">
+                                <p className="line-clamp-1 text-[15px] font-semibold leading-5 text-slate-800 dark:text-slate-100">{order.customer_name || 'N/A'}</p>
+                                <p className="line-clamp-1 text-[12px] leading-4 text-slate-400 dark:text-slate-500">{order.customer_email || 'No email provided'}</p>
                               </div>
                             </div>
-                          </Table.Cell>
+                          </td>
 
                           {/* Amount */}
-                          <Table.Cell className="px-4 py-2 align-middle">
+                          <td className="px-5 py-3.5 align-middle">
                             <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{formatMoney(order.amount)}</p>
-                            <p className="mt-0.5 text-[10px] uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                            <p className="mt-0.5 text-[11px] uppercase tracking-wide text-slate-400 dark:text-slate-500">
                               {order.payment_method || '-'}
                             </p>
-                          </Table.Cell>
+                          </td>
 
                           {/* Approval badge */}
-                          <Table.Cell className="px-4 py-2 align-middle">
+                          <td className="px-5 py-3.5 align-middle">
                             <Chip size="sm" variant="soft" className={`border text-[11px] font-semibold ${approval.badge}`}>
                               <span className={`mr-1.5 inline-block h-1.5 w-1.5 rounded-full ${approval.dot}`} />
                               {approval.label}
                             </Chip>
-                          </Table.Cell>
+                          </td>
 
                           {/* SLA */}
-                          <Table.Cell className="px-4 py-2 align-middle">
+                          <td className="px-5 py-3.5 align-middle">
                             {sla ? (
                               <div className="space-y-1">
                                 <Chip size="sm" variant="soft" className={`border text-[11px] font-semibold ${sla.badge}`}>
@@ -1057,10 +1070,10 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                             ) : (
                               <span className="text-[11px] text-slate-300 dark:text-slate-600">—</span>
                             )}
-                          </Table.Cell>
+                          </td>
 
                           {/* Tracking select */}
-                          <Table.Cell className="px-4 py-2 align-middle">
+                          <td className="px-5 py-3.5 align-middle">
                             <div className="space-y-1.5">
                               {isFulfillmentModeLocked ? (
                                 <AdminOrderStaticValue label={fulfillmentModeLabel} />
@@ -1075,7 +1088,7 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                               )}
 
                               {isZqMode ? (
-                                <div className="rounded-2xl border border-violet-200 bg-violet-50 p-3">
+                                  <div className="rounded-2xl border border-violet-200 bg-violet-50 p-3 dark:border-violet-500/30 dark:bg-violet-500/10">
                                   <div className="flex items-center justify-between gap-2">
                                     <p className="text-[10px] font-bold uppercase tracking-wide text-violet-700">ZQ Supplier Flow</p>
                                     <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold ${zqBadgeClass}`}>
@@ -1090,21 +1103,21 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                                         : 'Approve the order first before pushing it to ZQ.'}
                                   </p>
                                   {order.zq_platform_order_id ? (
-                                    <p className="mt-2 break-all text-[11px] font-semibold text-slate-800">
+                                    <p className="mt-2 break-all text-[11px] font-semibold text-slate-800 dark:text-slate-100">
                                       Platform ID: {order.zq_platform_order_id}
                                     </p>
                                   ) : null}
                                   {order.zq_order_id ? (
-                                    <p className="mt-1 break-all text-[11px] text-slate-600">
+                                    <p className="mt-1 break-all text-[11px] text-slate-600 dark:text-slate-300">
                                       ZQ Order: {order.zq_order_id}
                                     </p>
                                   ) : null}
                                 </div>
                               ) : isManualMode ? (
-                                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700/60 dark:bg-slate-800/50">
+                                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 dark:border-[#31405f] dark:bg-[#1b2640]">
                                   <div className="flex items-center justify-between gap-2">
                                     <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Manual Flow</p>
-                                    <span className="inline-flex items-center rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                                    <span className="inline-flex items-center rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-semibold text-slate-600 dark:border-[#3a4b6d] dark:bg-[#121a2b] dark:text-slate-300">
                                       Internal
                                     </span>
                                   </div>
@@ -1152,7 +1165,7 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                                       variant="tertiary"
                                       isDisabled={isBusy || !canUseCourierFlow || !order.tracking_no || isCourierCancelled}
                                       onPress={() => handleTrackCourier(order.id)}
-                                      className="border border-slate-200 bg-slate-50 px-2 py-1.5 text-[11px] font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+                                      className="border border-slate-200 bg-slate-50 px-2 py-1.5 text-[11px] font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-[#31405f] dark:bg-[#1b2640] dark:text-slate-200 dark:hover:bg-[#22304b]"
                                     >
                                       Track
                                     </Button>
@@ -1198,7 +1211,7 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                               {order.courier || order.tracking_no || order.shipment_status ? (
                                 <div className="space-y-2 text-[11px] text-slate-500 leading-relaxed dark:text-slate-300">
                                   {order.zq_platform_order_id || order.zq_status ? (
-                                    <div className="rounded-xl border border-violet-200 bg-violet-50 p-2.5">
+                                    <div className="rounded-xl border border-violet-200 bg-violet-50 p-2.5 dark:border-violet-500/30 dark:bg-violet-500/10">
                                       <div className="flex items-center justify-between gap-2">
                                         <p className="text-[10px] font-bold uppercase tracking-wide text-violet-700">ZQ</p>
                                         <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold ${zqBadgeClass}`}>
@@ -1206,12 +1219,12 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                                         </span>
                                       </div>
                                       {order.zq_platform_order_id ? (
-                                        <p className="mt-1 break-all text-[11px] font-semibold text-slate-800">
+                                        <p className="mt-1 break-all text-[11px] font-semibold text-slate-800 dark:text-slate-100">
                                           Platform ID: {order.zq_platform_order_id}
                                         </p>
                                       ) : null}
                                       {order.zq_order_id ? (
-                                        <p className="mt-1 break-all text-[11px] text-slate-600">
+                                        <p className="mt-1 break-all text-[11px] text-slate-600 dark:text-slate-300">
                                           ZQ Order: {order.zq_order_id}
                                         </p>
                                       ) : null}
@@ -1220,7 +1233,7 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                                   {order.courier ? <p className="uppercase tracking-wide dark:text-slate-400">Courier: {formatCourierLabel(order.courier)}</p> : null}
                                   {rawCourierStatus ? <p className="capitalize dark:text-slate-400">Courier Status: {rawCourierStatus.replace(/_/g, ' ')}</p> : null}
                                   {order.tracking_no ? (
-                                    <div className="rounded-xl border border-teal-200 bg-teal-50 p-2 dark:border-teal-500/25 dark:bg-slate-800/75">
+                                    <div className="rounded-xl border border-teal-200 bg-teal-50 p-2 dark:border-teal-500/25 dark:bg-[#1b2640]">
                                       <p className="text-[10px] font-bold uppercase tracking-wide text-teal-700">Tracking Number</p>
                                       <div className="mt-1 flex items-center gap-2">
                                         <p className="min-w-0 flex-1 break-all text-sm font-bold text-slate-900 dark:text-white">{order.tracking_no}</p>
@@ -1236,7 +1249,7 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                                               showErrorToast(message)
                                             }
                                           }}
-                                          className="shrink-0 border border-teal-200 bg-white px-2 py-1 text-[10px] font-semibold text-teal-700 transition hover:bg-teal-100 dark:border-teal-500/25 dark:bg-slate-900 dark:text-teal-300 dark:hover:bg-slate-800"
+                                          className="shrink-0 border border-teal-200 bg-white px-2 py-1 text-[10px] font-semibold text-teal-700 transition hover:bg-teal-100 dark:border-teal-500/25 dark:bg-[#121a2b] dark:text-teal-300 dark:hover:bg-[#22304b]"
                                         >
                                           Copy
                                         </Button>
@@ -1248,7 +1261,7 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                                     size="sm"
                                     variant="tertiary"
                                     onPress={() => setPayloadPreview({ checkoutId: order.checkout_id, payload: order.shipment_payload ?? null })}
-                                    className="border border-slate-200 bg-slate-50 px-2 py-1 text-[10px] font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-200 dark:hover:bg-slate-800"
+                                  className="border border-slate-200 bg-slate-50 px-2 py-1 text-[10px] font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-[#31405f] dark:bg-[#1b2640] dark:text-slate-200 dark:hover:bg-[#22304b]"
                                   >
                                     {order.shipment_payload ? 'View Payload' : 'No Payload Yet'}
                                   </Button>
@@ -1259,10 +1272,10 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                                 </p>
                               )}
                             </div>
-                          </Table.Cell>
+                          </td>
 
                           {/* Actions */}
-                          <Table.Cell className="px-4 py-2 align-middle">
+                          <td className="px-5 py-3.5 align-middle">
                             {canApproveThisOrder ? (
                               <div className="flex w-36 flex-col gap-1.5">
                                 <div className="grid grid-cols-2 gap-1">
@@ -1311,25 +1324,24 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                                 )}
                               </div>
                             ) : (
-                              <Chip size="sm" variant="soft" className="border border-slate-200 bg-slate-50 text-[11px] font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-300">
+                              <Chip size="sm" variant="soft" className="border border-slate-200 bg-slate-50 text-[11px] font-semibold text-slate-500 dark:border-[#31405f] dark:bg-[#1b2640] dark:text-slate-300">
                                 {order.approval_status === 'pending_approval' ? 'Awaiting approval' : 'No actions'}
                               </Chip>
                             )}
-                          </Table.Cell>
-                        </Table.Row>
+                          </td>
+                        </tr>
                       )
                     })
                   ) : (
-                    <Table.Row key="empty" className="bg-white dark:bg-slate-900">
-                      <Table.Cell colSpan={9}>
+                    <tr key="empty" className="bg-white dark:bg-[#121a2b]">
+                      <td colSpan={9}>
                         <EmptyOrdersState />
-                      </Table.Cell>
-                    </Table.Row>
+                      </td>
+                    </tr>
                   )}
-                  </Table.Body>
-                </Table.Content>
-              </Table.ScrollContainer>
-            </Table>
+                </tbody>
+              </table>
+            </div>
 
             {totalPages > 1 && (
               <div className="flex flex-col gap-3 border-t border-slate-100 px-4 py-4 dark:border-slate-800 md:flex-row md:items-center md:justify-between">

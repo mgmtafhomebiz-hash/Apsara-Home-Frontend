@@ -64,18 +64,8 @@ const navItems: NavItem[] = [
     ],
   },
   {
-    id: 'orders', label: 'Orders', badge: 12,
+    id: 'orders', label: 'Orders', path: '/admin/orders', badge: 12,
     icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>,
-    children: [
-      { label: 'All Orders', path: '/admin/orders' },
-      { label: 'Needs Approval', path: '/admin/orders/pending' },
-      { label: 'Ready to Process', path: '/admin/orders/processing' },
-      { label: 'In Fulfillment', path: '/admin/orders/shipped' },
-      { label: 'In Transit', path: '/admin/orders/out_for_delivery' },
-      { label: 'Completed', path: '/admin/orders/completed' },
-      { label: 'Returns / Refunds', path: '/admin/orders/returned_refunded' },
-      { label: 'Issues (Failed/Cancelled)', path: '/admin/orders/failed_payments' },
-    ],
   },
   {
     id: 'interior-requests', label: 'Interior Requests', path: '/admin/interior-requests',
@@ -181,12 +171,12 @@ const navItems: NavItem[] = [
     ],
   },
   {
-    id: 'payments', label: "Payment's",
+    id: 'payments', label: 'Payments',
     icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>,
     children: [
       { label: 'Transactions', path: '/admin/payments' },
       { label: 'E-Wallet', path: '/admin/payments/ewallet' },
-      { label: 'Gift Cards', path: '/admin/payments/giftcards' },
+      { label: 'Vouchers', path: '/admin/payments/giftcards' },
     ],
   },
   {
@@ -252,13 +242,6 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
   const { data: adminMe } = useGetAdminMeQuery(adminIdentityKey, { skip: !sessionAccessToken })
   const orderCountQueryOptions = { skip: !sessionAccessToken }
   const { data: allOrdersData } = useGetAdminOrdersQuery({ filter: 'all', page: 1, perPage: 1 }, orderCountQueryOptions)
-  const { data: pendingOrdersData } = useGetAdminOrdersQuery({ filter: 'pending', page: 1, perPage: 1 }, orderCountQueryOptions)
-  const { data: processingOrdersData } = useGetAdminOrdersQuery({ filter: 'processing', page: 1, perPage: 1 }, orderCountQueryOptions)
-  const { data: shippedOrdersData } = useGetAdminOrdersQuery({ filter: 'shipped', page: 1, perPage: 1 }, orderCountQueryOptions)
-  const { data: transitOrdersData } = useGetAdminOrdersQuery({ filter: 'out_for_delivery', page: 1, perPage: 1 }, orderCountQueryOptions)
-  const { data: completedOrdersData } = useGetAdminOrdersQuery({ filter: 'completed', page: 1, perPage: 1 }, orderCountQueryOptions)
-  const { data: returnedOrdersData } = useGetAdminOrdersQuery({ filter: 'returned_refunded', page: 1, perPage: 1 }, orderCountQueryOptions)
-  const { data: failedOrdersData } = useGetAdminOrdersQuery({ filter: 'failed_payments', page: 1, perPage: 1 }, orderCountQueryOptions)
   const resolvedAdminMe = adminMe
   const displayName = String(resolvedAdminMe?.name ?? session?.user?.name ?? '').trim() || 'Admin'
   const displayEmail = String(resolvedAdminMe?.email ?? session?.user?.email ?? '').trim()
@@ -339,29 +322,15 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
     void signOut({ callbackUrl: loginPath })
   }
 
-  const isActive = (path: string) => pathname === path
+  const isActive = (path: string) => pathname === path || pathname.startsWith(`${path}/`)
   const isChildActive = (children?: SubItem[]) => children?.some(c => pathname === c.path) ?? false
-  const orderCountsByPath: Record<string, number> = {
-    '/admin/orders': allOrdersData?.meta.total ?? 0,
-    '/admin/orders/pending': pendingOrdersData?.meta.total ?? 0,
-    '/admin/orders/processing': processingOrdersData?.meta.total ?? 0,
-    '/admin/orders/shipped': shippedOrdersData?.meta.total ?? 0,
-    '/admin/orders/out_for_delivery': transitOrdersData?.meta.total ?? 0,
-    '/admin/orders/completed': completedOrdersData?.meta.total ?? 0,
-    '/admin/orders/returned_refunded': returnedOrdersData?.meta.total ?? 0,
-    '/admin/orders/failed_payments': failedOrdersData?.meta.total ?? 0,
-  }
 
   const visibleNavItems = navItems
     .map((item) => {
       if (item.id === 'orders') {
         return {
           ...item,
-          badge: orderCountsByPath['/admin/orders'] ?? 0,
-          children: item.children?.map((child) => ({
-            ...child,
-            badge: orderCountsByPath[child.path] ?? 0,
-          })),
+          badge: allOrdersData?.meta.total ?? 0,
         }
       }
 
@@ -442,7 +411,7 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
           '/admin/products/categories',
         ]
     criticalRoutes.forEach((route) => router.prefetch(route))
-  }, [adminPermissions, hasCustomAdminPermissions, isAdmin, isMerchantAdmin, isSuperAdmin, isSupplierAdmin, router])
+  }, [adminPermissions, hasCustomAdminPermissions, isAdmin, isMerchantAdmin, isSuperAdmin, isSupplierAdmin, isWebContent, router])
 
   const prefetchMembersData = () => {
     dispatch(

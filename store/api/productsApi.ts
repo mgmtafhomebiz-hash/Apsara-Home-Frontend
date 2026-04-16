@@ -29,6 +29,7 @@ export interface Product {
   musthave: boolean
   bestseller: boolean
   salespromo: boolean
+  manualCheckoutEnabled?: boolean
   verified?: boolean
   status: number
   sku: string
@@ -284,6 +285,7 @@ export interface BulkUpdateApplyResponse {
   }>
 }
 
+<<<<<<< HEAD
 export interface ProductBrandInfo {
   id: number
   name: string
@@ -295,6 +297,21 @@ export interface ProductBrandInfo {
   joinedDate?: string
   overallRating?: number | null
   totalReviews?: number
+=======
+export interface ManualCheckoutApplyResponse {
+  message: string
+  summary: {
+    total: number
+    updated: number
+    failed: number
+  }
+  results: Array<{
+    product_id: number
+    status: 'updated' | 'failed'
+    name?: string | null
+    message: string
+  }>
+>>>>>>> a636128a87e8518d3476af9d471e2116a340305e
 }
 
 export interface PublicProductResponse {
@@ -327,6 +344,7 @@ export interface CreateProductPayload {
   pd_musthave?: boolean
   pd_bestseller?: boolean
   pd_salespromo?: boolean
+  pd_manual_checkout_enabled?: boolean
   pd_verified?: boolean
   pd_status?: number
   pd_image?: string | null
@@ -569,6 +587,10 @@ export const normalizeProduct = (input: Product & Record<string, unknown>): Prod
       typeof input.salespromo === 'boolean'
         ? input.salespromo
         : Boolean(input.pd_salespromo),
+    manualCheckoutEnabled:
+      typeof input.manualCheckoutEnabled === 'boolean'
+        ? input.manualCheckoutEnabled
+        : Boolean(input.pd_manual_checkout_enabled),
     status:
       typeof input.status === 'number'
         ? input.status
@@ -746,6 +768,14 @@ export const productsApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['Products'],
     }),
+    manualCheckoutApply: builder.mutation<ManualCheckoutApplyResponse, { product_ids: number[]; enabled?: boolean }>({
+      query: (body) => ({
+        url: '/api/admin/products/manual-checkout/apply',
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: ['Products'],
+    }),
     updateProduct: builder.mutation<{ message: string; product?: Product }, { id: number; data: Partial<CreateProductPayload> }>({
       query: ({ id, data }) => ({
         url: `/api/admin/products/${id}`,
@@ -781,6 +811,7 @@ export const {
   useBulkPriceApplyMutation,
   useBulkUpdatePreviewMutation,
   useBulkUpdateApplyMutation,
+  useManualCheckoutApplyMutation,
   useUpdateProductMutation,
   useDeleteProductMutation,
 } = productsApi

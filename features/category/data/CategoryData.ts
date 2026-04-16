@@ -42,6 +42,7 @@ export interface CategoryProduct {
     musthave?: boolean;
     bestseller?: boolean;
     salespromo?: boolean;
+    manualCheckoutEnabled?: boolean;
     weight?: number;
     psweight?: number;
     pswidth?: number;

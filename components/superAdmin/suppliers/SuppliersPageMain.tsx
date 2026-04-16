@@ -123,6 +123,13 @@ export default function SuppliersPageMain() {
         : inviteForm,
     [inviteForm, isSupplierAdmin, linkedSupplierId]
   )
+  const selectedInviteSupplier = useMemo(
+    () =>
+      sortedSuppliers.find(
+        (supplier) => String(supplier.id) === String(supplierInviteForm.supplier_id)
+      ) ?? null,
+    [sortedSuppliers, supplierInviteForm.supplier_id]
+  )
   const filteredSuppliers = useMemo(() => {
     const keyword = supplierSearch.trim().toLowerCase()
     if (keyword === '') return sortedSuppliers
@@ -237,9 +244,17 @@ export default function SuppliersPageMain() {
     setInviteFeedback(null)
     setLatestInvite(null)
 
+    if (!selectedInviteSupplier) {
+      setInviteFeedback({
+        type: 'error',
+        message: 'Please select a valid supplier company first.',
+      })
+      return
+    }
+
     try {
       const result = await inviteSupplierUser({
-        supplier_id: Number(supplierInviteForm.supplier_id),
+        supplier_id: selectedInviteSupplier.id,
         fullname: supplierInviteForm.fullname.trim(),
         username: supplierInviteForm.username.trim(),
         email: supplierInviteForm.email.trim() || undefined,
@@ -325,7 +340,11 @@ export default function SuppliersPageMain() {
     setCompanyFeedback(null)
 
     try {
-      const result = await deleteSupplier(deleteTarget.id).unwrap()
+      const result = await deleteSupplier({
+        id: deleteTarget.id,
+        company: deleteTarget.company,
+        name: deleteTarget.name,
+      }).unwrap()
       setCompanyFeedback({ type: 'success', message: result.message })
       setSupplierOverrides((prev) => {
         const next = { ...prev }
@@ -613,7 +632,7 @@ export default function SuppliersPageMain() {
           <form onSubmit={handleInviteSupplier} className="space-y-4">
             <FormField label="Supplier Company">
               <select
-                value={inviteForm.supplier_id}
+                value={supplierInviteForm.supplier_id}
                 onChange={handleInviteInput('supplier_id')}
                 required
                 className={inputClassName}

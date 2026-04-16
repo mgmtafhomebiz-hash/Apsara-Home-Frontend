@@ -13,6 +13,8 @@ export interface AdminGeneralSettings {
   currency: string
   date_format: string
   language: string
+  enable_test_payments: boolean
+  enable_manual_checkout_mode: boolean
   updated_at?: string | null
 }
 
@@ -39,6 +41,7 @@ export const adminSettingsApi = baseApi.injectEndpoints({
         method: 'GET',
         cache: 'no-store',
       }),
+      providesTags: ['AdminSettings'],
     }),
     getAdminGeneralSettings: builder.query<{ settings: AdminGeneralSettings }, void>({
       query: () => ({

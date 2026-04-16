@@ -10,6 +10,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { setStoredReferralCode } from '@/libs/referral';
 import { useSession } from 'next-auth/react';
 import type { ProductReviewSummary } from '@/store/api/productsApi';
+import { useGetPublicGeneralSettingsQuery } from '@/store/api/adminSettingsApi';
 
 interface ProductPageClientProps {
     product: CategoryProduct;
@@ -204,7 +205,9 @@ const ProductPageClient = ({ product, categoryLabel, reviewSummary }: ProductPag
     const router = useRouter();
     const searchParams = useSearchParams();
     const { data: session, status } = useSession();
+    const { data: publicSettingsData } = useGetPublicGeneralSettingsQuery();
     const role = String(session?.user?.role ?? '').toLowerCase();
+    const isManualCheckoutOnly = Boolean(publicSettingsData?.settings?.enable_manual_checkout_mode) && !Boolean(product.manualCheckoutEnabled);
 
     const handleVariantChange = useCallback((variant?: VariantOption) => {
         setSelectedVariant(variant);
@@ -218,6 +221,9 @@ const ProductPageClient = ({ product, categoryLabel, reviewSummary }: ProductPag
         if (status === 'authenticated' && role && role !== 'customer') return;
 
         try {
+            if (isManualCheckoutOnly) {
+                return;
+            }
             setStoredReferralCode(username);
             const quantity = 1;
             const unitPrice = Number(selectedVariant?.priceSrp ?? product.price ?? 0);
@@ -247,7 +253,7 @@ const ProductPageClient = ({ product, categoryLabel, reviewSummary }: ProductPag
         } catch {
             // If anything fails, keep user on product page.
         }
-    }, [product, role, router, searchParams, selectedVariant, status]);
+    }, [isManualCheckoutOnly, product, role, router, searchParams, selectedVariant, status]);
 
     const toSlugBrand = (value: string) =>
         value

@@ -14,6 +14,7 @@ import CustomerCheckoutAddressForm from "./CustomerCheckoutAddressForm";
 import CustomerCheckoutPaymentMethod from "./CustomerCheckoutPaymentMethod";
 import CustomerCheckoutOrderSummary from "./CustomerCheckoutOrderSummary";
 import { CheckoutOnlineBankingProvider, useCreateCheckoutSessionMutation, useValidateVoucherMutation } from "@/store/api/paymentApi";
+import { useGetPublicGeneralSettingsQuery } from "@/store/api/adminSettingsApi";
 import { getStoredReferralCode } from "@/libs/referral";
 import { useMeQuery } from "@/store/api/userApi";
 import type { Category } from '@/store/api/categoriesApi';
@@ -94,6 +95,7 @@ const CustomerCheckoutMain = ({ initialCategories = [] }: { initialCategories?: 
     const isCustomerSession = status === 'authenticated' && (role === 'customer' || role === '');
     const isLoggedIn = isCustomerSession;
     const { data: meData } = useMeQuery(undefined, { skip: !isCustomerSession });
+    const { data: publicSettingsData } = useGetPublicGeneralSettingsQuery();
 
     const checkoutData = useMemo(() => readCheckoutDraft(), []);
     const storedReferral = useMemo(() => readStoredReferral(), []);
@@ -110,6 +112,12 @@ const CustomerCheckoutMain = ({ initialCategories = [] }: { initialCategories?: 
     );
     const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>('gcash');
     const [selectedOnlineBankingProvider, setSelectedOnlineBankingProvider] = useState<CheckoutOnlineBankingProvider>('dob');
+    const paymentModeEnabledByAdmin = Boolean(publicSettingsData?.settings?.enable_test_payments);
+    const manualCheckoutModeEnabledByAdmin = Boolean(publicSettingsData?.settings?.enable_manual_checkout_mode);
+    const isLocalPaymentHost = useMemo(() => {
+        if (typeof window === 'undefined') return false;
+        return LOCAL_PAYMENT_MODE_HOSTS.has(window.location.hostname);
+    }, []);
     const [paymentMode, setPaymentMode] = useState<PaymentMode>(() => {
         if (typeof window === 'undefined') return 'live';
         return LOCAL_PAYMENT_MODE_HOSTS.has(window.location.hostname) ? 'test' : 'live';
@@ -119,15 +127,13 @@ const CustomerCheckoutMain = ({ initialCategories = [] }: { initialCategories?: 
     const [validateVoucher, { isLoading: voucherLoading }] = useValidateVoucherMutation();
     const [voucherInfo, setVoucherInfo] = useState<{ code: string; amount: number; discount: number } | null>(null);
     const [voucherError, setVoucherError] = useState<string | null>(null);
-    const canSwitchPaymentMode = useMemo(() => {
-        if (typeof window === 'undefined') return false;
-        return LOCAL_PAYMENT_MODE_HOSTS.has(window.location.hostname);
-    }, []);
+    const canSwitchPaymentMode = isLocalPaymentHost || paymentModeEnabledByAdmin;
+    const effectivePaymentMode: PaymentMode = canSwitchPaymentMode ? paymentMode : 'live';
     const paymentModeOptions = useMemo<PaymentMode[]>(
         () => (canSwitchPaymentMode ? ['test', 'live'] : ['live']),
         [canSwitchPaymentMode]
     );
-    const showOnlineBankingProviderPicker = paymentMode === 'test';
+    const showOnlineBankingProviderPicker = effectivePaymentMode === 'test';
 
     const form = useMemo<GuestForm>(() => ({
         ...defaultForm,
@@ -150,6 +156,15 @@ const CustomerCheckoutMain = ({ initialCategories = [] }: { initialCategories?: 
         if (checkoutData) return;
         router.replace('/');
     }, [checkoutData, router]);
+
+    useEffect(() => {
+        if (!checkoutData?.product) return;
+        if (!manualCheckoutModeEnabledByAdmin) return;
+        if (checkoutData.product.manualCheckoutEnabled === true) return;
+
+        localStorage.removeItem('guest_checkout');
+        router.replace('/');
+    }, [checkoutData, manualCheckoutModeEnabledByAdmin, router]);
 
     useEffect(() => {
         if (!checkoutData) return;
@@ -247,7 +262,7 @@ const CustomerCheckoutMain = ({ initialCategories = [] }: { initialCategories?: 
                 amount: computedTotal,
                 description: checkoutData.product.name,
                 payment_method: selectedMethod,
-                payment_mode: canSwitchPaymentMode ? paymentMode : undefined,
+                payment_mode: canSwitchPaymentMode ? effectivePaymentMode : undefined,
                 online_banking_provider: selectedMethod === 'online_banking' && showOnlineBankingProviderPicker
                     ? selectedOnlineBankingProvider
                     : undefined,
@@ -283,7 +298,7 @@ const CustomerCheckoutMain = ({ initialCategories = [] }: { initialCategories?: 
 
             if (data.checkout_id) {
                 localStorage.setItem('last_checkout_id', data.checkout_id);
-                localStorage.setItem('last_checkout_payment_mode', canSwitchPaymentMode ? (data.payment_mode || paymentMode) : 'live');
+                localStorage.setItem('last_checkout_payment_mode', canSwitchPaymentMode ? (data.payment_mode || effectivePaymentMode) : 'live');
             }
             localStorage.removeItem('guest_checkout');
             window.location.href = data.checkout_url;
@@ -379,12 +394,13 @@ const CustomerCheckoutMain = ({ initialCategories = [] }: { initialCategories?: 
                                     setSelectedMethod(m);
                                     setNotice('');
                                 }}
-                                paymentMode={paymentMode}
+                                paymentMode={effectivePaymentMode}
                                 paymentModeOptions={paymentModeOptions}
                                 onPaymentModeChange={setPaymentMode}
                                 selectedOnlineBankingProvider={selectedOnlineBankingProvider}
                                 onOnlineBankingProviderChange={setSelectedOnlineBankingProvider}
                                 showOnlineBankingProviderPicker={showOnlineBankingProviderPicker}
+                                paymentModeSource={isLocalPaymentHost ? 'local' : paymentModeEnabledByAdmin ? 'admin' : 'hidden'}
                                 notice={notice}
                             />
                         </div>

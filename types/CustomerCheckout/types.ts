@@ -30,6 +30,7 @@ export interface CustomerCheckoutProduct {
   id?: number;
   sku?: string;
   prodpv?: number;
+  manualCheckoutEnabled?: boolean;
   name: string;
   image: string;
   price: number;

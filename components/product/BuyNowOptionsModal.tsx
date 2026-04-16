@@ -7,6 +7,7 @@ import { useMemo, useState } from 'react';
 import Loading from '../Loading';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
+import { useGetPublicGeneralSettingsQuery } from '@/store/api/adminSettingsApi';
 
 type VariantOption = NonNullable<CategoryProduct['variants']>[number];
 
@@ -39,6 +40,7 @@ const BuyNowOptionsModal = ({
   selectedType,
 }: BuyNowOptionsModalProps) => {
   const { status } = useSession();
+  const { data: publicSettingsData } = useGetPublicGeneralSettingsQuery();
   const [notice, setNotice] = useState('');
   const [variantPickerOpen, setVariantPickerOpen] = useState(false);
   const [modalSelectedVariantSku, setModalSelectedVariantSku] = useState(selectedVariant?.sku ?? '');
@@ -87,6 +89,8 @@ const BuyNowOptionsModal = ({
   const handlingFee = 0;
   const total = subtotal + handlingFee;
 
+  const isManualCheckoutOnly = Boolean(publicSettingsData?.settings?.enable_manual_checkout_mode) && !Boolean(product.manualCheckoutEnabled);
+
   const handleClose = () => {
     setNotice('');
     setVariantPickerOpen(false);
@@ -127,6 +131,10 @@ const BuyNowOptionsModal = ({
 
   const handleProceed = async () => {
     if (!ensureVariantReady()) return;
+    if (isManualCheckoutOnly) {
+      setNotice('This product is not available for checkout at the moment');
+      return;
+    }
 
     if (status !== 'authenticated') {
       handleClose();
@@ -141,6 +149,10 @@ const BuyNowOptionsModal = ({
 
   const handleCustomerCheckout = () => {
     if (!ensureVariantReady()) return;
+    if (isManualCheckoutOnly) {
+      setNotice('This product is not available for checkout at the moment');
+      return;
+    }
 
     persistCheckoutDraft();
     handleClose();

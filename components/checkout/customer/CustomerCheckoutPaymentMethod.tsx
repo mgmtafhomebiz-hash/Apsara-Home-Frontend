@@ -16,6 +16,7 @@ interface Props {
   selectedOnlineBankingProvider: CheckoutOnlineBankingProvider;
   onOnlineBankingProviderChange: (provider: CheckoutOnlineBankingProvider) => void;
   showOnlineBankingProviderPicker: boolean;
+  paymentModeSource?: 'local' | 'admin' | 'hidden';
 }
 
 const onlineBankingOptions: Array<{ id: CheckoutOnlineBankingProvider; label: string; description: string }> = [
@@ -40,6 +41,7 @@ export default function CustomerCheckoutPaymentMethod({
   selectedOnlineBankingProvider,
   onOnlineBankingProviderChange,
   showOnlineBankingProviderPicker,
+  paymentModeSource = 'hidden',
 }: Props) {
   const [selectedCard, setSelectedCard] = useState(cardOptions[0]);
 
@@ -55,7 +57,11 @@ export default function CustomerCheckoutPaymentMethod({
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.18em] text-orange-600">Payment Mode</p>
-              <p className="mt-1 text-xs text-slate-500">Local-only switch for testing PayMongo test and live credentials.</p>
+              <p className="mt-1 text-xs text-slate-500">
+                {paymentModeSource === 'local'
+                  ? 'Local checkout testing is enabled on this host.'
+                  : 'Test mode is currently enabled by admin for customer checkout visibility.'}
+              </p>
             </div>
             <div className="inline-flex rounded-2xl border border-orange-200 bg-white p-1 shadow-sm">
               {paymentModeOptions.map((mode) => {

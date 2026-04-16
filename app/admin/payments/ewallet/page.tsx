@@ -1,5 +1,5 @@
 import { buildPageMetadata } from '@/app/seo'
-import UnderMaintenancePage from '@/components/superAdmin/UnderMaintenancePage'
+import PaymentsEwalletPageMain from '@/components/superAdmin/payments/PaymentsEwalletPageMain'
 
 export const metadata = buildPageMetadata({
   title: 'Admin E-Wallet Payments',
@@ -9,10 +9,5 @@ export const metadata = buildPageMetadata({
 })
 
 export default function AdminPaymentsEwalletPage() {
-  return (
-    <UnderMaintenancePage
-      title="E-Wallet Payments"
-      description="E-wallet transaction monitoring is still being prepared."
-    />
-  )
+  return <PaymentsEwalletPageMain />
 }
