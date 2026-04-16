@@ -18,6 +18,8 @@ interface DisplayProduct {
   createdAt?: string | null
   price: number
   priceMember?: number
+  priceDp?: number
+  priceSrp?: number
   prodpv?: number
   originalPrice?: number
   image: string
@@ -109,6 +111,8 @@ const mapProductToDisplay = (row: LooseRecord, apiUrl?: string): DisplayProduct 
       : (typeof row.pd_date === 'string' ? row.pd_date : null),
     price: toNumber(row.priceSrp),
     priceMember: toNumber(row.priceMember) || undefined,
+    priceDp: toNumber(row.priceDp) || undefined,
+    priceSrp: toNumber(row.priceSrp) || undefined,
     prodpv: toNumber(row.prodpv) || undefined,
     image: resolveImageUrl(rawImage, apiUrl),
     images: rawImages.map((item) => resolveImageUrl(item, apiUrl)),
