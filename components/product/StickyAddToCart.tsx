@@ -69,10 +69,20 @@ const StickyAddToCart = ({ product, selectedVariant }: StickyAddToCartProps) => 
   const isInStock = stock > 0;
 
   useEffect(() => {
-    const handler = () => setVisible(window.scrollY > 500);
+    let lastScrollY = window.scrollY;
+    const handler = () => {
+      const currentScrollY = window.scrollY;
+      // Add hysteresis to prevent rapid toggling
+      if (visible && currentScrollY < 400) {
+        setVisible(false);
+      } else if (!visible && currentScrollY > 500) {
+        setVisible(true);
+      }
+      lastScrollY = currentScrollY;
+    };
     window.addEventListener('scroll', handler);
     return () => window.removeEventListener('scroll', handler);
-  }, []);
+  }, [visible]);
 
   const handleAddToCart = () => {
     if (!isInStock) return;
