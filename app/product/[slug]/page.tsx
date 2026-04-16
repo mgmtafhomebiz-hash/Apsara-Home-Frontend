@@ -414,17 +414,17 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
 
   return (
     <ProductPageWrapper initialCategories={navbarCategories}>
-      <main className="flex-1">
-        <div className="bg-gray-50 border-b border-gray-100">
+      <main className="flex-1 bg-white dark:bg-gray-900">
+        <div className="bg-gray-50 dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800">
           <div className="container mx-auto px-4 py-3">
-            <nav className="flex items-center gap-1.5 text-xs text-gray-400">
-              <Link href="/" className="hover:text-orange-500 transition-colors font-medium">Home</Link>
+            <nav className="flex items-center gap-1.5 text-xs text-gray-400 dark:text-gray-500">
+              <Link href="/" className="hover:text-orange-500 dark:hover:text-orange-400 transition-colors font-medium">Home</Link>
               <ChevronRight />
-              <Link href={`/category/${dynamicData.categorySlug}`} className="hover:text-orange-500 transition-colors">
+              <Link href={`/category/${dynamicData.categorySlug}`} className="hover:text-orange-500 dark:hover:text-orange-400 transition-colors">
                 {dynamicData.categoryLabel}
               </Link>
               <ChevronRight />
-              <span className="text-slate-600 font-semibold truncate max-w-48">{dynamicData.product.name}</span>
+              <span className="text-slate-600 dark:text-gray-300 font-semibold truncate max-w-48">{dynamicData.product.name}</span>
             </nav>
           </div>
         </div>
