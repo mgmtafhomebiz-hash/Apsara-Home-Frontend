@@ -303,7 +303,23 @@ export default function ByBrandPageMain() {
   }, [rawBrandProducts, filters, sortBy])
 
   return (
-    <main className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <>
+      <div 
+        className="fixed inset-0 -z-50 by-brand-background"
+        style={{ 
+          backgroundColor: '#faf8f5',
+          background: '#faf8f5'
+        } as React.CSSProperties}
+      />
+      <style dangerouslySetInnerHTML={{
+        __html: `
+          html.dark .by-brand-background {
+            background-color: #030712 !important;
+            background: #030712 !important;
+          }
+        `
+      }} />
+      <main className="relative min-h-screen text-slate-900 dark:text-white">
       {/* Page Header */}
       <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
         <div className="container mx-auto px-4 py-6">
@@ -947,5 +963,6 @@ export default function ByBrandPageMain() {
       <Footer />
       <ScrollToTop />
     </main>
+    </>
   )
 }

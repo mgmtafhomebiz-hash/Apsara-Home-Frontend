@@ -29,6 +29,9 @@ interface Product {
   originalPrice?: number | null
   sku?: string | null
   prodpv?: number | null
+  bestseller?: boolean
+  soldCount?: number
+  avgRating?: number
 }
 
 interface ItemCardProps {
@@ -156,7 +159,7 @@ export default function ItemCard({ product, brandName }: ItemCardProps) {
   return (
     <Link href={href} className="flex flex-col group bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden hover:border-orange-500 dark:hover:border-orange-400 transition-colors cursor-pointer">
       {/* Product Image */}
-      <div className="relative aspect-[3/4] w-full bg-gray-100 dark:bg-gray-700 overflow-hidden border-b border-gray-200 dark:border-gray-700">
+      <div className="relative aspect-square w-full bg-gray-100 dark:bg-gray-700 overflow-hidden border-b border-gray-200 dark:border-gray-700">
         {/* Action Icons */}
         <div className="absolute top-2 right-2 flex flex-col gap-2 z-10">
           <div className="relative">
@@ -238,6 +241,13 @@ export default function ItemCard({ product, brandName }: ItemCardProps) {
           </div>
         ) : null}
 
+        {/* Bestseller Badge */}
+        {product.bestseller && !hasMemberPrice && (
+          <div className="absolute top-0 left-0 bg-purple-500 text-white text-xs font-bold px-2 py-1">
+            Bestseller
+          </div>
+        )}
+
         {/* Add to Cart Button */}
         <button
           onClick={handleAddToCart}
@@ -266,6 +276,12 @@ export default function ItemCard({ product, brandName }: ItemCardProps) {
 
       {/* Product Info */}
       <div className="mt-1.5 flex flex-col gap-1 p-3">
+        {/* Brand Name */}
+        {brandName && (
+          <p className="text-xs text-gray-500 dark:text-gray-400 font-medium uppercase tracking-wide">
+            {brandName}
+          </p>
+        )}
         {/* Product Name */}
         <h3 className="line-clamp-2 text-sm text-gray-800 dark:text-gray-200 leading-snug min-h-[2.5rem]">
           {product.name}
@@ -300,15 +316,17 @@ export default function ItemCard({ product, brandName }: ItemCardProps) {
                 width="10"
                 height="10"
                 viewBox="0 0 24 24"
-                fill={star <= 4 ? '#f97316' : 'none'}
-                stroke={star <= 4 ? '#f97316' : '#d1d5db'}
+                fill="#f97316"
+                stroke="#f97316"
                 strokeWidth="2"
               >
                 <path d="M12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
               </svg>
             ))}
           </div>
-          <span className="text-xs text-gray-400 dark:text-gray-500">124 sold</span>
+          <span className="text-xs text-gray-400 dark:text-gray-500">
+            {product.soldCount ?? 0} sold
+          </span>
         </div>
       </div>
     </Link>

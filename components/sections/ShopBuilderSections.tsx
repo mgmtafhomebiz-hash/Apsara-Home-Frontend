@@ -7,7 +7,7 @@ import HeroSection from './HeroSection'
 import FeaturedSections from './FeaturedSections'
 import PromoBenners from './PromoBenners'
 import NewsLetter from './NewsLetter'
-import ProductCard from '../ui/ProductCard'
+import ItemCard from '../item/ItemCard'
 import ShopCategoryCarousel from './ShopCategoryCarousel'
 import ShopNewsletterSignup from './ShopNewsletterSignup'
 import type { Category } from '@/store/api/categoriesApi'
@@ -457,14 +457,9 @@ function FeaturedCollectionSection({
                       exit={{ opacity: 0, y: -12 }}
                       transition={{ duration: 0.35, delay: index * 0.05 }}
                     >
-                      <ProductCard
-                        id={product.id}
-                        name={product.name}
-                        price={product.priceSrp}
-                        priceMember={product.priceMember}
-                        prodpv={product.prodpv}
-                        image={product.image || fallbackImage}
-                        stock={product.qty}
+                      <ItemCard
+                        product={product}
+                        brandName={product.brand || ''}
                       />
                     </motion.div>
                   ))}

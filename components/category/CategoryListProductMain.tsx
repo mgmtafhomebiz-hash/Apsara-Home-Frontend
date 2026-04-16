@@ -217,19 +217,35 @@ export default function CategoryListProductMain({
     ].filter(Boolean).length;
 
     return (
-        <div className="min-h-screen bg-white flex flex-col">
+        <>
+            <div 
+                className="fixed inset-0 -z-50 category-background"
+                style={{ 
+                    backgroundColor: '#faf8f5',
+                    background: '#faf8f5'
+                } as React.CSSProperties}
+            />
+            <style dangerouslySetInnerHTML={{
+                __html: `
+                    html.dark .category-background {
+                        background-color: #030712 !important;
+                        background: #030712 !important;
+                    }
+                `
+            }} />
+            <div className="relative min-h-screen text-slate-900 dark:text-white flex flex-col">
             <TopBar />
             <Navbar initialCategories={initialCategories} />
 
             <main className="flex-1">
                 {/* Breadcrumb */}
-                <div className="bg-gray-50 border-b border-gray-100">
+                <div className="bg-gray-50 dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700">
                     <div className="container mx-auto px-4 py-3 flex items-center justify-between">
-                        <h1 className="text-base font-bold text-slate-800">{categoryLabel}</h1>
-                        <nav className="flex items-center gap-1.5 text-xs text-gray-400">
-                            <Link href="/" className="hover:text-orange-500 transition-colors font-medium">Home</Link>
+                        <h1 className="text-base font-bold text-slate-800 dark:text-white">{categoryLabel}</h1>
+                        <nav className="flex items-center gap-1.5 text-xs text-gray-400 dark:text-gray-500">
+                            <Link href="/" className="hover:text-orange-500 dark:hover:text-orange-400 transition-colors font-medium">Home</Link>
                             <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6" /></svg>
-                            <span className="text-slate-600 font-semibold">{categoryLabel}</span>
+                            <span className="text-slate-600 dark:text-gray-300 font-semibold">{categoryLabel}</span>
                         </nav>
                     </div>
                 </div>
@@ -246,7 +262,7 @@ export default function CategoryListProductMain({
                                 currentCategory={categoryLabel}
                             />
                             {/* Video Section */}
-                            <div className="mt-4 rounded-2xl overflow-hidden aspect-square border border-slate-100 bg-slate-50">
+                            <div className="mt-4 rounded-2xl overflow-hidden aspect-square border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
                                 <video
                                     className="h-full w-full object-cover"
                                     src="/loginpageVideo/afhome.mp4"
@@ -274,13 +290,13 @@ export default function CategoryListProductMain({
                                     sortValue={filterState.sortBy}
                                     className="mb-4"
                                 />
-                                <div className="flex items-center justify-between text-sm text-gray-600">
+                                <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400">
                                     <span>
-                                        Showing <span className="font-semibold text-slate-700">{paginatedProducts.length}</span> of{' '}
-                                        <span className="font-semibold text-slate-700">{filteredProducts.length}</span> products
+                                        Showing <span className="font-semibold text-slate-700 dark:text-gray-200">{paginatedProducts.length}</span> of{' '}
+                                        <span className="font-semibold text-slate-700 dark:text-gray-200">{filteredProducts.length}</span> products
                                     </span>
                                     {hasActiveFilters && (
-                                        <span className="text-xs text-orange-500 font-medium">
+                                        <span className="text-xs text-orange-500 dark:text-orange-400 font-medium">
                                             {activeFilterCount} filter{activeFilterCount !== 1 ? 's' : ''} active
                                         </span>
                                     )}
@@ -290,14 +306,14 @@ export default function CategoryListProductMain({
                             {/* Products */}
                             {filteredProducts.length === 0 ? (
                                 <div className="flex flex-col items-center justify-center py-24 text-center">
-                                    <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+                                    <div className="w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-4">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="1.5" strokeLinecap="round">
                                             <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
                                         </svg>
                                     </div>
-                                    <p className="text-slate-700 font-semibold mb-1">No products found</p>
-                                    <p className="text-gray-400 text-sm mb-4">Try adjusting your filters</p>
-                                    <button onClick={resetFilters} className="text-sm font-semibold text-orange-500 hover:text-orange-600 transition-colors">
+                                    <p className="text-slate-700 dark:text-gray-200 font-semibold mb-1">No products found</p>
+                                    <p className="text-gray-400 dark:text-gray-500 text-sm mb-4">Try adjusting your filters</p>
+                                    <button onClick={resetFilters} className="text-sm font-semibold text-orange-500 dark:text-orange-400 hover:text-orange-600 dark:hover:text-orange-300 transition-colors">
                                         Clear all filters
                                     </button>
                                 </div>
@@ -323,13 +339,49 @@ export default function CategoryListProductMain({
                                     ))}
                                 </div>
                             )}
+                            {/* Pagination */}
+                            {totalPages > 1 && (
+                                <div className="mt-8 flex items-center justify-center gap-2">
+                                    <button
+                                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                        disabled={boundedCurrentPage === 1}
+                                        className="px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-slate-700 dark:text-gray-200 hover:border-orange-500 dark:hover:border-orange-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                    >
+                                        Previous
+                                    </button>
+                                    <div className="flex items-center gap-1">
+                                        {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                                            <button
+                                                key={page}
+                                                onClick={() => setCurrentPage(page)}
+                                                className={`w-10 h-10 rounded-lg border transition-colors ${
+                                                    page === boundedCurrentPage
+                                                        ? 'border-orange-500 bg-orange-500 text-white'
+                                                        : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-slate-700 dark:text-gray-200 hover:border-orange-500 dark:hover:border-orange-400'
+                                                }`}
+                                            >
+                                                {page}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <button
+                                        onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                        disabled={boundedCurrentPage === totalPages}
+                                        className="px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-slate-700 dark:text-gray-200 hover:border-orange-500 dark:hover:border-orange-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                    >
+                                        Next
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
             </main>
             <Footer />
         </div>
+        </>
     );
+
 }
 
 // List View Product Component

@@ -14,6 +14,7 @@ export interface WishlistItem {
   prodpv?: number
   image: string
   slug: string
+  brand?: string | null
 }
 
 type UnknownRow = Record<string, unknown>
@@ -60,6 +61,8 @@ const normalizeWishlistRow = (rowInput: unknown): WishlistItem | null => {
     asString(product.pd_name) ||
     asString(row.name)
 
+  const brand = asString(product.brand) || null
+
   if (!productId || !name) return null
 
   const price =
@@ -99,6 +102,7 @@ const normalizeWishlistRow = (rowInput: unknown): WishlistItem | null => {
     prodpv,
     image,
     slug,
+    brand,
   }
 }
 

@@ -6,30 +6,11 @@ import Link from 'next/link'
 import { useCart } from '@/context/CartContext'
 import { useRouter } from 'next/navigation'
 import type { CustomerCheckoutLineItem } from '@/types/CustomerCheckout/types'
-import { useLazyGetPublicProductQuery } from '@/store/api/productsApi'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import PrimaryButton from '@/components/ui/buttons/PrimaryButton'
-
-type ProductSearchBrand = {
-  pb_name?: string | null
-  name?: string | null
-}
-
-type ProductSearchItem = {
-  brand?: string | ProductSearchBrand | null
-  brand_name?: string | null
-}
-
-type ProductSearchResponse = {
-  products?: ProductSearchItem[]
-}
 
 export default function CartDrawer() {
   const router = useRouter()
-  const [brandByBaseId, setBrandByBaseId] = useState<Record<string, string>>({})
-  const [brandBySku, setBrandBySku] = useState<Record<string, string>>({})
-  const [brandByName, setBrandByName] = useState<Record<string, string>>({})
-  const [fetchPublicProduct] = useLazyGetPublicProductQuery()
   const {
     items,
     selectedIds,
@@ -47,108 +28,15 @@ export default function CartDrawer() {
     cartCount,
   } = useCart()
 
-  const parseBaseId = (id: string) => id.split('::')[0] ?? id
-  const resolveProductBrand = (product?: ProductSearchItem) => {
-    if (!product) return null
-
-    const brand = product.brand
-    if (typeof brand === 'string') return brand
-    if (brand && typeof brand === 'object') {
-      return brand.pb_name ?? brand.name ?? null
-    }
-
-    return product.brand_name ?? null
-  }
-
-  useEffect(() => {
-    const missing = items.filter((item) => !item.brand)
-    if (missing.length === 0) return
-
-    missing.forEach(async (item) => {
-      const baseId = parseBaseId(item.id)
-      if (!baseId || brandByBaseId[baseId]) return
-      if (!/^\d+$/.test(baseId)) return
-      try {
-        const product = await fetchPublicProduct(Number(baseId)).unwrap()
-        const brand = (product?.brand ?? '').trim()
-        if (brand) {
-          setBrandByBaseId((prev) => ({ ...prev, [baseId]: brand }))
-        }
-      } catch {
-        return
-      }
-    })
-  }, [items, brandByBaseId, fetchPublicProduct])
-
-  useEffect(() => {
-    const apiBase = process.env.NEXT_PUBLIC_LARAVEL_API_URL
-    if (!apiBase) return
-
-    const missing = items.filter((item) => !item.brand && item.selectedSku)
-    if (missing.length === 0) return
-
-    missing.forEach(async (item) => {
-      const sku = String(item.selectedSku ?? '').trim()
-      if (!sku || brandBySku[sku]) return
-      try {
-        const res = await fetch(`${apiBase}/api/products?q=${encodeURIComponent(sku)}&per_page=1`, {
-          method: 'GET',
-          headers: { Accept: 'application/json' },
-          cache: 'no-store',
-        })
-        if (!res.ok) return
-        const json = (await res.json()) as ProductSearchResponse
-        const product = (json.products ?? [])[0]
-        const brand = resolveProductBrand(product)
-        if (brand && typeof brand === 'string') {
-          setBrandBySku((prev) => ({ ...prev, [sku]: brand }))
-        }
-      } catch {
-        return
-      }
-    })
-  }, [items, brandBySku])
-
-  useEffect(() => {
-    const apiBase = process.env.NEXT_PUBLIC_LARAVEL_API_URL
-    if (!apiBase) return
-
-    const missing = items.filter((item) => !item.brand && !item.selectedSku)
-    if (missing.length === 0) return
-
-    missing.forEach(async (item) => {
-      const nameKey = String(item.name ?? '').trim()
-      if (!nameKey || brandByName[nameKey]) return
-      try {
-        const res = await fetch(`${apiBase}/api/products?q=${encodeURIComponent(nameKey)}&per_page=1`, {
-          method: 'GET',
-          headers: { Accept: 'application/json' },
-          cache: 'no-store',
-        })
-        if (!res.ok) return
-        const json = (await res.json()) as ProductSearchResponse
-        const product = (json.products ?? [])[0]
-        const brand = resolveProductBrand(product)
-        if (brand && typeof brand === 'string') {
-          setBrandByName((prev) => ({ ...prev, [nameKey]: brand }))
-        }
-      } catch {
-        return
-      }
-    })
-  }, [items, brandByName])
-
   const groupedItems = useMemo(() => items.reduce((map, item) => {
-    const baseId = parseBaseId(item.id)
-    const sku = String(item.selectedSku ?? '').trim()
-    const resolvedBrand = (item.brand ?? brandByBaseId[baseId] ?? brandBySku[sku] ?? brandByName[item.name] ?? '').trim()
-    const key = resolvedBrand || 'Unbranded'
+    const resolvedBrand = (item.brand ?? '').trim()
+    const key = resolvedBrand || 'Other'
     if (!map.has(key)) {
       map.set(key, [])
     }
     map.get(key)?.push(item)
     return map
-  }, new Map<string, typeof items>()), [items, brandByBaseId, brandBySku, brandByName])
+  }, new Map<string, typeof items>()), [items])
   const checkoutItems: CustomerCheckoutLineItem[] = selectedItems.map((item) => ({
     id: item.id,
     name: item.name,
@@ -274,26 +162,9 @@ export default function CartDrawer() {
                               className="h-4 w-4 rounded border-gray-300 text-orange-500 focus:ring-orange-200 cursor-pointer"
                               style={{ cursor: 'pointer' }}
                             />
-                            <Link
-                              href={`/by-brand/${brandName.toLowerCase().replace(/\s+/g, '-')}`}
-                              className="flex items-center gap-1.5 font-bold uppercase tracking-[0.2em] hover:text-orange-600 dark:hover:text-orange-400 transition-colors group text-slate-700 dark:text-gray-300"
-                            >
+                            <span className="flex items-center gap-1.5 font-bold uppercase tracking-[0.2em] text-slate-700 dark:text-gray-300">
                               {brandName}
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                width="12"
-                                height="12"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                className="opacity-0 group-hover:opacity-100 transition-opacity"
-                              >
-                                <polyline points="9 18 15 12 9 6" />
-                              </svg>
-                            </Link>
+                            </span>
                           </label>
                           <span className="text-[11px] text-slate-400 dark:text-gray-500">
                             {brandItems.length} item{brandItems.length === 1 ? '' : 's'}

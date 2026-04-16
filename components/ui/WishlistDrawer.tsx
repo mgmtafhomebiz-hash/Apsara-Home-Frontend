@@ -131,7 +131,7 @@ export default function WishlistDrawer() {
                             prodpv: item.prodpv,
                             image: item.image,
                           }}
-                          brandName=""
+                          brandName={item.brand ?? ''}
                         />
                       </motion.div>
                     ))}
