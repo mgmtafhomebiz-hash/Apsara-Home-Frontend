@@ -35,8 +35,16 @@ export default function PaymentsEwalletPageMain() {
   const overview = useGetAdminPaymentsOverviewQuery()
   const encashment = useGetAdminEncashmentRequestsQuery({ filter: 'all', page: 1, perPage: 8 })
 
-  const isLoading = overview.isLoading || encashment.isLoading
-  const hasError = overview.isError || encashment.isError
+  const isLoading = encashment.isLoading || (overview.isLoading && !encashment.data)
+  const hasFatalError = !encashment.data && encashment.isError
+  const pendingRequests = overview.data?.encashment_summary.pending_requests ?? encashment.data?.counts.pending ?? 0
+  const releasedRequests = overview.data?.encashment_summary.released_requests ?? encashment.data?.counts.released ?? 0
+  const totalRequests = overview.data?.encashment_summary.total_requests ?? encashment.data?.counts.all ?? 0
+  const releasedAmount = overview.data?.encashment_summary.released_amount
+    ?? encashment.data?.requests
+      ?.filter((request) => request.status === 'released')
+      .reduce((sum, request) => sum + (request.amount ?? 0), 0)
+    ?? 0
 
   if (isLoading) {
     return (
@@ -72,18 +80,24 @@ export default function PaymentsEwalletPageMain() {
 
       {overview.isFetching || encashment.isFetching ? <div className="google-loading-bar" /> : null}
 
-      {hasError || !overview.data || !encashment.data ? (
+      {hasFatalError || !encashment.data ? (
         <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
           Failed to load the e-wallet overview.
         </div>
       ) : (
         <>
+          {overview.isError ? (
+            <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+              Payments summary is temporarily unavailable, so this page is showing encashment-based fallback data.
+            </div>
+          ) : null}
+
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="grid gap-4 md:grid-cols-3">
             <div className="rounded-2xl border border-amber-200 bg-white p-4 shadow-sm">
               <div className="inline-flex rounded-xl border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-700">
                 Pending Payouts
               </div>
-              <p className="mt-4 text-2xl font-bold text-slate-900">{overview.data.encashment_summary.pending_requests.toLocaleString()}</p>
+              <p className="mt-4 text-2xl font-bold text-slate-900">{pendingRequests.toLocaleString()}</p>
               <p className="mt-1 text-sm text-slate-500">Requests waiting for approval or release</p>
             </div>
 
@@ -91,15 +105,15 @@ export default function PaymentsEwalletPageMain() {
               <div className="inline-flex rounded-xl border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700">
                 Released Amount
               </div>
-              <p className="mt-4 text-2xl font-bold text-slate-900">{formatMoney(overview.data.encashment_summary.released_amount)}</p>
-              <p className="mt-1 text-sm text-slate-500">{overview.data.encashment_summary.released_requests.toLocaleString()} released request(s)</p>
+              <p className="mt-4 text-2xl font-bold text-slate-900">{formatMoney(releasedAmount)}</p>
+              <p className="mt-1 text-sm text-slate-500">{releasedRequests.toLocaleString()} released request(s)</p>
             </div>
 
             <div className="rounded-2xl border border-sky-200 bg-white p-4 shadow-sm">
               <div className="inline-flex rounded-xl border border-sky-200 bg-sky-50 px-2.5 py-1 text-[11px] font-semibold text-sky-700">
                 Wallet Touchpoints
               </div>
-              <p className="mt-4 text-2xl font-bold text-slate-900">{overview.data.encashment_summary.total_requests.toLocaleString()}</p>
+              <p className="mt-4 text-2xl font-bold text-slate-900">{totalRequests.toLocaleString()}</p>
               <p className="mt-1 text-sm text-slate-500">Total encashment records connected to wallet activity</p>
             </div>
           </motion.div>
