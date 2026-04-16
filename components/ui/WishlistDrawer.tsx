@@ -102,7 +102,10 @@ export default function WishlistDrawer() {
                     <p className="font-semibold text-gray-800 dark:text-gray-200">Your wishlist is empty</p>
                     <p className="mt-1 text-sm text-gray-400 dark:text-gray-500">Start adding items you love</p>
                   </div>
-                  <PrimaryButton onClick={() => setIsOpen(false)} className="!px-6 !py-2.5 !text-sm">
+                  <PrimaryButton onClick={() => {
+                    setIsOpen(false)
+                    router.push('/wishlist')
+                  }} className="!px-6 !py-2.5 !text-sm">
                     View All
                   </PrimaryButton>
                 </div>
@@ -142,8 +145,11 @@ export default function WishlistDrawer() {
 
             {wishlist.length > 0 && (
               <div className="border-t border-gray-100 dark:border-gray-700 p-5">
-                <PrimaryButton 
-                  onClick={() => setIsOpen(false)} 
+                <PrimaryButton
+                  onClick={() => {
+                    setIsOpen(false)
+                    router.push('/wishlist')
+                  }}
                   className="w-full !px-6 !py-2.5 !text-sm"
                 >
                   View All
