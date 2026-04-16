@@ -160,7 +160,7 @@ const CustomerCheckoutMain = ({ initialCategories = [] }: { initialCategories?: 
     useEffect(() => {
         if (!checkoutData?.product) return;
         if (!manualCheckoutModeEnabledByAdmin) return;
-        if (checkoutData.product.manualCheckoutEnabled === false) return;
+        if (checkoutData.product.manualCheckoutEnabled === true) return;
 
         localStorage.removeItem('guest_checkout');
         router.replace('/');
