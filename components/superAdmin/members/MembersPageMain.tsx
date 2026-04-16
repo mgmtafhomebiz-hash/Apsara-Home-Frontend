@@ -4,11 +4,20 @@ import { Button } from '@heroui/react'
 import { motion } from "framer-motion"
 import MembersToolbar from "./MembersToolbar"
 import MembersStats from "./MembersStats"
+import type { MembersStatCardKey } from "./MembersStats"
 import MembersTable from "./MembersTable"
-import { useEffect, useMemo, useState } from "react"
-import { MemberStatus, MemberTier } from "@/types/members/types"
+import { useCallback, useEffect, useMemo, useState } from "react"
+import { Member, MemberStatus, MemberTier } from "@/types/members/types"
 import AddMemberModal from "./AddMemberModal"
-import { MembersResponse, MembersStatsResponse, useGetMembersQuery, useGetMembersStatsQuery, useLazyGetMembersQuery } from "@/store/api/membersApi"
+import {
+    MembersMeta,
+    MembersResponse,
+    MembersStatsResponse,
+    useGetMembersQuery,
+    useGetMembersStatsQuery,
+    useLazyGetMemberStatDetailsQuery,
+    useLazyGetMembersQuery,
+} from "@/store/api/membersApi"
 import { useSearchParams, useRouter, usePathname } from "next/navigation"
 
 interface MembersPageMainProps {
@@ -19,12 +28,12 @@ interface MembersPageMainProps {
 function SkeletonTable() {
     return (
         <div className="animate-pulse overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
-            <div className="border-b border-slate-100 dark:border-slate-800 px-5 py-4 dark:border-slate-800">
+            <div className="border-b border-slate-100 px-5 py-4 dark:border-slate-800">
                 <div className="h-4 w-28 rounded-lg bg-slate-100 dark:bg-slate-800/60" />
             </div>
-            <div className="divide-y divide-slate-100 dark:divide-slate-800/70 dark:divide-slate-800/70 dark:divide-slate-800/70">
+            <div className="divide-y divide-slate-100 dark:divide-slate-800/70">
                 {Array.from({ length: 6 }).map((_, i) => (
-                    <div key={i} className="px-4 py-4 flex items-center gap-4">
+                    <div key={i} className="flex items-center gap-4 px-4 py-4">
                         <div className="h-9 w-9 shrink-0 rounded-full bg-slate-100 dark:bg-slate-800/60" />
                         <div className="flex-1 space-y-2">
                             <div className="h-3 w-32 rounded bg-slate-100 dark:bg-slate-800/60" />
@@ -47,6 +56,51 @@ const csvEscape = (value: unknown) => {
     return text
 }
 
+type ModalMember = Member & { metricValue?: string }
+
+const modalDescriptions: Record<MembersStatCardKey, { intro: string; emptyTitle: string; emptyDescription: string }> = {
+    total_members: {
+        intro: 'Live member records loaded directly from the database.',
+        emptyTitle: 'No members found.',
+        emptyDescription: 'No member records were returned from the database.',
+    },
+    active: {
+        intro: 'Live active-member records loaded directly from the database.',
+        emptyTitle: 'No active members found.',
+        emptyDescription: 'There are no active-member records to show right now.',
+    },
+    pending: {
+        intro: 'Live pending and KYC-related member records loaded directly from the database.',
+        emptyTitle: 'No pending or KYC members found.',
+        emptyDescription: 'There are no pending or KYC-review records to show right now.',
+    },
+    blocked: {
+        intro: 'Live blocked-member records loaded directly from the database.',
+        emptyTitle: 'No blocked members found.',
+        emptyDescription: 'There are no blocked-member records to show right now.',
+    },
+    new_members: {
+        intro: 'Live recent registrations from the last 7 days, loaded directly from the database.',
+        emptyTitle: 'No recent members found.',
+        emptyDescription: 'There are no recent registration records to show right now.',
+    },
+    total_spent: {
+        intro: 'These are the actual members contributing to Total Spent, ranked from the database.',
+        emptyTitle: 'No spending records found.',
+        emptyDescription: 'No members with recorded spending were returned from the database.',
+    },
+    total_earnings: {
+        intro: 'These are the actual members contributing to Total Earnings, ranked from the database.',
+        emptyTitle: 'No earnings records found.',
+        emptyDescription: 'No members with recorded earnings were returned from the database.',
+    },
+    total_referrals: {
+        intro: 'These are the actual members contributing to Total Referrals, ranked from the database.',
+        emptyTitle: 'No referral records found.',
+        emptyDescription: 'No members with referral counts were returned from the database.',
+    },
+}
+
 const MembersPageMain = ({ initialData = null, initialStats = null }: MembersPageMainProps) => {
     const searchParams = useSearchParams()
     const router = useRouter()
@@ -54,17 +108,25 @@ const MembersPageMain = ({ initialData = null, initialStats = null }: MembersPag
     const [search, setSearch] = useState('')
     const [debouncedSearch, setDebouncedSearch] = useState('')
     const [status, setStatus] = useState<'all' | MemberStatus>('all')
-    const [tier, setTier] = useState<'all' | MemberTier>('all');
+    const [tier, setTier] = useState<'all' | MemberTier>('all')
     const [registration, setRegistration] = useState<'all' | 'new' | 'referred' | 'direct'>('all')
     const [profilePhoto, setProfilePhoto] = useState<'all' | 'with_photo' | 'no_photo'>('all')
     const [sort, setSort] = useState<'default' | 'newest_registered' | 'oldest_registered' | 'earnings_low_high' | 'earnings_high_low' | 'referrals_high_low'>('default')
-    const [showModal, setShowModal] = useState(false);
-    const [showEarningsModal, setShowEarningsModal] = useState(false);
+    const [showModal, setShowModal] = useState(false)
+    const [selectedStatCard, setSelectedStatCard] = useState<MembersStatCardKey | null>(null)
+    const [statModalMembers, setStatModalMembers] = useState<ModalMember[]>([])
+    const [statModalMeta, setStatModalMeta] = useState<MembersMeta | null>(null)
+    const [statModalTitle, setStatModalTitle] = useState('Member Details')
+    const [statModalMetricLabel, setStatModalMetricLabel] = useState('Metric')
+    const [statModalError, setStatModalError] = useState<string | null>(null)
+    const [isStatModalLoading, setIsStatModalLoading] = useState(false)
+    const [isStatModalLoadingMore, setIsStatModalLoadingMore] = useState(false)
     const [isExporting, setIsExporting] = useState(false)
     const [page, setPage] = useState(1)
     const [stableData, setStableData] = useState<MembersResponse | null>(initialData)
     const [stableStats, setStableStats] = useState<MembersStatsResponse | null>(initialStats)
     const perPage = 7
+    const statPageSize = 30
     const urlSearch = (searchParams.get('q') ?? '').trim()
 
     useEffect(() => {
@@ -101,6 +163,7 @@ const MembersPageMain = ({ initialData = null, initialStats = null }: MembersPag
         skip: Boolean(initialStats),
     })
     const [triggerExportMembers] = useLazyGetMembersQuery()
+    const [triggerStatDetails] = useLazyGetMemberStatDetailsQuery()
 
     const { data, isLoading, isFetching, isError } = useGetMembersQuery(
         {
@@ -153,13 +216,52 @@ const MembersPageMain = ({ initialData = null, initialStats = null }: MembersPag
         return list
     }, [members, sort])
     const meta = effectiveData?.meta
-    const earningsMembers = useMemo(
-        () =>
-            members
-                .filter((member) => member.earnings > 0)
-                .sort((a, b) => b.earnings - a.earnings),
-        [members]
-    )
+
+    const loadStatPage = useCallback(async (stat: MembersStatCardKey, nextPage: number, append: boolean) => {
+        try {
+            if (append) {
+                setIsStatModalLoadingMore(true)
+            } else {
+                setIsStatModalLoading(true)
+                setStatModalError(null)
+            }
+
+            const response = await triggerStatDetails({
+                stat,
+                page: nextPage,
+                perPage: statPageSize,
+            }).unwrap()
+
+            setStatModalTitle(response.title)
+            setStatModalMetricLabel(response.metricLabel)
+            setStatModalMeta(response.meta)
+            setStatModalMembers((prev) => append ? [...prev, ...response.members] : response.members)
+        } catch (error) {
+            console.error('Failed to load member stat details', error)
+            setStatModalError('Failed to load live member records for this stat.')
+            if (!append) {
+                setStatModalMembers([])
+                setStatModalMeta(null)
+            }
+        } finally {
+            setIsStatModalLoading(false)
+            setIsStatModalLoadingMore(false)
+        }
+    }, [triggerStatDetails])
+
+    useEffect(() => {
+        if (!selectedStatCard) {
+            setStatModalMembers([])
+            setStatModalMeta(null)
+            setStatModalError(null)
+            return
+        }
+
+        setStatModalMembers([])
+        setStatModalMeta(null)
+        setStatModalError(null)
+        loadStatPage(selectedStatCard, 1, false)
+    }, [loadStatPage, selectedStatCard])
 
     const handleSearch = (value: string) => {
         setSearch(value)
@@ -305,11 +407,18 @@ const MembersPageMain = ({ initialData = null, initialStats = null }: MembersPag
         }
     }
 
+    const selectedStatMeta = selectedStatCard ? modalDescriptions[selectedStatCard] : null
+    const canLoadMoreStatMembers = Boolean(
+        selectedStatCard &&
+        statModalMeta &&
+        statModalMeta.current_page < statModalMeta.last_page
+    )
+
     return (
         <div className="space-y-5">
-            {/* Header */}
             <motion.div
-                initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
                 className="flex items-start justify-between gap-4"
             >
                 <div>
@@ -320,7 +429,7 @@ const MembersPageMain = ({ initialData = null, initialStats = null }: MembersPag
                     onPress={() => setShowModal(true)}
                     className="shrink-0 rounded-xl bg-teal-600 text-white transition hover:bg-teal-700"
                 >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                     </svg>
                     <span className="hidden sm:inline">Add Member</span>
@@ -329,7 +438,7 @@ const MembersPageMain = ({ initialData = null, initialStats = null }: MembersPag
 
             <MembersStats
                 stats={effectiveStats ?? undefined}
-                onTotalEarningsClick={() => setShowEarningsModal(true)}
+                onCardClick={setSelectedStatCard}
             />
 
             <MembersToolbar
@@ -358,9 +467,7 @@ const MembersPageMain = ({ initialData = null, initialStats = null }: MembersPag
                 <SkeletonTable />
             ) : (
                 <div className="space-y-2">
-                    {isFetching && (
-                        <div className="google-loading-bar" />
-                    )}
+                    {isFetching && <div className="google-loading-bar" />}
                     <MembersTable
                         rows={sortedMembers}
                         currentPage={meta?.current_page ?? 1}
@@ -373,7 +480,7 @@ const MembersPageMain = ({ initialData = null, initialStats = null }: MembersPag
                 </div>
             )}
 
-            <AddMemberModal 
+            <AddMemberModal
                 isOpen={showModal}
                 onClose={() => {
                     setShowModal(false)
@@ -386,52 +493,106 @@ const MembersPageMain = ({ initialData = null, initialStats = null }: MembersPag
                 }}
             />
 
-            {showEarningsModal && (
+            {selectedStatCard && (
                 <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
-                    <div
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
                         className="absolute inset-0 bg-slate-900/55"
-                        onClick={() => setShowEarningsModal(false)}
+                        onClick={() => setSelectedStatCard(null)}
                     />
-                    <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden">
-                        <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                    <motion.div
+                        initial={{ opacity: 0, y: 18, scale: 0.98 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 12, scale: 0.98 }}
+                        transition={{ duration: 0.2 }}
+                        className="relative w-full max-w-3xl overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-2xl"
+                    >
+                        <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-4 dark:border-slate-800">
                             <div>
-                                <h2 className="text-base font-bold text-slate-800">Members With Earnings</h2>
-                                <p className="text-xs text-slate-500 mt-0.5">
-                                    Traced from the current members list view.
+                                <h2 className="text-base font-bold text-slate-800">{statModalTitle}</h2>
+                                <p className="mt-0.5 text-xs text-slate-500">
+                                    {selectedStatMeta?.intro ?? 'Live records loaded from the database.'}
                                 </p>
+                                {statModalMeta && (
+                                    <p className="mt-1 text-[11px] font-medium text-teal-600">
+                                        Showing {statModalMembers.length.toLocaleString()} of {statModalMeta.total.toLocaleString()} database records
+                                    </p>
+                                )}
                             </div>
                             <button
-                                onClick={() => setShowEarningsModal(false)}
-                                className="h-8 w-8 rounded-lg border border-slate-200 text-slate-500 hover:text-slate-700 hover:bg-slate-50"
+                                onClick={() => setSelectedStatCard(null)}
+                                className="h-9 w-9 rounded-xl border border-slate-200 text-slate-500 transition hover:bg-slate-50 hover:text-slate-700"
                             >
-                                ✕
+                                ×
                             </button>
                         </div>
 
-                        <div className="max-h-[65vh] overflow-auto">
-                            {earningsMembers.length > 0 ? (
-                                <div className="divide-y divide-slate-100 dark:divide-slate-800/70">
-                                    {earningsMembers.map((member) => (
-                                        <div key={member.id} className="px-5 py-3.5 flex items-center justify-between gap-3">
-                                            <div className="min-w-0">
-                                                <p className="text-sm font-semibold text-slate-800 truncate">{member.name}</p>
-                                                <p className="text-xs text-slate-500 truncate">{member.email}</p>
-                                            </div>
-                                            <div className="text-right shrink-0">
-                                                <p className="text-sm font-bold text-teal-700">PHP {member.earnings.toLocaleString()}</p>
-                                                <p className="text-[11px] text-slate-400">Orders: {member.orders}</p>
-                                            </div>
+                        <div className="max-h-[70vh] overflow-y-auto">
+                            {isStatModalLoading ? (
+                                <div className="space-y-3 px-5 py-5">
+                                    {Array.from({ length: 6 }).map((_, index) => (
+                                        <div key={index} className="animate-pulse rounded-2xl border border-slate-100 px-4 py-3">
+                                            <div className="h-4 w-44 rounded bg-slate-100" />
+                                            <div className="mt-2 h-3 w-60 rounded bg-slate-100" />
                                         </div>
+                                    ))}
+                                </div>
+                            ) : statModalError ? (
+                                <div className="px-5 py-12 text-center">
+                                    <p className="text-sm font-medium text-red-600">{statModalError}</p>
+                                    <p className="mt-1 text-xs text-slate-400">Try reopening the modal to fetch the live records again.</p>
+                                </div>
+                            ) : statModalMembers.length > 0 ? (
+                                <div className="divide-y divide-slate-100 dark:divide-slate-800/70">
+                                    {statModalMembers.map((member, index) => (
+                                        <motion.div
+                                            key={`${member.id}-${index}`}
+                                            initial={{ opacity: 0, y: 8 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ duration: 0.18, delay: Math.min(index * 0.015, 0.18) }}
+                                            className="flex items-center justify-between gap-4 px-5 py-4"
+                                        >
+                                            <div className="min-w-0">
+                                                <p className="truncate text-sm font-semibold text-slate-800">{member.name}</p>
+                                                <p className="truncate text-xs text-slate-500">{member.email}</p>
+                                                <p className="mt-1 truncate text-[11px] text-slate-400">
+                                                    {member.fullAddress || member.referredByName || member.status}
+                                                </p>
+                                            </div>
+                                            <div className="shrink-0 text-right">
+                                                <p className="text-sm font-bold text-teal-700">{member.metricValue ?? '-'}</p>
+                                                <p className="text-[11px] text-slate-400">{statModalMetricLabel}</p>
+                                            </div>
+                                        </motion.div>
                                     ))}
                                 </div>
                             ) : (
                                 <div className="px-5 py-12 text-center">
-                                    <p className="text-sm text-slate-600 font-medium">No members with earnings found.</p>
-                                    <p className="text-xs text-slate-400 mt-1">Try changing search/filter to trace other records.</p>
+                                    <p className="text-sm font-medium text-slate-600">{selectedStatMeta?.emptyTitle ?? 'No records found.'}</p>
+                                    <p className="mt-1 text-xs text-slate-400">{selectedStatMeta?.emptyDescription ?? 'No live records were returned from the database.'}</p>
                                 </div>
                             )}
                         </div>
-                    </div>
+
+                        <div className="border-t border-slate-100 px-5 py-4 dark:border-slate-800">
+                            <div className="flex items-center justify-between gap-3">
+                                <p className="text-xs text-slate-400">
+                                    Scroll to inspect records. Use load more to fetch the next batch from the database.
+                                </p>
+                                {canLoadMoreStatMembers && selectedStatCard ? (
+                                    <Button
+                                        onPress={() => loadStatPage(selectedStatCard, (statModalMeta?.current_page ?? 1) + 1, true)}
+                                        isDisabled={isStatModalLoadingMore}
+                                        className="rounded-xl bg-teal-600 text-white transition hover:bg-teal-700 disabled:bg-teal-300"
+                                    >
+                                        {isStatModalLoadingMore ? 'Loading...' : 'Load More'}
+                                    </Button>
+                                ) : null}
+                            </div>
+                        </div>
+                    </motion.div>
                 </div>
             )}
         </div>

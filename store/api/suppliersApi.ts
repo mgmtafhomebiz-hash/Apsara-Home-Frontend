@@ -92,10 +92,14 @@ export const suppliersApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['Suppliers'],
     }),
-    deleteSupplier: builder.mutation<{ message: string }, number>({
-      query: (id) => ({
+    deleteSupplier: builder.mutation<{ message: string }, { id: number; company?: string; name?: string }>({
+      query: ({ id, company, name }) => ({
         url: `/api/admin/suppliers/${id}`,
         method: 'DELETE',
+        body: {
+          company,
+          name,
+        },
       }),
       invalidatesTags: ['Suppliers'],
     }),
