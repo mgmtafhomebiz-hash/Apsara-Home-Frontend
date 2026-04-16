@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import type { Category } from '@/store/api/categoriesApi'
 
 export interface FilterState {
@@ -32,6 +32,25 @@ export default function ProductFilter({ onFilterChange, className = '', pvRange:
   const [pvRange, setPvRange] = useState<[number, number]>(propPvRange)
   const [hasPvOnly, setHasPvOnly] = useState(false)
   const [showPvInfo, setShowPvInfo] = useState(false)
+  const [isScrolling, setIsScrolling] = useState(false)
+
+  useEffect(() => {
+    let scrollTimeout: NodeJS.Timeout
+
+    const handleScroll = () => {
+      setIsScrolling(true)
+      clearTimeout(scrollTimeout)
+      scrollTimeout = setTimeout(() => {
+        setIsScrolling(false)
+      }, 1000)
+    }
+
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => {
+      window.removeEventListener('scroll', handleScroll)
+      clearTimeout(scrollTimeout)
+    }
+  }, [])
 
   const discountPresets = [
     { label: '10% or more', value: 10 },
@@ -284,8 +303,12 @@ export default function ProductFilter({ onFilterChange, className = '', pvRange:
               onClick={() => handlePresetClick(preset)}
               className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
                 priceRange[0] === preset.min && priceRange[1] === preset.max
-                  ? 'bg-orange-500 text-white'
-                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-orange-100 dark:hover:bg-orange-500/20 hover:text-orange-600 dark:hover:text-orange-400'
+                  ? isScrolling
+                    ? 'border border-orange-500 text-orange-600 dark:text-orange-400 dark:border-orange-500 bg-orange-50/50 dark:bg-orange-500/10'
+                    : 'bg-orange-500 text-white'
+                  : isScrolling
+                    ? 'border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-orange-400 dark:hover:border-orange-500 hover:text-orange-600 dark:hover:text-orange-400'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-orange-100 dark:hover:bg-orange-500/20 hover:text-orange-600 dark:hover:text-orange-400'
               }`}
             >
               {preset.label}
@@ -302,8 +325,12 @@ export default function ProductFilter({ onFilterChange, className = '', pvRange:
             onClick={() => handleSortChange('default')}
             className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
               sortBy === 'default'
-                ? 'bg-orange-500 text-white'
-                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-orange-100 dark:hover:bg-orange-500/20 hover:text-orange-600 dark:hover:text-orange-400'
+                ? isScrolling
+                  ? 'border border-orange-500 text-orange-600 dark:text-orange-400 dark:border-orange-500 bg-orange-50/50 dark:bg-orange-500/10'
+                  : 'bg-orange-500 text-white'
+                : isScrolling
+                  ? 'border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-orange-400 dark:hover:border-orange-500 hover:text-orange-600 dark:hover:text-orange-400'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-orange-100 dark:hover:bg-orange-500/20 hover:text-orange-600 dark:hover:text-orange-400'
             }`}
           >
             Default
@@ -312,8 +339,12 @@ export default function ProductFilter({ onFilterChange, className = '', pvRange:
             onClick={() => handleSortChange('asc')}
             className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
               sortBy === 'asc'
-                ? 'bg-orange-500 text-white'
-                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-orange-100 dark:hover:bg-orange-500/20 hover:text-orange-600 dark:hover:text-orange-400'
+                ? isScrolling
+                  ? 'border border-orange-500 text-orange-600 dark:text-orange-400 dark:border-orange-500 bg-orange-50/50 dark:bg-orange-500/10'
+                  : 'bg-orange-500 text-white'
+                : isScrolling
+                  ? 'border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-orange-400 dark:hover:border-orange-500 hover:text-orange-600 dark:hover:text-orange-400'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-orange-100 dark:hover:bg-orange-500/20 hover:text-orange-600 dark:hover:text-orange-400'
             }`}
           >
             A to Z
@@ -322,8 +353,12 @@ export default function ProductFilter({ onFilterChange, className = '', pvRange:
             onClick={() => handleSortChange('desc')}
             className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
               sortBy === 'desc'
-                ? 'bg-orange-500 text-white'
-                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-orange-100 dark:hover:bg-orange-500/20 hover:text-orange-600 dark:hover:text-orange-400'
+                ? isScrolling
+                  ? 'border border-orange-500 text-orange-600 dark:text-orange-400 dark:border-orange-500 bg-orange-50/50 dark:bg-orange-500/10'
+                  : 'bg-orange-500 text-white'
+                : isScrolling
+                  ? 'border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-orange-400 dark:hover:border-orange-500 hover:text-orange-600 dark:hover:text-orange-400'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-orange-100 dark:hover:bg-orange-500/20 hover:text-orange-600 dark:hover:text-orange-400'
             }`}
           >
             Z to A
@@ -355,8 +390,12 @@ export default function ProductFilter({ onFilterChange, className = '', pvRange:
                 onClick={() => handleDiscountPercentageChange(preset.value)}
                 className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
                   minDiscount === preset.value
-                    ? 'bg-orange-500 text-white'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-orange-100 dark:hover:bg-orange-500/20 hover:text-orange-600 dark:hover:text-orange-400'
+                    ? isScrolling
+                      ? 'border border-orange-500 text-orange-600 dark:text-orange-400 dark:border-orange-500 bg-orange-50/50 dark:bg-orange-500/10'
+                      : 'bg-orange-500 text-white'
+                    : isScrolling
+                      ? 'border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-orange-400 dark:hover:border-orange-500 hover:text-orange-600 dark:hover:text-orange-400'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-orange-100 dark:hover:bg-orange-500/20 hover:text-orange-600 dark:hover:text-orange-400'
                 }`}
               >
                 {preset.label}
@@ -409,8 +448,12 @@ export default function ProductFilter({ onFilterChange, className = '', pvRange:
                 onClick={() => handlePvPresetClick(preset)}
                 className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
                   pvRange[0] === preset.min && pvRange[1] === preset.max
-                    ? 'bg-orange-500 text-white'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-orange-100 dark:hover:bg-orange-500/20 hover:text-orange-600 dark:hover:text-orange-400'
+                    ? isScrolling
+                      ? 'border border-orange-500 text-orange-600 dark:text-orange-400 dark:border-orange-500 bg-orange-50/50 dark:bg-orange-500/10'
+                      : 'bg-orange-500 text-white'
+                    : isScrolling
+                      ? 'border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-orange-400 dark:hover:border-orange-500 hover:text-orange-600 dark:hover:text-orange-400'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-orange-100 dark:hover:bg-orange-500/20 hover:text-orange-600 dark:hover:text-orange-400'
                 }`}
               >
                 {preset.label}
@@ -454,7 +497,11 @@ export default function ProductFilter({ onFilterChange, className = '', pvRange:
             hasPvOnly: false
           })
         }}
-        className="w-full rounded-lg border border-gray-300 dark:border-gray-600 py-2 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+        className={`w-full rounded-lg py-2 text-sm font-semibold transition-colors cursor-pointer ${
+          isScrolling
+            ? 'border border-orange-500 text-orange-600 dark:text-orange-400 dark:border-orange-500 hover:bg-orange-50 dark:hover:bg-orange-500/10'
+            : 'bg-orange-500 text-white hover:bg-orange-600 dark:hover:bg-orange-600'
+        }`}
       >
         Clear Filters
       </button>
