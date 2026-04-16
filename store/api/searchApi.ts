@@ -3,11 +3,11 @@ import { baseApi } from './baseApi'
 export interface SearchHistoryItem {
   id: number
   query: string
-  created_at: string
+  date_created: string
 }
 
 export interface SearchHistoryResponse {
-  history: SearchHistoryItem[]
+  data: SearchHistoryItem[]
 }
 
 export const searchApi = baseApi.injectEndpoints({
@@ -28,8 +28,16 @@ export const searchApi = baseApi.injectEndpoints({
       }),
       providesTags: ['SearchHistory'],
     }),
+
+    clearSearchHistory: builder.mutation<{ message: string }, void>({
+      query: () => ({
+        url: '/api/search/history',
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['SearchHistory'],
+    }),
   }),
   overrideExisting: true,
 })
 
-export const { useSaveSearchHistoryMutation, useGetSearchHistoryQuery } = searchApi
+export const { useSaveSearchHistoryMutation, useGetSearchHistoryQuery, useClearSearchHistoryMutation } = searchApi
