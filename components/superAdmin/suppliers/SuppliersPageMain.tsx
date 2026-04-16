@@ -7,10 +7,12 @@ import {
   InviteSupplierUserResponse,
   SupplierItem,
   useCreateSupplierMutation,
+  useDeleteSupplierUserMutation,
   useDeleteSupplierMutation,
   useGetSupplierUsersQuery,
   useGetSuppliersQuery,
   useInviteSupplierUserMutation,
+  useUpdateSupplierUserMutation,
   useUpdateSupplierCategoriesMutation,
   useUpdateSupplierMutation,
 } from '@/store/api/suppliersApi'
@@ -1069,8 +1071,90 @@ export default function SuppliersPageMain() {
 }
 
 function SupplierUsersTree({ supplierId }: { supplierId: number }) {
-  const { data, isLoading, isError } = useGetSupplierUsersQuery(supplierId)
+  const { data: session } = useSession()
+  const role = String(session?.user?.role ?? '').toLowerCase()
+  const canManageAccounts = role !== 'supplier'
+
+  const { data, isLoading, isError, error, refetch } = useGetSupplierUsersQuery(supplierId)
+  const [updateSupplierUser, { isLoading: isUpdating }] = useUpdateSupplierUserMutation()
+  const [deleteSupplierUser, { isLoading: isDeleting }] = useDeleteSupplierUserMutation()
   const users = data?.users ?? []
+  const [editing, setEditing] = useState<{
+    id: number
+    fullname: string
+    username: string
+    email: string
+    password: string
+    is_main_supplier?: boolean
+  } | null>(null)
+  const [confirmDelete, setConfirmDelete] = useState<{ id: number; label: string; isMain?: boolean } | null>(null)
+  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
+
+  const getErrorMessage = (errorValue: unknown, fallback: string) => {
+    if (errorValue && typeof errorValue === 'object') {
+      const dataValue = (errorValue as {
+        data?: { message?: string; errors?: Record<string, string[]> }
+      }).data
+      const firstEntry = dataValue?.errors ? Object.values(dataValue.errors)[0] : null
+      if (Array.isArray(firstEntry) && typeof firstEntry[0] === 'string') return firstEntry[0]
+      if (typeof dataValue?.message === 'string') return dataValue.message
+    }
+
+    return fallback
+  }
+
+  const openEdit = (user: { id: number; fullname: string; username: string; email: string; is_main_supplier?: boolean }) => {
+    setFeedback(null)
+    setEditing({
+      id: user.id,
+      fullname: user.fullname || '',
+      username: user.username || '',
+      email: user.email || '',
+      password: '',
+      is_main_supplier: user.is_main_supplier,
+    })
+  }
+
+  const handleUpdate = async (event: React.FormEvent) => {
+    event.preventDefault()
+    if (!editing) return
+    setFeedback(null)
+
+    try {
+      const result = await updateSupplierUser({
+        id: editing.id,
+        fullname: editing.fullname.trim(),
+        username: editing.username.trim(),
+        email: editing.email.trim() || undefined,
+        password: editing.password.trim() || undefined,
+      }).unwrap()
+      setFeedback({ type: 'success', message: result.message })
+      setEditing(null)
+    } catch (err) {
+      setFeedback({ type: 'error', message: getErrorMessage(err, 'Unable to update supplier user.') })
+    }
+  }
+
+  const requestDelete = (user: { id: number; fullname: string; username: string; is_main_supplier?: boolean }) => {
+    setFeedback(null)
+    setConfirmDelete({
+      id: user.id,
+      label: user.fullname?.trim() ? user.fullname : `@${user.username}`,
+      isMain: Boolean(user.is_main_supplier),
+    })
+  }
+
+  const confirmDeleteNow = async () => {
+    if (!confirmDelete) return
+    setFeedback(null)
+    try {
+      const result = await deleteSupplierUser(confirmDelete.id).unwrap()
+      setFeedback({ type: 'success', message: result.message })
+      setConfirmDelete(null)
+    } catch (err) {
+      setFeedback({ type: 'error', message: getErrorMessage(err, 'Unable to remove supplier user.') })
+    }
+  }
 
   if (isLoading) {
     return <p className="text-sm text-slate-500">Loading supplier users...</p>
@@ -1078,9 +1162,16 @@ function SupplierUsersTree({ supplierId }: { supplierId: number }) {
 
   if (isError) {
     return (
-      <p className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-        Failed to load supplier users.
-      </p>
+      <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <p>{getErrorMessage(error, 'Failed to load supplier users.')}</p>
+        <button
+          type="button"
+          onClick={() => refetch()}
+          className="mt-3 rounded-xl border border-red-200 bg-white px-3 py-2 text-xs font-semibold text-red-700 transition hover:bg-red-100"
+        >
+          Retry
+        </button>
+      </div>
     )
   }
 
@@ -1107,22 +1198,167 @@ function SupplierUsersTree({ supplierId }: { supplierId: number }) {
               : 'border-slate-200 bg-white'
           }`}
         >
-          <div className="flex flex-wrap items-center gap-2">
-            <p className="text-sm font-semibold text-slate-900">{user.fullname || user.username}</p>
-            <span
-              className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-semibold ${
-                user.is_main_supplier
-                  ? 'border-cyan-200 bg-white text-cyan-700'
-                  : 'border-slate-200 bg-slate-50 text-slate-600'
-              }`}
-            >
-              {user.role_label || (user.is_main_supplier ? 'Main Supplier' : 'Sub Supplier')}
-            </span>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="text-sm font-semibold text-slate-900">{user.fullname || user.username}</p>
+                <span
+                  className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-semibold ${
+                    user.is_main_supplier
+                      ? 'border-cyan-200 bg-white text-cyan-700'
+                      : 'border-slate-200 bg-slate-50 text-slate-600'
+                  }`}
+                >
+                  {user.role_label || (user.is_main_supplier ? 'Main Supplier' : 'Sub Supplier')}
+                </span>
+              </div>
+              <p className="mt-1 text-xs text-slate-500">@{user.username}</p>
+              <p className="mt-1 text-xs text-slate-500">{user.email || 'No email provided'}</p>
+            </div>
+
+            {canManageAccounts ? (
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => openEdit(user)}
+                  className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-cyan-300 hover:text-cyan-700"
+                >
+                  Manage Account
+                </button>
+                <button
+                  type="button"
+                  onClick={() => requestDelete(user)}
+                  disabled={isDeleting || Boolean(user.is_main_supplier)}
+                  className="rounded-xl border border-red-200 px-3 py-2 text-xs font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  Delete
+                </button>
+              </div>
+            ) : null}
           </div>
-          <p className="mt-1 text-xs text-slate-500">@{user.username}</p>
-          <p className="mt-1 text-xs text-slate-500">{user.email || 'No email provided'}</p>
         </div>
       ))}
+
+      {editing ? (
+        <ModalShell onClose={() => setEditing(null)}>
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.22em] text-slate-400">Manage Account</p>
+              <h3 className="mt-2 text-xl font-bold text-slate-900">Update supplier portal user</h3>
+              <p className="mt-2 text-sm text-slate-500">Keep the password blank if you don’t want to change it.</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setEditing(null)}
+              className="rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+            >
+              Close
+            </button>
+          </div>
+
+          <form onSubmit={handleUpdate} className="mt-6 space-y-4">
+            <FormField label="Full Name">
+              <input
+                value={editing.fullname}
+                onChange={(e) => setEditing((prev) => (prev ? { ...prev, fullname: e.target.value } : prev))}
+                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
+                required
+              />
+            </FormField>
+            <FormField label="Username">
+              <input
+                value={editing.username}
+                onChange={(e) => setEditing((prev) => (prev ? { ...prev, username: e.target.value } : prev))}
+                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
+                required
+              />
+            </FormField>
+            <FormField label="Email (Optional)">
+              <input
+                type="email"
+                value={editing.email}
+                onChange={(e) => setEditing((prev) => (prev ? { ...prev, email: e.target.value } : prev))}
+                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
+                placeholder="Optional"
+              />
+            </FormField>
+            <FormField label="New Password (Optional)">
+              <input
+                type="password"
+                value={editing.password}
+                onChange={(e) => setEditing((prev) => (prev ? { ...prev, password: e.target.value } : prev))}
+                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
+                placeholder="Leave blank if you don't want to change it"
+              />
+            </FormField>
+
+            {feedback ? <FeedbackBanner type={feedback.type} message={feedback.message} /> : null}
+
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setEditing(null)}
+                className="rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isUpdating}
+                className="rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isUpdating ? 'Saving...' : 'Save Changes'}
+              </button>
+            </div>
+          </form>
+        </ModalShell>
+      ) : null}
+
+      {confirmDelete ? (
+        <ModalShell onClose={() => setConfirmDelete(null)}>
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.22em] text-red-600">Confirm Delete</p>
+              <h3 className="mt-2 text-xl font-bold text-slate-900">Remove supplier user?</h3>
+              <p className="mt-2 text-sm text-slate-600">
+                This will remove access for <span className="font-semibold text-slate-900">{confirmDelete.label}</span>.
+              </p>
+              {confirmDelete.isMain ? (
+                <p className="mt-2 text-sm text-amber-700">
+                  The main supplier owner account cannot be deleted here.
+                </p>
+              ) : null}
+            </div>
+            <button
+              type="button"
+              onClick={() => setConfirmDelete(null)}
+              className="rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+            >
+              Close
+            </button>
+          </div>
+
+          {feedback ? <div className="mt-4"><FeedbackBanner type={feedback.type} message={feedback.message} /></div> : null}
+
+          <div className="mt-6 flex justify-end gap-3">
+            <button
+              type="button"
+              onClick={() => setConfirmDelete(null)}
+              className="rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => void confirmDeleteNow()}
+              disabled={isDeleting || Boolean(confirmDelete.isMain)}
+              className="rounded-2xl bg-red-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isDeleting ? 'Deleting...' : 'Delete User'}
+            </button>
+          </div>
+        </ModalShell>
+      ) : null}
     </div>
   )
 }
