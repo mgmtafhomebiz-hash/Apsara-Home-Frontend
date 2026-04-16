@@ -3,6 +3,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { useState, useMemo, useEffect, useRef } from 'react';
+import { useSession } from 'next-auth/react';
 import Footer from '@/components/landing-page/Footer';
 import TopBar from '@/components/layout/TopBar';
 import Navbar from '@/components/layout/Navbar';
@@ -316,118 +317,7 @@ export default function CategoryListProductMain({
                                             {viewMode === 'grid' ? (
                                                 <ItemCard key={product.id} product={product} brandName={product.brand || ''} />
                                             ) : (
-                                                <Link
-                                                    key={product.id}
-                                                    href={`/product/${product.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-i${product.id}`}
-                                                    className="flex gap-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden hover:border-orange-500 dark:hover:border-orange-400 transition-colors group relative"
-                                                >
-                                                    {/* Action Icons */}
-                                                    <div className="absolute top-2 right-2 flex flex-col gap-2 z-10">
-                                                        <button
-                                                            onClick={(e) => {
-                                                                e.preventDefault()
-                                                                e.stopPropagation()
-                                                                // Add to wishlist functionality here
-                                                            }}
-                                                            className="p-2 rounded-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-md border border-gray-200 dark:border-gray-600 shadow-lg hover:bg-orange-500 hover:border-orange-500 dark:hover:bg-orange-500 dark:hover:border-orange-500 transition-all duration-200 cursor-pointer"
-                                                            title="Add to Wishlist"
-                                                        >
-                                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-700 dark:text-gray-300 hover:text-white transition-colors">
-                                                                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-                                                            </svg>
-                                                        </button>
-                                                        <button
-                                                            onClick={(e) => {
-                                                                e.preventDefault()
-                                                                e.stopPropagation()
-                                                                const productUrl = `${window.location.origin}/product/${product.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-i${product.id}`
-                                                                navigator.clipboard.writeText(productUrl).then(() => {
-                                                                    // Show success message
-                                                                }).catch(() => {
-                                                                    // Show error message
-                                                                })
-                                                            }}
-                                                            className="p-2 rounded-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-md border border-gray-200 dark:border-gray-600 shadow-lg hover:bg-orange-500 hover:border-orange-500 dark:hover:bg-orange-500 dark:hover:border-orange-500 transition-all duration-200 cursor-pointer"
-                                                            title="Share"
-                                                        >
-                                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-700 dark:text-gray-300 hover:text-white transition-colors">
-                                                                <circle cx="18" cy="5" r="3" />
-                                                                <circle cx="6" cy="12" r="3" />
-                                                                <circle cx="18" cy="19" r="3" />
-                                                                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
-                                                                <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
-                                                            </svg>
-                                                        </button>
-                                                    </div>
-                                                    <div className="relative aspect-square w-32 bg-gray-100 dark:bg-gray-700 overflow-hidden shrink-0">
-                                                        {product.image ? (
-                                                            <img
-                                                                src={product.image}
-                                                                alt={product.name}
-                                                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                                            />
-                                                        ) : (
-                                                            <div className="flex h-full items-center justify-center text-gray-400 dark:text-gray-500">
-                                                                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                                                                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                                                                    <circle cx="8.5" cy="8.5" r="1.5" />
-                                                                    <polyline points="21 15 16 10 5 21" />
-                                                                </svg>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                    <div className="flex flex-col justify-center flex-1 p-4 relative">
-                                                        <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-2 line-clamp-2 group-hover:text-orange-500 dark:group-hover:text-orange-400 transition-colors">{product.name}</h3>
-                                                        <div className="flex items-baseline gap-2 mb-2">
-                                                            <span className="text-lg font-bold text-orange-500 dark:text-orange-400">
-                                                                ₱{Number(product.price || 0).toLocaleString()}
-                                                            </span>
-                                                        </div>
-                                                        <div className="flex items-center gap-2">
-                                                            {product.prodpv && Number(product.prodpv) > 0 && (
-                                                                <span className="inline-flex items-center rounded-full border border-blue-200 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 text-[11px] font-semibold text-blue-700 dark:text-blue-300">
-                                                                    PV {Number(product.prodpv).toLocaleString()}
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                        {/* Sales/Ratings */}
-                                                        <div className="flex items-center gap-1 mt-1">
-                                                            <div className="flex items-center">
-                                                                {[1, 2, 3, 4, 5].map((star) => (
-                                                                    <svg
-                                                                        key={star}
-                                                                        xmlns="http://www.w3.org/2000/svg"
-                                                                        width="10"
-                                                                        height="10"
-                                                                        viewBox="0 0 24 24"
-                                                                        fill={star <= 4 ? '#f97316' : 'none'}
-                                                                        stroke={star <= 4 ? '#f97316' : '#d1d5db'}
-                                                                        strokeWidth="2"
-                                                                    >
-                                                                        <path d="M12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
-                                                                    </svg>
-                                                                ))}
-                                                            </div>
-                                                            <span className="text-xs text-gray-400 dark:text-gray-500">124 sold</span>
-                                                        </div>
-                                                        {/* Add to Cart Button */}
-                                                        <button
-                                                            onClick={(e) => {
-                                                                e.preventDefault()
-                                                                e.stopPropagation()
-                                                                // Add to cart functionality here
-                                                            }}
-                                                            className="absolute bottom-4 right-4 flex items-center justify-center gap-2 rounded-full bg-orange-500 hover:bg-orange-600 px-4 py-2 text-sm font-semibold text-white opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 cursor-pointer"
-                                                        >
-                                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                                                <circle cx="9" cy="21" r="1" />
-                                                                <circle cx="20" cy="21" r="1" />
-                                                                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
-                                                            </svg>
-                                                            Add to Cart
-                                                        </button>
-                                                    </div>
-                                                </Link>
+                                                <ListViewProduct key={product.id} product={product} />
                                             )}
                                         </motion.div>
                                     ))}
@@ -440,4 +330,142 @@ export default function CategoryListProductMain({
             <Footer />
         </div>
     );
+}
+
+// List View Product Component
+function ListViewProduct({ product }: { product: CategoryProduct }) {
+    const srpPrice = Number(product.priceSrp ?? product.price ?? 0)
+    const memberPrice = Number(product.priceMember ?? product.priceDp ?? 0)
+    const hasMemberPrice = memberPrice > 0 && memberPrice < srpPrice
+    const displayPrice = hasMemberPrice ? memberPrice : srpPrice
+    const strikePrice = hasMemberPrice ? srpPrice : Number(product.originalPrice ?? 0)
+    const displayPv = Number(product.prodpv ?? 0)
+    const { data: session } = useSession()
+    const isLoggedIn = Boolean(session?.user)
+
+    return (
+        <Link
+            href={`/product/${product.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-i${product.id}`}
+            className="flex gap-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden hover:border-orange-500 dark:hover:border-orange-400 transition-colors group relative"
+        >
+            {/* Discount Badge */}
+            {hasMemberPrice && (
+                <div className="absolute top-2 left-2 bg-orange-500 text-white text-xs font-bold px-2 py-1 z-10">
+                    {isLoggedIn ? `Enjoy ${Math.round(((srpPrice - memberPrice) / srpPrice) * 100)}% off` : `Register to get ${Math.round(((srpPrice - memberPrice) / srpPrice) * 100)}% discount`}
+                </div>
+            )}
+
+            {/* Action Icons */}
+            <div className="absolute top-2 right-2 flex flex-col gap-2 z-10">
+                <button
+                    onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        // Add to wishlist functionality here
+                    }}
+                    className="p-2 rounded-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-md border border-gray-200 dark:border-gray-600 shadow-lg hover:bg-orange-500 hover:border-orange-500 dark:hover:bg-orange-500 dark:hover:border-orange-500 transition-all duration-200 cursor-pointer"
+                    title="Add to Wishlist"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-700 dark:text-gray-300 hover:text-white transition-colors">
+                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                    </svg>
+                </button>
+                <button
+                    onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        const productUrl = `${window.location.origin}/product/${product.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-i${product.id}`
+                        navigator.clipboard.writeText(productUrl).then(() => {
+                            // Show success message
+                        }).catch(() => {
+                            // Show error message
+                        })
+                    }}
+                    className="p-2 rounded-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-md border border-gray-200 dark:border-gray-600 shadow-lg hover:bg-orange-500 hover:border-orange-500 dark:hover:bg-orange-500 dark:hover:border-orange-500 transition-all duration-200 cursor-pointer"
+                    title="Share"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-700 dark:text-gray-300 hover:text-white transition-colors">
+                        <circle cx="18" cy="5" r="3" />
+                        <circle cx="6" cy="12" r="3" />
+                        <circle cx="18" cy="19" r="3" />
+                        <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+                        <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+                    </svg>
+                </button>
+            </div>
+            <div className="relative aspect-square w-32 bg-gray-100 dark:bg-gray-700 overflow-hidden shrink-0">
+                {product.image ? (
+                    <img
+                        src={product.image}
+                        alt={product.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                ) : (
+                    <div className="flex h-full items-center justify-center text-gray-400 dark:text-gray-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                            <circle cx="8.5" cy="8.5" r="1.5" />
+                            <polyline points="21 15 16 10 5 21" />
+                        </svg>
+                    </div>
+                )}
+            </div>
+            <div className="flex flex-col justify-center flex-1 p-4 relative">
+                <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-2 line-clamp-2 group-hover:text-orange-500 dark:group-hover:text-orange-400 transition-colors">{product.name}</h3>
+                <div className="flex items-baseline gap-2 mb-2">
+                    <span className="text-lg font-bold text-orange-500 dark:text-orange-400">
+                        ₱{displayPrice.toLocaleString()}
+                    </span>
+                    {strikePrice > displayPrice && (
+                        <span className="text-sm text-gray-400 dark:text-gray-500 line-through">
+                            ₱{strikePrice.toLocaleString()}
+                        </span>
+                    )}
+                </div>
+                <div className="flex items-center gap-2">
+                    {displayPv > 0 && (
+                        <span className="inline-flex items-center rounded-full border border-blue-200 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 text-[11px] font-semibold text-blue-700 dark:text-blue-300">
+                            PV {displayPv.toLocaleString()}
+                        </span>
+                    )}
+                </div>
+                {/* Sales/Ratings */}
+                <div className="flex items-center gap-1 mt-1">
+                    <div className="flex items-center">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                            <svg
+                                key={star}
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="10"
+                                height="10"
+                                viewBox="0 0 24 24"
+                                fill={star <= 4 ? '#f97316' : 'none'}
+                                stroke={star <= 4 ? '#f97316' : '#d1d5db'}
+                                strokeWidth="2"
+                            >
+                                <path d="M12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+                            </svg>
+                        ))}
+                    </div>
+                    <span className="text-xs text-gray-400 dark:text-gray-500">124 sold</span>
+                </div>
+                {/* Add to Cart Button */}
+                <button
+                    onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        // Add to cart functionality here
+                    }}
+                    className="absolute bottom-4 right-4 flex items-center justify-center gap-2 rounded-full bg-orange-500 hover:bg-orange-600 px-4 py-2 text-sm font-semibold text-white opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 cursor-pointer"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <circle cx="9" cy="21" r="1" />
+                        <circle cx="20" cy="21" r="1" />
+                        <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+                    </svg>
+                    Add to Cart
+                </button>
+            </div>
+        </Link>
+    )
 }
