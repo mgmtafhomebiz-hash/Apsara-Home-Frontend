@@ -752,7 +752,7 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                 </div>
                 <button
                   onClick={() => setIsOpen(true)}
-                  className="relative p-2 rounded-xl hover:bg-gray-100 active:bg-gray-200 transition-colors cursor-pointer"
+                  className="relative p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 active:bg-gray-200 dark:active:bg-gray-700 transition-colors cursor-pointer text-slate-600 dark:text-gray-300"
                   title="Cart"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -818,7 +818,7 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                               <img
                                 src={avatarUrl}
                                 alt={user?.name || 'Profile'}
-                                className="h-11 w-11 rounded-full object-cover ring-2 ring-white shadow"
+                                className="h-11 w-11 rounded-full object-cover ring-2 ring-white dark:ring-gray-700 shadow"
                               />
                             ) : (
                               <span className="flex items-center justify-center h-11 w-11 rounded-full bg-orange-500 text-white text-sm font-bold uppercase ring-2 ring-white shadow">
@@ -834,7 +834,7 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                                   {user.email}
                                 </p>
                               )}
-                              <span className="inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-600 text-[10px] font-semibold">
+                              <span className="inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400 text-[10px] font-semibold">
                                 <span className="h-1.5 w-1.5 rounded-full bg-orange-500" />
                                 Active
                               </span>
@@ -849,7 +849,7 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                             onClick={() => setProfileMenuOpen(false)}
                             className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group"
                           >
-                            <span className="flex items-center justify-center h-7 w-7 rounded-lg bg-gray-100 group-hover:bg-orange-100 transition-colors shrink-0">
+                            <span className="flex items-center justify-center h-7 w-7 rounded-lg bg-gray-100 dark:bg-gray-700 group-hover:bg-orange-100 dark:group-hover:bg-orange-900/30 transition-colors shrink-0">
                               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-500 dark:text-gray-400 group-hover:text-orange-600 transition-colors">
                                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                                 <circle cx="12" cy="7" r="4" />
@@ -866,7 +866,7 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                             onClick={() => setProfileMenuOpen(false)}
                             className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group"
                           >
-                            <span className="flex items-center justify-center h-7 w-7 rounded-lg bg-gray-100 group-hover:bg-orange-100 transition-colors shrink-0">
+                            <span className="flex items-center justify-center h-7 w-7 rounded-lg bg-gray-100 dark:bg-gray-700 group-hover:bg-orange-100 dark:group-hover:bg-orange-900/30 transition-colors shrink-0">
                               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-500 dark:text-gray-400 group-hover:text-orange-600 transition-colors">
                                 <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
                                 <line x1="3" y1="6" x2="21" y2="6" />
@@ -884,7 +884,7 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                             onClick={() => setProfileMenuOpen(false)}
                             className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group"
                           >
-                            <span className="flex items-center justify-center h-7 w-7 rounded-lg bg-gray-100 group-hover:bg-orange-100 transition-colors shrink-0">
+                            <span className="flex items-center justify-center h-7 w-7 rounded-lg bg-gray-100 dark:bg-gray-700 group-hover:bg-orange-100 dark:group-hover:bg-orange-900/30 transition-colors shrink-0">
                               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-500 dark:text-gray-400 group-hover:text-orange-600 transition-colors">
                                 <path d="m12 21-1.45-1.32C5.4 15.36 2 12.28 2 8.5A4.5 4.5 0 0 1 6.5 4 5 5 0 0 1 12 6.09 5 5 0 0 1 17.5 4 4.5 4.5 0 0 1 22 8.5c0 3.78-3.4 6.86-8.55 11.18z" />
                               </svg>
@@ -901,7 +901,7 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                           <button
                             onClick={() => handleCustomerLogout('/shop')}
                             disabled={isLoggingOut}
-                            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors disabled:opacity-60 group"
+                            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-60 group"
                           >
                             <span className="flex items-center justify-center h-7 w-7 rounded-lg bg-red-50 group-hover:bg-red-100 transition-colors shrink-0">
                               {isLoggingOut ? (
@@ -1062,10 +1062,8 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
             className="absolute left-0 right-0 !bg-white dark:!bg-gray-900 border-t border-gray-100 dark:border-gray-800 shadow-xl shadow-black/5 dark:shadow-black/30 hidden md:block"
             onMouseEnter={() => open(activeLink.label)}
             onMouseLeave={close}
-            style={{ backgroundColor: 'white' }}
           >
-            <div className="!bg-white dark:!bg-gray-900 container mx-auto px-4 py-4"
-                 style={{ backgroundColor: 'white' }}>
+            <div className="!bg-white dark:!bg-gray-900 container mx-auto px-4 py-4">
               {activeLink.label === 'Shop By Brand' ? (
                 <div className="flex flex-col gap-3">
                   <div className="grid grid-cols-4 lg:grid-cols-8 gap-1">
@@ -1144,10 +1142,8 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
             className="absolute left-0 right-0 !bg-white dark:!bg-gray-900 border-t border-gray-100 dark:border-gray-800 shadow-xl shadow-black/5 dark:shadow-black/30 hidden md:block"
             onMouseEnter={() => open(activeLink.label)}
             onMouseLeave={close}
-            style={{ backgroundColor: 'white' }}
           >
-            <div className="!bg-white dark:!bg-gray-900 container mx-auto px-4 py-5"
-                 style={{ backgroundColor: 'white' }}>
+            <div className="!bg-white dark:!bg-gray-900 container mx-auto px-4 py-5">
               <div className="grid grid-cols-4 lg:grid-cols-8 gap-1">
                 {Object.keys(activeLink.mega!).map((room) => {
                   const roomSlug = room.toLowerCase().replace(/\s+/g, '-');
@@ -1824,9 +1820,11 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                                               </>
                                             )}
                                           </div>
-                                          <span className="inline-flex items-center rounded-full border border-orange-200 bg-orange-50 px-2.5 py-1 text-[11px] font-semibold text-orange-700 dark:border-orange-900/50 dark:bg-orange-900/30 dark:text-orange-300">
-                                            ✨ Sign in or Register to claim {Math.round(((((product.priceSrp ?? product.price ?? 0) - (product.priceMember ?? 0)) / (product.priceSrp ?? product.price ?? 1)) * 100))}% savings!
-                                          </span>
+                                          {!isLoggedIn && (
+                                            <span className="inline-flex items-center rounded-full border border-orange-200 bg-orange-50 px-2.5 py-1 text-[11px] font-semibold text-orange-700 dark:border-orange-900/50 dark:bg-orange-900/30 dark:text-orange-300">
+                                              ✨ Sign in or Register to claim {Math.round(((((product.priceSrp ?? product.price ?? 0) - (product.priceMember ?? 0)) / (product.priceSrp ?? product.price ?? 1)) * 100))}% savings!
+                                            </span>
+                                          )}
                                         </>
                                       ) : (
                                         <div className="flex flex-wrap items-center gap-2">
