@@ -186,10 +186,10 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, 
     const { data: session, status, update: updateSession } = useSession();
     const isLoggedIn = Boolean(session?.user);
     const { data: me } = useMeQuery(undefined, { skip: !isLoggedIn });
-<<<<<<< HEAD
     const { data: wishlist = [] } = useGetWishlistQuery(undefined, { skip: !isLoggedIn });
     const [addWishlist] = useAddWishlistMutation();
     const [removeWishlist] = useRemoveWishlistMutation();
+    const { data: publicSettingsData } = useGetPublicGeneralSettingsQuery();
     const canUseMemberPrice = isLoggedIn && status === 'authenticated';
     const [hasRefreshedSession, setHasRefreshedSession] = useState(false);
 
@@ -200,10 +200,6 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, 
             setHasRefreshedSession(true);
         }
     }, []);
-=======
-    const { data: publicSettingsData } = useGetPublicGeneralSettingsQuery();
-    const canUseMemberPrice = isLoggedIn;
->>>>>>> a636128a87e8518d3476af9d471e2116a340305e
     const basePv = toPositiveNumber(product.prodpv) ?? 0;
     const [quantity, setQuantity] = useState(1);
     const [selectedColor, setSelectedColor] = useState('');
