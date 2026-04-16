@@ -36,8 +36,8 @@ export default function PartnerUsersPage() {
   const [showPassword, setShowPassword] = useState(false)
 
   const { data: storefrontData } = useGetAdminWebPageItemsQuery({ type: 'partner-storefront', page: 1, perPage: 100, status: 'all' })
-  const storefrontItems = storefrontData?.items ?? []
   const storefronts = useMemo(() => {
+    const storefrontItems = storefrontData?.items ?? []
     return storefrontItems
       .map((item) => {
         const cfg = getPartnerStorefrontConfig(item)
@@ -48,7 +48,7 @@ export default function PartnerUsersPage() {
         }
       })
       .sort((a, b) => a.name.localeCompare(b.name))
-  }, [storefrontItems])
+  }, [storefrontData?.items])
 
   const storefrontNameById = useMemo(() => {
     const map = new Map<number, string>()
@@ -93,8 +93,8 @@ export default function PartnerUsersPage() {
       name: user.name,
       username: user.username,
       email: user.email ?? '',
-      password: '',
       storefrontIds: user.storefront_ids ?? [],
+      password: '',
     })
   }
 
@@ -133,7 +133,8 @@ export default function PartnerUsersPage() {
         }).unwrap()
         showSuccessToast('Partner user created.')
       }
-      resetForm()
+      setSelected(null)
+      setForm(emptyForm)
     } catch (error) {
       const apiErr = error as { data?: { message?: string } }
       showErrorToast(apiErr?.data?.message || 'Failed to save partner user.')
@@ -262,6 +263,9 @@ export default function PartnerUsersPage() {
           </Field>
           <Field label="Email (optional)">
             <input
+              type="email"
+              name="partner_user_email"
+              autoComplete="off"
               value={form.email}
               onChange={(event) => setForm((prev) => ({ ...prev, email: event.target.value }))}
               placeholder="jane@email.com"
@@ -272,6 +276,8 @@ export default function PartnerUsersPage() {
             <div className="relative">
               <input
                 type={showPassword ? 'text' : 'password'}
+                name="partner_user_password"
+                autoComplete="new-password"
                 value={form.password}
                 onChange={(event) => setForm((prev) => ({ ...prev, password: event.target.value }))}
                 placeholder={selected ? 'Leave blank to keep' : '********'}

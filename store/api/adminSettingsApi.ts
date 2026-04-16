@@ -9,6 +9,7 @@ export interface AdminGeneralSettings {
   branches: string
   logo_url: string | null
   favicon_url: string | null
+  website_qr_code_url: string | null
   timezone: string
   currency: string
   date_format: string
