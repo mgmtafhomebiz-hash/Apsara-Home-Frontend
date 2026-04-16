@@ -93,19 +93,19 @@ const ProductTabs = ({ product, defaultTab = 'description', onTabChange, reviews
             transition={{ duration: 0.5, delay: 0.3 }}
             className="mt-12 sm:mt-16"
         >
-            <div className="flex border-b border-gray-200 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+            <div className="flex border-b border-gray-200 dark:border-gray-700 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
                 {tabs.map(tab => (
                     <button
                         key={tab.id}
                         onClick={() => handleTabChange(tab.id)}
                         className={`relative px-4 sm:px-6 py-3 text-sm font-semibold whitespace-nowrap shrink-0 transition-colors ${
-                            activeTab === tab.id ? 'text-orange-500' : 'text-gray-400 hover:text-slate-600'
+                            activeTab === tab.id ? 'text-orange-500 dark:text-orange-400' : 'text-gray-400 dark:text-gray-500 hover:text-slate-600 dark:hover:text-gray-300'
                         }`}
                     >
                         {tab.label}
                         {tab.id === 'reviews' && (
                             <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${
-                                activeTab === 'reviews' ? 'bg-orange-100 text-orange-500' : 'bg-gray-100 text-gray-400'
+                                activeTab === 'reviews' ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-500 dark:text-orange-400' : 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500'
                             }`}>
                                 {reviewCount}
                             </span>
@@ -130,9 +130,9 @@ const ProductTabs = ({ product, defaultTab = 'description', onTabChange, reviews
                     className="py-6 sm:py-8"
                 >
                     {activeTab === 'description' && (
-                        <div className="max-w-2xl text-gray-600 text-sm leading-relaxed">
+                        <div className="max-w-2xl text-gray-600 dark:text-gray-300 text-sm leading-relaxed">
                             {cleanedDescription ? (
-                                <div className="space-y-3 text-sm text-gray-600">
+                                <div className="space-y-3 text-sm text-gray-600 dark:text-gray-300">
                                     {cleanedDescription.split(/\n{2,}/).map((paragraph, index) => (
                                         <p key={`${index}-${paragraph.slice(0, 24)}`} className="whitespace-pre-line">
                                             {paragraph.trim()}
@@ -140,7 +140,7 @@ const ProductTabs = ({ product, defaultTab = 'description', onTabChange, reviews
                                     ))}
                                 </div>
                             ) : (
-                                <p className="text-gray-400 italic">No description available.</p>
+                                <p className="text-gray-400 dark:text-gray-500 italic">No description available.</p>
                             )}
                         </div>
                     )}
@@ -168,21 +168,21 @@ const ProductTabs = ({ product, defaultTab = 'description', onTabChange, reviews
                                 ].filter(Boolean) as { label: string; value: string }[]
 
                                 return rows.length > 0 ? (
-                                    <div className="border border-gray-100 rounded-2xl overflow-hidden">
+                                    <div className="border border-gray-100 dark:border-gray-700 rounded-2xl overflow-hidden">
                                         {rows.map((spec, index) => (
                                             <div
                                                 key={spec.label}
                                                 className={`flex items-center justify-between px-4 sm:px-5 py-3.5 text-sm gap-4 ${
-                                                    index % 2 === 0 ? 'bg-gray-50' : 'bg-white'
+                                                    index % 2 === 0 ? 'bg-gray-50 dark:bg-gray-800' : 'bg-white dark:bg-gray-700/50'
                                                 }`}
                                             >
-                                                <span className="font-semibold text-slate-700 w-36 sm:w-44 shrink-0">{spec.label}</span>
-                                                <span className="text-gray-500 text-right">{spec.value}</span>
+                                                <span className="font-semibold text-slate-700 dark:text-gray-200 w-36 sm:w-44 shrink-0">{spec.label}</span>
+                                                <span className="text-gray-500 dark:text-gray-300 text-right">{spec.value}</span>
                                             </div>
                                         ))}
                                     </div>
                                 ) : (
-                                    <p className="text-gray-400 italic text-sm">No specifications available.</p>
+                                    <p className="text-gray-400 dark:text-gray-500 italic text-sm">No specifications available.</p>
                                 )
                             })()}
                         </div>
@@ -190,11 +190,11 @@ const ProductTabs = ({ product, defaultTab = 'description', onTabChange, reviews
 
                     {activeTab === 'reviews' && (
                         <div className="space-y-4 max-w-2xl">
-                            <div className="flex items-center gap-4 sm:gap-6 bg-orange-50 rounded-2xl p-4 sm:p-5 mb-6">
+                            <div className="flex items-center gap-4 sm:gap-6 bg-orange-50 dark:bg-orange-900/20 rounded-2xl p-4 sm:p-5 mb-6">
                                 <div className="text-center shrink-0">
-                                    <div className="text-4xl sm:text-5xl font-bold text-orange-500">{avgRating}</div>
+                                    <div className="text-4xl sm:text-5xl font-bold text-orange-500 dark:text-orange-400">{avgRating}</div>
                                     <StarRating rating={Math.round(Number(avgRating))} size={14} />
-                                    <div className="text-xs text-gray-400 mt-1">{reviewCount} reviews</div>
+                                    <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">{reviewCount} reviews</div>
                                 </div>
                                 <div className="flex-1 space-y-1.5">
                                     {[5, 4, 3, 2, 1].map(star => {
@@ -202,19 +202,19 @@ const ProductTabs = ({ product, defaultTab = 'description', onTabChange, reviews
                                         const pct = reviewCount > 0 ? (count / reviewCount) * 100 : 0;
                                         return (
                                             <div key={star} className="flex items-center gap-2 text-xs">
-                                                <span className="w-3 text-gray-500">{star}</span>
+                                                <span className="w-3 text-gray-500 dark:text-gray-400">{star}</span>
                                                 <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="#f97316" className="shrink-0">
                                                     <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                                                 </svg>
-                                                <div className="flex-1 bg-gray-200 rounded-full h-1.5 overflow-hidden">
+                                                <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 overflow-hidden">
                                                     <motion.div
                                                         initial={{ width: 0 }}
                                                         animate={{ width: `${pct}%` }}
                                                         transition={{ duration: 0.6, delay: star * 0.05 }}
-                                                        className="bg-orange-400 h-full rounded-full"
+                                                        className="bg-orange-400 dark:bg-orange-500 h-full rounded-full"
                                                     />
                                                 </div>
-                                                <span className="w-4 text-gray-400 text-right">{count}</span>
+                                                <span className="w-4 text-gray-400 dark:text-gray-500 text-right">{count}</span>
                                             </div>
                                         );
                                     })}
@@ -228,7 +228,7 @@ const ProductTabs = ({ product, defaultTab = 'description', onTabChange, reviews
                                         initial={{ opacity: 0, y: 10 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ delay: index * 0.08 }}
-                                        className="border border-gray-100 rounded-2xl p-4 sm:p-5 hover:border-orange-100 hover:shadow-sm transition-all"
+                                        className="border border-gray-100 dark:border-gray-700 rounded-2xl p-4 sm:p-5 hover:border-orange-100 dark:hover:border-orange-900/50 hover:shadow-sm transition-all"
                                     >
                                         <div className="flex items-start gap-3 mb-3">
                                             {review.customer_avatar ? (
@@ -236,28 +236,28 @@ const ProductTabs = ({ product, defaultTab = 'description', onTabChange, reviews
                                                 <img
                                                     src={review.customer_avatar}
                                                     alt={review.customer_name}
-                                                    className="w-9 h-9 rounded-full object-cover border border-orange-100 shrink-0"
+                                                    className="w-9 h-9 rounded-full object-cover border border-orange-100 dark:border-orange-900/50 shrink-0"
                                                 />
                                             ) : (
-                                                <div className="w-9 h-9 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 text-xs font-bold shrink-0">
+                                                <div className="w-9 h-9 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center text-orange-600 dark:text-orange-400 text-xs font-bold shrink-0">
                                                     {getInitials(review.customer_name)}
                                                 </div>
                                             )}
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-center justify-between gap-2 flex-wrap">
-                                                    <span className="text-sm font-semibold text-slate-800">{review.customer_name}</span>
+                                                    <span className="text-sm font-semibold text-slate-800 dark:text-gray-200">{review.customer_name}</span>
                                                     {review.created_at && (
-                                                        <span className="text-xs text-gray-400 shrink-0">{formattedDate(review.created_at)}</span>
+                                                        <span className="text-xs text-gray-400 dark:text-gray-500 shrink-0">{formattedDate(review.created_at)}</span>
                                                     )}
                                                 </div>
                                                 <StarRating rating={review.rating} size={12} />
                                             </div>
                                         </div>
-                                        <p className="text-sm text-gray-600 leading-relaxed">{review.review}</p>
+                                        <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">{review.review}</p>
                                     </motion.div>
                                 ))
                             ) : (
-                                <div className="border border-dashed border-gray-200 rounded-2xl p-6 text-center text-sm text-gray-400">
+                                <div className="border border-dashed border-gray-200 dark:border-gray-700 rounded-2xl p-6 text-center text-sm text-gray-400 dark:text-gray-500">
                                     No reviews yet. Be the first to share your experience.
                                 </div>
                             )}
