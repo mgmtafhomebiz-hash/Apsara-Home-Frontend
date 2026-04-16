@@ -145,11 +145,12 @@ export default function ItemCard({ product, brandName }: ItemCardProps) {
     }
   }
 
-  const srpPrice = Number(product.priceSrp ?? product.price ?? 0)
-  const memberPrice = Number(product.priceMember ?? product.priceDp ?? 0)
+  const baseSrp = Number(product.originalPrice) ?? Number(product.price) ?? 0
+  const srpPrice = Number(product.priceSrp) ?? baseSrp
+  const memberPrice = Number(product.priceMember) ?? Number(product.priceDp) ?? 0
   const hasMemberPrice = memberPrice > 0 && memberPrice < srpPrice
   const displayPrice = hasMemberPrice ? memberPrice : srpPrice
-  const strikePrice = hasMemberPrice ? srpPrice : Number(product.originalPrice ?? 0)
+  const strikePrice = hasMemberPrice ? srpPrice : (product.originalPrice && product.originalPrice > srpPrice ? product.originalPrice : 0)
   const displayPv = Number(product.prodpv ?? 0)
 
   return (
