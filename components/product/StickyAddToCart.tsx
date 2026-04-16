@@ -7,6 +7,8 @@ import { useSession } from 'next-auth/react';
 import { useCart } from '@/context/CartContext';
 import { CategoryProduct } from '@/libs/CategoryData';
 import { displayColorName } from '@/libs/colorUtils';
+import PrimaryButton from '@/components/ui/buttons/PrimaryButton';
+import OutlineButton from '@/components/ui/buttons/OutlineButton';
 
 interface StickyAddToCartProps {
   product: CategoryProduct;
@@ -108,7 +110,7 @@ const StickyAddToCart = ({ product, selectedVariant }: StickyAddToCartProps) => 
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: -80, opacity: 0 }}
           transition={{ duration: 0.3, ease: 'easeOut' }}
-          className="fixed left-0 right-0 top-0 z-50 border-b border-gray-200 bg-white shadow-md"
+          className="fixed left-0 right-0 top-0 z-40 border-b border-gray-200 bg-white shadow-md dark:bg-gray-900 dark:border-gray-700"
         >
           <div className="container mx-auto flex items-center gap-3 px-4 py-2.5">
             <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-gray-50">
@@ -126,28 +128,20 @@ const StickyAddToCart = ({ product, selectedVariant }: StickyAddToCartProps) => 
               </div>
             </div>
             <div className="flex shrink-0 gap-2">
-              <button
+              <OutlineButton
                 onClick={handleAddToCart}
                 disabled={!isInStock}
-                className={`rounded-xl px-3 py-2 text-xs font-semibold transition-colors sm:px-5 sm:text-sm ${
-                  isInStock
-                    ? 'bg-orange-500 text-white hover:bg-orange-600 active:bg-orange-700'
-                    : 'bg-slate-200 text-slate-500 cursor-not-allowed'
-                }`}
+                className="!px-4 !py-2 !text-sm !rounded-lg"
               >
                 <span className="hidden sm:inline">Add to Cart</span>
                 <span className="sm:hidden">Cart</span>
-              </button>
-              <button
+              </OutlineButton>
+              <PrimaryButton
                 disabled={!isInStock}
-                className={`rounded-xl px-3 py-2 text-xs font-semibold transition-colors sm:px-5 sm:text-sm ${
-                  isInStock
-                    ? 'bg-slate-900 text-white hover:bg-slate-800'
-                    : 'bg-slate-200 text-slate-500 cursor-not-allowed'
-                }`}
+                className="!px-4 !py-2 !text-sm !rounded-lg"
               >
                 Buy Now
-              </button>
+              </PrimaryButton>
             </div>
           </div>
         </motion.div>
