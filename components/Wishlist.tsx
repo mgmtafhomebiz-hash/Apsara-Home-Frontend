@@ -63,11 +63,6 @@ export default function Wishlist() {
     return items.filter((item) => item.name.toLowerCase().includes(keyword));
   }, [items, search]);
 
-  const totalValue = useMemo(
-    () => items.reduce((sum, item) => sum + Number(item.price || 0), 0),
-    [items],
-  );
-
   const errorMessage = useMemo(() => {
     if (!error) return 'Failed to load wishlist from your account.';
     const err = error as FetchBaseQueryError;
@@ -131,10 +126,6 @@ export default function Wishlist() {
                 <div className="rounded-2xl border border-slate-100 bg-white px-5 py-3 shadow-sm">
                   <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Saved Items</p>
                   <p className="text-xl font-bold text-slate-900 mt-0.5">{items.length}</p>
-                </div>
-                <div className="rounded-2xl border border-orange-100 bg-orange-50 px-5 py-3 shadow-sm">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-orange-400">Total Value</p>
-                  <p className="text-xl font-bold text-orange-600 mt-0.5">₱{totalValue.toLocaleString()}</p>
                 </div>
               </div>
             )}
@@ -252,74 +243,98 @@ export default function Wishlist() {
           </motion.div>
 
         ) : (
-          /* Product grid */
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+          /* Product list */
+          <div className="space-y-3">
             <AnimatePresence mode="popLayout">
               {filteredItems.map((item, index) => {
                 const productPath = `/product/${item.slug}-i${item.productId}`;
                 const isRemoving = pendingRemoveId === item.productId;
 
+                // Price computation matching ItemCard logic
+                const baseSrp = Number(item.originalPrice) ?? Number(item.price) ?? 0;
+                const srpPrice = Number(item.priceSrp) ?? baseSrp;
+                const memberPrice = Number(item.priceMember) ?? Number(item.priceDp) ?? 0;
+                const hasMemberPrice = memberPrice > 0 && memberPrice < srpPrice;
+                const displayPrice = hasMemberPrice ? memberPrice : srpPrice;
+                const strikePrice = hasMemberPrice ? srpPrice : (item.originalPrice && item.originalPrice > srpPrice ? item.originalPrice : 0);
+                const displayPv = Number(item.prodpv ?? 0);
+
                 return (
                   <motion.div
                     key={item.productId}
                     layout
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.9 }}
-                    transition={{ duration: 0.22, delay: index * 0.03 }}
-                    className="group flex flex-col overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm hover:-translate-y-1 hover:shadow-lg hover:border-orange-100 transition-all duration-300"
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    transition={{ duration: 0.2, delay: index * 0.02 }}
+                    className="flex gap-3 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-700/50 p-3"
                   >
-                    {/* Image */}
-                    <Link href={productPath} className="relative block aspect-square overflow-hidden bg-slate-50">
-                      <Image
-                        src={item.image}
-                        alt={item.name}
-                        fill
-                        unoptimized
-                        className="object-cover transition-transform duration-500 group-hover:scale-105"
-                      />
-                      <div className="pointer-events-none absolute inset-0 bg-linear-to-t from-black/20 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-
-                      {/* Remove button on hover */}
-                      <button
-                        type="button"
-                        onClick={e => { e.preventDefault(); e.stopPropagation(); handleRemove(item.productId); }}
-                        disabled={isRemoving}
-                        className="absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 backdrop-blur-sm shadow-md text-rose-400 opacity-0 group-hover:opacity-100 translate-x-1 group-hover:translate-x-0 hover:bg-rose-50 hover:text-rose-600 transition-all duration-300 disabled:opacity-50"
-                        title="Remove from wishlist"
-                      >
-                        {isRemoving ? (
-                          <svg className="animate-spin" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+                    {/* Product Image */}
+                    <Link href={productPath} className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl">
+                      {item.image ? (
+                        <Image
+                          src={item.image}
+                          alt={item.name}
+                          fill
+                          className="object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center bg-gray-200 dark:bg-gray-600">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-gray-400 dark:text-gray-500">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                            <circle cx="8.5" cy="8.5" r="1.5" />
+                            <polyline points="21 15 16 10 5 21" />
                           </svg>
-                        ) : <TrashIcon />}
-                      </button>
+                        </div>
+                      )}
                     </Link>
 
-                    {/* Info */}
-                    <div className="flex flex-1 flex-col p-4">
-                      <Link href={productPath} className="flex-1">
-                        <h2 className="line-clamp-2 text-sm font-semibold text-slate-800 leading-snug group-hover:text-orange-500 transition-colors">{item.name}</h2>
-                        <p className="mt-1.5 text-base font-bold text-orange-500">₱{Number(item.price).toLocaleString()}</p>
+                    {/* Product Info */}
+                    <div className="min-w-0 flex-1">
+                      <Link href={productPath} className="block">
+                        <h2 className="line-clamp-2 text-sm font-semibold text-slate-800 dark:text-gray-200 hover:text-orange-500 dark:hover:text-orange-400 transition-colors">
+                          {item.name}
+                        </h2>
                       </Link>
-
-                      <div className="mt-3 grid grid-cols-2 gap-2">
+                      <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                        <p className="text-sm font-bold text-orange-500 dark:text-orange-400">
+                          ₱{displayPrice.toLocaleString()}
+                        </p>
+                        {strikePrice > displayPrice && (
+                          <p className="text-xs font-semibold text-slate-400 dark:text-gray-500 line-through">
+                            ₱{strikePrice.toLocaleString()}
+                          </p>
+                        )}
+                        {displayPv > 0 && (
+                          <span className="rounded-full border border-blue-200 dark:border-blue-900/30 bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 text-[10px] font-semibold text-blue-700 dark:text-blue-400">
+                            PV {displayPv.toLocaleString()}
+                          </span>
+                        )}
+                      </div>
+                      <div className="mt-2 flex items-center gap-2">
                         <Link
                           href={productPath}
-                          className="flex items-center justify-center gap-1.5 rounded-xl bg-orange-500 px-3 py-2 text-xs font-semibold text-white hover:bg-orange-600 transition-colors shadow-sm shadow-orange-100"
+                          className="flex items-center gap-1.5 rounded-xl bg-orange-500 hover:bg-orange-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors"
                         >
                           <CartIcon /> Add to Cart
                         </Link>
-                        <button
-                          type="button"
-                          onClick={() => handleRemove(item.productId)}
-                          disabled={isRemoving}
-                          className="flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-red-50 hover:border-red-100 hover:text-red-500 transition-colors disabled:opacity-50"
-                        >
-                          {isRemoving ? 'Removing…' : <><TrashIcon /> Remove</>}
-                        </button>
                       </div>
                     </div>
+
+                    {/* Remove Button */}
+                    <button
+                      type="button"
+                      onClick={() => handleRemove(item.productId)}
+                      disabled={isRemoving}
+                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-gray-400 dark:text-gray-500 transition-colors hover:bg-red-50 dark:hover:bg-red-900/30 hover:text-red-500 dark:hover:text-red-400 disabled:opacity-50"
+                      title="Remove from wishlist"
+                    >
+                      {isRemoving ? (
+                        <svg className="animate-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                          <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+                        </svg>
+                      ) : <TrashIcon />}
+                    </button>
                   </motion.div>
                 );
               })}
