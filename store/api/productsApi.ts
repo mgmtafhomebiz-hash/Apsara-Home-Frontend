@@ -282,6 +282,19 @@ export interface BulkUpdateApplyResponse {
   }>
 }
 
+export interface ProductBrandInfo {
+  id: number
+  name: string
+  image?: string | null
+  status?: number
+  rating?: number | null
+  chatPerformance?: number
+  totalProducts?: number
+  joinedDate?: string
+  overallRating?: number | null
+  totalReviews?: number
+}
+
 export interface PublicProductResponse {
   product: Product
 }
@@ -592,6 +605,7 @@ export const normalizeProductsResponse = (response: ProductsResponse | Record<st
 }
 
 export const productsApi = baseApi.injectEndpoints({
+  overrideExisting: true,
   endpoints: (builder) => ({
     getPublicProducts: builder.query<ProductsResponse, ProductsQueryParams | void>({
       query: (params) => ({
@@ -630,6 +644,24 @@ export const productsApi = baseApi.injectEndpoints({
         url: `/api/products/${id}/reviews`,
         method: 'GET',
       }),
+      providesTags: ['Products'],
+    }),
+    getProductBrand: builder.query<ProductBrandInfo, number>({
+      query: (id) => ({
+        url: `/api/products/${id}/brand`,
+        method: 'GET',
+      }),
+      transformResponse: (response: any) => {
+        const brand = response.brand || {};
+        const supplierUser = response.supplier_user || {};
+        return {
+          ...brand,
+          joinedDate: supplierUser.joined_date,
+          overallRating: response.overall_rating,
+          totalReviews: response.total_reviews,
+          totalProducts: response.total_products,
+        } as ProductBrandInfo;
+      },
       providesTags: ['Products'],
     }),
     getProducts: builder.query<ProductsResponse, ProductsQueryParams | void>({
@@ -738,6 +770,7 @@ export const {
   useGetPublicProductsQuery,
   useLazyGetPublicProductQuery,
   useGetProductReviewsQuery,
+  useGetProductBrandQuery,
   useGetProductsQuery,
   useGetProductActivityLogsQuery,
   useCreateProductMutation,
