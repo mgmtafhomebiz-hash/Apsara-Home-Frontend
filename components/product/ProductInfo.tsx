@@ -12,6 +12,7 @@ import StarRating from "../ui/StarRating";
 import BuyNowOptionsModal from "./BuyNowOptionsModal";
 import { useSession } from "next-auth/react";
 import { useMeQuery } from "@/store/api/userApi";
+import { useGetPublicGeneralSettingsQuery } from "@/store/api/adminSettingsApi";
 import type { ProductReviewSummary } from "@/store/api/productsApi";
 import OutlineButton from "@/components/ui/buttons/OutlineButton";
 import PrimaryButton from "@/components/ui/buttons/PrimaryButton";
@@ -256,6 +257,7 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, 
     const { data: session } = useSession();
     const isLoggedIn = Boolean(session?.user);
     const { data: me } = useMeQuery(undefined, { skip: !isLoggedIn });
+    const { data: publicSettingsData } = useGetPublicGeneralSettingsQuery();
     const canUseMemberPrice = isLoggedIn;
     const basePv = toPositiveNumber(product.prodpv) ?? 0;
     const [quantity, setQuantity] = useState(1);
@@ -562,6 +564,8 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, 
         ? `${product.name} - ${selectedVariantTitleParts.join(' - ')}`
         : product.name;
     const isInStock = typeof displayStock !== 'number' || displayStock > 0;
+    const isManualCheckoutOnly = Boolean(publicSettingsData?.settings?.enable_manual_checkout_mode) && !Boolean(product.manualCheckoutEnabled);
+    const isCheckoutAvailable = !isManualCheckoutOnly;
     const productDescription = (product.description ?? '').trim();
     const plainDescription = productDescription ? stripHtml(productDescription) : '';
 
@@ -571,7 +575,7 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, 
     const avgRating = avgRatingValue.toFixed(1);
 
     const handleAddToCart = () => {
-        if (!isInStock) return;
+        if (!isInStock || !isCheckoutAvailable) return;
 
         const variantLabel = [
             selectedVariant?.name?.trim(),
@@ -1010,22 +1014,27 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, 
                 <div className="flex flex-col sm:flex-row gap-3">
                     <OutlineButton
                         onClick={handleAddToCart}
-                        disabled={!isInStock}
+                        disabled={!isInStock || !isCheckoutAvailable}
                         className="flex-1"
                     >
                         {added ? '✓ Added!' : <><CartIcon /> Add to Cart</>}
                     </OutlineButton>
                     <PrimaryButton
                         onClick={() => {
-                            if (!isInStock) return;
+                            if (!isInStock || !isCheckoutAvailable) return;
                             setBuyOptionsOpen(true);
                         }}
-                        disabled={!isInStock}
+                        disabled={!isInStock || !isCheckoutAvailable}
                         className="flex-1"
                     >
                         Buy Now
                     </PrimaryButton>
                 </div>
+                {isManualCheckoutOnly ? (
+                    <p className="text-sm font-medium text-amber-700">
+                        This product is not available for checkout at the moment
+                    </p>
+                ) : null}
             </div>
 
             <BuyNowOptionsModal

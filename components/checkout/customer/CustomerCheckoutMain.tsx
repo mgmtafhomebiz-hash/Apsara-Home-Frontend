@@ -113,6 +113,7 @@ const CustomerCheckoutMain = ({ initialCategories = [] }: { initialCategories?: 
     const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>('gcash');
     const [selectedOnlineBankingProvider, setSelectedOnlineBankingProvider] = useState<CheckoutOnlineBankingProvider>('dob');
     const paymentModeEnabledByAdmin = Boolean(publicSettingsData?.settings?.enable_test_payments);
+    const manualCheckoutModeEnabledByAdmin = Boolean(publicSettingsData?.settings?.enable_manual_checkout_mode);
     const isLocalPaymentHost = useMemo(() => {
         if (typeof window === 'undefined') return false;
         return LOCAL_PAYMENT_MODE_HOSTS.has(window.location.hostname);
@@ -155,6 +156,15 @@ const CustomerCheckoutMain = ({ initialCategories = [] }: { initialCategories?: 
         if (checkoutData) return;
         router.replace('/');
     }, [checkoutData, router]);
+
+    useEffect(() => {
+        if (!checkoutData?.product) return;
+        if (!manualCheckoutModeEnabledByAdmin) return;
+        if (checkoutData.product.manualCheckoutEnabled === false) return;
+
+        localStorage.removeItem('guest_checkout');
+        router.replace('/');
+    }, [checkoutData, manualCheckoutModeEnabledByAdmin, router]);
 
     useEffect(() => {
         if (!checkoutData) return;

@@ -20,6 +20,10 @@ interface ProductsToolbarProps {
   supplierFilterId?: number
   onSupplierFilterId?: (v: number | undefined) => void
   supplierOptions?: Array<{ id: number; label: string }>
+  selectedCount?: number
+  onViewSelected?: () => void
+  manualCheckoutCount?: number
+  onViewManualCheckout?: () => void
 }
 
 const STATUS_TABS = [
@@ -84,6 +88,10 @@ export default function ProductsToolbar({
   supplierFilterId,
   onSupplierFilterId,
   supplierOptions = [],
+  selectedCount = 0,
+  onViewSelected,
+  manualCheckoutCount = 0,
+  onViewManualCheckout,
 }: ProductsToolbarProps) {
   const { data: categoriesData } = useGetCategoriesQuery(
     supplierId && supplierId > 0
@@ -143,23 +151,57 @@ export default function ProductsToolbar({
             ))}
           </div>
 
-          <div className="w-full max-w-xl">
-            <SearchField
-              aria-label="Search products"
-              value={search}
-              onChange={onSearch}
-              className="w-full"
-            >
-              <Label className="sr-only">Search products</Label>
-              <SearchField.Group className="flex min-h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 transition-all duration-200 focus-within:border-teal-300 focus-within:bg-white">
-                <SearchField.SearchIcon className="h-4 w-4 text-slate-400" />
-                <SearchField.Input
-                  placeholder="Search by name or SKU..."
-                  className="flex-1 border-none bg-transparent p-0 text-sm text-slate-700 outline-none placeholder:text-slate-400"
-                />
-                {search ? <SearchField.ClearButton className="text-slate-400 transition hover:text-slate-600" /> : null}
-              </SearchField.Group>
-            </SearchField>
+          <div className="flex w-full max-w-4xl flex-col gap-3 lg:flex-row lg:items-center lg:justify-end">
+            <div className="w-full lg:max-w-xl">
+              <SearchField
+                aria-label="Search products"
+                value={search}
+                onChange={onSearch}
+                className="w-full"
+              >
+                <Label className="sr-only">Search products</Label>
+                <SearchField.Group className="flex min-h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 transition-all duration-200 focus-within:border-teal-300 focus-within:bg-white">
+                  <SearchField.SearchIcon className="h-4 w-4 text-slate-400" />
+                  <SearchField.Input
+                    placeholder="Search by name or SKU..."
+                    className="flex-1 border-none bg-transparent p-0 text-sm text-slate-700 outline-none placeholder:text-slate-400"
+                  />
+                  {search ? <SearchField.ClearButton className="text-slate-400 transition hover:text-slate-600" /> : null}
+                </SearchField.Group>
+              </SearchField>
+            </div>
+
+            {onViewManualCheckout ? (
+              <div className="flex items-center gap-2 self-start lg:self-auto">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onPress={onViewManualCheckout}
+                  className="min-h-11 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                >
+                  View Manual Checkout
+                </Button>
+                <Chip size="sm" variant="soft" className="h-11 border border-emerald-200 bg-emerald-50 px-3 text-sm font-medium text-emerald-700">
+                  {manualCheckoutCount} added
+                </Chip>
+              </div>
+            ) : null}
+
+            {selectedCount > 0 && onViewSelected ? (
+              <div className="flex items-center gap-2 self-start lg:self-auto">
+                <Chip size="sm" variant="soft" className="h-11 border border-teal-200 bg-teal-50 px-3 text-sm font-medium text-teal-700">
+                  {selectedCount} selected
+                </Chip>
+                <Button
+                  size="sm"
+                  variant="primary"
+                  onPress={onViewSelected}
+                  className="min-h-11 rounded-xl bg-teal-600 px-4 text-sm font-semibold text-white hover:bg-teal-700"
+                >
+                  Add to Manual Checkout
+                </Button>
+              </div>
+            ) : null}
           </div>
         </div>
 

@@ -1,11 +1,13 @@
 'use client'
 
+import Image from 'next/image'
 import { useState, useEffect, useMemo } from 'react'
-import { motion } from 'framer-motion'
+import { AnimatePresence, motion } from 'framer-motion'
 import { useSession } from 'next-auth/react'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { useGetAdminMeQuery } from '@/store/api/authApi'
-import { Product, useGetProductsQuery, useGetPublicProductsQuery, useDeleteProductMutation, ProductsResponse } from '@/store/api/productsApi'
+import { Product, useGetProductsQuery, useGetPublicProductsQuery, useDeleteProductMutation, useManualCheckoutApplyMutation, ProductsResponse } from '@/store/api/productsApi'
+import { useGetAdminGeneralSettingsQuery, useUpdateAdminGeneralSettingsMutation } from '@/store/api/adminSettingsApi'
 import { useGetPublicProductBrandsQuery } from '@/store/api/productBrandsApi'
 import { useGetSuppliersQuery } from '@/store/api/suppliersApi'
 import ProductsToolbar from './ProductsToolbar'
@@ -68,7 +70,189 @@ function StatCard({
   )
 }
 
+function ManualCheckoutSelectionModal({
+  products,
+  onConfirm,
+  onRemove,
+  onClose,
+  isSaving = false,
+  removingIds = [],
+  mode = 'review',
+}: {
+  products: Product[]
+  onConfirm: () => void
+  onRemove?: (product: Product) => void
+  onClose: () => void
+  isSaving?: boolean
+  removingIds?: number[]
+  mode?: 'review' | 'view'
+}) {
+  const nonAffordahomeProducts = products.filter((product) => String(product.brand ?? '').trim().toLowerCase() !== 'affordahome')
+  const isViewMode = mode === 'view'
+  const eyebrow = isViewMode ? 'Manual Checkout Products' : 'Manual Checkout Review'
+  const title = isViewMode ? 'Added Products' : 'Selected Products'
+  const description = isViewMode
+    ? 'These products are already included in the manual checkout flow.'
+    : 'Review the selected products that can proceed under the manual checkout flow.'
+  const summaryLabel = isViewMode ? 'manual checkout product' : 'selected product'
+  const primaryLabel = isViewMode ? 'Already Added to Manual Checkout' : 'Add to Manual Checkout'
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.18, ease: 'easeOut' }}
+        className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/45 p-4"
+      >
+        <motion.div
+          initial={{ opacity: 0, y: 18, scale: 0.97 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: 12, scale: 0.97 }}
+          transition={{ duration: 0.22, ease: 'easeOut' }}
+          className="w-full max-w-4xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900"
+        >
+          <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-5 dark:border-slate-800">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-teal-600">{eyebrow}</p>
+              <h2 className="mt-1 text-lg font-bold text-slate-900 dark:text-white">{title}</h2>
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                {description}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+            >
+              Close
+            </button>
+          </div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 4 }}
+            transition={{ delay: 0.05, duration: 0.2, ease: 'easeOut' }}
+            className="space-y-4 p-6"
+          >
+            {nonAffordahomeProducts.length > 0 ? (
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                Only <span className="font-semibold">Affordahome</span> products should be allowed for manual checkout. Review the highlighted non-Affordahome items before proceeding.
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+                All selected products are under the <span className="font-semibold">Affordahome</span> brand and can be reviewed for manual checkout.
+              </div>
+            )}
+
+          <div className="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800">
+            <div className="max-h-[55vh] overflow-auto">
+              <table className="min-w-full text-sm">
+                <thead className="bg-slate-50 dark:bg-slate-800/70">
+                  <tr className="border-b border-slate-100 dark:border-slate-800">
+                    <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-300">Image</th>
+                    <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-300">Product</th>
+                    <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-300">Brand</th>
+                    <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-300">SKU</th>
+                    <th className="px-5 py-3.5 text-right text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-300">Stock</th>
+                    {isViewMode ? (
+                      <th className="px-5 py-3.5 text-right text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-300">Action</th>
+                    ) : null}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/70">
+                  {products.map((product) => {
+                    const isAffordahome = String(product.brand ?? '').trim().toLowerCase() === 'affordahome'
+                    const isRemoving = removingIds.includes(product.id)
+
+                    return (
+                      <tr
+                        key={product.id}
+                        className={isAffordahome
+                          ? 'bg-white dark:bg-slate-900'
+                          : 'bg-amber-50/80 dark:bg-amber-500/10'
+                        }
+                      >
+                        <td className="px-5 py-3.5">
+                          <div className="relative h-14 w-14 overflow-hidden rounded-xl border border-slate-200 bg-slate-100">
+                            {product.image ? (
+                              <Image src={product.image} alt={product.name} fill className="object-cover" unoptimized />
+                            ) : (
+                              <div className="flex h-full w-full items-center justify-center">
+                                <svg className="h-5 w-5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-5 py-3.5">
+                          <div className="min-w-0">
+                            <p className="line-clamp-1 font-semibold text-slate-800 dark:text-slate-100">{product.name}</p>
+                            <p className="mt-0.5 text-xs text-slate-400 dark:text-slate-500">#{product.id}</p>
+                          </div>
+                        </td>
+                        <td className="px-5 py-3.5">
+                          <span className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] font-semibold ${
+                            isAffordahome
+                              ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300'
+                              : 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300'
+                          }`}>
+                            {product.brand || 'Unbranded'}
+                          </span>
+                        </td>
+                        <td className="px-5 py-3.5 font-mono text-xs text-slate-500 dark:text-slate-400">{product.sku || 'N/A'}</td>
+                        <td className="px-5 py-3.5 text-right text-sm font-semibold text-slate-700 dark:text-slate-200">
+                          {getEffectiveStockQty(product).toLocaleString()}
+                        </td>
+                        {isViewMode ? (
+                          <td className="px-5 py-3.5 text-right">
+                            <button
+                              type="button"
+                              onClick={() => onRemove?.(product)}
+                              disabled={isRemoving}
+                              className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              {isRemoving ? 'Removing...' : 'Remove'}
+                            </button>
+                          </td>
+                        ) : null}
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between gap-3 rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-800/60">
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              <span className="font-semibold text-slate-800 dark:text-slate-100">{products.length}</span> {summaryLabel}{products.length !== 1 ? 's' : ''}
+            </p>
+            <button
+              type="button"
+              onClick={isViewMode ? onClose : onConfirm}
+              disabled={(!isViewMode && isSaving) || products.length === 0}
+              className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${
+                isViewMode
+                  ? 'border border-emerald-200 bg-emerald-50 text-emerald-700'
+                  : 'bg-teal-600 text-white hover:bg-teal-700 disabled:cursor-not-allowed disabled:bg-teal-300'
+              }`}
+            >
+              {isSaving && !isViewMode ? 'Saving...' : primaryLabel}
+            </button>
+          </div>
+          </motion.div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
+  )
+}
+
 export default function ProductsPageMain({ initialData = null, initialBrandType }: ProductsPageMainProps) {
+  const selectionPerPage = 5000
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -96,16 +280,25 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
   const [page,            setPage]            = useState(1)
   const [showAddModal,    setShowAddModal]    = useState(false)
   const [showActivityLogs, setShowActivityLogs] = useState(false)
+  const [showManualSelectionModal, setShowManualSelectionModal] = useState(false)
+  const [manualSelectionProducts, setManualSelectionProducts] = useState<Product[]>([])
+  const [manualSelectionMode, setManualSelectionMode] = useState<'review' | 'view'>('review')
   const [editProduct,     setEditProduct]     = useState<Product | null>(null)
   const [showBulkEdit,    setShowBulkEdit]    = useState(false)
   const [deletingIds,     setDeletingIds]     = useState<number[]>([])
+  const [removingManualCheckoutIds, setRemovingManualCheckoutIds] = useState<number[]>([])
   const [selectedIds,     setSelectedIds]     = useState<number[]>([])
+  const [applyManualCheckout, { isLoading: isApplyingManualCheckout }] = useManualCheckoutApplyMutation()
+  const [saveGeneralSettings, { isLoading: isSavingManualMode }] = useUpdateAdminGeneralSettingsMutation()
   const [productOverrides, setProductOverrides] = useState<Record<number, Product>>({})
   const [createdProducts, setCreatedProducts] = useState<Product[]>([])
   const [useInitialData,  setUseInitialData]  = useState(Boolean(initialData))
   const defaultPerPage = 25
   const searchPerPage = 500
   const perPage = debouncedSearch ? searchPerPage : defaultPerPage
+
+  const { data: adminGeneralSettingsData } = useGetAdminGeneralSettingsQuery()
+  const manualHeaderToggle = Boolean(adminGeneralSettingsData?.settings?.enable_manual_checkout_mode)
 
   useEffect(() => {
     const modal = (searchParams.get('modal') ?? '').toLowerCase()
@@ -225,6 +418,28 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
   const isError = isSupplierPortal ? isPublicError : isAdminError
   const error = isSupplierPortal ? publicError : adminError
   const refetchProducts = isSupplierPortal ? refetchPublicProducts : refetchAdminProducts
+
+  const adminSelectionQueryArgs = {
+    ...adminQueryArgs,
+    page: 1,
+    perPage: selectionPerPage,
+  }
+  const publicSelectionQueryArgs = {
+    ...publicQueryArgs,
+    page: 1,
+    perPage: selectionPerPage,
+  }
+
+  const { data: adminSelectionData } = useGetProductsQuery(
+    adminSelectionQueryArgs,
+    { skip: isSupplierPortal, refetchOnMountOrArgChange: true },
+  )
+  const { data: publicSelectionData } = useGetPublicProductsQuery(
+    publicSelectionQueryArgs,
+    { skip: !isSupplierPortal, refetchOnMountOrArgChange: true },
+  )
+
+  const selectionData = isSupplierPortal ? publicSelectionData : adminSelectionData
 
   /* Lightweight count queries for stats */
   const activeCountArgs = {
@@ -357,12 +572,55 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
     })
   }, [catId, debouncedSearch, products, status])
 
+  const selectableProducts = useMemo(() => {
+    const selectionSource = selectionData?.products
+      ? selectionData.products
+      : products
+    const mergedSelection = selectionSource.map((product) => productOverrides[product.id] ?? product)
+    const mergedById = new Map<number, Product>()
+
+    createdProducts.forEach((product) => {
+      const candidate = productOverrides[product.id] ?? product
+      const matchesSupplierFilter = !supplierFilterId || supplierFilterId <= 0 || Number(candidate.supplierId ?? 0) === supplierFilterId
+      const matchesLinkedSupplier = !isSupplierPortal || linkedSupplierId <= 0
+        ? true
+        : Number(candidate.supplierId ?? 0) === linkedSupplierId
+          || (typeof brandType === 'number' && brandType > 0 && Number(candidate.brandType ?? 0) === brandType)
+
+      if (matchesSupplierFilter && matchesLinkedSupplier) {
+        mergedById.set(candidate.id, candidate)
+      }
+    })
+
+    mergedSelection.forEach((product) => {
+      mergedById.set(product.id, product)
+    })
+
+    const rows = Array.from(mergedById.values())
+    return status === 'new' ? rows.filter(isNewProduct) : rows
+  }, [
+    brandType,
+    createdProducts,
+    isSupplierPortal,
+    linkedSupplierId,
+    productOverrides,
+    products,
+    selectionData?.products,
+    status,
+    supplierFilterId,
+  ])
+
+  const selectableIds = useMemo(
+    () => new Set(selectableProducts.map((product) => product.id)),
+    [selectableProducts],
+  )
+
   const meta = useMemo(() => {
     return data?.meta ?? (useInitialData ? initialData?.meta : undefined)
   }, [data?.meta, initialData?.meta, useInitialData])
 
   const visibleMeta = useMemo(() => {
-    if (!debouncedSearch && status !== 'new') {
+    if (!manualHeaderToggle && !debouncedSearch && status !== 'new') {
       return meta
     }
 
@@ -374,7 +632,7 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
       from: visibleProducts.length > 0 ? 1 : 0,
       to: visibleProducts.length,
     }
-  }, [debouncedSearch, meta, perPage, status, visibleProducts.length])
+  }, [debouncedSearch, manualHeaderToggle, meta, perPage, status, visibleProducts.length])
 
   /* Low-stock count from current page */
   const lowStockCount = useMemo(
@@ -400,9 +658,26 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
   )
 
   useEffect(() => {
-    const rowIds = new Set(visibleProducts.map(p => p.id))
-    setSelectedIds(prev => prev.filter(id => rowIds.has(id)))
-  }, [visibleProducts])
+    setSelectedIds((prev) => prev.filter((id) => selectableIds.has(id)))
+  }, [selectableIds])
+
+  useEffect(() => {
+    setSelectedIds([])
+  }, [manualHeaderToggle])
+
+  const handleToggleManualCheckoutMode = async () => {
+    const nextValue = !manualHeaderToggle
+    const payload = new FormData()
+    payload.append('enable_manual_checkout_mode', nextValue ? '1' : '0')
+
+    try {
+      await saveGeneralSettings(payload).unwrap()
+      showSuccessToast(nextValue ? 'Manual checkout mode enabled.' : 'Manual checkout mode disabled.')
+    } catch (error) {
+      const apiError = error as { data?: { message?: string } }
+      showErrorToast(apiError?.data?.message || 'Failed to update manual checkout mode.')
+    }
+  }
 
   const handleDelete = async (id: number) => {
     setDeletingIds(prev => [...prev, id])
@@ -428,10 +703,14 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
     setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
 
   const handleToggleSelectAll = () => {
-    const currentPageIds = products.map(p => p.id)
-    const allSelected    = currentPageIds.length > 0 && currentPageIds.every(id => selectedIds.includes(id))
-    if (allSelected) setSelectedIds(prev => prev.filter(id => !currentPageIds.includes(id)))
-    else             setSelectedIds(prev => Array.from(new Set([...prev, ...currentPageIds])))
+    const matchingIds = selectableProducts.map((product) => product.id)
+    const allSelected = matchingIds.length > 0 && matchingIds.every((id) => selectedIds.includes(id))
+    if (allSelected) {
+      setSelectedIds((prev) => prev.filter((id) => !selectableIds.has(id)))
+      return
+    }
+
+    setSelectedIds((prev) => Array.from(new Set([...prev, ...matchingIds])))
   }
 
   const handleBulkDelete = async () => {
@@ -457,9 +736,127 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
   }
 
   const selectedProducts = useMemo(
-    () => visibleProducts.filter((product) => selectedIds.includes(product.id)),
-    [visibleProducts, selectedIds],
+    () => selectableProducts.filter((product) => selectedIds.includes(product.id)),
+    [selectableProducts, selectedIds],
   )
+
+  const manualCheckoutProducts = useMemo(
+    () => selectableProducts.filter((product) => Boolean(product.manualCheckoutEnabled)),
+    [selectableProducts],
+  )
+
+  const openManualSelectionModal = (products: Product[], mode: 'review' | 'view' = 'review') => {
+    if (products.length === 0) {
+      showErrorToast(mode === 'view' ? 'No manual checkout products found yet.' : 'Select at least one product first.')
+      return
+    }
+
+    setManualSelectionProducts(products)
+    setManualSelectionMode(mode)
+    setShowManualSelectionModal(true)
+  }
+
+  const closeManualSelectionModal = () => {
+    setShowManualSelectionModal(false)
+    setManualSelectionProducts([])
+    setManualSelectionMode('review')
+  }
+
+  const handleApplyManualCheckout = async () => {
+    if (manualSelectionProducts.length === 0) {
+      showErrorToast('Select at least one product first.')
+      return
+    }
+
+    try {
+      const result = await applyManualCheckout({
+        product_ids: manualSelectionProducts.map((product) => product.id),
+        enabled: true,
+      }).unwrap()
+
+      const updatedIds = new Set(
+        result.results
+          .filter((row) => row.status === 'updated')
+          .map((row) => row.product_id),
+      )
+      const failedCount = Number(result.summary?.failed ?? 0)
+
+      if (updatedIds.size > 0) {
+        setProductOverrides((current) => {
+          const next = { ...current }
+          manualSelectionProducts.forEach((product) => {
+            if (updatedIds.has(product.id)) {
+              next[product.id] = {
+                ...product,
+                manualCheckoutEnabled: true,
+              }
+            }
+          })
+          return next
+        })
+      }
+
+      setSelectedIds((current) => current.filter((id) => !updatedIds.has(id)))
+      closeManualSelectionModal()
+
+      if (updatedIds.size > 0 && failedCount === 0) {
+        showSuccessToast(result.message || 'Selected products were added to manual checkout.')
+        return
+      }
+
+      if (updatedIds.size > 0 && failedCount > 0) {
+        showSuccessToast(`${updatedIds.size} product(s) added to manual checkout.`)
+        const firstFailure = result.results.find((row) => row.status === 'failed')?.message
+        if (firstFailure) {
+          showErrorToast(firstFailure)
+        }
+        return
+      }
+
+      showErrorToast(result.results.find((row) => row.status === 'failed')?.message || result.message || 'No products were added to manual checkout.')
+    } catch (error) {
+      const apiError = error as { data?: { message?: string } }
+      showErrorToast(apiError?.data?.message || 'Failed to save manual checkout products.')
+    }
+  }
+
+  const handleRemoveManualCheckout = async (product: Product) => {
+    setRemovingManualCheckoutIds((current) => Array.from(new Set([...current, product.id])))
+    try {
+      const result = await applyManualCheckout({
+        product_ids: [product.id],
+        enabled: false,
+      }).unwrap()
+
+      const updated = result.results.find((row) => row.product_id === product.id && row.status === 'updated')
+      if (!updated) {
+        showErrorToast(result.results.find((row) => row.product_id === product.id)?.message || result.message || 'Failed to remove product from manual checkout.')
+        return
+      }
+
+      setProductOverrides((current) => ({
+        ...current,
+        [product.id]: {
+          ...product,
+          manualCheckoutEnabled: false,
+        },
+      }))
+      setManualSelectionProducts((current) => {
+        const next = current.filter((item) => item.id !== product.id)
+        if (next.length === 0) {
+          setShowManualSelectionModal(false)
+          setManualSelectionMode('review')
+        }
+        return next
+      })
+      showSuccessToast(updated.message || `${product.name} removed from manual checkout.`)
+    } catch (error) {
+      const apiError = error as { data?: { message?: string } }
+      showErrorToast(apiError?.data?.message || 'Failed to remove product from manual checkout.')
+    } finally {
+      setRemovingManualCheckoutIds((current) => current.filter((id) => id !== product.id))
+    }
+  }
 
   const loadErrorMessage = useMemo(() => {
     if (!error || typeof error !== 'object') {
@@ -491,9 +888,33 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
         className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-xl font-bold text-slate-800">Products</h1>
-          <p className="text-sm text-slate-500 mt-0.5">Manage your product catalog</p>
+          <p className="text-sm text-slate-500 mt-0.5">
+            {manualHeaderToggle ? 'Viewing products assigned to manual checkout.' : 'Manage your product catalog'}
+          </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={handleToggleManualCheckoutMode}
+              disabled={isSavingManualMode}
+              className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors border shadow-sm ${
+                manualHeaderToggle
+                  ? 'border-teal-200 bg-teal-50 text-teal-700'
+                  : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+              }`}
+            >
+              <div className={`relative h-5 w-9 rounded-full transition-colors ${manualHeaderToggle ? 'bg-teal-500' : 'bg-slate-200'}`}>
+                <div className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${manualHeaderToggle ? 'left-4' : 'left-0.5'}`} />
+              </div>
+              <span className="hidden sm:inline">
+                {isSavingManualMode
+                  ? 'Saving...'
+                  : manualHeaderToggle
+                    ? 'Manual Checkout On'
+                    : 'Manual Checkout Off'}
+              </span>
+              <span className="sm:hidden">Manual</span>
+            </button>
           <button
             onClick={() => setShowActivityLogs(true)}
             className="flex items-center gap-2 px-4 py-2.5 bg-white hover:bg-slate-50 text-slate-700 rounded-xl text-sm font-semibold transition-colors border border-slate-200 shadow-sm"
@@ -576,6 +997,10 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
           supplierFilterId={!isSupplierPortal ? supplierFilterId : undefined}
           onSupplierFilterId={!isSupplierPortal ? handleSupplierFilterId : undefined}
           supplierOptions={!isSupplierPortal ? supplierOptions : undefined}
+          selectedCount={selectedIds.length}
+          onViewSelected={() => openManualSelectionModal(selectedProducts)}
+          manualCheckoutCount={manualCheckoutProducts.length}
+          onViewManualCheckout={() => openManualSelectionModal(manualCheckoutProducts, 'view')}
         />
       </motion.div>
 
@@ -605,6 +1030,12 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
                 </p>
               </div>
               <div className="flex items-center gap-2">
+                <button
+                  onClick={() => openManualSelectionModal(selectedProducts)}
+                  className="flex items-center gap-1.5 rounded-lg border border-teal-200 bg-white px-3 py-1.5 text-xs font-semibold text-teal-700 transition-colors hover:border-teal-300 hover:bg-teal-50"
+                >
+                  Add to Manual Checkout
+                </button>
                 <button
                   onClick={() => setShowBulkEdit(true)}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white text-slate-700 border border-red-200 hover:border-teal-300 hover:text-teal-700 transition-colors text-xs font-semibold"
@@ -642,6 +1073,7 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
             selectedIds={selectedIds}
             onToggleSelect={handleToggleSelect}
             onToggleSelectAll={handleToggleSelectAll}
+            onViewManualCheckout={(product) => openManualSelectionModal([product])}
           />
         </div>
       )}
@@ -666,6 +1098,17 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
           handleProductsSaved()
         }}
       />
+      {showManualSelectionModal ? (
+        <ManualCheckoutSelectionModal
+          products={manualSelectionProducts}
+          onConfirm={handleApplyManualCheckout}
+          onRemove={handleRemoveManualCheckout}
+          onClose={closeManualSelectionModal}
+          isSaving={isApplyingManualCheckout}
+          removingIds={removingManualCheckoutIds}
+          mode={manualSelectionMode}
+        />
+      ) : null}
     </div>
   )
 }

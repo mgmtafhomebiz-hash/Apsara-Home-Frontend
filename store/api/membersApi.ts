@@ -41,7 +41,20 @@ export interface MemberStatDetailsResponse {
   stat: MemberStatKey
   title: string
   metricLabel: string
-  members: Array<Member & { metricValue: string }>
+  search?: string
+  members: Array<Member & {
+    metricValue: string
+    referralChildren?: Array<{
+      id: number
+      name: string
+      username: string
+      email: string
+      contactNumber: string
+      status: MemberStatus
+      tier: MemberTier
+      joinedAt: string
+    }>
+  }>
   meta: MembersMeta
 }
 
@@ -188,13 +201,14 @@ export const membersApi = baseApi.injectEndpoints({
       keepUnusedDataFor: 300,
       providesTags: ['Members'],
     }),
-    getMemberStatDetails: builder.query<MemberStatDetailsResponse, { stat: MemberStatKey; page?: number; perPage?: number }>({
-      query: ({ stat, page = 1, perPage = 25 }) => ({
+    getMemberStatDetails: builder.query<MemberStatDetailsResponse, { stat: MemberStatKey; page?: number; perPage?: number; search?: string }>({
+      query: ({ stat, page = 1, perPage = 25, search }) => ({
         url: `/api/admin/members/stats/${stat}`,
         method: 'GET',
         params: {
           page,
           per_page: perPage,
+          q: search?.trim() ? search.trim() : undefined,
         },
       }),
       keepUnusedDataFor: 120,
