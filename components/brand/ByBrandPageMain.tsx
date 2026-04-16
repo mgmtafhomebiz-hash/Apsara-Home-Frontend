@@ -410,7 +410,7 @@ export default function ByBrandPageMain() {
             </div>
 
             {/* Promotional Banner */}
-            <div className="relative rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 bg-gradient-to-r from-orange-500 to-orange-600 dark:from-orange-600 dark:to-orange-700">
+            {/* <div className="relative rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 bg-gradient-to-r from-orange-500 to-orange-600 dark:from-orange-600 dark:to-orange-700">
               <div className="px-6 py-8">
                 <p className="text-xs font-bold uppercase tracking-[0.3em] text-orange-100">Special Offer</p>
                 <h2 className="mt-2 text-2xl font-bold text-white">
@@ -420,7 +420,7 @@ export default function ByBrandPageMain() {
                   Limited time offer - Shop now and save up to 30%
                 </p>
               </div>
-            </div>
+            </div> */}
           </>
         )}
 
