@@ -419,7 +419,7 @@ export default function ProductCard({
                   type="button"
                   onClick={handleWishlist}
                   disabled={isWishlistPending}
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-orange-200 hover:bg-orange-50 disabled:opacity-60"
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-slate-600 dark:text-gray-300 shadow-sm transition hover:border-orange-200 dark:hover:border-orange-800 hover:bg-orange-50 dark:hover:bg-orange-900/30 disabled:opacity-60"
                   aria-label={isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill={isWishlisted ? '#f97316' : 'none'} stroke={isWishlisted ? '#f97316' : 'currentColor'} strokeWidth="2">
@@ -434,7 +434,7 @@ export default function ProductCard({
                   className={`inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-xs font-semibold transition ${
                     isInStock
                       ? 'bg-orange-500 text-white shadow-sm hover:bg-orange-600'
-                      : 'cursor-not-allowed bg-slate-200 text-slate-500'
+                      : 'cursor-not-allowed bg-slate-200 dark:bg-gray-700 text-slate-500 dark:text-gray-400'
                   } ${isFetchingProductDetails ? 'opacity-80' : ''}`}
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -486,7 +486,7 @@ export default function ProductCard({
               type="button"
               onClick={handleWishlist}
               disabled={isWishlistPending}
-              className="absolute right-3 top-3 rounded-full bg-white/90 p-2 shadow-md backdrop-blur-sm transition-all duration-300 hover:bg-orange-50 group-hover:translate-x-0 group-hover:opacity-100 disabled:opacity-60 opacity-0 translate-x-2"
+              className="absolute right-3 top-3 rounded-full bg-white/90 dark:bg-gray-800/90 p-2 shadow-md backdrop-blur-sm transition-all duration-300 hover:bg-orange-50 dark:hover:bg-orange-900/30 group-hover:translate-x-0 group-hover:opacity-100 disabled:opacity-60 opacity-0 translate-x-2"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill={isWishlisted ? '#f97316' : 'none'} stroke={isWishlisted ? '#f97316' : 'currentColor'} strokeWidth="2">
                 <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
@@ -501,7 +501,7 @@ export default function ProductCard({
                 className={`flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold transition-all duration-200 ${
                   isInStock
                     ? 'bg-orange-500 text-white shadow-lg hover:bg-orange-600 active:scale-95'
-                    : 'cursor-not-allowed bg-slate-200 text-slate-500'
+                    : 'cursor-not-allowed bg-slate-200 dark:bg-gray-700 text-slate-500 dark:text-gray-400'
                 }`}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

@@ -6,6 +6,12 @@ export interface WishlistItem {
   productId: number
   name: string
   price: number
+  priceMember?: number
+  priceDp?: number
+  priceSrp?: number
+  originalPrice?: number
+  sku?: string
+  prodpv?: number
   image: string
   slug: string
 }
@@ -64,6 +70,13 @@ const normalizeWishlistRow = (rowInput: unknown): WishlistItem | null => {
     asNumber(product.pd_price_srp) ??
     0
 
+  const priceMember = asNumber(product.priceMember) ?? asNumber(product.pd_price_dp) ?? undefined
+  const priceDp = asNumber(product.priceDp) ?? asNumber(product.pd_price_dp) ?? undefined
+  const priceSrp = asNumber(product.priceSrp) ?? asNumber(product.pd_price_srp) ?? undefined
+  const originalPrice = asNumber(product.originalPrice) ?? asNumber(product.pd_price_srp) ?? asNumber(product.priceSrp) ?? undefined
+  const sku = asString(product.sku) ?? asString(product.pd_sku) ?? undefined
+  const prodpv = asNumber(product.prodpv) ?? asNumber(product.pd_pv) ?? undefined
+
   const image =
     asString(product.image) ||
     asString(product.pd_image) ||
@@ -78,6 +91,12 @@ const normalizeWishlistRow = (rowInput: unknown): WishlistItem | null => {
     productId,
     name,
     price,
+    priceMember,
+    priceDp,
+    priceSrp,
+    originalPrice,
+    sku,
+    prodpv,
     image,
     slug,
   }
