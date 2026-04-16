@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useSearchParams } from "next/navigation";
-import { getSession, signIn, signOut } from "next-auth/react";
+import { getSession, signIn, signOut, useSession } from "next-auth/react";
 import Loading from '@/components/Loading'
 import { showErrorToast, showInfoToast, showSuccessToast } from '@/libs/toast'
 import { clearAccessTokenCache } from "@/store/api/baseApi";
@@ -81,6 +81,7 @@ interface LoginFormProps {
 const LoginForm = ({ onSwitchToSignUp, onRequirePasswordChange }: LoginFormProps) => {
     const router = useRouter();
     const searchParams = useSearchParams();
+    const { data: session, update: updateSession } = useSession();
     const [showPass, setShowPass] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
@@ -140,6 +141,11 @@ const LoginForm = ({ onSwitchToSignUp, onRequirePasswordChange }: LoginFormProps
 
             const session = await getSession()
             const passwordChangeRequired = Boolean(session?.user?.passwordChangeRequired)
+
+            // Refresh session in all client components
+            if (updateSession) {
+                await updateSession()
+            }
 
             if (passwordChangeRequired) {
                 showInfoToast('Create a new password first before continuing to the shop.')
