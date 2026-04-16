@@ -19,7 +19,9 @@ interface DisplayProduct {
   name: string;
   createdAt?: string | null;
   price: number;
+  priceSrp?: number;
   priceMember?: number;
+  priceDp?: number;
   prodpv?: number;
   originalPrice?: number;
   image: string;
@@ -27,6 +29,7 @@ interface DisplayProduct {
   badge?: string;
   verified?: boolean;
   stock?: number;
+  brand?: string;
 }
 
 const slugify = (value: string) => value.toLowerCase().trim().replace(/\s+/g, '-');
@@ -156,6 +159,7 @@ const mapProductToDisplay = (product: Product | LooseRecord, apiUrl?: string): D
   const name = String(row.name ?? row.pd_name ?? 'Untitled Product');
   const srp = toNumber(row.priceSrp ?? row.pd_price_srp ?? 0);
   const member = toNumber(row.priceMember ?? row.pd_price_member ?? 0);
+  const dp = toNumber(row.priceDp ?? row.pd_price_dp ?? 0);
   const prodpv = toNumber(row.prodpv ?? row.pd_prodpv ?? 0);
   const price = srp;
   const rawVariants = Array.isArray(row.variants)
@@ -180,6 +184,7 @@ const mapProductToDisplay = (product: Product | LooseRecord, apiUrl?: string): D
   const rawImage = (row.image ?? row.pd_image) as string | null | undefined;
   const rawImages = toStringArray(row.images ?? row.pd_images);
   const verified = toBoolean(row.verified ?? row.pd_verified);
+  const brand = typeof row.brand === 'string' ? row.brand : undefined;
 
   return {
     id: toNumber(row.id ?? row.pd_id ?? 0) || undefined,
@@ -188,7 +193,9 @@ const mapProductToDisplay = (product: Product | LooseRecord, apiUrl?: string): D
       ? row.createdAt
       : (typeof row.pd_date === 'string' ? row.pd_date : null),
     price,
+    priceSrp: srp > 0 ? srp : undefined,
     priceMember: member > 0 ? member : undefined,
+    priceDp: dp > 0 ? dp : undefined,
     prodpv,
     originalPrice: undefined,
     image: resolveImageUrl(rawImage, apiUrl),
@@ -196,6 +203,7 @@ const mapProductToDisplay = (product: Product | LooseRecord, apiUrl?: string): D
     badge,
     verified,
     stock,
+    brand,
   };
 };
 
