@@ -2,9 +2,11 @@ import { buildPageMetadata } from '@/app/seo';
 import AssemblyGuidesPageClient from '@/components/assembly/AssemblyGuidesPageClient';
 import { readdir } from 'fs/promises';
 import path from 'path';
+import { getNavbarCategories } from '@/libs/serverStorefront';
 
-export const metadata = buildPageMetadata({ title: 'Assembly', description: 'Browse the Assembly page on AF Home.', path: '/assembly' });
+export const metadata = buildPageMetadata({ title: 'Assembly', description: 'Browse the Assembly page on AF Home.', path: '/assembly', noIndex: true });
 export const revalidate = 600;
+export const dynamic = 'force-dynamic';
 
 type LocalAssemblyGuide = {
   id: string
@@ -72,9 +74,12 @@ export default async function AssemblyGuidesPage() {
     localGuides = []
   }
 
+  const initialCategories = await getNavbarCategories();
+
   return (
     <AssemblyGuidesPageClient
       localGuides={localGuides.sort((a, b) => a.title.localeCompare(b.title))}
+      initialCategories={initialCategories}
     />
   )
 }
