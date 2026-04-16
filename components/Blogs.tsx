@@ -1,5 +1,13 @@
 'use client';
 
+import TopBar from '@/components/layout/TopBar';
+import Navbar from '@/components/layout/Navbar';
+import Footer from '@/components/landing-page/Footer';
+
+type BlogsProps = {
+  initialCategories?: any[];
+};
+
 const blogCategories = ['Design Tips', 'Small Space', 'Style Guide', 'Buying Guide', 'Home Care']
 
 const blogPosts = [
@@ -53,11 +61,14 @@ const blogPosts = [
   },
 ]
 
-const Blogs = () => {
+const Blogs = ({ initialCategories }: BlogsProps) => {
   return (
-    <main className="bg-slate-50">
+    <>
+      <TopBar />
+      <Navbar initialCategories={initialCategories} />
+      <main className="bg-white dark:bg-gradient-to-b dark:from-gray-900 dark:via-gray-900 dark:to-gray-800">
       <section className="container mx-auto px-4 pt-10 pb-8 sm:pt-12 sm:pb-10">
-        <div className="relative overflow-hidden rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-900 via-slate-800 to-cyan-900 px-5 py-8 text-white sm:px-10 sm:py-12">
+        <div className="relative overflow-hidden rounded-3xl border border-gray-200 dark:border-gray-700 bg-gradient-to-br from-slate-900 via-slate-800 to-cyan-900 dark:from-gray-800 dark:via-gray-800 dark:to-gray-900 px-5 py-8 text-white sm:px-10 sm:py-12">
           <div className="absolute -right-8 -top-10 h-36 w-36 rounded-full bg-cyan-300/30 blur-2xl" />
           <div className="absolute -left-10 -bottom-12 h-48 w-48 rounded-full bg-orange-300/20 blur-3xl" />
           <div className="relative max-w-2xl">
@@ -80,7 +91,7 @@ const Blogs = () => {
             <button
               key={category}
               type="button"
-              className="rounded-full border border-slate-300 bg-white px-4 py-2 text-xs font-medium text-slate-700 transition-colors hover:border-cyan-500 hover:text-cyan-700"
+              className="rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-2 text-xs font-medium text-slate-700 dark:text-gray-300 transition-colors hover:border-cyan-500 dark:hover:border-cyan-600 hover:text-cyan-700 dark:hover:text-cyan-400"
             >
               {category}
             </button>
@@ -93,21 +104,21 @@ const Blogs = () => {
           {blogPosts.map((post, index) => (
             <article
               key={post.id}
-              className={`group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md ${index === 0 ? 'md:col-span-2 lg:col-span-2' : ''}`}
+              className={`group overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800  transition-all hover:-translate-y-0.5  ${index === 0 ? 'md:col-span-2 lg:col-span-2' : ''}`}
             >
               <div className={`h-40 w-full bg-gradient-to-br ${index % 3 === 0 ? 'from-orange-100 to-rose-100' : index % 3 === 1 ? 'from-cyan-100 to-blue-100' : 'from-emerald-100 to-lime-100'} sm:h-44`} />
               <div className="p-5">
-                <div className="flex items-center justify-between gap-2 text-xs text-slate-500">
-                  <span className="rounded-full bg-slate-100 px-2.5 py-1 font-medium text-slate-700">{post.category}</span>
+                <div className="flex items-center justify-between gap-2 text-xs text-slate-500 dark:text-gray-400">
+                  <span className="rounded-full bg-slate-100 dark:bg-gray-700 px-2.5 py-1 font-medium text-slate-700 dark:text-gray-300">{post.category}</span>
                   <span>{post.readTime}</span>
                 </div>
-                <h2 className="mt-3 text-lg font-semibold leading-snug text-slate-900 transition-colors group-hover:text-cyan-700">
+                <h2 className="mt-3 text-lg font-semibold leading-snug text-slate-900 dark:text-white transition-colors group-hover:text-cyan-700 dark:group-hover:text-cyan-400">
                   {post.title}
                 </h2>
-                <p className="mt-2 text-sm text-slate-600">{post.excerpt}</p>
-                <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 text-xs text-slate-500">
+                <p className="mt-2 text-sm text-slate-600 dark:text-gray-400">{post.excerpt}</p>
+                <div className="mt-4 flex items-center justify-between border-t border-gray-200 dark:border-gray-700 pt-3 text-xs text-slate-500 dark:text-gray-400">
                   <span>{post.date}</span>
-                  <button type="button" className="font-semibold text-cyan-700 hover:text-cyan-800">
+                  <button type="button" className="font-semibold text-cyan-700 dark:text-cyan-400 hover:text-cyan-800 dark:hover:text-cyan-300">
                     Read article
                   </button>
                 </div>
@@ -116,20 +127,22 @@ const Blogs = () => {
           ))}
         </div>
 
-        <div className="mt-10 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:flex sm:items-center sm:justify-between">
+        <div className="mt-10 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-6  sm:flex sm:items-center sm:justify-between">
           <div>
-            <h3 className="text-lg font-semibold text-slate-900">Get fresh ideas every week</h3>
-            <p className="mt-1 text-sm text-slate-600">New blog updates on home styling, shopping tips, and space planning.</p>
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Get fresh ideas every week</h3>
+            <p className="mt-1 text-sm text-slate-600 dark:text-gray-400">New blog updates on home styling, shopping tips, and space planning.</p>
           </div>
           <button
             type="button"
-            className="mt-4 inline-flex w-full items-center justify-center rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-slate-800 sm:mt-0 sm:w-auto"
+            className="mt-4 inline-flex w-full items-center justify-center rounded-xl bg-slate-900 dark:bg-slate-700 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-slate-800 dark:hover:bg-slate-600 sm:mt-0 sm:w-auto"
           >
             Subscribe
           </button>
         </div>
       </section>
     </main>
+    <Footer />
+    </>
   )
 }
 

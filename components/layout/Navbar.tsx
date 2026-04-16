@@ -570,7 +570,7 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
       initial={{ y: -80 }}
       animate={{ y: 0 }}
       transition={{ duration: 0.5, ease: 'easeOut' }}
-      className={`sticky top-8 z-50 !bg-white dark:!bg-gray-900 transition-all duration-300 ${scrolled ? 'shadow-lg shadow-black/5 dark:shadow-black/20' : 'shadow-sm'}`}
+      className={`sticky top-8 z-50 !bg-white dark:!bg-gray-900 dark:border-b dark:border-gray-800 transition-all duration-300 ${scrolled ? 'shadow-lg shadow-black/5 dark:shadow-black/20' : 'shadow-sm'}`}
     >
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16 gap-4">

@@ -9,6 +9,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { MemberTier } from '@/types/members/types';
 import TopBar from '@/components/layout/TopBar';
 import Navbar from '@/components/layout/Navbar';
+import Footer from '@/components/landing-page/Footer';
 
 const TIER_BADGE_IMAGE: Record<MemberTier, string> = {
   'Home Starter': '/Badge/homeStarter.png',
@@ -2654,6 +2655,7 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
         )}
       </AnimatePresence>
     </motion.section>
+    <Footer />
     </>
   );
 };

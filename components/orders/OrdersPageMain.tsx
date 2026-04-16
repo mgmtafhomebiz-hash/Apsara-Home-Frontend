@@ -10,6 +10,7 @@ import { useSession } from "next-auth/react";
 import { useGetCheckoutHistoryQuery } from "@/store/api/paymentApi";
 import TopBar from "@/components/layout/TopBar";
 import Navbar from "@/components/layout/Navbar";
+import Footer from "@/components/landing-page/Footer";
 
 type TabKey = typeof TABS[number]['key'];
 
@@ -81,12 +82,8 @@ const OrdersPageMain = ({ initialCategories }: OrdersPageMainProps) => {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.35 }}
-        className="relative overflow-hidden bg-gradient-to-br from-orange-50/50 dark:from-gray-900 via-white dark:via-gray-900 to-white dark:to-gray-800 min-h-screen"
+        className="relative overflow-hidden bg-white dark:bg-gradient-to-b dark:from-gray-900 dark:via-gray-900 dark:to-gray-800 min-h-screen"
       >
-      {/* BLOBS */}
-      <div className="pointer-events-none absolute -top-20 -left-20 h-56 w-56 rounded-full bg-orange-200/25 dark:bg-orange-900/20 blur-3xl" />
-      <div className="pointer-events-none absolute top-0 right-0 h-56 w-56 rounded-full bg-amber-200/20 dark:bg-amber-900/15 blur-3xl" />
-
       <div className="container mx-auto px-4 py-8 md:py-10">
         {/* HEADER */}
         <div className="mb-7">
@@ -229,6 +226,7 @@ const OrdersPageMain = ({ initialCategories }: OrdersPageMainProps) => {
       </div>
       <div />
       </motion.div>
+      <Footer />
     </>
   )
 }

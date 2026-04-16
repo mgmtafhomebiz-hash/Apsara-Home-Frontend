@@ -10,6 +10,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter, usePathname } from 'next/navigation';
 import TopBar from '@/components/layout/TopBar';
 import Navbar from '@/components/layout/Navbar';
+import Footer from '@/components/landing-page/Footer';
 
 type WishlistProps = {
   initialCategories?: any[];
@@ -352,6 +353,7 @@ export default function Wishlist({ initialCategories }: WishlistProps) {
         )}
       </div>
     </main>
+    <Footer />
     </>
   );
 }
