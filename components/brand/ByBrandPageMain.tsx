@@ -355,7 +355,17 @@ export default function ByBrandPageMain() {
                   )}
                 </div>
                 <div className="flex-1">
-                  <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{selectedBrandItem.name}</h1>
+                  <div className="flex items-center gap-3">
+                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{selectedBrandItem.name}</h1>
+                    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${
+                        (selectedBrandItem.status ?? 0) === 0
+                            ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                            : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+                    }`}>
+                        <span className={`inline-block w-2 h-2 rounded-full ${(selectedBrandItem.status ?? 0) === 0 ? 'bg-green-500' : 'bg-gray-400'}`} />
+                        {(selectedBrandItem.status ?? 0) === 0 ? 'Online' : 'Offline'}
+                    </span>
+                  </div>
                   <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
                     Browse all products from this brand
                   </p>
@@ -364,13 +374,13 @@ export default function ByBrandPageMain() {
                       <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                       </svg>
-                      <span>Chat Performance: 95%</span>
+                      <span>Chat Performance: {(selectedBrandItem.chat_performance ?? 95)}%</span>
                     </div>
                     <div className="flex items-center gap-1 text-gray-600 dark:text-gray-400">
                       <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <path d="M12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
                       </svg>
-                      <span>Overall Rating: 4.8</span>
+                      <span>Overall Rating: {selectedBrandItem.overall_rating ? selectedBrandItem.overall_rating.toFixed(1) : 'N/A'}</span>
                     </div>
                     <div className="flex items-center gap-1 text-gray-600 dark:text-gray-400">
                       <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -387,7 +397,7 @@ export default function ByBrandPageMain() {
                         <line x1="8" y1="2" x2="8" y2="6" />
                         <line x1="3" y1="10" x2="21" y2="10" />
                       </svg>
-                      <span>Joined: Jan 2024</span>
+                      <span>Joined: {selectedBrandItem.joined_date ? new Date(selectedBrandItem.joined_date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'Jan 2024'}</span>
                     </div>
                   </div>
                 </div>
