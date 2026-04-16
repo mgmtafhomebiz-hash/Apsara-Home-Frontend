@@ -285,7 +285,6 @@ export interface BulkUpdateApplyResponse {
   }>
 }
 
-<<<<<<< HEAD
 export interface ProductBrandInfo {
   id: number
   name: string
@@ -297,7 +296,8 @@ export interface ProductBrandInfo {
   joinedDate?: string
   overallRating?: number | null
   totalReviews?: number
-=======
+}
+
 export interface ManualCheckoutApplyResponse {
   message: string
   summary: {
@@ -311,7 +311,6 @@ export interface ManualCheckoutApplyResponse {
     name?: string | null
     message: string
   }>
->>>>>>> a636128a87e8518d3476af9d471e2116a340305e
 }
 
 export interface PublicProductResponse {

@@ -23,7 +23,7 @@ const toSlug = (value: string) =>
 
 // List View Product Component
 function SearchListViewProduct({ product, toSlug }: { product: Product; toSlug: (value: string) => string }) {
-  const srpPrice = Number(product.priceSrp ?? product.price ?? 0)
+  const srpPrice = Number(product.priceSrp ?? product.priceDp ?? 0)
   const memberPrice = Number(product.priceMember ?? product.priceDp ?? 0)
   const hasMemberPrice = memberPrice > 0 && memberPrice < srpPrice
   const displayPrice = hasMemberPrice ? memberPrice : srpPrice

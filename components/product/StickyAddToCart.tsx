@@ -7,12 +7,9 @@ import { useSession } from 'next-auth/react';
 import { useCart } from '@/context/CartContext';
 import { CategoryProduct } from '@/libs/CategoryData';
 import { displayColorName } from '@/libs/colorUtils';
-<<<<<<< HEAD
 import PrimaryButton from '@/components/ui/buttons/PrimaryButton';
 import OutlineButton from '@/components/ui/buttons/OutlineButton';
-=======
 import { useGetPublicGeneralSettingsQuery } from '@/store/api/adminSettingsApi';
->>>>>>> a636128a87e8518d3476af9d471e2116a340305e
 
 interface StickyAddToCartProps {
   product: CategoryProduct;
@@ -146,35 +143,15 @@ const StickyAddToCart = ({ product, selectedVariant }: StickyAddToCartProps) => 
             <div className="flex shrink-0 gap-2">
               <OutlineButton
                 onClick={handleAddToCart}
-<<<<<<< HEAD
-                disabled={!isInStock}
+                disabled={!isInStock || !isCheckoutAvailable}
                 className="!px-4 !py-2 !text-sm !rounded-lg"
               >
                 <span className="hidden sm:inline">Add to Cart</span>
                 <span className="sm:hidden">Cart</span>
               </OutlineButton>
               <PrimaryButton
-                disabled={!isInStock}
+                disabled={!isInStock || !isCheckoutAvailable}
                 className="!px-4 !py-2 !text-sm !rounded-lg"
-=======
-                disabled={!isInStock || !isCheckoutAvailable}
-                className={`rounded-xl px-3 py-2 text-xs font-semibold transition-colors sm:px-5 sm:text-sm ${
-                  isInStock && isCheckoutAvailable
-                    ? 'bg-orange-500 text-white hover:bg-orange-600 active:bg-orange-700'
-                    : 'bg-slate-200 text-slate-500 cursor-not-allowed'
-                }`}
-              >
-                <span className="hidden sm:inline">Add to Cart</span>
-                <span className="sm:hidden">Cart</span>
-              </button>
-              <button
-                disabled={!isInStock || !isCheckoutAvailable}
-                className={`rounded-xl px-3 py-2 text-xs font-semibold transition-colors sm:px-5 sm:text-sm ${
-                  isInStock && isCheckoutAvailable
-                    ? 'bg-slate-900 text-white hover:bg-slate-800'
-                    : 'bg-slate-200 text-slate-500 cursor-not-allowed'
-                }`}
->>>>>>> a636128a87e8518d3476af9d471e2116a340305e
               >
                 Buy Now
               </PrimaryButton>
