@@ -25,10 +25,10 @@ const RelatedProducts = ({ products, category }: RelatedProductProps) => {
             className="mt-12 sm:mt-16"
         >
             <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-slate-900">You Might Also Like</h2>
+                <h2 className="text-xl font-bold text-slate-900 dark:text-gray-100">You Might Also Like</h2>
                 <Link
                     href={`/category/${category}`}
-                    className="text-sm text-orange-500 hover:text-orange-600 font-semibold transition-colors flex items-center gap-1"
+                    className="text-sm text-orange-500 dark:text-orange-400 hover:text-orange-600 dark:hover:text-orange-300 font-semibold transition-colors flex items-center gap-1"
                 >
                     View all <ChevronRight />
                 </Link>
