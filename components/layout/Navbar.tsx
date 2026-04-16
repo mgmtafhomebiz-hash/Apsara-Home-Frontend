@@ -1851,7 +1851,7 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                                   <p className="mt-0.5 text-xs text-slate-500 dark:text-gray-400">Match for &quot;{searchModalQuery.trim()}&quot;</p>
                                   {(product.priceMember ?? product.priceSrp ?? product.prodpv) && (
                                     <div className="mt-2 space-y-1.5">
-                                      {product.priceMember !== null && product.priceMember > 0 && product.priceMember < (product.priceSrp ?? product.price ?? 0) ? (
+                                      {product.priceMember !== null && product.priceMember > 0 && product.priceMember < (product.priceSrp ?? product.priceDp ?? 0) ? (
                                         <>
                                           <div className="flex flex-wrap items-center gap-2">
                                             <span className="text-sm font-bold text-orange-600 dark:text-orange-400">
@@ -1870,14 +1870,14 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                                           </div>
                                           {!isLoggedIn && (
                                             <span className="inline-flex items-center rounded-full border border-orange-200 bg-orange-50 px-2.5 py-1 text-[11px] font-semibold text-orange-700 dark:border-orange-900/50 dark:bg-orange-900/30 dark:text-orange-300">
-                                              ✨ Sign in or Register to claim {Math.round(((((product.priceSrp ?? product.price ?? 0) - (product.priceMember ?? 0)) / (product.priceSrp ?? product.price ?? 1)) * 100))}% savings!
+                                              ✨ Sign in or Register to claim {Math.round(((((product.priceSrp ?? product.priceDp ?? 0) - (product.priceMember ?? 0)) / (product.priceSrp ?? product.priceDp ?? 1)) * 100))}% savings!
                                             </span>
                                           )}
                                         </>
                                       ) : (
                                         <div className="flex flex-wrap items-center gap-2">
                                           <span className="text-sm font-bold text-orange-600 dark:text-orange-400">
-                                            {formatPrice(product.priceSrp ?? product.price ?? 0)}
+                                            {formatPrice(product.priceSrp ?? product.priceDp ?? 0)}
                                           </span>
                                         </div>
                                       )}

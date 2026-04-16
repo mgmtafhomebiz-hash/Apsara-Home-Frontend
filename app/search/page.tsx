@@ -27,7 +27,7 @@ function SearchListViewProduct({ product, toSlug }: { product: Product; toSlug: 
   const memberPrice = Number(product.priceMember ?? product.priceDp ?? 0)
   const hasMemberPrice = memberPrice > 0 && memberPrice < srpPrice
   const displayPrice = hasMemberPrice ? memberPrice : srpPrice
-  const strikePrice = hasMemberPrice ? srpPrice : Number(product.originalPrice ?? 0)
+  const strikePrice = hasMemberPrice ? srpPrice : 0
   const displayPv = Number(product.prodpv ?? 0)
   const { data: session } = useSession()
   const isLoggedIn = Boolean(session?.user)
