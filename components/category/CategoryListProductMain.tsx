@@ -512,7 +512,7 @@ export default function CategoryListProductMain({
             <Footer />
         </div>
         {/* Share Modal */}
-        {shareProduct && (
+        {shareProduct && shareProduct.id && (
             <ShareModal
                 isOpen={shareModalOpen}
                 onClose={() => setShareModalOpen(false)}
