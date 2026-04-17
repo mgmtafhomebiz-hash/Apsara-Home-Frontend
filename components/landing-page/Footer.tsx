@@ -19,6 +19,14 @@ function TikTokIcon({ size = 18 }: { size?: number }) {
   );
 }
 
+// Helper function to safely get values, preferring fallbacks if API data is empty
+const getSettingValue = (value: string | null | undefined, fallback: string): string => {
+  if (!value || typeof value !== 'string' || value.trim() === '') {
+    return fallback;
+  }
+  return value;
+};
+
 const footerLinks = {
   shop: [
     { name: 'Living Room', href: '#' },
@@ -54,11 +62,15 @@ const socialLinks = [
 export default function Footer() {
   const { data } = useGetPublicGeneralSettingsQuery();
   const settings = data?.settings;
-  const websiteQrCodeUrl = settings?.website_qr_code_url ?? null;
-  const logoUrl = settings?.logo_url ?? '/af_home_logo.png';
-  const address = settings?.address ?? '88 Calavite St., Brgy Paang Bundok, La Loma, Quezon City, Philippines';
-  const contactNumber = settings?.contact_number ?? '02-840 0290';
-  const supportEmail = settings?.support_email ?? 'info@afhome.biz';
+
+  // Use fallbacks when API returns empty/null values
+  const contactNumber = getSettingValue(settings?.contact_number, '02-840 0290');
+  const supportEmail = getSettingValue(settings?.support_email, 'info@afhome.biz');
+  const address = getSettingValue(settings?.address, '88 Calavite St., Brgy Paang Bundok, La Loma, Quezon City, Philippines');
+  const logoUrl = getSettingValue(settings?.logo_url, '/af_home_logo.png');
+
+  // QR code can be null, so handle it separately
+  const websiteQrCodeUrl = settings?.website_qr_code_url && settings.website_qr_code_url.trim() ? settings.website_qr_code_url : null;
   const branches = (() => {
     const raw = settings?.branches;
     if (!raw) return [] as { name: string; address: string }[];
@@ -113,18 +125,28 @@ export default function Footer() {
           <motion.div variants={itemVariants} className="col-span-2 lg:col-span-1">
             <Link href="/" className="inline-flex items-start gap-5 mb-6">
               {/* Logo Image */}
+              <div className="flex-shrink-0">
                 <img
                   src={logoUrl}
-                alt="AFhome Logo"
-                className="w-32 h-auto" // Adjust the width/height as needed
-              />
-              {websiteQrCodeUrl ? (
-                <img
-                  src={websiteQrCodeUrl}
-                  alt="AF Home website QR code"
-                  className="h-20 w-20 rounded-md object-contain"
-                  loading="lazy"
+                  alt="AFhome Logo"
+                  className="w-32 h-auto object-contain"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = '/af_home_logo.png';
+                  }}
                 />
+              </div>
+              {websiteQrCodeUrl ? (
+                <div className="flex-shrink-0">
+                  <img
+                    src={websiteQrCodeUrl}
+                    alt="AF Home website QR code"
+                    className="h-20 w-20 rounded-md object-contain border border-gray-300 dark:border-gray-700"
+                    loading="lazy"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = 'none';
+                    }}
+                  />
+                </div>
               ) : null}
             </Link>
             <p className="text-gray-600 dark:text-white/70 text-sm leading-relaxed mb-6">
@@ -252,7 +274,7 @@ export default function Footer() {
           className="mt-10 pt-6 border-t border-gray-300 dark:border-white/10 flex flex-col md:flex-row justify-between items-center gap-4"
         >
           <p className="text-gray-500 dark:text-white/50 text-sm">
-            Â© {new Date().getFullYear()} AFhome. All rights reserved.
+            © {new Date().getFullYear()} AFhome. All rights reserved.
           </p>
           <div className="flex gap-6">
             <a
