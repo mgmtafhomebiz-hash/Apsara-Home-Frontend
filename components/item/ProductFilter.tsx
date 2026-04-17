@@ -257,7 +257,9 @@ export default function ProductFilter({ onFilterChange, className = '', pvRange:
             <button
               key={category.id}
               onClick={() => {
-                const categorySlug = category.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')
+                const categorySlug = category.url
+                  ? category.url.replace(/^https?:\/\/[^/]+/i, '').replace(/^\/+category\//, '').replace(/\/+$/, '')
+                  : category.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')
                 window.location.href = `/category/${categorySlug}`
               }}
               className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium transition-colors cursor-pointer ${
