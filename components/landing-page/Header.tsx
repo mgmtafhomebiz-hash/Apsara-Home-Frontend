@@ -86,8 +86,8 @@ export default function Header({ cartCount }: HeaderProps) {
         : 'bg-transparent'
         }`}
     >
-      <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-20">
+      <div className="container mx-auto">
+        <div className="flex items-center justify-start h-20 gap-1 md:gap-8 pl-0 pr-4">
           {/* Logo */}
           <motion.a
             href="/"
@@ -134,7 +134,7 @@ export default function Header({ cartCount }: HeaderProps) {
           </nav>
 
           {/* Right Icons */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 ml-auto">
             {/* User Icon with href */}
             <div className="relative group">
               <motion.div

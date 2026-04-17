@@ -3,6 +3,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { AnimatePresence, motion } from 'framer-motion'
+import { Skeleton } from '@heroui/react'
 import HeroSection from './HeroSection'
 import FeaturedSections from './FeaturedSections'
 import PromoBenners from './PromoBenners'
@@ -48,6 +49,91 @@ const slugifyProductName = (value: string) =>
 
 const buildProductLink = (product: Pick<Product, 'id' | 'name'>) =>
   `/product/${slugifyProductName(product.name)}-i${product.id}`
+
+function CampaignBannerSkeleton() {
+  return (
+    <motion.section
+      className="!bg-white dark:!bg-gray-900 container mx-auto px-4 py-6"
+      initial={{ opacity: 0, y: 26 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.42 }}
+    >
+      <Skeleton className="h-[280px] w-full rounded-[32px] md:h-[380px]" />
+    </motion.section>
+  )
+}
+
+function CategoryGridSkeleton() {
+  return (
+    <motion.section className="!bg-white dark:!bg-gray-900 container mx-auto px-4 py-10">
+      <div className="mb-8 text-center space-y-3">
+        <Skeleton className="h-4 w-32 rounded mx-auto" />
+        <Skeleton className="h-8 w-64 rounded mx-auto" />
+      </div>
+      <div className="flex gap-4 overflow-x-auto pb-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="flex-shrink-0 w-40 space-y-2">
+            <Skeleton className="h-40 w-40 rounded-lg" />
+            <Skeleton className="h-4 w-full rounded" />
+            <Skeleton className="h-3 w-3/4 rounded" />
+          </div>
+        ))}
+      </div>
+    </motion.section>
+  )
+}
+
+function FeaturedCollectionSkeleton() {
+  return (
+    <motion.section className="!bg-gray-50 dark:!bg-gray-900 py-16">
+      <div className="container mx-auto px-4">
+        <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-2">
+          <Skeleton className="h-[500px] rounded-3xl" />
+          <div className="space-y-4">
+            <Skeleton className="h-4 w-24 rounded" />
+            <Skeleton className="h-8 w-48 rounded" />
+            <div className="grid grid-cols-2 gap-4 pt-4">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i}>
+                  <Skeleton className="aspect-square w-full rounded-2xl" />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </motion.section>
+  )
+}
+
+function PromoSkeleton() {
+  return (
+    <motion.section className="!bg-white dark:!bg-gray-900 py-12">
+      <div className="container mx-auto px-4">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          {Array.from({ length: 2 }).map((_, i) => (
+            <Skeleton key={i} className="h-[280px] rounded-3xl md:h-[360px]" />
+          ))}
+        </div>
+      </div>
+    </motion.section>
+  )
+}
+
+function NewsletterSkeleton() {
+  return (
+    <motion.section className="!bg-gray-50 dark:!bg-gray-900 py-16">
+      <div className="container mx-auto px-4 text-center">
+        <Skeleton className="h-8 w-64 rounded mx-auto mb-4" />
+        <Skeleton className="h-4 w-96 rounded mx-auto mb-8" />
+        <div className="flex gap-2 max-w-md mx-auto">
+          <Skeleton className="flex-1 h-10 rounded-lg" />
+          <Skeleton className="h-10 w-24 rounded-lg" />
+        </div>
+      </div>
+    </motion.section>
+  )
+}
 
 const getFeaturedProducts = (featuredCollection: WebPageItem | undefined, products: Product[]) => {
   const sourceCategoryId = Number.parseInt(getField(featuredCollection, 'source_category_id'), 10)
@@ -104,10 +190,11 @@ export default function ShopBuilderSections({ data = null, partnerSlug, allowedC
   if (!data || items.length === 0) {
     return (
       <>
-        <HeroSection />
-        <FeaturedSections />
-        <PromoBenners />
-        <NewsLetter />
+        <CampaignBannerSkeleton />
+        <CategoryGridSkeleton />
+        <FeaturedCollectionSkeleton />
+        <PromoSkeleton />
+        <NewsletterSkeleton />
       </>
     )
   }

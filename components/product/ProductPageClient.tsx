@@ -11,6 +11,7 @@ import { setStoredReferralCode } from '@/libs/referral';
 import { useSession } from 'next-auth/react';
 import type { ProductReviewSummary } from '@/store/api/productsApi';
 import { useGetPublicGeneralSettingsQuery } from '@/store/api/adminSettingsApi';
+import ShareModal from '@/components/ui/ShareModal';
 
 interface ProductPageClientProps {
     product: CategoryProduct;
@@ -24,6 +25,7 @@ type VariantOption = NonNullable<CategoryProduct['variants']>[number];
 const BrandCardComponent = ({ productId, toSlugBrand }: { productId?: number; toSlugBrand: (s: string) => string }) => {
     const queryResult = useGetProductBrandQuery(productId ?? 0, { skip: !productId });
     const { data: brandInfo, isLoading, error, status, currentData, originalArgs } = queryResult;
+    const [shareModalOpen, setShareModalOpen] = useState(false);
 
     // Log for debugging
     useEffect(() => {
@@ -97,15 +99,7 @@ const BrandCardComponent = ({ productId, toSlugBrand }: { productId?: number; to
         <div className="relative z-20 rounded-lg bg-white dark:bg-gray-800 p-6 border border-gray-200 dark:border-gray-700">
             {/* Share Button */}
             <button
-                onClick={(e) => {
-                    e.preventDefault();
-                    const brandUrl = `${window.location.origin}/by-brand?brand=${brandSlug}`;
-                    navigator.clipboard.writeText(brandUrl).then(() => {
-                        // Show success message
-                    }).catch(() => {
-                        // Show error message
-                    });
-                }}
+                onClick={() => setShareModalOpen(true)}
                 className="absolute top-4 right-4 p-2 rounded-full border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 hover:bg-orange-500 hover:border-orange-500 dark:hover:bg-orange-500 dark:hover:border-orange-500 hover:text-white transition-all duration-200 cursor-pointer"
                 title="Share Brand"
             >
@@ -186,7 +180,7 @@ const BrandCardComponent = ({ productId, toSlugBrand }: { productId?: number; to
             {/* View Brand Button */}
             <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
                 <a
-                    href={`/by-brand?brand=${brandSlug}`}
+                    href={`/by-brand?brand=${encodeURIComponent(brandSlug)}`}
                     className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold border border-orange-400 dark:border-orange-500 bg-transparent hover:bg-orange-50 dark:hover:bg-orange-900 text-orange-500 dark:text-orange-400 rounded-lg cursor-pointer transition-colors"
                 >
                     View Brand
@@ -195,6 +189,19 @@ const BrandCardComponent = ({ productId, toSlugBrand }: { productId?: number; to
                     </svg>
                 </a>
             </div>
+            {/* Share Modal */}
+            <ShareModal
+                isOpen={shareModalOpen}
+                onClose={() => setShareModalOpen(false)}
+                product={{
+                    id: brandInfo.id,
+                    name: brandInfo.name,
+                    image: brandInfo.image || '',
+                    price: 0,
+                }}
+                brandName={brandInfo.name}
+                shareUrl={`https://afhome.ph/by-brand?brand=${encodeURIComponent(brandSlug)}`}
+            />
         </div>
     );
 };

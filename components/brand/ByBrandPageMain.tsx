@@ -18,6 +18,7 @@ import ScrollToTop from '@/components/landing-page/ScrollToTop'
 import ItemCard from '@/components/item/ItemCard'
 import ProductFilter, { FilterState } from '@/components/item/ProductFilter'
 import TopFilter from '@/components/item/TopFilter'
+import ShareModal from '@/components/ui/ShareModal'
 import toast from 'react-hot-toast'
 
 const toSlug = (value: string) =>
@@ -86,12 +87,169 @@ function BrandCardSkeleton() {
 function ProductCardSkeleton() {
   return (
     <div className="overflow-hidden rounded-2xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800">
-      <Skeleton className="aspect-[4/3]" />
-      <div className="space-y-2 p-4">
-        <Skeleton className="h-3 w-1/3 rounded-full" />
-        <Skeleton className="h-4 w-full rounded-full" />
-        <Skeleton className="h-4 w-4/5 rounded-full" />
-        <Skeleton className="h-5 w-1/2 rounded-full" />
+      {/* Image skeleton */}
+      <Skeleton className="aspect-square w-full" />
+
+      {/* Content skeleton */}
+      <div className="space-y-3 p-4">
+        {/* Product name */}
+        <Skeleton className="h-4 w-full rounded" />
+        <Skeleton className="h-4 w-3/4 rounded" />
+
+        {/* Price */}
+        <div className="flex gap-2 items-center">
+          <Skeleton className="h-5 w-24 rounded" />
+          <Skeleton className="h-4 w-20 rounded" />
+        </div>
+
+        {/* PV and Rating */}
+        <div className="flex gap-2 pt-2">
+          <Skeleton className="h-6 w-24 rounded-full" />
+          <Skeleton className="h-4 w-16 rounded" />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function ProductListSkeleton() {
+  return (
+    <div className="flex gap-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden p-4">
+      {/* Image skeleton */}
+      <Skeleton className="aspect-square w-32 rounded-lg shrink-0" />
+
+      {/* Content skeleton */}
+      <div className="flex-1 space-y-3 py-2">
+        {/* Product name */}
+        <Skeleton className="h-5 w-3/4 rounded" />
+
+        {/* Price */}
+        <div className="flex gap-3 items-center">
+          <Skeleton className="h-6 w-28 rounded" />
+          <Skeleton className="h-5 w-24 rounded" />
+        </div>
+
+        {/* PV and Rating */}
+        <div className="flex gap-3">
+          <Skeleton className="h-6 w-24 rounded-full" />
+          <Skeleton className="h-4 w-16 rounded" />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function TopFilterSkeleton() {
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 space-y-4">
+      {/* Search bar skeleton */}
+      <Skeleton className="h-10 w-full rounded-xl" />
+
+      {/* Controls row skeleton */}
+      <div className="flex gap-3 justify-end">
+        <Skeleton className="h-9 w-24 rounded-lg" />
+        <Skeleton className="h-9 w-28 rounded-lg" />
+        <Skeleton className="h-9 w-28 rounded-lg" />
+        <Skeleton className="h-9 w-32 rounded-lg" />
+      </div>
+    </div>
+  )
+}
+
+function ProductFilterSkeleton() {
+  return (
+    <div className="space-y-6">
+      {/* Filter section 1 */}
+      <div className="space-y-3">
+        <Skeleton className="h-5 w-32 rounded" />
+        <div className="space-y-2">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Skeleton key={i} className="h-4 w-full rounded" />
+          ))}
+        </div>
+      </div>
+
+      {/* Filter section 2 */}
+      <div className="space-y-3">
+        <Skeleton className="h-5 w-32 rounded" />
+        <div className="space-y-2">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-4 w-full rounded" />
+          ))}
+        </div>
+      </div>
+
+      {/* Filter section 3 */}
+      <div className="space-y-3">
+        <Skeleton className="h-5 w-32 rounded" />
+        <div className="space-y-2">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Skeleton key={i} className="h-4 w-full rounded" />
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function BrandProfileSkeleton() {
+  return (
+    <div className="rounded-lg bg-white dark:bg-gray-800 p-6 border border-gray-200 dark:border-gray-700">
+      <div className="flex items-center gap-6">
+        {/* Image skeleton */}
+        <Skeleton className="h-32 w-32 rounded-lg shrink-0" />
+
+        {/* Content skeleton */}
+        <div className="flex-1 space-y-4">
+          {/* Title */}
+          <Skeleton className="h-8 w-48 rounded" />
+
+          {/* Description */}
+          <Skeleton className="h-4 w-full rounded" />
+
+          {/* Stats row */}
+          <div className="grid grid-cols-4 gap-4 pt-2">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="space-y-2">
+                <Skeleton className="h-4 w-full rounded" />
+                <Skeleton className="h-3 w-3/4 rounded" />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Back button skeleton */}
+        <Skeleton className="h-10 w-20 rounded-lg shrink-0" />
+      </div>
+    </div>
+  )
+}
+
+function FeaturedProductsSkeleton() {
+  return (
+    <div className="rounded-lg bg-white dark:bg-gray-800 p-6 border border-gray-200 dark:border-gray-700">
+      <div className="mb-4">
+        <Skeleton className="h-4 w-24 rounded mb-2" />
+        <Skeleton className="h-6 w-40 rounded" />
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <ProductCardSkeleton key={i} />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function PageHeaderSkeleton() {
+  return (
+    <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+      <div className="container mx-auto px-4 py-6">
+        <div className="mt-4">
+          <Skeleton className="h-4 w-32 rounded mb-3" />
+          <Skeleton className="h-10 w-64 rounded mb-4" />
+          <Skeleton className="h-5 w-full max-w-2xl rounded" />
+        </div>
       </div>
     </div>
   )
@@ -104,7 +262,7 @@ export default function ByBrandPageMain() {
   const letterFilterParam = searchParams.get('letter')
   const sortByParam = searchParams.get('sort')
   const [currentSlide, setCurrentSlide] = useState(0)
-  const selectedBrand = searchParams.get('brand')?.trim().toLowerCase() ?? ''
+  const selectedBrand = decodeURIComponent(searchParams.get('brand') || '').trim().toLowerCase()
   const [letterFilter, setLetterFilter] = useState<string>('ALL')
   const [searchQuery, setSearchQuery] = useState('')
   const [sortBy, setSortBy] = useState<'name-asc' | 'name-desc' | 'price-asc' | 'price-desc' | 'default'>('default')
@@ -124,6 +282,7 @@ export default function ByBrandPageMain() {
   const isLoggedIn = Boolean(session?.user)
   const [addToCart, { isLoading: isAddingToCart }] = useAddToCartMutation()
   const [hoveringShareProductId, setHoveringShareProductId] = useState<number | null>(null)
+  const [shareModalOpen, setShareModalOpen] = useState(false)
 
   // Handlers for TopFilters
   const handleSearchChange = (search: string) => {
@@ -136,6 +295,11 @@ export default function ByBrandPageMain() {
 
   const handlePvRangeChange = (pvRange: [number, number]) => {
     setFilters(prev => ({ ...prev, pvRange }))
+  }
+
+  // Show number change handler for TopFilter component
+  const handleShowNumberChange = (showNumber: number | 'all') => {
+    setShowNumber(showNumber)
   }
 
   const handleAddToCart = async (productId: number, e: React.MouseEvent) => {
@@ -190,7 +354,7 @@ export default function ByBrandPageMain() {
   }, [allBrands, selectedBrand, letterFilter, searchQuery, sortBy])
 
   const [productPage, setProductPage] = useState(1)
-  const PER_PAGE = 12
+  const perPage = showNumber === 'all' ? 500 : (typeof showNumber === 'number' ? showNumber : 12)
 
   const selectedBrandItem = useMemo(
     () => (data?.brands ?? []).find((brand) => toSlug(brand.name) === selectedBrand) ?? null,
@@ -212,9 +376,13 @@ export default function ByBrandPageMain() {
     }
   }, [selectedBrand, filters])
 
+  useEffect(() => {
+    setProductPage(1)
+  }, [showNumber])
+
   const { data: brandProductsData, isFetching: isFetchingProducts } = useGetPublicProductsQuery(
     selectedBrandItem
-      ? { page: productPage, perPage: PER_PAGE, status: '1', brandType: selectedBrandItem.id }
+      ? { page: productPage, perPage: perPage, status: '1', brandType: selectedBrandItem.id }
       : undefined,
     { skip: !selectedBrandItem },
   )
@@ -280,18 +448,22 @@ export default function ByBrandPageMain() {
       )
     }
 
-    // Sort by name and price
-    if (sortBy === 'name-asc') {
+    // Sort by name and price - prioritize filters.sortBy from ProductFilter, fall back to top-level sortBy
+    // Map ProductFilter 'asc'/'desc' to 'name-asc'/'name-desc'
+    const sortBySource = filters.sortBy !== 'default' ? filters.sortBy : sortBy;
+    const effectiveSortBy = sortBySource === 'asc' ? 'name-asc' : sortBySource === 'desc' ? 'name-desc' : sortBySource;
+
+    if (effectiveSortBy === 'name-asc') {
       filtered = [...filtered].sort((a, b) => a.name.localeCompare(b.name))
-    } else if (sortBy === 'name-desc') {
+    } else if (effectiveSortBy === 'name-desc') {
       filtered = [...filtered].sort((a, b) => b.name.localeCompare(a.name))
-    } else if (sortBy === 'price-asc') {
+    } else if (effectiveSortBy === 'price-asc') {
       filtered = [...filtered].sort((a, b) => {
         const priceA = Number(a.priceSrp ?? a.priceDp ?? 0)
         const priceB = Number(b.priceSrp ?? b.priceDp ?? 0)
         return priceA - priceB
       })
-    } else if (sortBy === 'price-desc') {
+    } else if (effectiveSortBy === 'price-desc') {
       filtered = [...filtered].sort((a, b) => {
         const priceA = Number(a.priceSrp ?? a.priceDp ?? 0)
         const priceB = Number(b.priceSrp ?? b.priceDp ?? 0)
@@ -321,34 +493,35 @@ export default function ByBrandPageMain() {
       }} />
       <main className="relative min-h-screen text-slate-900 dark:text-white">
       {/* Page Header */}
-      <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-        <div className="container mx-auto px-4 py-6">
-          <div className="mt-4">
-            <p className="text-xs font-bold uppercase tracking-[0.35em] text-orange-500 dark:text-orange-400">Shop by Brand</p>
-            <h1 className="mt-2 text-3xl font-bold text-gray-900 dark:text-white sm:text-4xl">
-              {selectedBrand && selectedBrandItem ? selectedBrandItem.name : 'All Brands'}
-            </h1>
-            <p className="mt-2 text-gray-600 dark:text-gray-400">
-              Browse featured product brands from the catalog. Pick a brand below to continue exploring.
-            </p>
+      {isFetching ? (
+        <PageHeaderSkeleton />
+      ) : (
+        <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+          <div className="container mx-auto px-4 py-6">
+            <div className="mt-4">
+              <p className="text-xs font-bold uppercase tracking-[0.35em] text-orange-500 dark:text-orange-400">Shop by Brand</p>
+              <h1 className="mt-2 text-3xl font-bold text-gray-900 dark:text-white sm:text-4xl">
+                {selectedBrand && selectedBrandItem ? selectedBrandItem.name : 'All Brands'}
+              </h1>
+              <p className="mt-2 text-gray-600 dark:text-gray-400">
+                Browse featured product brands from the catalog. Pick a brand below to continue exploring.
+              </p>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       <div className="container mx-auto px-4 py-8 space-y-8">
         {/* Brand Profile Card — only when brand selected */}
-        {selectedBrandItem && (
+        {selectedBrandItem && isFetchingProducts && (
+          <BrandProfileSkeleton />
+        )}
+
+        {selectedBrandItem && !isFetchingProducts && (
           <>
             <div className="rounded-lg bg-white dark:bg-gray-800 p-6 border border-gray-200 dark:border-gray-700 relative">
               <button
-                onClick={() => {
-                  const brandUrl = window.location.href
-                  navigator.clipboard.writeText(brandUrl).then(() => {
-                    toast.success('Brand link copied to clipboard')
-                  }).catch(() => {
-                    toast.error('Failed to copy link')
-                  })
-                }}
+                onClick={() => setShareModalOpen(true)}
                 className="absolute top-4 right-4 p-2 rounded-full border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 hover:bg-orange-500 hover:border-orange-500 dark:hover:bg-orange-500 dark:hover:border-orange-500 hover:text-white transition-all duration-200 cursor-pointer"
                 title="Share Brand"
               >
@@ -385,7 +558,19 @@ export default function ByBrandPageMain() {
                   <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
                     Browse all products from this brand
                   </p>
-                  <div className="mt-3 flex items-center gap-4 text-sm">
+                  <div className="mt-3 flex flex-wrap items-center gap-4 text-sm">
+                    <div className="flex items-center gap-1 text-gray-600 dark:text-gray-400">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                      </svg>
+                      <span>Chat Performance: {selectedBrandItem.chatPerformance ?? 95}%</span>
+                    </div>
+                    <div className="flex items-center gap-1 text-gray-600 dark:text-gray-400">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+                      </svg>
+                      <span>Overall Rating: {selectedBrandItem.overallRating ? selectedBrandItem.overallRating.toFixed(1) : 'N/A'}</span>
+                    </div>
                     <div className="flex items-center gap-1 text-gray-600 dark:text-gray-400">
                       <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
@@ -394,11 +579,20 @@ export default function ByBrandPageMain() {
                       </svg>
                       <span>Total Products: {productsMeta?.total ?? brandProducts.length}</span>
                     </div>
+                    <div className="flex items-center gap-1 text-gray-600 dark:text-gray-400">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                        <line x1="16" y1="2" x2="16" y2="6" />
+                        <line x1="8" y1="2" x2="8" y2="6" />
+                        <line x1="3" y1="10" x2="21" y2="10" />
+                      </svg>
+                      <span>Joined: {selectedBrandItem.joinedDate ? new Date(selectedBrandItem.joinedDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'Jan 2024'}</span>
+                    </div>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <OutlineButton href="/by-brand" className="shrink-0 !px-4 !py-2.5 !text-sm">
-                    ← Back to All Brands
+                  <OutlineButton onClick={() => router.back()} className="shrink-0 !px-4 !py-2.5 !text-sm">
+                    ← Back
                   </OutlineButton>
                 </div>
               </div>
@@ -536,18 +730,26 @@ export default function ByBrandPageMain() {
         )}
 
         {/* Featured Products Section */}
-        {selectedBrandItem && !isFetchingProducts && brandProducts.length > 0 && (
-          <div className="rounded-lg bg-white dark:bg-gray-800 p-6 border border-gray-200 dark:border-gray-700">
-            <div className="mb-4">
-              <p className="text-xs font-bold uppercase tracking-[0.3em] text-orange-500 dark:text-orange-400">Featured</p>
-              <h3 className="mt-1 text-xl font-bold text-gray-900 dark:text-white">Featured Products</h3>
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {brandProducts.slice(0, 4).map((product) => (
-                <ItemCard key={product.id} product={product} brandName={selectedBrandItem.name} />
-              ))}
-            </div>
-          </div>
+        {selectedBrandItem && (
+          <>
+            {isFetchingProducts ? (
+              <FeaturedProductsSkeleton />
+            ) : (
+              brandProducts.length > 0 && (
+                <div className="rounded-lg bg-white dark:bg-gray-800 p-6 border border-gray-200 dark:border-gray-700">
+                  <div className="mb-4">
+                    <p className="text-xs font-bold uppercase tracking-[0.3em] text-orange-500 dark:text-orange-400">Featured</p>
+                    <h3 className="mt-1 text-xl font-bold text-gray-900 dark:text-white">Featured Products</h3>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {brandProducts.slice(0, 4).map((product) => (
+                      <ItemCard key={product.id} product={product} brandName={selectedBrandItem.name} />
+                    ))}
+                  </div>
+                </div>
+              )
+            )}
+          </>
         )}
 
         {/* Hero Banner */}
@@ -639,12 +841,16 @@ export default function ByBrandPageMain() {
           <div className="flex flex-col gap-6 lg:flex-row">
             {/* Left Sidebar - Filter */}
             <div className="lg:w-72 shrink-0">
-              <ProductFilter
-                onFilterChange={setFilters}
-                pvRange={filters.pvRange}
-                search={filters.search}
-                categories={categoriesData?.categories || []}
-              />
+              {isFetchingProducts ? (
+                <ProductFilterSkeleton />
+              ) : (
+                <ProductFilter
+                  onFilterChange={setFilters}
+                  pvRange={filters.pvRange}
+                  search={filters.search}
+                  categories={categoriesData?.categories || []}
+                />
+              )}
               {renderAdBlock()}
             </div>
 
@@ -662,35 +868,51 @@ export default function ByBrandPageMain() {
 
               {/* Top Filters */}
               <div className="mt-6">
-                <TopFilter
-                  onSearchChange={handleSearchChange}
-                  onViewTypeChange={setViewType}
-                  onShowNumberChange={setShowNumber}
-                  onSortChange={handleSortChange}
-                  searchValue={filters.search}
-                  viewType={viewType}
-                  showNumber={showNumber}
-                  sortValue={sortBy}
-                />
+                {isFetchingProducts ? (
+                  <TopFilterSkeleton />
+                ) : (
+                  <TopFilter
+                    onSearchChange={handleSearchChange}
+                    onViewTypeChange={setViewType}
+                    onShowNumberChange={handleShowNumberChange}
+                    onSortChange={handleSortChange}
+                    searchValue={filters.search}
+                    viewType={viewType}
+                    showNumber={showNumber}
+                    sortValue={sortBy}
+                  />
+                )}
+                {!isFetchingProducts && (
+                  <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400 mt-4">
+                    <span>
+                      Showing <span className="font-semibold text-slate-700 dark:text-gray-200">{brandProducts.length}</span> of{' '}
+                      <span className="font-semibold text-slate-700 dark:text-gray-200">{productsMeta?.total ?? brandProducts.length}</span> products
+                    </span>
+                  </div>
+                )}
               </div>
 
               <div className="mt-6">
                 {isFetchingProducts ? (
                   <div className={viewType === 'grid' ? 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4 pb-6' : 'flex flex-col gap-4 pb-6'}>
-                    {Array.from({ length: 8 }).map((_, i) => <ProductCardSkeleton key={i} />)}
-                  </div>
-                ) : brandProducts.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-20 text-center">
-                    <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700 text-2xl">📦</div>
-                    <p className="mt-4 font-semibold text-gray-700 dark:text-gray-300">No products yet</p>
-                    <p className="mt-1 text-sm text-gray-400 dark:text-gray-500">No products assigned to this brand yet.</p>
+                    {Array.from({ length: viewType === 'grid' ? 12 : 8 }).map((_, i) =>
+                      viewType === 'grid' ? <ProductCardSkeleton key={i} /> : <ProductListSkeleton key={i} />
+                    )}
                   </div>
                 ) : (
-                  <div className={viewType === 'grid' ? 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4 pb-6' : 'flex flex-col gap-4 pb-6'}>
-                    {brandProducts.slice(0, showNumber === 'all' ? brandProducts.length : showNumber).map((product) => (
-                      viewType === 'grid' ? (
-                        <ItemCard key={product.id} product={product} brandName={selectedBrandItem.name} />
-                      ) : (
+                  <>
+                    {brandProducts.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center py-20 text-center">
+                        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700 text-2xl">📦</div>
+                        <p className="mt-4 font-semibold text-gray-700 dark:text-gray-300">No products yet</p>
+                        <p className="mt-1 text-sm text-gray-400 dark:text-gray-500">No products assigned to this brand yet.</p>
+                      </div>
+                    ) : (
+                      <div className={viewType === 'grid' ? 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4 pb-6' : 'flex flex-col gap-4 pb-6'}>
+                        {brandProducts.map((product) => (
+                          viewType === 'grid' ? (
+                            <ItemCard key={product.id} product={product} brandName={selectedBrandItem.name} />
+                          ) : (
                         <Link
                           key={product.id}
                           href={`/product/${toSlug(product.name)}-i${product.id}`}
@@ -799,7 +1021,7 @@ export default function ByBrandPageMain() {
                                   </svg>
                                 ))}
                               </div>
-                              <span className="text-xs text-gray-400 dark:text-gray-500">124 sold</span>
+                              <span className="text-xs text-gray-400 dark:text-gray-500">{product.soldCount ?? 0} sold</span>
                             </div>
                             {/* Add to Cart Button */}
                             <button
@@ -829,7 +1051,9 @@ export default function ByBrandPageMain() {
                         </Link>
                       )
                     ))}
-                  </div>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
 
@@ -941,6 +1165,21 @@ export default function ByBrandPageMain() {
       </div>
       <Footer />
       <ScrollToTop />
+      {/* Share Modal */}
+      {selectedBrandItem && (
+        <ShareModal
+          isOpen={shareModalOpen}
+          onClose={() => setShareModalOpen(false)}
+          product={{
+            id: selectedBrandItem.id,
+            name: selectedBrandItem.name,
+            image: selectedBrandItem.image || '',
+            price: 0,
+          }}
+          brandName={selectedBrandItem.name}
+          shareUrl={`https://afhome.ph/by-brand?brand=${encodeURIComponent(toSlug(selectedBrandItem.name))}`}
+        />
+      )}
     </main>
     </>
   )

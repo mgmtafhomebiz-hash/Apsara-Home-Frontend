@@ -10,6 +10,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link2, X as XIcon } from "lucide-react";
 import StarRating from "../ui/StarRating";
 import BuyNowOptionsModal from "./BuyNowOptionsModal";
+import ShareModal from "@/components/ui/ShareModal";
 import { useSession } from "next-auth/react";
 import { useMeQuery } from "@/store/api/userApi";
 import { useGetPublicGeneralSettingsQuery } from "@/store/api/adminSettingsApi";
@@ -74,21 +75,6 @@ type SizeChoice = {
     variant?: VariantOption;
     groupVariants?: VariantOption[];
 };
-type ShareOption =
-    | {
-        id: string;
-        label: string;
-        action: () => void;
-        iconSrc: string;
-    }
-    | {
-        id: string;
-        label: string;
-        action: () => void;
-        icon: typeof Link2;
-    };
-
-const hasShareIconSrc = (item: ShareOption): item is Extract<ShareOption, { iconSrc: string }> => 'iconSrc' in item;
 
 const buildVariantGroupKey = (variant: VariantOption, index: number) => {
     const sku = (variant.sku ?? '').trim();
@@ -209,9 +195,7 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, 
     const [wishlisted, setWishlisted] = useState(false);
     const [isWishlistLoading, setIsWishlistLoading] = useState(false);
     const [buyOptionsOpen, setBuyOptionsOpen] = useState(false);
-    const [paymentLogoMissing, setPaymentLogoMissing] = useState(false);
     const [isShareOpen, setIsShareOpen] = useState(false);
-    const [shareCopied, setShareCopied] = useState(false);
     const optionLabels = useMemo(() => extractVariantOptionLabels(product.specifications), [product.specifications]);
 
     // Check if product is in wishlist and update wishlisted state
@@ -592,61 +576,6 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, 
         return `${baseUrl}?ref=${encodeURIComponent(referralCode)}`;
     }, [referralCode]);
 
-    useEffect(() => {
-        if (!isShareOpen) return;
-        const onKeyDown = (event: KeyboardEvent) => {
-            if (event.key === 'Escape') setIsShareOpen(false);
-        };
-        document.addEventListener('keydown', onKeyDown);
-        document.body.style.overflow = 'hidden';
-        return () => {
-            document.removeEventListener('keydown', onKeyDown);
-            document.body.style.overflow = '';
-        };
-    }, [isShareOpen]);
-
-    const handleCopyShareLink = async () => {
-        const url = shareUrl || (typeof window !== 'undefined' ? window.location.href : '');
-        if (!url) return;
-        try {
-            if (navigator?.clipboard?.writeText) {
-                await navigator.clipboard.writeText(url);
-            } else {
-                const fallback = document.createElement('textarea');
-                fallback.value = url;
-                fallback.style.position = 'fixed';
-                fallback.style.opacity = '0';
-                document.body.appendChild(fallback);
-                fallback.focus();
-                fallback.select();
-                document.execCommand('copy');
-                document.body.removeChild(fallback);
-            }
-            setShareCopied(true);
-            setTimeout(() => setShareCopied(false), 2000);
-        } catch {
-            setShareCopied(false);
-        }
-    };
-
-    const handleShareExternal = (type: 'messenger' | 'whatsapp' | 'x' | 'telegram' | 'viber') => {
-        const url = shareUrl || (typeof window !== 'undefined' ? window.location.href : '');
-        const title = displayTitle || product.name;
-        if (!url) return;
-
-        const encodedUrl = encodeURIComponent(url);
-        const encodedText = encodeURIComponent(`${title} - ${url}`);
-        const shareTargets: Record<string, string> = {
-            messenger: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`,
-            whatsapp: `https://wa.me/?text=${encodedText}`,
-            x: `https://twitter.com/intent/tweet?text=${encodedText}`,
-            telegram: `https://t.me/share/url?url=${encodedUrl}&text=${encodedText}`,
-            viber: `viber://forward?text=${encodedText}`,
-        };
-        const targetUrl = shareTargets[type];
-        if (targetUrl) window.open(targetUrl, '_blank', 'noopener,noreferrer');
-    };
-
     return (
         <motion.div
             initial={{ opacity: 0, x: 30 }}
@@ -655,7 +584,7 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, 
             className="space-y-6"
         >
             {/* Header Section */}
-            <div className="flex items-start justify-between gap-4">
+            <div className="flex items-start justify-between gap-4 pb-4 border-b border-gray-200 dark:border-gray-700">
                 <div className="flex-1">
                     {product.brand && (
                         <span className="text-xs font-bold text-orange-500 uppercase tracking-wider">{product.brand}</span>
@@ -690,7 +619,7 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, 
                 </div>
             </div>
             {/* Rating & Badges */}
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3 pb-4 border-b border-gray-200 dark:border-gray-700">
                 <div className="flex items-center gap-2">
                     <StarRating rating={Math.round(avgRatingValue)} size={16} />
                     <span className="text-sm font-bold text-slate-700 dark:text-gray-300">{avgRating}</span>
@@ -721,7 +650,7 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, 
             </div>
             {/* Product Badges */}
             {(product.musthave || product.bestseller || product.salespromo) && (
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2 pb-4 border-b border-gray-200 dark:border-gray-700">
                     {product.musthave && (
                         <span className="inline-flex items-center gap-1 rounded-full border border-rose-200 px-3 py-1 text-xs font-semibold text-rose-700">
                             ★ Must Have
@@ -741,7 +670,7 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, 
             )}
 
             {/* Price Section */}
-            <div className="bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 rounded-2xl p-6 border border-orange-100 dark:border-orange-900/30">
+            <div className="bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 rounded-2xl p-6 border border-orange-100 dark:border-orange-900/30 mb-6">
                 <div className="flex items-baseline gap-3 flex-wrap mb-3">
                     <span className="text-3xl sm:text-4xl font-bold text-orange-600 dark:text-orange-400">₱{displayPrice.toLocaleString()}</span>
                     {displayOriginalPrice && (
@@ -780,7 +709,7 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, 
             </div>
 
             {/* Product Details */}
-            <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-700/50 p-4 space-y-3">
+            <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-700/50 p-4 space-y-3 mb-6">
                 {(displaySku || typeof displayStock === 'number') && (
                     <div className="flex flex-wrap items-center gap-4 text-sm">
                         {displaySku && (
@@ -814,7 +743,7 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, 
 
             {/* Variant Selection */}
             {hasRealVariants && (
-                <div className="space-y-4">
+                <div className="space-y-4 pb-4 border-b border-gray-200 dark:border-gray-700">
                     {selectedVariantLabel || hasDisplayDimensions || selectedVariantImage ? (
                         <div className="flex items-center gap-3 rounded-xl border border-orange-200 dark:border-orange-900/50 bg-orange-50 dark:bg-orange-900/20 p-3">
                             {selectedVariantImage ? (
@@ -935,7 +864,7 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, 
             )}
 
             {/* Shipping & Payment Info */}
-            <div className="bg-gradient-to-br from-slate-50 to-gray-50 dark:from-gray-800 dark:to-gray-800/50 rounded-2xl p-5 space-y-4">
+            <div className="bg-gradient-to-br from-slate-50 to-gray-50 dark:from-gray-800 dark:to-gray-800/50 rounded-2xl p-5 space-y-4 mb-6">
                 <div>
                     <h4 className="text-sm font-semibold text-slate-700 dark:text-gray-200 mb-3">Shipping & Delivery</h4>
                     <div className="space-y-2">
@@ -954,40 +883,28 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, 
 
                 <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
                     <p className="text-xs text-gray-500 dark:text-gray-400 mb-3 font-medium">We accept:</p>
-                    <div className="flex items-center">
-                        {!paymentLogoMissing ? (
-                            <img
-                                src="/Images/paymentsLogo/paymentsLogo.png"
-                                alt="Supported payment methods"
-                                className="h-8 md:h-10 w-auto"
-                                loading="lazy"
-                                decoding="async"
-                                onError={() => setPaymentLogoMissing(true)}
-                            />
-                        ) : (
-                            <div className="flex items-center gap-2 flex-wrap">
-                                {[
-                                    { src: '/payment-logos/gcash.svg', alt: 'GCash' },
-                                    { src: '/payment-logos/maya.svg', alt: 'Maya' },
-                                    { src: '/payment-logos/visa.svg', alt: 'Visa' },
-                                    { src: '/payment-logos/mastercard.svg', alt: 'Mastercard' },
-                                    { src: '/payment-logos/bpi.svg', alt: 'BPI' },
-                                    { src: '/payment-logos/bdo.svg', alt: 'BDO' },
-                                    { src: '/payment-logos/landbank.svg', alt: 'LandBank' },
-                                    { src: '/payment-logos/unionbank.svg', alt: 'UnionBank' },
-                                ].map((payment) => (
-                                    <div key={payment.alt} className="h-8">
-                                        <img
-                                            src={payment.src}
-                                            alt={payment.alt}
-                                            className="h-8 w-auto"
-                                            loading="lazy"
-                                            decoding="async"
-                                        />
-                                    </div>
-                                ))}
+                    <div className="flex items-center gap-3 flex-wrap">
+                        {[
+                            { src: 'https://1000logos.net/wp-content/uploads/2023/05/GCash-Logo.png', alt: 'GCash' },
+                            { src: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRBLMVQZTu66K6hYmx4Ea-VbLaevkjWEHAzWw&s', alt: 'Maya' },
+                            { src: 'https://cdn.simpleicons.org/visa', alt: 'Visa' },
+                            { src: 'https://download.logo.wine/logo/Mastercard/Mastercard-Logo.wine.png', alt: 'Mastercard' },
+                            { src: 'https://vectorseek.com/wp-content/uploads/2023/09/Bpi-Bank-Of-The-Philippine-Islands-Logo-Vector.svg-.png', alt: 'BPI' },
+                            { src: 'https://logodix.com/logo/925694.png', alt: 'BDO' },
+                            { src: 'https://play-lh.googleusercontent.com/0EFKMDMvv8IhSBH5OEvsrYW8SnYK56e6aHbTvriJoaQWxUgfAbi3wE8yhy5NYb_RVw', alt: 'LandBank' },
+                            { src: 'https://play-lh.googleusercontent.com/xeCakfcf3dDyUovyFd7CiAL_5LoS6W7n83f7jo4GqwFZBjhPR9MO9HuUgttmYPnOe7A', alt: 'UnionBank' },
+                            { src: 'https://png.pngtree.com/png-clipart/20250602/original/pngtree-cod-icon-vector-png-image_21114742.png', alt: 'Cash on Delivery' },
+                        ].map((payment) => (
+                            <div key={payment.alt} className="h-10">
+                                <img
+                                    src={payment.src}
+                                    alt={payment.alt}
+                                    className="h-10 w-auto"
+                                    loading="lazy"
+                                    decoding="async"
+                                />
                             </div>
-                        )}
+                        ))}
                     </div>
                 </div>
             </div>
@@ -1054,83 +971,25 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, 
 
             />
 
-            {isShareOpen && (
-                <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center px-4 pb-6 sm:p-6">
-                    <div
-                        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-                        onClick={() => setIsShareOpen(false)}
-                    />
-                    <motion.div
-                        initial={{ opacity: 0, y: 30, scale: 0.98 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        transition={{ duration: 0.2 }}
-                        className="relative w-full max-w-xl rounded-3xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 p-5 sm:p-6"
-                    >
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500">Share to</p>
-                                <h3 className="text-lg font-bold text-slate-800 dark:text-gray-200">Send this product</h3>
-                            </div>
-                            <button
-                                onClick={() => setIsShareOpen(false)}
-                                className="h-9 w-9 rounded-full border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:text-orange-600 dark:hover:text-orange-400 hover:border-orange-200 dark:hover:border-orange-900/50 transition-colors"
-                                type="button"
-                            >
-                                <span className="sr-only">Close</span>
-                                <XIcon className="mx-auto" size={16} />
-                            </button>
-                        </div>
-
-                        <div className="mt-5 grid grid-cols-3 sm:grid-cols-6 gap-4">
-                            {(([
-                                { id: 'messenger', label: 'Messenger', iconSrc: '/Images/icon_apps/messenger.png', action: () => handleShareExternal('messenger') },
-                                { id: 'whatsapp', label: 'WhatsApp', iconSrc: '/Images/icon_apps/whatapps.avif', action: () => handleShareExternal('whatsapp') },
-                                { id: 'x', label: 'X', iconSrc: '/Images/icon_apps/x.jpg', action: () => handleShareExternal('x') },
-                                { id: 'telegram', label: 'Telegram', iconSrc: '/Images/icon_apps/telegram.png', action: () => handleShareExternal('telegram') },
-                                { id: 'viber', label: 'Viber', iconSrc: '/Images/icon_apps/viber.png', action: () => handleShareExternal('viber') },
-                                { id: 'copy', label: shareCopied ? 'Copied' : 'Copy link', icon: Link2, action: handleCopyShareLink },
-                            ]) as ShareOption[]).map((item) => (
-                                <button
-                                    key={item.id}
-                                    onClick={item.action}
-                                    className="flex flex-col items-center gap-2 text-center text-xs font-semibold text-slate-600 dark:text-gray-400 hover:text-orange-600 dark:hover:text-orange-400 transition-colors"
-                                    type="button"
-                                >
-                                    <span className="flex h-14 w-14 items-center justify-center rounded-full border border-gray-200 dark:border-gray-600 text-slate-600 dark:text-gray-400">
-                                        {hasShareIconSrc(item) ? (
-                                            <Image
-                                                src={item.iconSrc}
-                                                alt={item.label}
-                                                width={28}
-                                                height={28}
-                                                className="h-7 w-7 object-contain"
-                                            />
-                                        ) : (
-                                            <item.icon size={22} />
-                                        )}
-                                    </span>
-                                    <span className="leading-tight">{item.label}</span>
-                                </button>
-                            ))}
-                        </div>
-
-                        <div className="mt-4 rounded-2xl border border-gray-100 dark:border-gray-700 px-4 py-3">
-                            <p className="text-xs font-semibold text-slate-500 dark:text-gray-400">Product share link</p>
-                            <div className="mt-1 flex items-center justify-between gap-3">
-                                <span className="text-xs text-slate-600 dark:text-gray-400 truncate">{shareUrl}</span>
-                                <button
-                                    onClick={handleCopyShareLink}
-                                    className="text-xs font-semibold text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300"
-                                    type="button"
-                                >
-                                    {shareCopied ? 'Copied' : 'Copy'}
-                                </button>
-                            </div>
-                        </div>
-
-                    </motion.div>
-                </div>
-            )}
+            {/* Share Modal */}
+            <ShareModal
+                isOpen={isShareOpen}
+                onClose={() => setIsShareOpen(false)}
+                product={{
+                    id: product.id || 0,
+                    name: displayTitle,
+                    image: selectedVariantImage || product.image || '',
+                    price: variantSrp,
+                    priceMember: variantMember,
+                    priceSrp: variantSrp,
+                    priceDp: toPositiveNumber(selectedVariant?.priceDp) || toPositiveNumber(product.priceDp),
+                    originalPrice: displayOriginalPrice,
+                    sku: displaySku,
+                    prodpv: variantPv,
+                }}
+                brandName={product.brand}
+                shareUrl={typeof window !== 'undefined' ? window.location.href : ''}
+            />
 
         </motion.div>
     );

@@ -436,19 +436,27 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
             categoryLabel={dynamicData.categoryLabel}
             reviewSummary={dynamicData.reviewSummary}
           />
-          <ProductTabs
-            product={dynamicData.product}
-            reviewSummary={dynamicData.reviewSummary}
-            reviews={dynamicData.reviews ?? []}
-          />
-          <RelatedProducts products={dynamicData.relatedProducts} category={dynamicData.categorySlug} />
-          <ProductQA />
-          <CompleteTheLook
-            currentCategory={dynamicData.categorySlug}
-            currentCategoryId={dynamicData.categoryId}
-            currentCategoryLabel={dynamicData.categoryLabel}
-            currentProductId={dynamicData.product.id}
-          />
+          <div className="border-t border-gray-200 dark:border-gray-700 pt-10 mt-10">
+            <ProductTabs
+              product={dynamicData.product}
+              reviewSummary={dynamicData.reviewSummary}
+              reviews={dynamicData.reviews ?? []}
+            />
+          </div>
+          <div className="border-t border-gray-200 dark:border-gray-700 pt-10 mt-10">
+            <RelatedProducts products={dynamicData.relatedProducts} category={dynamicData.categorySlug} />
+          </div>
+          <div className="border-t border-gray-200 dark:border-gray-700 pt-10 mt-10">
+            <ProductQA />
+          </div>
+          <div className="border-t border-gray-200 dark:border-gray-700 pt-10 mt-10">
+            <CompleteTheLook
+              currentCategory={dynamicData.categorySlug}
+              currentCategoryId={dynamicData.categoryId}
+              currentCategoryLabel={dynamicData.categoryLabel}
+              currentProductId={dynamicData.product.id}
+            />
+          </div>
         </div>
       </main>
       <Footer />

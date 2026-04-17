@@ -54,6 +54,7 @@ const navLinks: NavLink[] = [
     dropdown: ['Photo Gallery', 'Video Gallery'],
   },
   { label: 'Blogs', href: '/blog' },
+  { label: 'Community', href: '/community' },
 ]
 
 const toSlug = (value: string) => value.toLowerCase().trim().replace(/\s+/g, '-');
@@ -657,7 +658,7 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 6, scale: 0.98 }}
                         transition={{ duration: 0.15 }}
-                        className="fixed left-2 right-2 top-16 mt-0 w-auto rounded-2xl border border-gray-100 !bg-white dark:!bg-gray-900 shadow-xl shadow-black/10 overflow-hidden z-50 sm:absolute sm:right-0 sm:left-auto sm:top-auto sm:mt-2 sm:w-[360px] sm:max-w-[calc(100vw-1rem)]"
+                        className="fixed left-2 right-2 top-16 mt-0 w-auto rounded-2xl border border-gray-100 dark:border-gray-800 !bg-white dark:!bg-gray-900 shadow-xl shadow-black/10 overflow-hidden z-50 sm:absolute sm:right-0 sm:left-auto sm:top-auto sm:mt-2 sm:w-[360px] sm:max-w-[calc(100vw-1rem)]"
                       >
                         {/* Header */}
                         <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-orange-50 to-white dark:from-orange-950/20 dark:to-gray-900 border-b border-orange-100/80 dark:border-orange-800/50">
@@ -809,7 +810,7 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 8, scale: 0.97 }}
                         transition={{ duration: 0.15 }}
-                        className="absolute right-0 mt-2 w-64 rounded-2xl border border-gray-100 dark:border-gray-700 !bg-white dark:!bg-gray-900 shadow-xl shadow-black/10 overflow-hidden z-50"
+                        className="absolute right-0 mt-2 w-64 rounded-2xl border border-gray-200 dark:border-gray-800 !bg-white dark:!bg-gray-900 shadow-xl shadow-black/10 overflow-hidden z-50"
                       >
                         {/* User info header */}
                         <div className="px-4 py-4 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-gray-900 border-b border-orange-100 dark:border-orange-800/50">
@@ -1235,7 +1236,7 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
           >
             <nav className="container mx-auto px-4 py-3 flex flex-col gap-0.5">
               {isLoggedIn ? (
-                <div className="mb-3 rounded-2xl border border-orange-100 overflow-hidden shadow-sm">
+                <div className="mb-3 rounded-2xl border border-orange-100 dark:border-orange-900/50 overflow-hidden shadow-sm dark:shadow-none">
                   {/* Profile header */}
                   {(() => {
                     const rank = meData?.rank ?? 0;
@@ -1260,7 +1261,7 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                   })()}
 
                   {/* Avatar + info */}
-                  <div className="px-4 -mt-8 pb-4 bg-white">
+                  <div className="px-4 -mt-8 pb-4 bg-white dark:bg-gray-800">
                     {/* Avatar row — overlapping the banner */}
                     <div className="flex items-end justify-between mb-2">
                       <div className="relative shrink-0">
@@ -1268,24 +1269,24 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                           <img
                             src={avatarUrl}
                             alt={user?.name || 'Profile'}
-                            className="h-16 w-16 rounded-2xl object-cover ring-4 ring-white shadow-lg"
+                            className="h-16 w-16 rounded-2xl object-cover ring-4 ring-white dark:ring-gray-700 shadow-lg"
                           />
                         ) : (
-                          <span className="flex items-center justify-center h-16 w-16 rounded-2xl bg-gradient-to-br from-orange-400 to-amber-500 text-white text-xl font-bold ring-4 ring-white shadow-lg">
+                          <span className="flex items-center justify-center h-16 w-16 rounded-2xl bg-gradient-to-br from-orange-400 to-amber-500 text-white text-xl font-bold ring-4 ring-white dark:ring-gray-700 shadow-lg">
                             {user?.name?.charAt(0)?.toUpperCase() ?? 'U'}
                           </span>
                         )}
-                        <span className="absolute -bottom-1 -right-1 h-4 w-4 rounded-full bg-emerald-400 border-2 border-white" />
+                        <span className="absolute -bottom-1 -right-1 h-4 w-4 rounded-full bg-emerald-400 border-2 border-white dark:border-gray-700" />
                       </div>
                     </div>
                     {/* Name / email / username — clearly in white area */}
                     <div className="mb-3">
-                      <p className="text-base font-bold text-gray-900 leading-tight">{user?.name ?? 'User'}</p>
+                      <p className="text-base font-bold text-gray-900 dark:text-white leading-tight">{user?.name ?? 'User'}</p>
                       {user?.email && (
-                        <p className="text-xs text-gray-400 mt-0.5">{user.email}</p>
+                        <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{user.email}</p>
                       )}
                       {meData?.username && (
-                        <p className="text-xs text-orange-500 font-medium mt-0.5">@{meData.username}</p>
+                        <p className="text-xs text-orange-500 dark:text-orange-400 font-medium mt-0.5">@{meData.username}</p>
                       )}
                     </div>
 
@@ -1301,16 +1302,16 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                           key={item.href}
                           href={item.href}
                           onClick={() => setMobileOpen(false)}
-                          className="group flex items-center gap-2.5 rounded-xl border border-gray-100 bg-gray-50 hover:border-orange-200 hover:bg-orange-50 px-3 py-2.5 transition-colors"
+                          className="group flex items-center gap-2.5 rounded-xl border border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 hover:border-orange-200 dark:hover:border-orange-800 hover:bg-orange-50 dark:hover:bg-orange-900/20 px-3 py-2.5 transition-colors"
                         >
-                          <span className="flex items-center justify-center h-8 w-8 rounded-lg bg-white shadow-sm group-hover:bg-orange-100 transition-colors shrink-0">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-500 group-hover:text-orange-600 transition-colors">
+                          <span className="flex items-center justify-center h-8 w-8 rounded-lg bg-white dark:bg-gray-600 shadow-sm group-hover:bg-orange-100 dark:group-hover:bg-orange-900/30 transition-colors shrink-0">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-500 dark:text-gray-300 group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors">
                               {item.icon}
                             </svg>
                           </span>
                           <div className="min-w-0">
-                            <p className="text-xs font-semibold text-gray-800 leading-tight">{item.label}</p>
-                            <p className="text-[10px] text-gray-400 leading-tight">{item.sub}</p>
+                            <p className="text-xs font-semibold text-gray-800 dark:text-gray-200 leading-tight">{item.label}</p>
+                            <p className="text-[10px] text-gray-400 dark:text-gray-500 leading-tight">{item.sub}</p>
                           </div>
                         </Link>
                       ))}
@@ -1320,7 +1321,7 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                     <button
                       onClick={() => { handleCustomerLogout('/'); setMobileOpen(false); }}
                       disabled={isLoggingOut}
-                      className="w-full flex items-center justify-center gap-2 rounded-xl border border-red-100 bg-red-50 hover:bg-red-100 px-4 py-2.5 text-sm font-semibold text-red-600 transition-colors disabled:opacity-60"
+                      className="w-full flex items-center justify-center gap-2 rounded-xl border border-red-100 dark:border-red-900/30 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 px-4 py-2.5 text-sm font-semibold text-red-600 dark:text-red-400 transition-colors disabled:opacity-60"
                     >
                       {isLoggingOut ? (
                         <svg className="animate-spin h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24">
@@ -1339,7 +1340,7 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                   </div>
                 </div>
               ) : (
-                <div className="mb-3 rounded-2xl border border-gray-100 overflow-hidden">
+                <div className="mb-3 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden">
                   <div className="bg-gradient-to-br from-slate-700 to-slate-900 px-4 py-5 flex items-center gap-3">
                     <span className="flex items-center justify-center h-12 w-12 rounded-xl bg-white/10 border border-white/20 shrink-0">
                       <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-white/70">
@@ -1352,7 +1353,7 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                       <p className="text-xs text-white/60 mt-0.5">Sign in to access your account</p>
                     </div>
                   </div>
-                  <div className="bg-white px-4 py-3 flex gap-2">
+                  <div className="bg-white dark:bg-gray-800 px-4 py-3 flex gap-2">
                     <motion.div whileTap={{ scale: 0.97 }} transition={{ duration: 0.12 }} className="flex-1">
                       <PrimaryButton
                         href={`/login?callback=${encodeURIComponent(pathname)}`}
@@ -1369,7 +1370,7 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                     <Link
                       href="/track-order"
                       onClick={() => setMobileOpen(false)}
-                      className="flex-1 flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-gray-50 hover:bg-gray-100 px-4 py-2.5 text-sm font-semibold text-gray-700 transition-colors"
+                      className="flex-1 flex items-center justify-center gap-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 px-4 py-2.5 text-sm font-semibold text-gray-700 dark:text-gray-300 transition-colors"
                     >
                       Track Order
                     </Link>
@@ -1410,7 +1411,7 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                           setMobileSearch('')
                           setMobileBrandSearch('')
                         }}
-                        className="w-full flex items-center justify-between px-4 py-2.5 text-sm font-medium text-gray-700 hover:text-orange-500 hover:bg-orange-50 rounded-xl transition-colors"
+                        className="w-full flex items-center justify-between px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-orange-500 dark:hover:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-xl transition-colors"
                       >
                         {link.label}
                         <svg
@@ -1429,7 +1430,7 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                     ) : (
                       <Link
                         href={link.href}
-                        className="block px-4 py-2.5 text-sm font-medium text-gray-700 hover:text-orange-500 hover:bg-orange-50 rounded-xl transition-colors"
+                        className="block px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-orange-500 dark:hover:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-xl transition-colors"
                         onClick={() => setMobileOpen(false)}
                       >
                         {link.label}
@@ -1444,10 +1445,10 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                       <div className="overflow-hidden">
                         {link.mega ? (
                           /* Mega menu — search + grouped rooms */
-                          <div className="ml-4 pl-4 border-l-2 border-orange-200 py-2 space-y-1">
+                          <div className="ml-4 pl-4 border-l-2 border-orange-200 dark:border-orange-800 py-2 space-y-1">
                             {/* Search */}
                             <div className="relative mb-3">
-                              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 pointer-events-none">
                                 <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
                               </svg>
                               <input
@@ -1455,7 +1456,7 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                                 value={mobileSearch}
                                 onChange={(e) => setMobileSearch(e.target.value)}
                                 placeholder="Search items..."
-                                className="w-full pl-8 pr-8 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-400/50 focus:bg-white transition-all"
+                                className="w-full pl-8 pr-8 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-xs text-gray-700 dark:text-gray-300 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-400/50 dark:focus:ring-orange-500/30 focus:bg-white dark:focus:bg-gray-600 transition-all"
                               />
                               {mobileSearch && (
                                 <button onClick={() => setMobileSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400">
@@ -1470,8 +1471,8 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                               const rooms = Object.keys(link.mega!).filter((room) => room.toLowerCase().includes(q));
 
                               if (rooms.length === 0) return (
-                                <p className="px-3 py-3 text-xs text-gray-400 text-center">
-                                  No rooms found for &quot;<span className="text-orange-500">{mobileSearch}</span>&quot;
+                                <p className="px-3 py-3 text-xs text-gray-400 dark:text-gray-500 text-center">
+                                  No rooms found for &quot;<span className="text-orange-500 dark:text-orange-400">{mobileSearch}</span>&quot;
                                 </p>
                               );
 
@@ -1481,7 +1482,7 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                                   <div key={room} className="mb-2">
                                     <Link
                                       href={`/by-room/${roomSlug}`}
-                                      className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-3 text-sm font-semibold text-gray-700 hover:border-orange-300 hover:bg-orange-50 hover:text-orange-500 transition-colors"
+                                      className="flex items-center gap-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-3 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:border-orange-300 dark:hover:border-orange-800 hover:bg-orange-50 dark:hover:bg-orange-900/20 hover:text-orange-500 dark:hover:text-orange-400 transition-colors"
                                       onClick={() => setMobileOpen(false)}
                                     >
                                       <span className="text-orange-500">{roomIcons[room] ?? roomIcons.BEDROOM}</span>
@@ -1494,10 +1495,10 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                           </div>
                         ) : link.label === 'Shop By Brand' ? (
                           /* Brand dropdown — search + logos */
-                          <div className="ml-4 pl-4 border-l-2 border-orange-200 py-2 space-y-2">
+                          <div className="ml-4 pl-4 border-l-2 border-orange-200 dark:border-orange-800 py-2 space-y-2">
                             {/* Search */}
                             <div className="relative">
-                              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 pointer-events-none">
                                 <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
                               </svg>
                               <input
@@ -1505,7 +1506,7 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                                 value={mobileBrandSearch}
                                 onChange={(e) => setMobileBrandSearch(e.target.value)}
                                 placeholder="Search brands..."
-                                className="w-full pl-8 pr-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-400/40"
+                                className="w-full pl-8 pr-3 py-1.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-xs text-gray-700 dark:text-gray-300 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-400/40 dark:focus:ring-orange-500/30"
                               />
                             </div>
                             {/* Brand list with logos */}
@@ -1516,10 +1517,10 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                               <Link
                                 key={item.id}
                                 href={item.href}
-                                className="flex items-center gap-2.5 rounded-xl border border-gray-100 px-3 py-2 text-sm text-gray-600 hover:border-orange-200 hover:bg-orange-50 hover:text-orange-500 transition-colors"
+                                className="flex items-center gap-2.5 rounded-xl border border-gray-100 dark:border-gray-700 px-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:border-orange-200 dark:hover:border-orange-800 hover:bg-orange-50 dark:hover:bg-orange-900/20 hover:text-orange-500 dark:hover:text-orange-400 transition-colors"
                                 onClick={() => setMobileOpen(false)}
                               >
-                                <div className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-gray-100">
+                                <div className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-700">
                                   {item.image ? (
                                     <Image src={item.image} alt={item.label} width={28} height={28} className="h-full w-full object-cover" unoptimized />
                                   ) : (
@@ -1597,21 +1598,21 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                         handleProductSearchSubmit(searchModalQuery)
                       }}
                     >
-                      <div className="flex items-center gap-3">
+                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
                         <SearchField
                           aria-label="Search products"
                           value={searchModalQuery}
                           onChange={setSearchModalQuery}
-                          className="flex-1"
+                          className="flex-1 min-w-0"
                         >
                           <Label className="sr-only">Search products</Label>
-                          <SearchField.Group className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-5 py-3.5 transition-all duration-200 focus-within:border-orange-400 focus-within:ring-2 focus-within:ring-orange-100 dark:border-gray-700 dark:bg-gray-800 dark:focus-within:border-orange-500 dark:focus-within:ring-orange-900/50">
-                            <SearchField.SearchIcon className="h-5 w-5 shrink-0 text-slate-400 dark:text-gray-400" />
+                          <SearchField.Group className="flex items-center gap-2 sm:gap-3 rounded-xl border border-slate-200 bg-white px-3 sm:px-5 py-2.5 sm:py-3.5 transition-all duration-200 focus-within:border-orange-400 focus-within:ring-2 focus-within:ring-orange-100 dark:border-gray-700 dark:bg-gray-800 dark:focus-within:border-orange-500 dark:focus-within:ring-orange-900/50">
+                            <SearchField.SearchIcon className="h-4 sm:h-5 w-4 sm:w-5 shrink-0 text-slate-400 dark:text-gray-400" />
                             <SearchField.Input
                               ref={searchInputRef}
                               autoFocus
                               placeholder="Search..."
-                              className="flex-1 border-none bg-transparent p-0 text-base text-slate-900 outline-none placeholder:text-slate-400 dark:text-gray-100 dark:placeholder:text-gray-500"
+                              className="flex-1 border-none bg-transparent p-0 text-sm sm:text-base text-slate-900 outline-none placeholder:text-slate-400 dark:text-gray-100 dark:placeholder:text-gray-500"
                             />
                             {searchModalQuery && (
                               <motion.button
@@ -1624,43 +1625,45 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                                 className="shrink-0 rounded-md p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
                                 title="Clear search"
                               >
-                                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg className="h-3.5 sm:h-4 w-3.5 sm:w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                                 </svg>
                               </motion.button>
                             )}
                           </SearchField.Group>
                         </SearchField>
-                        <AnimatePresence>
-                          {searchModalQuery && (
-                            <motion.button
-                              type="submit"
-                              initial={{ opacity: 0, scale: 0.8 }}
-                              animate={{ opacity: 1, scale: 1 }}
-                              exit={{ opacity: 0, scale: 0.8 }}
-                              transition={{ duration: 0.1 }}
-                              whileHover={{ scale: 1.05 }}
-                              whileTap={{ scale: 0.95 }}
-                              className="shrink-0 inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-orange-200 bg-orange-50 px-3 py-2 text-xs font-semibold text-orange-600 transition hover:bg-orange-100 dark:border-orange-800 dark:bg-orange-900/30 dark:text-orange-400 dark:hover:bg-orange-900/50"
-                              title="Press Enter to search"
-                            >
-                              <span>ENTER</span>
-                            </motion.button>
-                          )}
-                        </AnimatePresence>
-                        <motion.button
-                          type="button"
-                          onClick={() => {
-                            setSearchModalQuery('')
-                            setSearchModalOpen(false)
-                          }}
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          className="shrink-0 inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 dark:border-gray-700 dark:bg-gray-700 dark:text-gray-400 dark:hover:bg-gray-600"
-                          title="Close search (Esc)"
-                        >
-                          <span>ESC</span>
-                        </motion.button>
+                        <div className="flex items-center gap-2 sm:gap-3">
+                          <AnimatePresence>
+                            {searchModalQuery && (
+                              <motion.button
+                                type="submit"
+                                initial={{ opacity: 0, scale: 0.8 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.8 }}
+                                transition={{ duration: 0.1 }}
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                className="shrink-0 inline-flex cursor-pointer items-center gap-1 sm:gap-1.5 rounded-lg border border-orange-200 bg-orange-50 px-2 sm:px-3 py-1.5 sm:py-2 text-[10px] sm:text-xs font-semibold text-orange-600 transition hover:bg-orange-100 dark:border-orange-800 dark:bg-orange-900/30 dark:text-orange-400 dark:hover:bg-orange-900/50"
+                                title="Press Enter to search"
+                              >
+                                <span>ENTER</span>
+                              </motion.button>
+                            )}
+                          </AnimatePresence>
+                          <motion.button
+                            type="button"
+                            onClick={() => {
+                              setSearchModalQuery('')
+                              setSearchModalOpen(false)
+                            }}
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            className="shrink-0 inline-flex cursor-pointer items-center gap-1 sm:gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2 sm:px-2.5 py-1.5 sm:py-2 text-[10px] sm:text-xs font-semibold text-slate-500 transition hover:bg-slate-100 dark:border-gray-700 dark:bg-gray-700 dark:text-gray-400 dark:hover:bg-gray-600"
+                            title="Close search (Esc)"
+                          >
+                            <span>ESC</span>
+                          </motion.button>
+                        </div>
                       </div>
                     </form>
                     <div className="max-h-[calc(100vh-180px)] overflow-y-auto px-3 py-4 sm:px-4 sm:py-5">
@@ -1827,9 +1830,9 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                                   setSearchModalOpen(false)
                                   setMobileOpen(false)
                                 }}
-                                className="group relative flex items-center gap-4 rounded-xl border border-slate-200 bg-white p-3 transition-all hover:border-orange-300 hover:bg-orange-50 dark:border-gray-700 dark:bg-gray-700/50 dark:hover:border-orange-500/50 dark:hover:bg-gray-700"
+                                className="group relative flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 rounded-xl border border-slate-200 bg-white p-2 sm:p-3 transition-all hover:border-orange-300 hover:bg-orange-50 dark:border-gray-700 dark:bg-gray-700/50 dark:hover:border-orange-500/50 dark:hover:bg-gray-700"
                               >
-                                <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-slate-100 dark:bg-gray-700">
+                                <div className="relative h-16 w-16 sm:h-20 sm:w-20 shrink-0 overflow-hidden rounded-lg bg-slate-100 dark:bg-gray-700">
                                   {product.image ? (
                                     <Image src={product.image} alt={product.name} fill className="object-cover transition group-hover:scale-110" />
                                   ) : (
@@ -1839,7 +1842,7 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                                   )}
                                 </div>
                                 <div className="min-w-0 flex-1">
-                                  <p className="truncate text-sm font-semibold text-slate-900 dark:text-gray-100">
+                                  <p className="line-clamp-2 sm:truncate text-xs sm:text-sm font-semibold text-slate-900 dark:text-gray-100">
                                     {highlightText(product.name, searchModalQuery).map((part, i) =>
                                       part.type === 'highlight' ? (
                                         <span key={i} className="bg-yellow-200 dark:bg-yellow-700 rounded px-0.5">{part.text}</span>
@@ -1848,21 +1851,21 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                                       )
                                     )}
                                   </p>
-                                  <p className="mt-0.5 text-xs text-slate-500 dark:text-gray-400">Match for &quot;{searchModalQuery.trim()}&quot;</p>
+                                  <p className="mt-0.5 text-[10px] sm:text-xs text-slate-500 dark:text-gray-400">Match for &quot;{searchModalQuery.trim()}&quot;</p>
                                   {(product.priceMember ?? product.priceSrp ?? product.prodpv) && (
-                                    <div className="mt-2 space-y-1.5">
+                                    <div className="mt-1 sm:mt-2 space-y-1 sm:space-y-1.5">
                                       {product.priceMember !== null && product.priceMember > 0 && product.priceMember < (product.priceSrp ?? product.priceDp ?? 0) ? (
                                         <>
-                                          <div className="flex flex-wrap items-center gap-2">
-                                            <span className="text-sm font-bold text-orange-600 dark:text-orange-400">
+                                          <div className="flex flex-wrap items-center gap-1 sm:gap-2">
+                                            <span className="text-xs sm:text-sm font-bold text-orange-600 dark:text-orange-400">
                                               {formatPrice(product.priceMember)}
                                             </span>
                                             {product.priceSrp && product.priceSrp > product.priceMember && (
                                               <>
-                                                <span className="text-xs text-slate-400 line-through dark:text-gray-500">
+                                                <span className="text-[10px] sm:text-xs text-slate-400 line-through dark:text-gray-500">
                                                   {formatPrice(product.priceSrp)}
                                                 </span>
-                                                <span className="inline-flex items-center rounded-full border border-green-200 bg-green-50 px-2 py-0.5 text-[10px] font-semibold text-green-700 dark:border-green-900/50 dark:bg-green-900/30 dark:text-green-300">
+                                                <span className="inline-flex items-center rounded-full border border-green-200 bg-green-50 px-1.5 sm:px-2 py-0.5 text-[8px] sm:text-[10px] font-semibold text-green-700 dark:border-green-900/50 dark:bg-green-900/30 dark:text-green-300">
                                                   Save {formatPrice(product.priceSrp - product.priceMember)}
                                                 </span>
                                               </>

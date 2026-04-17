@@ -4,10 +4,12 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useState } from 'react'
 import { useSession } from 'next-auth/react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useAddToCartMutation, useGetCartQuery } from '@/store/api/cartApi'
 import { useGetWishlistQuery, useAddWishlistMutation, useRemoveWishlistMutation } from '@/store/api/wishlistApi'
 import { useCart } from '@/context/CartContext'
 import toast from 'react-hot-toast'
+import ShareModal from '@/components/ui/ShareModal'
 
 const toSlug = (value: string) =>
   value
@@ -48,25 +50,7 @@ export default function ItemCard({ product, brandName }: ItemCardProps) {
   const [addToCart, { isLoading: isAddingToCart }] = useAddToCartMutation()
   const { setIsOpen } = useCart()
   const { refetch: refetchCart } = useGetCartQuery(undefined, { skip: !isLoggedIn })
-  const [isHoveringShare, setIsHoveringShare] = useState(false)
-  
-  const handleShareExternal = (type: 'messenger' | 'whatsapp' | 'x' | 'telegram' | 'viber') => {
-    const url = `${window.location.origin}${href}`
-    const title = product.name
-    if (!url) return
-
-    const encodedUrl = encodeURIComponent(url)
-    const encodedText = encodeURIComponent(`${title} - ${url}`)
-    const shareTargets: Record<string, string> = {
-      messenger: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`,
-      whatsapp: `https://wa.me/?text=${encodedText}`,
-      x: `https://twitter.com/intent/tweet?text=${encodedText}`,
-      telegram: `https://t.me/share/url?url=${encodedUrl}&text=${encodedText}`,
-      viber: `viber://forward?text=${encodedText}`,
-    }
-    const targetUrl = shareTargets[type]
-    if (targetUrl) window.open(targetUrl, '_blank', 'noopener,noreferrer')
-  }
+  const [shareModalOpen, setShareModalOpen] = useState(false)
   
   // Wishlist functionality
   const { data: wishlist = [] } = useGetWishlistQuery(undefined, { skip: !isLoggedIn })
@@ -112,13 +96,7 @@ export default function ItemCard({ product, brandName }: ItemCardProps) {
   const handleShare = async (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
-    
-    const productUrl = `${window.location.origin}${href}`
-    navigator.clipboard.writeText(productUrl).then(() => {
-      toast.success('Link copied to clipboard')
-    }).catch(() => {
-      toast.error('Failed to copy link')
-    })
+    setShareModalOpen(true)
   }
 
   const handleWishlist = async (e: React.MouseEvent) => {
@@ -148,15 +126,16 @@ export default function ItemCard({ product, brandName }: ItemCardProps) {
     }
   }
 
-  const baseSrp = Number(product.originalPrice) ?? Number(product.price) ?? 0
-  const srpPrice = Number(product.priceSrp) ?? baseSrp
-  const memberPrice = Number(product.priceMember) ?? Number(product.priceDp) ?? 0
+  const baseSrp = (product.originalPrice ? Number(product.originalPrice) : undefined) ?? (product.price ? Number(product.price) : undefined) ?? 0
+  const srpPrice = (product.priceSrp ? Number(product.priceSrp) : undefined) ?? baseSrp
+  const memberPrice = (product.priceMember ? Number(product.priceMember) : undefined) ?? (product.priceDp ? Number(product.priceDp) : undefined) ?? 0
   const hasMemberPrice = memberPrice > 0 && memberPrice < srpPrice
   const displayPrice = hasMemberPrice ? memberPrice : srpPrice
-  const strikePrice = hasMemberPrice ? srpPrice : (product.originalPrice && product.originalPrice > srpPrice ? product.originalPrice : 0)
-  const displayPv = Number(product.prodpv ?? 0)
+  const strikePrice = hasMemberPrice ? srpPrice : (product.originalPrice && Number(product.originalPrice) > srpPrice ? Number(product.originalPrice) : 0)
+  const displayPv = product.prodpv ? Number(product.prodpv) : 0
 
   return (
+    <>
     <Link href={href} className="flex flex-col group bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden hover:border-orange-500 dark:hover:border-orange-400 transition-colors cursor-pointer">
       {/* Product Image */}
       <div className="relative aspect-square w-full bg-gray-100 dark:bg-gray-700 overflow-hidden border-b border-gray-200 dark:border-gray-700">
@@ -195,24 +174,15 @@ export default function ItemCard({ product, brandName }: ItemCardProps) {
           </div>
           <button
             onClick={handleShare}
-            onMouseEnter={() => setIsHoveringShare(true)}
-            onMouseLeave={() => setIsHoveringShare(false)}
             className="p-2 rounded-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-md border border-gray-200 dark:border-gray-600 shadow-lg hover:bg-orange-500 hover:border-orange-500 dark:hover:bg-orange-500 dark:hover:border-orange-500 transition-all duration-200 cursor-pointer hover:cursor-hand"
           >
-            {isHoveringShare ? (
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-700 dark:text-gray-300 hover:text-white transition-colors">
-                <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-              </svg>
-            ) : (
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-700 dark:text-gray-300 hover:text-white transition-colors">
-                <circle cx="18" cy="5" r="3" />
-                <circle cx="6" cy="12" r="3" />
-                <circle cx="18" cy="19" r="3" />
-                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
-                <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
-              </svg>
-            )}
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-700 dark:text-gray-300 hover:text-white transition-colors">
+              <circle cx="18" cy="5" r="3" />
+              <circle cx="6" cy="12" r="3" />
+              <circle cx="18" cy="19" r="3" />
+              <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+              <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+            </svg>
           </button>
         </div>
         {product.image && !imageError ? (
@@ -275,60 +245,70 @@ export default function ItemCard({ product, brandName }: ItemCardProps) {
       </div>
 
       {/* Product Info */}
-      <div className="mt-1.5 flex flex-col gap-1 p-3">
+      <div className="mt-1 flex flex-col gap-1 px-2.5 sm:px-3 py-2.5 sm:py-3">
         {/* Brand Name */}
         {brandName && (
-          <p className="text-xs text-gray-500 dark:text-gray-400 font-medium uppercase tracking-wide">
+          <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 font-medium uppercase tracking-wide">
             {brandName}
           </p>
         )}
         {/* Product Name */}
-        <h3 className="line-clamp-2 text-sm text-gray-800 dark:text-gray-200 leading-snug min-h-[2.5rem]">
+        <h3 className="line-clamp-2 text-xs sm:text-sm text-gray-800 dark:text-gray-200 leading-snug min-h-[2.5rem]">
           {product.name}
         </h3>
 
         {/* Price */}
-        <div className="flex items-baseline justify-between gap-2">
-          <div className="flex items-baseline gap-2">
-            <span className="text-base font-bold text-orange-500 dark:text-orange-400">
+        <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-1 sm:gap-2">
+          <div className="flex items-baseline gap-1.5 sm:gap-2 flex-wrap">
+            <span className="text-sm sm:text-base font-bold text-orange-500 dark:text-orange-400">
               ₱{displayPrice.toLocaleString()}
             </span>
             {strikePrice > displayPrice && (
-              <span className="text-sm text-gray-400 dark:text-gray-500 line-through">
+              <span className="text-xs sm:text-sm text-gray-400 dark:text-gray-500 line-through">
                 ₱{strikePrice.toLocaleString()}
               </span>
             )}
           </div>
           {displayPv > 0 && (
-            <span className="rounded-full border border-blue-200 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 text-[11px] font-semibold text-blue-700 dark:text-blue-300 shrink-0">
+            <span className="rounded-full border border-blue-200 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/30 px-1 sm:px-2 py-0.5 text-[8px] sm:text-[11px] font-semibold text-blue-700 dark:text-blue-300 shrink-0 whitespace-nowrap w-fit">
               PV {displayPv.toLocaleString()}
             </span>
           )}
         </div>
 
         {/* Sales/Ratings */}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-0.5 sm:gap-1">
           <div className="flex items-center">
             {[1, 2, 3, 4, 5].map((star) => (
               <svg
                 key={star}
                 xmlns="http://www.w3.org/2000/svg"
-                width="10"
-                height="10"
+                width="9"
+                height="9"
                 viewBox="0 0 24 24"
                 fill="#f97316"
                 stroke="#f97316"
                 strokeWidth="2"
+                className="sm:w-[10px] sm:h-[10px]"
               >
                 <path d="M12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
               </svg>
             ))}
           </div>
-          <span className="text-xs text-gray-400 dark:text-gray-500">
+          <span className="text-[10px] sm:text-xs text-gray-400 dark:text-gray-500">
             {product.soldCount ?? 0} sold
           </span>
         </div>
       </div>
     </Link>
+
+    {/* Share Modal */}
+    <ShareModal
+      isOpen={shareModalOpen}
+      onClose={() => setShareModalOpen(false)}
+      product={product}
+      brandName={brandName}
+    />
+  </>
   )
 }

@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import CategoryListProductMain from '@/components/category/CategoryListProductMain'
 import { buildPageMetadata } from '@/app/seo'
 import { getNavbarCategories } from '@/libs/serverStorefront'
@@ -173,10 +174,7 @@ async function getRoomProducts(roomSlug: string, keywordSlug?: string) {
   }
 }
 
-export default async function ByRoomDetailsPage({ params }: ByRoomDetailsPageProps) {
-  const { slug } = await params
-  const roomSlug = slug[0] ?? ''
-  const keywordSlug = slug[1]
+async function RoomContent({ roomSlug, keywordSlug }: { roomSlug: string; keywordSlug?: string }) {
   const { label, products } = await getRoomProducts(roomSlug, keywordSlug)
   const navbarCategories = await getNavbarCategories()
 
@@ -186,6 +184,30 @@ export default async function ByRoomDetailsPage({ params }: ByRoomDetailsPagePro
       initialCategoryLabel={label}
       initialProducts={products}
       initialCategories={navbarCategories}
+      isRoomPage={true}
     />
+  )
+}
+
+function RoomLoadingFallback({ roomSlug }: { roomSlug: string }) {
+  return (
+    <CategoryListProductMain
+      slug={roomSlug}
+      isLoading={true}
+      initialCategories={[]}
+      isRoomPage={true}
+    />
+  )
+}
+
+export default async function ByRoomDetailsPage({ params }: ByRoomDetailsPageProps) {
+  const { slug } = await params
+  const roomSlug = slug[0] ?? ''
+  const keywordSlug = slug[1]
+
+  return (
+    <Suspense fallback={<RoomLoadingFallback roomSlug={roomSlug} />}>
+      <RoomContent roomSlug={roomSlug} keywordSlug={keywordSlug} />
+    </Suspense>
   )
 }
