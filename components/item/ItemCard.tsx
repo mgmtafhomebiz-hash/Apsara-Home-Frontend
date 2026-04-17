@@ -4,10 +4,12 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useState } from 'react'
 import { useSession } from 'next-auth/react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useAddToCartMutation, useGetCartQuery } from '@/store/api/cartApi'
 import { useGetWishlistQuery, useAddWishlistMutation, useRemoveWishlistMutation } from '@/store/api/wishlistApi'
 import { useCart } from '@/context/CartContext'
 import toast from 'react-hot-toast'
+import ShareModal from '@/components/ui/ShareModal'
 
 const toSlug = (value: string) =>
   value
@@ -48,25 +50,7 @@ export default function ItemCard({ product, brandName }: ItemCardProps) {
   const [addToCart, { isLoading: isAddingToCart }] = useAddToCartMutation()
   const { setIsOpen } = useCart()
   const { refetch: refetchCart } = useGetCartQuery(undefined, { skip: !isLoggedIn })
-  const [isHoveringShare, setIsHoveringShare] = useState(false)
-  
-  const handleShareExternal = (type: 'messenger' | 'whatsapp' | 'x' | 'telegram' | 'viber') => {
-    const url = `${window.location.origin}${href}`
-    const title = product.name
-    if (!url) return
-
-    const encodedUrl = encodeURIComponent(url)
-    const encodedText = encodeURIComponent(`${title} - ${url}`)
-    const shareTargets: Record<string, string> = {
-      messenger: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`,
-      whatsapp: `https://wa.me/?text=${encodedText}`,
-      x: `https://twitter.com/intent/tweet?text=${encodedText}`,
-      telegram: `https://t.me/share/url?url=${encodedUrl}&text=${encodedText}`,
-      viber: `viber://forward?text=${encodedText}`,
-    }
-    const targetUrl = shareTargets[type]
-    if (targetUrl) window.open(targetUrl, '_blank', 'noopener,noreferrer')
-  }
+  const [shareModalOpen, setShareModalOpen] = useState(false)
   
   // Wishlist functionality
   const { data: wishlist = [] } = useGetWishlistQuery(undefined, { skip: !isLoggedIn })
@@ -112,13 +96,7 @@ export default function ItemCard({ product, brandName }: ItemCardProps) {
   const handleShare = async (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
-    
-    const productUrl = `${window.location.origin}${href}`
-    navigator.clipboard.writeText(productUrl).then(() => {
-      toast.success('Link copied to clipboard')
-    }).catch(() => {
-      toast.error('Failed to copy link')
-    })
+    setShareModalOpen(true)
   }
 
   const handleWishlist = async (e: React.MouseEvent) => {
@@ -157,6 +135,7 @@ export default function ItemCard({ product, brandName }: ItemCardProps) {
   const displayPv = product.prodpv ? Number(product.prodpv) : 0
 
   return (
+    <>
     <Link href={href} className="flex flex-col group bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden hover:border-orange-500 dark:hover:border-orange-400 transition-colors cursor-pointer">
       {/* Product Image */}
       <div className="relative aspect-square w-full bg-gray-100 dark:bg-gray-700 overflow-hidden border-b border-gray-200 dark:border-gray-700">
@@ -195,24 +174,15 @@ export default function ItemCard({ product, brandName }: ItemCardProps) {
           </div>
           <button
             onClick={handleShare}
-            onMouseEnter={() => setIsHoveringShare(true)}
-            onMouseLeave={() => setIsHoveringShare(false)}
             className="p-2 rounded-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-md border border-gray-200 dark:border-gray-600 shadow-lg hover:bg-orange-500 hover:border-orange-500 dark:hover:bg-orange-500 dark:hover:border-orange-500 transition-all duration-200 cursor-pointer hover:cursor-hand"
           >
-            {isHoveringShare ? (
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-700 dark:text-gray-300 hover:text-white transition-colors">
-                <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-              </svg>
-            ) : (
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-700 dark:text-gray-300 hover:text-white transition-colors">
-                <circle cx="18" cy="5" r="3" />
-                <circle cx="6" cy="12" r="3" />
-                <circle cx="18" cy="19" r="3" />
-                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
-                <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
-              </svg>
-            )}
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-700 dark:text-gray-300 hover:text-white transition-colors">
+              <circle cx="18" cy="5" r="3" />
+              <circle cx="6" cy="12" r="3" />
+              <circle cx="18" cy="19" r="3" />
+              <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+              <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+            </svg>
           </button>
         </div>
         {product.image && !imageError ? (
@@ -331,5 +301,14 @@ export default function ItemCard({ product, brandName }: ItemCardProps) {
         </div>
       </div>
     </Link>
+
+    {/* Share Modal */}
+    <ShareModal
+      isOpen={shareModalOpen}
+      onClose={() => setShareModalOpen(false)}
+      product={product}
+      brandName={brandName}
+    />
+  </>
   )
 }
