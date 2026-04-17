@@ -84,6 +84,7 @@ export default function AdminGeneralSettingsPageMain() {
   const [branchDraftAddress, setBranchDraftAddress] = useState('')
   const [branchDraftGoogleMapLink, setBranchDraftGoogleMapLink] = useState('')
   const [branchDraftWazeLink, setBranchDraftWazeLink] = useState('')
+  const [editingBranchIndex, setEditingBranchIndex] = useState<number | null>(null)
   const [logoFile, setLogoFile] = useState<File | null>(null)
   const [faviconFile, setFaviconFile] = useState<File | null>(null)
   const [websiteQrCodeFile, setWebsiteQrCodeFile] = useState<File | null>(null)
@@ -96,6 +97,14 @@ export default function AdminGeneralSettingsPageMain() {
   const [dateFormat, setDateFormat] = useState('MM/DD/YYYY')
   const [language, setLanguage] = useState('English')
   const [enableTestPayments, setEnableTestPayments] = useState(false)
+
+  const resetBranchDraft = () => {
+    setBranchDraftName('')
+    setBranchDraftAddress('')
+    setBranchDraftGoogleMapLink('')
+    setBranchDraftWazeLink('')
+    setEditingBranchIndex(null)
+  }
 
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
@@ -560,25 +569,36 @@ export default function AdminGeneralSettingsPageMain() {
                       showErrorToast('Please add both office name and address.')
                       return
                     }
-                    setBranches((prev) => [
-                      ...prev,
-                      {
-                        name: branchDraftName.trim(),
-                        address: branchDraftAddress.trim(),
-                        google_map_link: branchDraftGoogleMapLink.trim(),
-                        waze_link: branchDraftWazeLink.trim(),
-                      },
-                    ])
+                    const nextBranch = {
+                      name: branchDraftName.trim(),
+                      address: branchDraftAddress.trim(),
+                      google_map_link: branchDraftGoogleMapLink.trim(),
+                      waze_link: branchDraftWazeLink.trim(),
+                    }
+
+                    if (editingBranchIndex !== null) {
+                      setBranches((prev) =>
+                        prev.map((item, idx) => (idx === editingBranchIndex ? nextBranch : item)),
+                      )
+                    } else {
+                      setBranches((prev) => [...prev, nextBranch])
+                    }
                     branchesTouched.current = true
-                    setBranchDraftName('')
-                    setBranchDraftAddress('')
-                    setBranchDraftGoogleMapLink('')
-                    setBranchDraftWazeLink('')
+                    resetBranchDraft()
                   }}
                   className="rounded-full bg-gradient-to-r from-cyan-600 to-sky-500 px-5 py-2 text-xs font-semibold text-white shadow-sm transition hover:shadow-md"
                 >
-                  Add Branch
+                  {editingBranchIndex !== null ? 'Update Branch' : 'Add Branch'}
                 </button>
+                {editingBranchIndex !== null ? (
+                  <button
+                    type="button"
+                    onClick={resetBranchDraft}
+                    className="rounded-full bg-white px-4 py-2 text-xs font-semibold text-slate-600 shadow-sm ring-1 ring-slate-200"
+                  >
+                    Cancel Edit
+                  </button>
+                ) : null}
               </div>
             </div>
 
@@ -618,8 +638,26 @@ export default function AdminGeneralSettingsPageMain() {
                     <button
                       type="button"
                       onClick={() => {
+                        setEditingBranchIndex(index)
+                        setBranchDraftName(branch.name || '')
+                        setBranchDraftAddress(branch.address || '')
+                        setBranchDraftGoogleMapLink(branch.google_map_link || '')
+                        setBranchDraftWazeLink(branch.waze_link || '')
+                      }}
+                      className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-cyan-700 shadow-sm ring-1 ring-cyan-100"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
                         branchesTouched.current = true
                         setBranches((prev) => prev.filter((_, idx) => idx !== index))
+                        if (editingBranchIndex === index) {
+                          resetBranchDraft()
+                        } else if (editingBranchIndex !== null && editingBranchIndex > index) {
+                          setEditingBranchIndex(editingBranchIndex - 1)
+                        }
                       }}
                       className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-rose-600 shadow-sm ring-1 ring-rose-100"
                     >

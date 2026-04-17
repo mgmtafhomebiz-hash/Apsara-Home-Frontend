@@ -53,6 +53,7 @@ const footerLinks = {
     { name: 'FAQs', href: '#' },
     { name: 'Shipping Info', href: '#' },
     { name: 'Returns', href: '#' },
+    { name: 'Track Order', href: '/track-order' },
   ],
 };
 
@@ -179,12 +180,12 @@ export default function Footer() {
             <ul className="space-y-3">
               {footerLinks.shop.map((link) => (
                 <li key={link.name}>
-                  <a
+                  <Link
                     href={link.href}
                     className="text-gray-600 dark:text-white/70 hover:text-orange-500 dark:hover:text-orange-400 transition-colors text-sm"
                   >
                     {link.name}
-                  </a>
+                  </Link>
                 </li>
               ))}
             </ul>

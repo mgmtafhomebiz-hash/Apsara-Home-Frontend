@@ -131,8 +131,12 @@ export default function ItemCard({ product, brandName }: ItemCardProps) {
   const memberPrice = (product.priceMember ? Number(product.priceMember) : undefined) ?? (product.priceDp ? Number(product.priceDp) : undefined) ?? 0
   const hasMemberPrice = memberPrice > 0 && memberPrice < srpPrice
   const displayPrice = hasMemberPrice ? memberPrice : srpPrice
-  const strikePrice = hasMemberPrice ? srpPrice : (product.originalPrice && Number(product.originalPrice) > srpPrice ? Number(product.originalPrice) : 0)
-  const displayPv = product.prodpv ? Number(product.prodpv) : 0
+  const strikePrice = hasMemberPrice ? srpPrice : (product.originalPrice && product.originalPrice > srpPrice ? product.originalPrice : 0)
+  const displayPv = Number(product.prodpv ?? 0)
+  const averageRating = Math.max(0, Math.min(5, Number(product.avgRating ?? 0)))
+  const hasRating = averageRating > 0
+  const filledStars = Math.floor(averageRating)
+  const soldCount = Number(product.soldCount ?? 0)
 
   return (
     <>
@@ -286,8 +290,8 @@ export default function ItemCard({ product, brandName }: ItemCardProps) {
                 width="9"
                 height="9"
                 viewBox="0 0 24 24"
-                fill="#f97316"
-                stroke="#f97316"
+                fill={hasRating && star <= filledStars ? '#f97316' : 'none'}
+                stroke={hasRating && star <= filledStars ? '#f97316' : '#d1d5db'}
                 strokeWidth="2"
                 className="sm:w-[10px] sm:h-[10px]"
               >
@@ -295,8 +299,9 @@ export default function ItemCard({ product, brandName }: ItemCardProps) {
               </svg>
             ))}
           </div>
-          <span className="text-[10px] sm:text-xs text-gray-400 dark:text-gray-500">
-            {product.soldCount ?? 0} sold
+          <span className="text-xs text-gray-400 dark:text-gray-500">
+            {hasRating ? `${averageRating.toFixed(1)} • ` : 'No rating yet • '}
+            {soldCount} sold
           </span>
         </div>
       </div>

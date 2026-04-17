@@ -129,6 +129,11 @@ export default function CategoryListProductMain({
         () => (hasDynamicProducts ? (initialProducts ?? []) : (staticProducts ?? [])),
         [hasDynamicProducts, initialProducts, staticProducts],
     );
+    const defaultPriceMax = useMemo(() => {
+        const maxPrice = safeProducts.reduce((highest, product) => Math.max(highest, Number(product.price ?? 0)), 0);
+        if (maxPrice <= 0) return 10000;
+        return Math.max(10000, Math.ceil(maxPrice / 1000) * 1000);
+    }, [safeProducts]);
 
     const categoryLabel = initialCategoryLabel ?? meta?.label ?? titleFromSlug(slug);
 
@@ -244,7 +249,7 @@ export default function CategoryListProductMain({
     
     // Filter state for ProductFilter component
     const [filterState, setFilterState] = useState<FilterState>({
-        priceRange: [0, 10000],
+        priceRange: [0, defaultPriceMax],
         sortBy: 'default',
         inStock: false,
         discountOnly: false,
@@ -264,7 +269,7 @@ export default function CategoryListProductMain({
     // Reset filters function
     const resetFilters = () => {
         setFilterState({
-            priceRange: [0, 10000],
+            priceRange: [0, defaultPriceMax],
             sortBy: 'default',
             inStock: false,
             discountOnly: false,
@@ -376,9 +381,9 @@ export default function CategoryListProductMain({
         listingTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, [boundedCurrentPage]);
 
-    const hasActiveFilters = (filterState.priceRange[0] > 0 ||
-        filterState.priceRange[1] < 10000 ||
-        filterState.inStock ||
+    const hasActiveFilters = filterState.priceRange[0] > 0 || 
+        filterState.priceRange[1] < defaultPriceMax || 
+        filterState.inStock || 
         filterState.discountOnly ||
         filterState.minDiscount > 0 ||
         filterState.hasPvOnly ||
@@ -389,7 +394,7 @@ export default function CategoryListProductMain({
     
     const activeFilterCount = [
         filterState.priceRange[0] > 0,
-        filterState.priceRange[1] < 10000,
+        filterState.priceRange[1] < defaultPriceMax,
         filterState.inStock,
         filterState.discountOnly,
         filterState.minDiscount > 0,
@@ -441,9 +446,7 @@ export default function CategoryListProductMain({
                                 search={searchQuery}
                                 categories={initialCategories}
                                 currentCategory={categoryLabel}
-                                isRoomPage={isRoomPage}
-                                currentRoom={slug}
-                                filterState={filterState}
+                                maxPrice={defaultPriceMax}
                             />
                             {/* Video Section */}
                             <div className="mt-4 rounded-2xl overflow-hidden aspect-square border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
@@ -601,8 +604,13 @@ function ListViewProduct({ product, onShareClick }: ListViewProductProps) {
     const memberPrice = (product.priceMember ? Number(product.priceMember) : undefined) ?? (product.priceDp ? Number(product.priceDp) : undefined) ?? 0
     const hasMemberPrice = memberPrice > 0 && memberPrice < srpPrice
     const displayPrice = hasMemberPrice ? memberPrice : srpPrice
-    const strikePrice = hasMemberPrice ? srpPrice : (product.originalPrice ? Number(product.originalPrice) : 0)
-    const displayPv = product.prodpv ? Number(product.prodpv) : 0
+    const strikePrice = hasMemberPrice ? srpPrice : Number(product.originalPrice ?? 0)
+    const displayPv = Number(product.prodpv ?? 0)
+    const productWithStats = product as CategoryProduct & { soldCount?: number; avgRating?: number }
+    const averageRating = Math.max(0, Math.min(5, Number(productWithStats.avgRating ?? product.rating ?? 0)))
+    const hasRating = averageRating > 0
+    const filledStars = Math.floor(averageRating)
+    const soldCount = Number(productWithStats.soldCount ?? 0)
     const { data: session } = useSession()
     const isLoggedIn = Boolean(session?.user)
 
@@ -652,27 +660,29 @@ function ListViewProduct({ product, onShareClick }: ListViewProductProps) {
                             PV {displayPv.toLocaleString()}
                         </span>
                     )}
-                    {/* Sales/Ratings */}
-                    <div className="flex items-center gap-0.5 sm:gap-1">
-                        <div className="flex items-center">
-                            {[1, 2, 3, 4, 5].map((star) => (
-                                <svg
-                                    key={star}
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    width="8"
-                                    height="8"
-                                    viewBox="0 0 24 24"
-                                    fill={star <= 4 ? '#f97316' : 'none'}
-                                    stroke={star <= 4 ? '#f97316' : '#d1d5db'}
-                                    strokeWidth="2"
-                                    className="sm:w-[10px] sm:h-[10px]"
-                                >
-                                    <path d="M12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
-                                </svg>
-                            ))}
-                        </div>
-                        <span className="text-[9px] sm:text-xs text-gray-400 dark:text-gray-500">{product.soldCount ?? 0} sold</span>
+                </div>
+                {/* Sales/Ratings */}
+                <div className="flex items-center gap-1 mt-1">
+                    <div className="flex items-center">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                            <svg
+                                key={star}
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="10"
+                                height="10"
+                                viewBox="0 0 24 24"
+                                fill={hasRating && star <= filledStars ? '#f97316' : 'none'}
+                                stroke={hasRating && star <= filledStars ? '#f97316' : '#d1d5db'}
+                                strokeWidth="2"
+                            >
+                                <path d="M12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+                            </svg>
+                        ))}
                     </div>
+                    <span className="text-xs text-gray-400 dark:text-gray-500">
+                        {hasRating ? `${averageRating.toFixed(1)} • ` : 'No rating yet • '}
+                        {soldCount} sold
+                    </span>
                 </div>
 
                 {/* Action Icons - Bottom */}

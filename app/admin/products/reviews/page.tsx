@@ -1,5 +1,5 @@
 import { buildPageMetadata } from '@/app/seo'
-import UnderMaintenancePage from '@/components/superAdmin/UnderMaintenancePage'
+import ProductsReviewsPageMain from '@/components/superAdmin/products/ProductsReviewsPageMain'
 
 export const metadata = buildPageMetadata({
   title: 'Admin Products Reviews',
@@ -9,10 +9,5 @@ export const metadata = buildPageMetadata({
 })
 
 export default function AdminProductsReviewsPage() {
-  return (
-    <UnderMaintenancePage
-      title="Product Reviews"
-      description="Review moderation and product feedback tools are still being built."
-    />
-  )
+  return <ProductsReviewsPageMain />
 }

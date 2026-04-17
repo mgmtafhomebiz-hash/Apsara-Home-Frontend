@@ -31,9 +31,20 @@ interface DisplayProduct {
   verified?: boolean;
   stock?: number;
   brand?: string;
+  soldCount?: number;
+  avgRating?: number;
+  rating?: number;
 }
 
-const slugify = (value: string) => value.toLowerCase().trim().replace(/\s+/g, '-');
+const slugify = (value: string) =>
+  value
+    .toLowerCase()
+    .trim()
+    .replace(/&/g, ' ')
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-+|-+$/g, '');
 const normalizeCategorySlug = (rawUrl: string | null | undefined, fallbackName: string) => {
   const source = (rawUrl ?? '').trim();
   if (!source || source === '0') return slugify(fallbackName);
@@ -186,6 +197,8 @@ const mapProductToDisplay = (product: Product | LooseRecord, apiUrl?: string): D
   const rawImages = toStringArray(row.images ?? row.pd_images);
   const verified = toBoolean(row.verified ?? row.pd_verified);
   const brand = typeof row.brand === 'string' ? row.brand : undefined;
+  const soldCount = toNumber(row.soldCount ?? row.sold_count ?? 0);
+  const avgRating = toNumber(row.avgRating ?? row.avg_rating ?? row.rating ?? 0);
 
   return {
     id: toNumber(row.id ?? row.pd_id ?? 0) || undefined,
@@ -205,6 +218,9 @@ const mapProductToDisplay = (product: Product | LooseRecord, apiUrl?: string): D
     verified,
     stock,
     brand,
+    soldCount,
+    avgRating,
+    rating: avgRating,
   };
 };
 
@@ -226,36 +242,81 @@ async function getCategoryProducts(slug: string): Promise<{ label?: string; prod
     const categoriesJson = (await categoriesRes.json()) as ApiCategoriesResponse;
     const categories = extractCategories(categoriesJson);
 
-    const category = categories.find((item) => {
+    const slugKey = slug.toLowerCase();
+    const matchingCategories = categories.filter((item) => {
       const normalized = normalizeCategorySlug(item.url, item.name);
-      const byUrl = normalized === slug.toLowerCase();
-      const byName = slugify(item.name) === slug.toLowerCase();
+      const byUrl = normalized === slugKey;
+      const byName = slugify(item.name) === slugKey;
       return byUrl || byName;
     });
 
+    // If there are duplicate categories sharing the same slug, prefer the one
+    // with the largest active catalog, then newest id as a tiebreaker.
+    const category = matchingCategories
+      .slice()
+      .sort((a, b) => {
+        const countDiff = Number(b.product_count ?? 0) - Number(a.product_count ?? 0);
+        if (countDiff !== 0) return countDiff;
+        return Number(b.id ?? 0) - Number(a.id ?? 0);
+      })[0];
+
     const categoryId = category ? Number(category.id) : undefined;
+    const categoryIds = Array.from(
+      new Set(
+        matchingCategories
+          .map((item) => Number(item.id))
+          .filter((id) => Number.isFinite(id)),
+      ),
+    );
     const categoryLabel = category?.name ?? titleFromSlug(slug);
 
-    const productsUrl = new URL(`${apiUrl}/api/products`);
-    productsUrl.searchParams.set('page', '1');
-    productsUrl.searchParams.set('per_page', '200');
-    productsUrl.searchParams.set('status', '1');
-    if (typeof categoryId === 'number' && Number.isFinite(categoryId)) {
-      productsUrl.searchParams.set('cat_id', String(categoryId));
-    }
+    const fetchProductsByCategory = async (id?: number) => {
+      const fetchPage = async (page: number) => {
+        const productsUrl = new URL(`${apiUrl}/api/products`);
+        productsUrl.searchParams.set('page', String(page));
+        productsUrl.searchParams.set('per_page', '100');
+        productsUrl.searchParams.set('status', '1');
+        if (typeof id === 'number' && Number.isFinite(id)) {
+          productsUrl.searchParams.set('cat_id', String(id));
+        }
 
-    const productsRes = await fetch(productsUrl.toString(), {
-      method: 'GET',
-      headers: { Accept: 'application/json' },
-      cache: 'no-store',
-    });
+        const productsRes = await fetch(productsUrl.toString(), {
+          method: 'GET',
+          headers: { Accept: 'application/json' },
+          cache: 'no-store',
+        });
 
-    if (!productsRes.ok) {
-      return { label: categoryLabel, products: [] };
-    }
+        if (!productsRes.ok) {
+          return { products: [] as Product[], lastPage: 1 };
+        }
 
-    const productsJson = (await productsRes.json()) as ProductsResponse;
-    const products = extractProducts(productsJson);
+        const productsJson = (await productsRes.json()) as ProductsResponse & {
+          meta?: { last_page?: number } | null;
+        };
+
+        return {
+          products: extractProducts(productsJson),
+          lastPage: Number(productsJson?.meta?.last_page ?? 1) || 1,
+        };
+      };
+
+      const firstPage = await fetchPage(1);
+      if (firstPage.lastPage <= 1) {
+        return firstPage.products;
+      }
+
+      const remainingPages = await Promise.all(
+        Array.from({ length: firstPage.lastPage - 1 }, (_, index) => fetchPage(index + 2)),
+      );
+
+      return [firstPage, ...remainingPages].flatMap((batch) => batch.products);
+    };
+
+    const productBatches = categoryIds.length > 0
+      ? await Promise.all(categoryIds.map((id) => fetchProductsByCategory(id)))
+      : [await fetchProductsByCategory(categoryId)];
+    const products = productBatches.flat();
+    const matchingCategoryIdSet = new Set(categoryIds);
 
     return {
       label: categoryLabel,
@@ -272,10 +333,29 @@ async function getCategoryProducts(slug: string): Promise<{ label?: string; prod
           );
           const productCategorySlug = resolveProductCategorySlug(row);
 
-          const byId = typeof categoryId === 'number' && Number.isFinite(categoryId) && productCategoryId === categoryId;
+          const byId = matchingCategoryIdSet.size > 0
+            ? matchingCategoryIdSet.has(productCategoryId)
+            : (typeof categoryId === 'number' && Number.isFinite(categoryId) && productCategoryId === categoryId);
           const bySlug = productCategorySlug === slug.toLowerCase();
 
           return byId || bySlug;
+        })
+        .filter((item, index, list) => {
+          const row = toLooseRecord(item);
+          const currentId = Number(row.id ?? row.pd_id ?? 0);
+          if (currentId > 0) {
+            return list.findIndex((candidate) => {
+              const candidateRow = toLooseRecord(candidate);
+              return Number(candidateRow.id ?? candidateRow.pd_id ?? 0) === currentId;
+            }) === index;
+          }
+
+          const currentName = String(row.name ?? row.pd_name ?? '').trim().toLowerCase();
+          if (!currentName) return true;
+          return list.findIndex((candidate) => {
+            const candidateRow = toLooseRecord(candidate);
+            return String(candidateRow.name ?? candidateRow.pd_name ?? '').trim().toLowerCase() === currentName;
+          }) === index;
         })
         .map((item) => mapProductToDisplay(item, apiUrl)),
     };

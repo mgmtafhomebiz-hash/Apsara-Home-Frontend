@@ -803,6 +803,7 @@ export const {
   useGetProductReviewsQuery,
   useGetProductBrandQuery,
   useGetProductsQuery,
+  useLazyGetProductsQuery,
   useGetProductActivityLogsQuery,
   useCreateProductMutation,
   useBulkImportProductsMutation,
