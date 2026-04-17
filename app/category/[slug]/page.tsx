@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import CategoryListProductMain from '@/components/category/CategoryListProductMain';
 import type { Category } from '@/store/api/categoriesApi';
 import type { Product, ProductsResponse } from '@/store/api/productsApi';
@@ -286,8 +287,7 @@ async function getCategoryProducts(slug: string): Promise<{ label?: string; prod
   }
 }
 
-export default async function CategoryPage({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params;
+async function CategoryContent({ slug }: { slug: string }) {
   const { label, products } = await getCategoryProducts(slug);
   const navbarCategories = await getNavbarCategories();
 
@@ -298,5 +298,25 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
       initialProducts={products}
       initialCategories={navbarCategories}
     />
+  );
+}
+
+function CategoryLoadingFallback({ slug }: { slug: string }) {
+  return (
+    <CategoryListProductMain
+      slug={slug}
+      isLoading={true}
+      initialCategories={[]}
+    />
+  );
+}
+
+export default async function CategoryPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+
+  return (
+    <Suspense fallback={<CategoryLoadingFallback slug={slug} />}>
+      <CategoryContent slug={slug} />
+    </Suspense>
   );
 }

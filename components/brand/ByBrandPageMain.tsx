@@ -87,12 +87,169 @@ function BrandCardSkeleton() {
 function ProductCardSkeleton() {
   return (
     <div className="overflow-hidden rounded-2xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800">
-      <Skeleton className="aspect-[4/3]" />
-      <div className="space-y-2 p-4">
-        <Skeleton className="h-3 w-1/3 rounded-full" />
-        <Skeleton className="h-4 w-full rounded-full" />
-        <Skeleton className="h-4 w-4/5 rounded-full" />
-        <Skeleton className="h-5 w-1/2 rounded-full" />
+      {/* Image skeleton */}
+      <Skeleton className="aspect-square w-full" />
+
+      {/* Content skeleton */}
+      <div className="space-y-3 p-4">
+        {/* Product name */}
+        <Skeleton className="h-4 w-full rounded" />
+        <Skeleton className="h-4 w-3/4 rounded" />
+
+        {/* Price */}
+        <div className="flex gap-2 items-center">
+          <Skeleton className="h-5 w-24 rounded" />
+          <Skeleton className="h-4 w-20 rounded" />
+        </div>
+
+        {/* PV and Rating */}
+        <div className="flex gap-2 pt-2">
+          <Skeleton className="h-6 w-24 rounded-full" />
+          <Skeleton className="h-4 w-16 rounded" />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function ProductListSkeleton() {
+  return (
+    <div className="flex gap-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden p-4">
+      {/* Image skeleton */}
+      <Skeleton className="aspect-square w-32 rounded-lg shrink-0" />
+
+      {/* Content skeleton */}
+      <div className="flex-1 space-y-3 py-2">
+        {/* Product name */}
+        <Skeleton className="h-5 w-3/4 rounded" />
+
+        {/* Price */}
+        <div className="flex gap-3 items-center">
+          <Skeleton className="h-6 w-28 rounded" />
+          <Skeleton className="h-5 w-24 rounded" />
+        </div>
+
+        {/* PV and Rating */}
+        <div className="flex gap-3">
+          <Skeleton className="h-6 w-24 rounded-full" />
+          <Skeleton className="h-4 w-16 rounded" />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function TopFilterSkeleton() {
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 space-y-4">
+      {/* Search bar skeleton */}
+      <Skeleton className="h-10 w-full rounded-xl" />
+
+      {/* Controls row skeleton */}
+      <div className="flex gap-3 justify-end">
+        <Skeleton className="h-9 w-24 rounded-lg" />
+        <Skeleton className="h-9 w-28 rounded-lg" />
+        <Skeleton className="h-9 w-28 rounded-lg" />
+        <Skeleton className="h-9 w-32 rounded-lg" />
+      </div>
+    </div>
+  )
+}
+
+function ProductFilterSkeleton() {
+  return (
+    <div className="space-y-6">
+      {/* Filter section 1 */}
+      <div className="space-y-3">
+        <Skeleton className="h-5 w-32 rounded" />
+        <div className="space-y-2">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Skeleton key={i} className="h-4 w-full rounded" />
+          ))}
+        </div>
+      </div>
+
+      {/* Filter section 2 */}
+      <div className="space-y-3">
+        <Skeleton className="h-5 w-32 rounded" />
+        <div className="space-y-2">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-4 w-full rounded" />
+          ))}
+        </div>
+      </div>
+
+      {/* Filter section 3 */}
+      <div className="space-y-3">
+        <Skeleton className="h-5 w-32 rounded" />
+        <div className="space-y-2">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Skeleton key={i} className="h-4 w-full rounded" />
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function BrandProfileSkeleton() {
+  return (
+    <div className="rounded-lg bg-white dark:bg-gray-800 p-6 border border-gray-200 dark:border-gray-700">
+      <div className="flex items-center gap-6">
+        {/* Image skeleton */}
+        <Skeleton className="h-32 w-32 rounded-lg shrink-0" />
+
+        {/* Content skeleton */}
+        <div className="flex-1 space-y-4">
+          {/* Title */}
+          <Skeleton className="h-8 w-48 rounded" />
+
+          {/* Description */}
+          <Skeleton className="h-4 w-full rounded" />
+
+          {/* Stats row */}
+          <div className="grid grid-cols-4 gap-4 pt-2">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="space-y-2">
+                <Skeleton className="h-4 w-full rounded" />
+                <Skeleton className="h-3 w-3/4 rounded" />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Back button skeleton */}
+        <Skeleton className="h-10 w-20 rounded-lg shrink-0" />
+      </div>
+    </div>
+  )
+}
+
+function FeaturedProductsSkeleton() {
+  return (
+    <div className="rounded-lg bg-white dark:bg-gray-800 p-6 border border-gray-200 dark:border-gray-700">
+      <div className="mb-4">
+        <Skeleton className="h-4 w-24 rounded mb-2" />
+        <Skeleton className="h-6 w-40 rounded" />
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <ProductCardSkeleton key={i} />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function PageHeaderSkeleton() {
+  return (
+    <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+      <div className="container mx-auto px-4 py-6">
+        <div className="mt-4">
+          <Skeleton className="h-4 w-32 rounded mb-3" />
+          <Skeleton className="h-10 w-64 rounded mb-4" />
+          <Skeleton className="h-5 w-full max-w-2xl rounded" />
+        </div>
       </div>
     </div>
   )
@@ -336,23 +493,31 @@ export default function ByBrandPageMain() {
       }} />
       <main className="relative min-h-screen text-slate-900 dark:text-white">
       {/* Page Header */}
-      <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-        <div className="container mx-auto px-4 py-6">
-          <div className="mt-4">
-            <p className="text-xs font-bold uppercase tracking-[0.35em] text-orange-500 dark:text-orange-400">Shop by Brand</p>
-            <h1 className="mt-2 text-3xl font-bold text-gray-900 dark:text-white sm:text-4xl">
-              {selectedBrand && selectedBrandItem ? selectedBrandItem.name : 'All Brands'}
-            </h1>
-            <p className="mt-2 text-gray-600 dark:text-gray-400">
-              Browse featured product brands from the catalog. Pick a brand below to continue exploring.
-            </p>
+      {isFetching ? (
+        <PageHeaderSkeleton />
+      ) : (
+        <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+          <div className="container mx-auto px-4 py-6">
+            <div className="mt-4">
+              <p className="text-xs font-bold uppercase tracking-[0.35em] text-orange-500 dark:text-orange-400">Shop by Brand</p>
+              <h1 className="mt-2 text-3xl font-bold text-gray-900 dark:text-white sm:text-4xl">
+                {selectedBrand && selectedBrandItem ? selectedBrandItem.name : 'All Brands'}
+              </h1>
+              <p className="mt-2 text-gray-600 dark:text-gray-400">
+                Browse featured product brands from the catalog. Pick a brand below to continue exploring.
+              </p>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       <div className="container mx-auto px-4 py-8 space-y-8">
         {/* Brand Profile Card — only when brand selected */}
-        {selectedBrandItem && (
+        {selectedBrandItem && isFetchingProducts && (
+          <BrandProfileSkeleton />
+        )}
+
+        {selectedBrandItem && !isFetchingProducts && (
           <>
             <div className="rounded-lg bg-white dark:bg-gray-800 p-6 border border-gray-200 dark:border-gray-700 relative">
               <button
@@ -565,18 +730,26 @@ export default function ByBrandPageMain() {
         )}
 
         {/* Featured Products Section */}
-        {selectedBrandItem && !isFetchingProducts && brandProducts.length > 0 && (
-          <div className="rounded-lg bg-white dark:bg-gray-800 p-6 border border-gray-200 dark:border-gray-700">
-            <div className="mb-4">
-              <p className="text-xs font-bold uppercase tracking-[0.3em] text-orange-500 dark:text-orange-400">Featured</p>
-              <h3 className="mt-1 text-xl font-bold text-gray-900 dark:text-white">Featured Products</h3>
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {brandProducts.slice(0, 4).map((product) => (
-                <ItemCard key={product.id} product={product} brandName={selectedBrandItem.name} />
-              ))}
-            </div>
-          </div>
+        {selectedBrandItem && (
+          <>
+            {isFetchingProducts ? (
+              <FeaturedProductsSkeleton />
+            ) : (
+              brandProducts.length > 0 && (
+                <div className="rounded-lg bg-white dark:bg-gray-800 p-6 border border-gray-200 dark:border-gray-700">
+                  <div className="mb-4">
+                    <p className="text-xs font-bold uppercase tracking-[0.3em] text-orange-500 dark:text-orange-400">Featured</p>
+                    <h3 className="mt-1 text-xl font-bold text-gray-900 dark:text-white">Featured Products</h3>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {brandProducts.slice(0, 4).map((product) => (
+                      <ItemCard key={product.id} product={product} brandName={selectedBrandItem.name} />
+                    ))}
+                  </div>
+                </div>
+              )
+            )}
+          </>
         )}
 
         {/* Hero Banner */}
@@ -668,12 +841,16 @@ export default function ByBrandPageMain() {
           <div className="flex flex-col gap-6 lg:flex-row">
             {/* Left Sidebar - Filter */}
             <div className="lg:w-72 shrink-0">
-              <ProductFilter
-                onFilterChange={setFilters}
-                pvRange={filters.pvRange}
-                search={filters.search}
-                categories={categoriesData?.categories || []}
-              />
+              {isFetchingProducts ? (
+                <ProductFilterSkeleton />
+              ) : (
+                <ProductFilter
+                  onFilterChange={setFilters}
+                  pvRange={filters.pvRange}
+                  search={filters.search}
+                  categories={categoriesData?.categories || []}
+                />
+              )}
               {renderAdBlock()}
             </div>
 
@@ -691,41 +868,51 @@ export default function ByBrandPageMain() {
 
               {/* Top Filters */}
               <div className="mt-6">
-                <TopFilter
-                  onSearchChange={handleSearchChange}
-                  onViewTypeChange={setViewType}
-                  onShowNumberChange={handleShowNumberChange}
-                  onSortChange={handleSortChange}
-                  searchValue={filters.search}
-                  viewType={viewType}
-                  showNumber={showNumber}
-                  sortValue={sortBy}
-                />
-                <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400 mt-4">
-                  <span>
-                    Showing <span className="font-semibold text-slate-700 dark:text-gray-200">{brandProducts.length}</span> of{' '}
-                    <span className="font-semibold text-slate-700 dark:text-gray-200">{productsMeta?.total ?? brandProducts.length}</span> products
-                  </span>
-                </div>
+                {isFetchingProducts ? (
+                  <TopFilterSkeleton />
+                ) : (
+                  <TopFilter
+                    onSearchChange={handleSearchChange}
+                    onViewTypeChange={setViewType}
+                    onShowNumberChange={handleShowNumberChange}
+                    onSortChange={handleSortChange}
+                    searchValue={filters.search}
+                    viewType={viewType}
+                    showNumber={showNumber}
+                    sortValue={sortBy}
+                  />
+                )}
+                {!isFetchingProducts && (
+                  <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400 mt-4">
+                    <span>
+                      Showing <span className="font-semibold text-slate-700 dark:text-gray-200">{brandProducts.length}</span> of{' '}
+                      <span className="font-semibold text-slate-700 dark:text-gray-200">{productsMeta?.total ?? brandProducts.length}</span> products
+                    </span>
+                  </div>
+                )}
               </div>
 
               <div className="mt-6">
                 {isFetchingProducts ? (
                   <div className={viewType === 'grid' ? 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4 pb-6' : 'flex flex-col gap-4 pb-6'}>
-                    {Array.from({ length: 8 }).map((_, i) => <ProductCardSkeleton key={i} />)}
-                  </div>
-                ) : brandProducts.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-20 text-center">
-                    <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700 text-2xl">📦</div>
-                    <p className="mt-4 font-semibold text-gray-700 dark:text-gray-300">No products yet</p>
-                    <p className="mt-1 text-sm text-gray-400 dark:text-gray-500">No products assigned to this brand yet.</p>
+                    {Array.from({ length: viewType === 'grid' ? 12 : 8 }).map((_, i) =>
+                      viewType === 'grid' ? <ProductCardSkeleton key={i} /> : <ProductListSkeleton key={i} />
+                    )}
                   </div>
                 ) : (
-                  <div className={viewType === 'grid' ? 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4 pb-6' : 'flex flex-col gap-4 pb-6'}>
-                    {brandProducts.map((product) => (
-                      viewType === 'grid' ? (
-                        <ItemCard key={product.id} product={product} brandName={selectedBrandItem.name} />
-                      ) : (
+                  <>
+                    {brandProducts.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center py-20 text-center">
+                        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700 text-2xl">📦</div>
+                        <p className="mt-4 font-semibold text-gray-700 dark:text-gray-300">No products yet</p>
+                        <p className="mt-1 text-sm text-gray-400 dark:text-gray-500">No products assigned to this brand yet.</p>
+                      </div>
+                    ) : (
+                      <div className={viewType === 'grid' ? 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4 pb-6' : 'flex flex-col gap-4 pb-6'}>
+                        {brandProducts.map((product) => (
+                          viewType === 'grid' ? (
+                            <ItemCard key={product.id} product={product} brandName={selectedBrandItem.name} />
+                          ) : (
                         <Link
                           key={product.id}
                           href={`/product/${toSlug(product.name)}-i${product.id}`}
@@ -864,7 +1051,9 @@ export default function ByBrandPageMain() {
                         </Link>
                       )
                     ))}
-                  </div>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
 

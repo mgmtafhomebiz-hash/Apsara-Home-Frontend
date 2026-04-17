@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
+import { Skeleton } from '@heroui/react';
 import Footer from '@/components/landing-page/Footer';
 import TopBar from '@/components/layout/TopBar';
 import Navbar from '@/components/layout/Navbar';
@@ -47,6 +48,53 @@ const ChevronDown = () => (
         stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="6 9 12 15 18 9" /></svg>
 );
 
+function TopFilterSkeleton() {
+    return (
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-2.5 sm:p-4">
+            <div className="flex flex-col gap-3 sm:gap-4">
+                <Skeleton className="h-10 w-full rounded-xl" />
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3 sm:justify-end">
+                    <Skeleton className="h-8 w-16 rounded-lg" />
+                    <Skeleton className="h-8 w-20 rounded-lg" />
+                    <Skeleton className="h-8 w-24 rounded-lg" />
+                    <Skeleton className="h-8 w-20 rounded-lg" />
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function ProductGridSkeleton() {
+    return (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {Array.from({ length: 16 }).map((_, i) => (
+                <div key={i} className="space-y-2">
+                    <Skeleton className="aspect-square w-full rounded-lg" />
+                    <Skeleton className="h-4 w-3/4 rounded" />
+                    <Skeleton className="h-3 w-1/2 rounded" />
+                    <div className="flex gap-2">
+                        <Skeleton className="h-4 w-16 rounded" />
+                        <Skeleton className="h-4 w-16 rounded" />
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
+}
+
+function ProductFilterSkeleton() {
+    return (
+        <div className="space-y-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="space-y-2">
+                    <Skeleton className="h-4 w-24 rounded" />
+                    <Skeleton className="h-8 w-full rounded" />
+                </div>
+            ))}
+            <Skeleton className="aspect-square w-full rounded-2xl" />
+        </div>
+    );
+}
 
 interface CategoryListProductMainProps {
     slug: string;
@@ -54,6 +102,7 @@ interface CategoryListProductMainProps {
     initialProducts?: CategoryProduct[];
     initialCategories?: Category[];
     isRoomPage?: boolean;
+    isLoading?: boolean;
 }
 
 const titleFromSlug = (slug: string) =>
@@ -69,16 +118,65 @@ export default function CategoryListProductMain({
     initialProducts,
     initialCategories = [],
     isRoomPage = false,
+    isLoading = false,
 }: CategoryListProductMainProps) {
     const meta = categoryMeta[slug];
     const staticProducts = categoryProducts[slug];
-    const hasDynamicProducts = Array.isArray(initialProducts);
+    const hasDynamicProducts = Array.isArray(initialProducts) && initialProducts.length > 0;
     const safeProducts = useMemo(
         () => (hasDynamicProducts ? (initialProducts ?? []) : (staticProducts ?? [])),
         [hasDynamicProducts, initialProducts, staticProducts],
     );
 
     const categoryLabel = initialCategoryLabel ?? meta?.label ?? titleFromSlug(slug);
+
+    if (isLoading || (!hasDynamicProducts && !staticProducts)) {
+        return (
+            <>
+                <div
+                    className="fixed inset-0 -z-50 category-background"
+                    style={{
+                        backgroundColor: '#faf8f5',
+                        background: '#faf8f5'
+                    } as React.CSSProperties}
+                />
+                <style dangerouslySetInnerHTML={{
+                    __html: `
+                        html.dark .category-background {
+                            background-color: #030712 !important;
+                            background: #030712 !important;
+                        }
+                    `
+                }} />
+                <div className="relative min-h-screen text-slate-900 dark:text-white flex flex-col">
+                    <TopBar />
+                    <Navbar initialCategories={initialCategories} />
+
+                    <main className="flex-1">
+                        <div className="bg-gray-50 dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700">
+                            <div className="container mx-auto px-4 py-3">
+                                <Skeleton className="h-6 w-32 rounded" />
+                            </div>
+                        </div>
+
+                        <div className="container mx-auto px-4 py-6 lg:py-8">
+                            <div className="flex gap-6 items-start">
+                                <aside className="hidden lg:block w-80 shrink-0">
+                                    <ProductFilterSkeleton />
+                                </aside>
+
+                                <div className="flex-1 min-w-0 space-y-4">
+                                    <TopFilterSkeleton />
+                                    <ProductGridSkeleton />
+                                </div>
+                            </div>
+                        </div>
+                    </main>
+                    <Footer />
+                </div>
+            </>
+        );
+    }
 
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
     const [showCount, setShowCount] = useState(16);
