@@ -10,6 +10,7 @@ import Navbar from '@/components/layout/Navbar';
 import ItemCard from '@/components/item/ItemCard';
 import TopFilter from '@/components/item/TopFilter';
 import ProductFilter, { FilterState } from '@/components/item/ProductFilter';
+import ShareModal from '@/components/ui/ShareModal';
 import { CategoryProduct, categoryMeta, categoryProducts, CATEGORY_BRANDS } from '@/libs/CategoryData';
 import type { Category } from '@/store/api/categoriesApi';
 
@@ -52,6 +53,7 @@ interface CategoryListProductMainProps {
     initialCategoryLabel?: string;
     initialProducts?: CategoryProduct[];
     initialCategories?: Category[];
+    isRoomPage?: boolean;
 }
 
 const titleFromSlug = (slug: string) =>
@@ -66,6 +68,7 @@ export default function CategoryListProductMain({
     initialCategoryLabel,
     initialProducts,
     initialCategories = [],
+    isRoomPage = false,
 }: CategoryListProductMainProps) {
     const meta = categoryMeta[slug];
     const staticProducts = categoryProducts[slug];
@@ -83,6 +86,10 @@ export default function CategoryListProductMain({
     const [searchQuery, setSearchQuery] = useState('');
     const listingTopRef = useRef<HTMLDivElement | null>(null);
     
+    // Share modal state
+    const [shareModalOpen, setShareModalOpen] = useState(false);
+    const [shareProduct, setShareProduct] = useState<CategoryProduct | null>(null);
+    
     // Filter state for ProductFilter component
     const [filterState, setFilterState] = useState<FilterState>({
         priceRange: [0, 10000],
@@ -99,6 +106,7 @@ export default function CategoryListProductMain({
     // Filter change handler for ProductFilter component
     const handleFilterChange = (filters: FilterState) => {
         setFilterState(filters);
+        setSearchQuery(filters.search);
     };
 
     // Reset filters function
@@ -149,11 +157,14 @@ export default function CategoryListProductMain({
                 p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 (p.brand && p.brand.toLowerCase().includes(searchQuery.toLowerCase()));
 
-            // Filter by stock (assuming all products are in stock for now)
-            const passStock = !filterState.inStock || true;
+            // Filter by stock
+            const srpPrice = (p.priceSrp ? Number(p.priceSrp) : undefined) ?? (p.price ? Number(p.price) : undefined) ?? 0
+            const memberPrice = (p.priceMember ? Number(p.priceMember) : undefined) ?? (p.priceDp ? Number(p.priceDp) : undefined) ?? 0
+            const hasMemberPrice = memberPrice > 0 && memberPrice < srpPrice
+            const passStock = !filterState.inStock || (p.stock !== undefined && p.stock > 0);
 
-            // Filter by discount (assuming no discount data for now)
-            const passDiscount = !filterState.discountOnly || false;
+            // Filter by discount
+            const passDiscount = !filterState.discountOnly || hasMemberPrice;
 
             return passPrice && passSearch && passStock && passDiscount;
         });
@@ -249,12 +260,15 @@ export default function CategoryListProductMain({
                     <div className="flex gap-6 items-start">
 
                         {/* ─── PRODUCT FILTER SIDEBAR ─── */}
-                        <aside className="hidden lg:block w-80 shrink-0 sticky top-4">
+                        <aside className="hidden lg:block w-80 shrink-0 sticky top-4 z-10">
                             <ProductFilter
                                 onFilterChange={handleFilterChange}
                                 search={searchQuery}
                                 categories={initialCategories}
                                 currentCategory={categoryLabel}
+                                isRoomPage={isRoomPage}
+                                currentRoom={slug}
+                                filterState={filterState}
                             />
                             {/* Video Section */}
                             <div className="mt-4 rounded-2xl overflow-hidden aspect-square border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
@@ -330,7 +344,7 @@ export default function CategoryListProductMain({
                                             {viewMode === 'grid' ? (
                                                 <ItemCard key={product.id} product={product} brandName={product.brand || ''} />
                                             ) : (
-                                                <ListViewProduct key={product.id} product={product} />
+                                                <ListViewProduct key={product.id} product={product} onShareClick={(p) => { setShareProduct(p); setShareModalOpen(true); }} />
                                             )}
                                         </motion.div>
                                     ))}
@@ -376,13 +390,38 @@ export default function CategoryListProductMain({
             </main>
             <Footer />
         </div>
+        {/* Share Modal */}
+        {shareProduct && (
+            <ShareModal
+                isOpen={shareModalOpen}
+                onClose={() => setShareModalOpen(false)}
+                product={{
+                    id: shareProduct.id,
+                    name: shareProduct.name,
+                    image: shareProduct.image,
+                    price: shareProduct.price,
+                    priceMember: shareProduct.priceMember,
+                    priceDp: shareProduct.priceDp,
+                    priceSrp: shareProduct.priceSrp,
+                    originalPrice: shareProduct.originalPrice,
+                    sku: shareProduct.sku,
+                    prodpv: shareProduct.prodpv,
+                    brand: shareProduct.brand,
+                }}
+                brandName={shareProduct.brand || ''}
+                shareUrl={`https://apsara-home.com/product/${shareProduct.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-i${shareProduct.id}`}
+            />
+        )}
         </>
     );
-
 }
 
-// List View Product Component
-function ListViewProduct({ product }: { product: CategoryProduct }) {
+interface ListViewProductProps {
+    product: CategoryProduct;
+    onShareClick: (product: CategoryProduct) => void;
+}
+
+function ListViewProduct({ product, onShareClick }: ListViewProductProps) {
     const srpPrice = (product.priceSrp ? Number(product.priceSrp) : undefined) ?? (product.price ? Number(product.price) : undefined) ?? 0
     const memberPrice = (product.priceMember ? Number(product.priceMember) : undefined) ?? (product.priceDp ? Number(product.priceDp) : undefined) ?? 0
     const hasMemberPrice = memberPrice > 0 && memberPrice < srpPrice
@@ -397,14 +436,13 @@ function ListViewProduct({ product }: { product: CategoryProduct }) {
             href={`/product/${product.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-i${product.id}`}
             className="flex gap-2 sm:gap-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden hover:border-orange-500 dark:hover:border-orange-400 transition-colors group relative"
         >
-            {/* Discount Badge */}
-            {hasMemberPrice && (
-                <div className="absolute top-2 left-2 bg-orange-500 text-white text-[10px] sm:text-xs font-bold px-2 py-1 z-10">
-                    {isLoggedIn ? `Enjoy ${Math.round(((srpPrice - memberPrice) / srpPrice) * 100)}% off` : `Register to get ${Math.round(((srpPrice - memberPrice) / srpPrice) * 100)}% discount`}
-                </div>
-            )}
-
             <div className="relative aspect-square w-20 sm:w-32 bg-gray-100 dark:bg-gray-700 overflow-hidden shrink-0 flex-shrink-0">
+                {/* Discount Badge */}
+                {hasMemberPrice && (
+                    <div className="absolute top-2 left-2 bg-orange-500 text-white text-[10px] sm:text-xs font-bold px-2 py-1 z-10 max-w-[calc(100%-16px)]">
+                        {isLoggedIn ? `Enjoy ${Math.round(((srpPrice - memberPrice) / srpPrice) * 100)}% off` : `Register to get ${Math.round(((srpPrice - memberPrice) / srpPrice) * 100)}% discount`}
+                    </div>
+                )}
                 {product.image ? (
                     <img
                         src={product.image}
@@ -481,12 +519,7 @@ function ListViewProduct({ product }: { product: CategoryProduct }) {
                         onClick={(e) => {
                             e.preventDefault()
                             e.stopPropagation()
-                            const productUrl = `${window.location.origin}/product/${product.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-i${product.id}`
-                            navigator.clipboard.writeText(productUrl).then(() => {
-                                // Show success message
-                            }).catch(() => {
-                                // Show error message
-                            })
+                            onShareClick(product)
                         }}
                         className="p-1.5 rounded-full bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 hover:bg-orange-100 dark:hover:bg-orange-900/20 hover:border-orange-300 dark:hover:border-orange-600 transition-all duration-200 cursor-pointer"
                         title="Share"
