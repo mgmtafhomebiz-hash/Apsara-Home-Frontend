@@ -186,6 +186,7 @@ export default async function ByRoomDetailsPage({ params }: ByRoomDetailsPagePro
       initialCategoryLabel={label}
       initialProducts={products}
       initialCategories={navbarCategories}
+      isRoomPage={true}
     />
   )
 }
