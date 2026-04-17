@@ -15,13 +15,15 @@ export default function AdminGeneralSettingsPageMain() {
 
   const normalizeAssetUrl = (value: string | null | undefined) => {
     if (!value) return null
+    const cleanedValue = value.trim().replace(/^"+|"+$/g, '').replace(/%22$/i, '')
+    if (!cleanedValue) return null
 
     const fallbackBase =
       process.env.NEXT_PUBLIC_LARAVEL_API_URL ||
       (typeof window !== 'undefined' ? window.location.origin : '')
 
     try {
-      const parsed = new URL(value)
+      const parsed = new URL(cleanedValue)
       const base = fallbackBase ? new URL(fallbackBase) : null
 
       // If the backend is hosted on a different domain (e.g. backend.*) but it returns a
@@ -48,8 +50,8 @@ export default function AdminGeneralSettingsPageMain() {
 
       return parsed.toString()
     } catch {
-      if (fallbackBase && value.startsWith('/')) return new URL(value, fallbackBase).toString()
-      return value
+      if (fallbackBase && cleanedValue.startsWith('/')) return new URL(cleanedValue, fallbackBase).toString()
+      return cleanedValue
     }
   }
 
