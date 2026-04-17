@@ -43,8 +43,8 @@ const TopProducts = () => {
 
   return (
     <div className="space-y-4">
-      <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 shadow-sm dark:shadow-none border border-slate-100 dark:border-white/10">
-        <h3 className="text-slate-800 dark:text-slate-100 font-semibold text-sm mb-3">Quick Actions</h3>
+      <div className="bg-white dark:bg-gray-800 rounded-2xl p-5 border border-gray-200 dark:border-gray-700">
+        <h3 className="text-gray-800 dark:text-gray-100 font-semibold text-sm mb-3">Quick Actions</h3>
         <div className="grid grid-cols-2 gap-2">
           {quickActions.map((action) => (
             <button
@@ -59,9 +59,9 @@ const TopProducts = () => {
         </div>
       </div>
 
-      <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 shadow-sm dark:shadow-none border border-slate-100 dark:border-white/10">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl p-5 border border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-slate-800 dark:text-slate-100 font-semibold text-sm">Top Products</h3>
+          <h3 className="text-gray-800 dark:text-gray-100 font-semibold text-sm">Top Products</h3>
           <button className="text-xs text-teal-600 dark:text-teal-300 font-medium hover:underline">See all</button>
         </div>
         <div className="space-y-4">
@@ -74,18 +74,18 @@ const TopProducts = () => {
             >
               <div className="flex items-start justify-between gap-2 mb-1.5">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-slate-300 dark:text-slate-500 w-4 shrink-0">{index + 1}</span>
+                  <span className="text-xs font-bold text-gray-300 dark:text-gray-500 w-4 shrink-0">{index + 1}</span>
                   <div className="min-w-0">
-                    <p className="text-slate-700 dark:text-slate-100 text-xs font-semibold truncate">{product.name}</p>
-                    <p className="text-slate-400 dark:text-slate-400 text-xs">{product.category}</p>
+                    <p className="text-gray-700 dark:text-gray-100 text-xs font-semibold truncate">{product.name}</p>
+                    <p className="text-gray-500 dark:text-gray-400 text-xs">{product.category}</p>
                   </div>
                 </div>
                 <div className="text-right shrink-0">
-                  <p className="text-slate-700 dark:text-slate-100 text-xs font-semibold">{product.revenue}</p>
-                  <p className="text-slate-400 dark:text-slate-400 text-xs">{product.sold} sold</p>
+                  <p className="text-gray-700 dark:text-gray-100 text-xs font-semibold">{product.revenue}</p>
+                  <p className="text-gray-500 dark:text-gray-400 text-xs">{product.sold} sold</p>
                 </div>
               </div>
-              <div className="h-1.5 bg-slate-100 dark:bg-white/10 rounded-full overflow-hidden">
+              <div className="h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                 <motion.div
                   initial={{ width: 0 }}
                   animate={{ width: `${product.pct}%` }}
