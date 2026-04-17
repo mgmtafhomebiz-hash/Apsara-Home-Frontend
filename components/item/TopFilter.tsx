@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 interface TopFilterProps {
   onSearchChange?: (search: string) => void
@@ -16,7 +16,7 @@ interface TopFilterProps {
   hasActiveFilters?: boolean
 }
 
-const SHOW_NUMBER_OPTIONS = ['All', 12, 24, 48, 96]
+const SHOW_NUMBER_OPTIONS = ['all', 12, 24, 48, 96]
 const SORT_OPTIONS = [
   { value: 'default', label: 'Default' },
   { value: 'name-asc', label: 'Name: A to Z' },
@@ -64,6 +64,23 @@ export default function TopFilter({
     setCurrentSort(sort)
     onSortChange?.(sort)
   }
+
+  // Sync internal state with props when they change
+  useEffect(() => {
+    setSearch(searchValue)
+  }, [searchValue])
+
+  useEffect(() => {
+    setCurrentViewType(viewType)
+  }, [viewType])
+
+  useEffect(() => {
+    setCurrentShowNumber(showNumber)
+  }, [showNumber])
+
+  useEffect(() => {
+    setCurrentSort(sortValue)
+  }, [sortValue])
 
   return (
     <div className={`bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-2.5 sm:p-4 ${className}`}>
@@ -144,7 +161,7 @@ export default function TopFilter({
             <span className="hidden sm:inline text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400">Show:</span>
             <select
               value={currentShowNumber}
-              onChange={(e) => handleShowNumberChange(e.target.value === 'All' ? 'all' : Number(e.target.value))}
+              onChange={(e) => handleShowNumberChange(e.target.value === 'all' ? 'all' : Number(e.target.value))}
               className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-700 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-200 focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-400/30 transition-all cursor-pointer hover:border-orange-300"
             >
               {SHOW_NUMBER_OPTIONS.map((option) => (
