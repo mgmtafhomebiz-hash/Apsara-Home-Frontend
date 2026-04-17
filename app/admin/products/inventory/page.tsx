@@ -1,5 +1,5 @@
 import { buildPageMetadata } from '@/app/seo'
-import UnderMaintenancePage from '@/components/superAdmin/UnderMaintenancePage'
+import ProductsInventoryPageMain from '@/components/superAdmin/products/ProductsInventoryPageMain'
 
 export const metadata = buildPageMetadata({
   title: 'Admin Products Inventory',
@@ -9,10 +9,5 @@ export const metadata = buildPageMetadata({
 })
 
 export default function AdminProductsInventoryPage() {
-  return (
-    <UnderMaintenancePage
-      title="Product Inventory"
-      description="Inventory management tools are still under maintenance."
-    />
-  )
+  return <ProductsInventoryPageMain />
 }

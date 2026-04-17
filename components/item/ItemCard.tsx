@@ -155,6 +155,10 @@ export default function ItemCard({ product, brandName }: ItemCardProps) {
   const displayPrice = hasMemberPrice ? memberPrice : srpPrice
   const strikePrice = hasMemberPrice ? srpPrice : (product.originalPrice && product.originalPrice > srpPrice ? product.originalPrice : 0)
   const displayPv = Number(product.prodpv ?? 0)
+  const averageRating = Math.max(0, Math.min(5, Number(product.avgRating ?? 0)))
+  const hasRating = averageRating > 0
+  const filledStars = Math.floor(averageRating)
+  const soldCount = Number(product.soldCount ?? 0)
 
   return (
     <Link href={href} className="flex flex-col group bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden hover:border-orange-500 dark:hover:border-orange-400 transition-colors cursor-pointer">
@@ -316,8 +320,8 @@ export default function ItemCard({ product, brandName }: ItemCardProps) {
                 width="10"
                 height="10"
                 viewBox="0 0 24 24"
-                fill="#f97316"
-                stroke="#f97316"
+                fill={hasRating && star <= filledStars ? '#f97316' : 'none'}
+                stroke={hasRating && star <= filledStars ? '#f97316' : '#d1d5db'}
                 strokeWidth="2"
               >
                 <path d="M12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
@@ -325,7 +329,8 @@ export default function ItemCard({ product, brandName }: ItemCardProps) {
             ))}
           </div>
           <span className="text-xs text-gray-400 dark:text-gray-500">
-            {product.soldCount ?? 0} sold
+            {hasRating ? `${averageRating.toFixed(1)} • ` : 'No rating yet • '}
+            {soldCount} sold
           </span>
         </div>
       </div>

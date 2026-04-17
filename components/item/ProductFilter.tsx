@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { Category } from '@/store/api/categoriesApi'
 
 export interface FilterState {
@@ -21,10 +21,11 @@ interface ProductFilterProps {
   search?: string
   categories?: Category[]
   currentCategory?: string
+  maxPrice?: number
 }
 
-export default function ProductFilter({ onFilterChange, className = '', pvRange: propPvRange = [0, 5000], search: propSearch = '', categories = [], currentCategory }: ProductFilterProps) {
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 10000])
+export default function ProductFilter({ onFilterChange, className = '', pvRange: propPvRange = [0, 5000], search: propSearch = '', categories = [], currentCategory, maxPrice = 10000 }: ProductFilterProps) {
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, maxPrice])
   const [sortBy, setSortBy] = useState<'default' | 'asc' | 'desc'>('default')
   const [inStockOnly, setInStockOnly] = useState(false)
   const [discountOnly, setDiscountOnly] = useState(false)
@@ -53,6 +54,27 @@ export default function ProductFilter({ onFilterChange, className = '', pvRange:
     { label: '1000 - 2000 PV', min: 1000, max: 2000 },
     { label: 'Over 2000 PV', min: 2000, max: 5000 },
   ]
+
+  useEffect(() => {
+    setPriceRange((previous) => {
+      if (previous[0] !== 0) return previous
+      if (previous[1] === maxPrice) return previous
+      if (previous[1] !== 10000) return previous
+      const next: [number, number] = [0, maxPrice]
+      onFilterChange({
+        priceRange: next,
+        sortBy,
+        inStock: inStockOnly,
+        discountOnly,
+        minDiscount,
+        pvRange,
+        search: propSearch,
+        hasPvOnly,
+      })
+      return next
+    })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [maxPrice])
 
 
   const handlePriceChange = (min: number, max: number) => {
