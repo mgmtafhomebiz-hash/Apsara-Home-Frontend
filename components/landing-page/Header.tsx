@@ -87,11 +87,11 @@ export default function Header({ cartCount }: HeaderProps) {
         }`}
     >
       <div className="container mx-auto">
-        <div className="flex items-center justify-start h-20 gap-1 md:gap-8 pl-0 pr-4">
+        <div className="flex items-center justify-between h-20 px-4">
           {/* Logo */}
           <motion.a
             href="/"
-            className="flex items-center"
+            className="flex items-center shrink-0"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
@@ -102,8 +102,8 @@ export default function Header({ cartCount }: HeaderProps) {
             />
           </motion.a>
 
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-8">
+          {/* Desktop Navigation - Centered */}
+          <nav className="hidden md:flex items-center gap-8 absolute left-1/2 -translate-x-1/2">
             {navLinks.map((link, index) => {
               const sectionId = link.href.replace(/^\/?#/, '');
               const isActive = link.href === '/'
@@ -134,7 +134,7 @@ export default function Header({ cartCount }: HeaderProps) {
           </nav>
 
           {/* Right Icons */}
-          <div className="flex items-center gap-4 ml-auto">
+          <div className="flex items-center gap-4 shrink-0">
             {/* User Icon with href */}
             <div className="relative group">
               <motion.div

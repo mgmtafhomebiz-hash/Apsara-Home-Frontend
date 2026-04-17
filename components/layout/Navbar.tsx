@@ -575,7 +575,7 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
     >
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16 gap-4">
-          {/* Logo */}
+          {/* Left Section - Logo */}
           <Link href="/shop" className="flex items-center shrink-0">
             <Image
               src="/Images/af_home_logo.png"
@@ -587,8 +587,8 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
             />
           </Link>
 
-          {/* Search */}
-          <div className="flex-1 max-w-lg hidden md:block">
+          {/* Search - Centered */}
+          <div className="flex-1 max-w-lg hidden md:flex md:justify-center">
             <SearchField aria-label="Open product search" className="w-full">
               <Label className="sr-only">Search</Label>
               <SearchField.Group
