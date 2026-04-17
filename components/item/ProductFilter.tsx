@@ -36,9 +36,14 @@ interface ProductFilterProps {
   categories?: Category[]
   currentCategory?: string
   maxPrice?: number
+  isBrandPage?: boolean
+  brands?: Brand[]
+  currentBrand?: string
+  isRoomPage?: boolean
+  currentRoom?: string
 }
 
-export default function ProductFilter({ onFilterChange, className = '', pvRange: propPvRange = [0, 5000], search: propSearch = '', categories = [], currentCategory, maxPrice = 10000 }: ProductFilterProps) {
+export default function ProductFilter({ onFilterChange, className = '', pvRange: propPvRange = [0, 5000], search: propSearch = '', categories = [], currentCategory, maxPrice = 10000, isBrandPage = false, brands = [], currentBrand, isRoomPage = false, currentRoom }: ProductFilterProps) {
   const [priceRange, setPriceRange] = useState<[number, number]>([0, maxPrice])
   const [sortBy, setSortBy] = useState<'default' | 'asc' | 'desc'>('default')
   const [inStockOnly, setInStockOnly] = useState(false)
@@ -50,18 +55,6 @@ export default function ProductFilter({ onFilterChange, className = '', pvRange:
   const [showAllBrands, setShowAllBrands] = useState(false)
   const [brandSearch, setBrandSearch] = useState('')
 
-  // Sync local state with parent filterState
-  useEffect(() => {
-    if (parentFilterState) {
-      setPriceRange(parentFilterState.priceRange)
-      setSortBy(parentFilterState.sortBy)
-      setInStockOnly(parentFilterState.inStock)
-      setDiscountOnly(parentFilterState.discountOnly)
-      setMinDiscount(parentFilterState.minDiscount)
-      setPvRange(parentFilterState.pvRange)
-      setHasPvOnly(parentFilterState.hasPvOnly)
-    }
-  }, [parentFilterState])
 
   const discountPresets = [
     { label: '10% or more', value: 10 },

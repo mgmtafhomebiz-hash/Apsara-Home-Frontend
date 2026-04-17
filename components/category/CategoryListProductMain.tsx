@@ -381,16 +381,16 @@ export default function CategoryListProductMain({
         listingTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, [boundedCurrentPage]);
 
-    const hasActiveFilters = filterState.priceRange[0] > 0 || 
-        filterState.priceRange[1] < defaultPriceMax || 
-        filterState.inStock || 
+    const hasActiveFilters = filterState.priceRange[0] > 0 ||
+        filterState.priceRange[1] < defaultPriceMax ||
+        filterState.inStock ||
         filterState.discountOnly ||
         filterState.minDiscount > 0 ||
         filterState.hasPvOnly ||
         searchQuery !== '' ||
         topSortBy !== 'default' ||
         viewMode !== 'grid' ||
-        showCount !== 16);
+        showCount !== 16;
     
     const activeFilterCount = [
         filterState.priceRange[0] > 0,
