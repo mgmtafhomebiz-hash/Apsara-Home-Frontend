@@ -67,6 +67,7 @@ export default function ProductPageWrapper({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -60 }}
             transition={{ duration: 0.3, ease: 'easeInOut' }}
+            className="relative z-[55]"
           >
             <TopBar />
             <Navbar initialCategories={initialCategories} />
