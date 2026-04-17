@@ -386,7 +386,7 @@ export default function AdminGeneralSettingsPageMain() {
             payload.append('currency', currency)
             payload.append('date_format', dateFormat)
             payload.append('language', language)
-            payload.append('enable_test_payments', enableTestPayments ? 'true' : 'false')
+            payload.append('enable_test_payments', enableTestPayments ? '1' : '0')
 
             if (logoFile) {
               payload.append('logo', logoFile)
