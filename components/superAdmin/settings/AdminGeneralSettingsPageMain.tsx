@@ -13,6 +13,66 @@ export default function AdminGeneralSettingsPageMain() {
   const hasHydrated = useRef(false)
   const branchesTouched = useRef(false)
 
+  const normalizeAssetUrl = (value: string | null | undefined) => {
+    if (!value) return null
+    const cleanedValue = value.trim().replace(/^"+|"+$/g, '').replace(/%22$/i, '')
+    if (!cleanedValue) return null
+
+    const fallbackBase =
+      process.env.NEXT_PUBLIC_LARAVEL_API_URL ||
+      (typeof window !== 'undefined' ? window.location.origin : '')
+
+    try {
+      const parsed = new URL(cleanedValue)
+      const base = fallbackBase ? new URL(fallbackBase) : null
+
+      // If the backend is hosted on a different domain (e.g. backend.*) but it returns a
+      // /storage/* URL pointing at the frontend host, rewrite it to the API host.
+      if (base && parsed.pathname.startsWith('/storage/') && parsed.host !== base.host) {
+        parsed.protocol = base.protocol
+        parsed.host = base.host
+        return parsed.toString()
+      }
+
+      const isLocalhost = parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1'
+      if (isLocalhost && base) {
+        parsed.protocol = base.protocol
+        parsed.host = base.host
+        return parsed.toString()
+      }
+
+      if (typeof window !== 'undefined' && window.location.protocol === 'https:' && parsed.protocol === 'http:' && base) {
+        if (parsed.host === base.host || parsed.host === window.location.host) {
+          parsed.protocol = 'https:'
+          return parsed.toString()
+        }
+      }
+
+      return parsed.toString()
+    } catch {
+      if (fallbackBase && cleanedValue.startsWith('/')) return new URL(cleanedValue, fallbackBase).toString()
+      return cleanedValue
+    }
+  }
+
+  const uploadSettingsAsset = async (file: File): Promise<string> => {
+    const payload = new FormData()
+    payload.append('file', file)
+    payload.append('folder', 'web-content')
+
+    const response = await fetch('/api/admin/upload', {
+      method: 'POST',
+      body: payload,
+    })
+
+    const json = await response.json()
+    if (!response.ok || typeof json?.url !== 'string') {
+      throw new Error(typeof json?.error === 'string' ? json.error : 'Image upload failed.')
+    }
+
+    return json.url
+  }
+
   const [systemName, setSystemName] = useState('Apsara Home')
   const [companyName, setCompanyName] = useState('')
   const [supportEmail, setSupportEmail] = useState('')
@@ -67,9 +127,9 @@ export default function AdminGeneralSettingsPageMain() {
     } catch {
       if (!branchesTouched.current) setBranches([])
     }
-    setLogoUrl(settings.logo_url ?? null)
-    setFaviconUrl(settings.favicon_url ?? null)
-    setWebsiteQrCodeUrl(settings.website_qr_code_url ?? null)
+    setLogoUrl(normalizeAssetUrl(settings.logo_url))
+    setFaviconUrl(normalizeAssetUrl(settings.favicon_url))
+    setWebsiteQrCodeUrl(normalizeAssetUrl(settings.website_qr_code_url))
     setTimezone(settings.timezone || 'Asia/Manila')
     setCurrency(settings.currency || 'PHP')
     setDateFormat(settings.date_format || 'MM/DD/YYYY')
@@ -376,6 +436,28 @@ export default function AdminGeneralSettingsPageMain() {
           type="button"
           onClick={async () => {
             const payload = new FormData()
+            let nextLogoUrl: string | null = logoUrl
+            let nextFaviconUrl: string | null = faviconUrl
+            let nextWebsiteQrCodeUrl: string | null = websiteQrCodeUrl
+
+            try {
+              if (logoFile) {
+                nextLogoUrl = await uploadSettingsAsset(logoFile)
+              }
+
+              if (faviconFile) {
+                nextFaviconUrl = await uploadSettingsAsset(faviconFile)
+              }
+
+              if (websiteQrCodeFile) {
+                nextWebsiteQrCodeUrl = await uploadSettingsAsset(websiteQrCodeFile)
+              }
+            } catch (error) {
+              console.error(error)
+              showErrorToast((error as Error)?.message || 'Failed to upload image. Please try again.')
+              return
+            }
+
             payload.append('system_name', systemName)
             payload.append('company_name', companyName)
             payload.append('support_email', supportEmail)
@@ -386,23 +468,16 @@ export default function AdminGeneralSettingsPageMain() {
             payload.append('currency', currency)
             payload.append('date_format', dateFormat)
             payload.append('language', language)
-            payload.append('enable_test_payments', enableTestPayments ? 'true' : 'false')
-
-            if (logoFile) {
-              payload.append('logo', logoFile)
-            }
-            if (faviconFile) {
-              payload.append('favicon', faviconFile)
-            }
-            if (websiteQrCodeFile) {
-              payload.append('website_qr_code', websiteQrCodeFile)
-            }
+            payload.append('enable_test_payments', enableTestPayments ? '1' : '0')
+            if (nextLogoUrl) payload.append('logo_url', nextLogoUrl)
+            if (nextFaviconUrl) payload.append('favicon_url', nextFaviconUrl)
+            if (nextWebsiteQrCodeUrl) payload.append('website_qr_code_url', nextWebsiteQrCodeUrl)
 
             try {
               const response = await saveSettings(payload).unwrap()
-              setLogoUrl(response.settings.logo_url ?? null)
-              setFaviconUrl(response.settings.favicon_url ?? null)
-              setWebsiteQrCodeUrl(response.settings.website_qr_code_url ?? null)
+              setLogoUrl(normalizeAssetUrl(response.settings.logo_url))
+              setFaviconUrl(normalizeAssetUrl(response.settings.favicon_url))
+              setWebsiteQrCodeUrl(normalizeAssetUrl(response.settings.website_qr_code_url))
               setLogoFile(null)
               setFaviconFile(null)
               setWebsiteQrCodeFile(null)

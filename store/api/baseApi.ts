@@ -73,7 +73,9 @@ const baseQuery = fetchBaseQuery({
         }
 
         headers.set('Accept', 'application/json')
-        headers.set('Content-Type', 'application/json')
+        // Let fetchBaseQuery set Content-Type automatically.
+        // This is required for FormData requests (e.g., logo/favicon uploads),
+        // where the browser must provide the multipart boundary.
         return headers
     }
 })
