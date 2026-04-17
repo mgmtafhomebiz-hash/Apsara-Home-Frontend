@@ -853,7 +853,9 @@ export default function ByBrandPageMain() {
                   onFilterChange={setFilters}
                   pvRange={filters.pvRange}
                   search={filters.search}
-                  categories={categoriesData?.categories || []}
+                  isBrandPage={true}
+                  brands={allBrands}
+                  currentBrand={selectedBrandItem?.name}
                 />
               )}
               {renderAdBlock()}

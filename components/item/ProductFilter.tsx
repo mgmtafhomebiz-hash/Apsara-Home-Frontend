@@ -15,6 +15,12 @@ export interface FilterState {
   hasPvOnly: boolean
 }
 
+interface Brand {
+  id: number
+  name: string
+  status?: number
+}
+
 interface ProductFilterProps {
   onFilterChange: (filters: FilterState) => void
   className?: string
@@ -25,9 +31,12 @@ interface ProductFilterProps {
   isRoomPage?: boolean
   currentRoom?: string
   filterState?: FilterState
+  isBrandPage?: boolean
+  brands?: Brand[]
+  currentBrand?: string
 }
 
-export default function ProductFilter({ onFilterChange, className = '', pvRange: propPvRange = [0, 5000], search: propSearch = '', categories = [], currentCategory, isRoomPage = false, currentRoom, filterState: parentFilterState }: ProductFilterProps) {
+export default function ProductFilter({ onFilterChange, className = '', pvRange: propPvRange = [0, 5000], search: propSearch = '', categories = [], currentCategory, isRoomPage = false, currentRoom, filterState: parentFilterState, isBrandPage = false, brands = [], currentBrand }: ProductFilterProps) {
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 10000])
   const [sortBy, setSortBy] = useState<'default' | 'asc' | 'desc'>('default')
   const [inStockOnly, setInStockOnly] = useState(false)
@@ -36,6 +45,8 @@ export default function ProductFilter({ onFilterChange, className = '', pvRange:
   const [pvRange, setPvRange] = useState<[number, number]>(propPvRange)
   const [hasPvOnly, setHasPvOnly] = useState(false)
   const [showPvInfo, setShowPvInfo] = useState(false)
+  const [showAllBrands, setShowAllBrands] = useState(false)
+  const [brandSearch, setBrandSearch] = useState('')
 
   // Sync local state with parent filterState
   useEffect(() => {
@@ -312,6 +323,73 @@ export default function ProductFilter({ onFilterChange, className = '', pvRange:
       </div>
       )}
 
+      {/* Brand Filter for Brand Page Only */}
+      {isBrandPage && brands && brands.length > 0 && (
+      <div className="mb-4 sm:mb-6">
+        <h4 className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2 sm:mb-3">Shop By Brand</h4>
+
+        {/* Brand Search */}
+        <div className="mb-3">
+          <input
+            type="text"
+            placeholder="Search brands..."
+            value={brandSearch}
+            onChange={(e) => setBrandSearch(e.target.value)}
+            className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-xs sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
+          />
+        </div>
+
+        {(() => {
+          const filteredBrands = brands.filter(b =>
+            b.name.toLowerCase().includes(brandSearch.toLowerCase())
+          )
+
+          return (
+            <div className="flex flex-wrap gap-1.5 sm:gap-2">
+              <button
+                onClick={() => {
+                  window.location.href = '/by-brand'
+                }}
+                className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium transition-colors cursor-pointer ${
+                  !currentBrand
+                    ? 'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400'
+                    : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 hover:bg-orange-100 hover:text-orange-600 dark:hover:bg-orange-900/30 dark:hover:text-orange-400'
+                }`}
+              >
+                All Brands
+              </button>
+              {filteredBrands.slice(0, showAllBrands ? filteredBrands.length : 8).map((brand) => (
+                <button
+                  key={brand.id}
+                  onClick={() => {
+                    const brandSlug = brand.name.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-')
+                    window.location.href = `/by-brand?brand=${brandSlug}`
+                  }}
+                  className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium transition-colors cursor-pointer ${
+                    currentBrand === brand.name
+                      ? 'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400'
+                      : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 hover:bg-orange-100 hover:text-orange-600 dark:hover:bg-orange-900/30 dark:hover:text-orange-400'
+                  }`}
+                >
+                  {brand.name}
+                </button>
+              ))}
+              {filteredBrands.length > 8 && (
+                <button
+                  onClick={() => setShowAllBrands(!showAllBrands)}
+                  className="px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium transition-colors cursor-pointer bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 hover:bg-orange-100 hover:text-orange-600 dark:hover:bg-orange-900/30 dark:hover:text-orange-400"
+                >
+                  {showAllBrands ? 'See Less' : `See More (+${filteredBrands.length - 8})`}
+                </button>
+              )}
+              {filteredBrands.length === 0 && (
+                <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 w-full py-2">No brands found</p>
+              )}
+            </div>
+          )
+        })()}
+      </div>
+      )}
 
       {/* Price Range Filter */}
       <div className="mb-4 sm:mb-6">
