@@ -1040,12 +1040,12 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
       <div className="hidden md:block border-t border-gray-100 dark:border-gray-800">
         <div className="container mx-auto px-4">
           <nav className="flex items-center h-11">
-            {navLinks.map((link) => {
+            {navLinks.map((link, index) => {
               const hasDropdown = link.dropdown || link.mega
               return (
                 <div
                   key={link.label}
-                  className="relative h-full"
+                  className={`relative h-full ${index === 0 ? '-ml-4' : ''}`}
                   onMouseEnter={() => hasDropdown && open(link.label)}
                   onMouseLeave={close}
                 >
