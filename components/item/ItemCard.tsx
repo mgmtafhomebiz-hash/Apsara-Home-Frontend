@@ -148,13 +148,13 @@ export default function ItemCard({ product, brandName }: ItemCardProps) {
     }
   }
 
-  const baseSrp = Number(product.originalPrice) ?? Number(product.price) ?? 0
-  const srpPrice = Number(product.priceSrp) ?? baseSrp
-  const memberPrice = Number(product.priceMember) ?? Number(product.priceDp) ?? 0
+  const baseSrp = (product.originalPrice ? Number(product.originalPrice) : undefined) ?? (product.price ? Number(product.price) : undefined) ?? 0
+  const srpPrice = (product.priceSrp ? Number(product.priceSrp) : undefined) ?? baseSrp
+  const memberPrice = (product.priceMember ? Number(product.priceMember) : undefined) ?? (product.priceDp ? Number(product.priceDp) : undefined) ?? 0
   const hasMemberPrice = memberPrice > 0 && memberPrice < srpPrice
   const displayPrice = hasMemberPrice ? memberPrice : srpPrice
-  const strikePrice = hasMemberPrice ? srpPrice : (product.originalPrice && product.originalPrice > srpPrice ? product.originalPrice : 0)
-  const displayPv = Number(product.prodpv ?? 0)
+  const strikePrice = hasMemberPrice ? srpPrice : (product.originalPrice && Number(product.originalPrice) > srpPrice ? Number(product.originalPrice) : 0)
+  const displayPv = product.prodpv ? Number(product.prodpv) : 0
 
   return (
     <Link href={href} className="flex flex-col group bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden hover:border-orange-500 dark:hover:border-orange-400 transition-colors cursor-pointer">
@@ -288,8 +288,8 @@ export default function ItemCard({ product, brandName }: ItemCardProps) {
         </h3>
 
         {/* Price */}
-        <div className="flex items-baseline justify-between gap-1.5 sm:gap-2">
-          <div className="flex items-baseline gap-1.5 sm:gap-2">
+        <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-1 sm:gap-2">
+          <div className="flex items-baseline gap-1.5 sm:gap-2 flex-wrap">
             <span className="text-sm sm:text-base font-bold text-orange-500 dark:text-orange-400">
               ₱{displayPrice.toLocaleString()}
             </span>
@@ -300,7 +300,7 @@ export default function ItemCard({ product, brandName }: ItemCardProps) {
             )}
           </div>
           {displayPv > 0 && (
-            <span className="rounded-full border border-blue-200 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/30 px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[11px] font-semibold text-blue-700 dark:text-blue-300 shrink-0 whitespace-nowrap">
+            <span className="rounded-full border border-blue-200 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/30 px-1 sm:px-2 py-0.5 text-[8px] sm:text-[11px] font-semibold text-blue-700 dark:text-blue-300 shrink-0 whitespace-nowrap w-fit">
               PV {displayPv.toLocaleString()}
             </span>
           )}
