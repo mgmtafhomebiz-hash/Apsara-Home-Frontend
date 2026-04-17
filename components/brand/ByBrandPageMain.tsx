@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation'
 import { useSearchParams } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { useGetPublicProductBrandsQuery } from '@/store/api/productBrandsApi'
-import { useGetPublicProductsQuery } from '@/store/api/productsApi'
+import { useGetPublicProductsQuery, useGetProductBrandQuery } from '@/store/api/productsApi'
 import { useAddToCartMutation } from '@/store/api/cartApi'
 import { useGetCategoriesQuery } from '@/store/api/categoriesApi'
 import { Skeleton } from '@heroui/react'
@@ -380,6 +380,11 @@ export default function ByBrandPageMain() {
     setProductPage(1)
   }, [showNumber])
 
+  // Fetch detailed brand info including rating
+  const { data: brandInfo } = useGetProductBrandQuery(selectedBrandItem?.id ?? 0, {
+    skip: !selectedBrandItem,
+  })
+
   const { data: brandProductsData, isFetching: isFetchingProducts } = useGetPublicProductsQuery(
     selectedBrandItem
       ? { page: productPage, perPage: perPage, status: '1', brandType: selectedBrandItem.id }
@@ -563,13 +568,13 @@ export default function ByBrandPageMain() {
                       <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                       </svg>
-                      <span>Chat Performance: {selectedBrandItem.chatPerformance ?? 95}%</span>
+                      <span>Chat Performance: {brandInfo?.chatPerformance ?? 95}%</span>
                     </div>
                     <div className="flex items-center gap-1 text-gray-600 dark:text-gray-400">
                       <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <path d="M12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
                       </svg>
-                      <span>Overall Rating: {selectedBrandItem.overallRating ? selectedBrandItem.overallRating.toFixed(1) : 'N/A'}</span>
+                      <span>Overall Rating: {brandInfo?.overallRating ? brandInfo.overallRating.toFixed(1) : 'N/A'}</span>
                     </div>
                     <div className="flex items-center gap-1 text-gray-600 dark:text-gray-400">
                       <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -586,7 +591,7 @@ export default function ByBrandPageMain() {
                         <line x1="8" y1="2" x2="8" y2="6" />
                         <line x1="3" y1="10" x2="21" y2="10" />
                       </svg>
-                      <span>Joined: {selectedBrandItem.joinedDate ? new Date(selectedBrandItem.joinedDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'Jan 2024'}</span>
+                      <span>Joined: {brandInfo?.joinedDate ? new Date(brandInfo.joinedDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'Jan 2024'}</span>
                     </div>
                   </div>
                 </div>
