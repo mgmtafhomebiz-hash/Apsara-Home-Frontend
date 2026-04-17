@@ -4,12 +4,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
+import { Skeleton } from '@heroui/react';
 import Footer from '@/components/landing-page/Footer';
 import TopBar from '@/components/layout/TopBar';
 import Navbar from '@/components/layout/Navbar';
 import ItemCard from '@/components/item/ItemCard';
 import TopFilter from '@/components/item/TopFilter';
 import ProductFilter, { FilterState } from '@/components/item/ProductFilter';
+import ShareModal from '@/components/ui/ShareModal';
 import { CategoryProduct, categoryMeta, categoryProducts, CATEGORY_BRANDS } from '@/libs/CategoryData';
 import type { Category } from '@/store/api/categoriesApi';
 
@@ -46,12 +48,62 @@ const ChevronDown = () => (
         stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="6 9 12 15 18 9" /></svg>
 );
 
+function TopFilterSkeleton() {
+    return (
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-2.5 sm:p-4">
+            <div className="flex flex-col gap-3 sm:gap-4">
+                <Skeleton className="h-10 w-full rounded-xl" />
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3 sm:justify-end">
+                    <Skeleton className="h-8 w-16 rounded-lg" />
+                    <Skeleton className="h-8 w-20 rounded-lg" />
+                    <Skeleton className="h-8 w-24 rounded-lg" />
+                    <Skeleton className="h-8 w-20 rounded-lg" />
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function ProductGridSkeleton() {
+    return (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {Array.from({ length: 16 }).map((_, i) => (
+                <div key={i} className="space-y-2">
+                    <Skeleton className="aspect-square w-full rounded-lg" />
+                    <Skeleton className="h-4 w-3/4 rounded" />
+                    <Skeleton className="h-3 w-1/2 rounded" />
+                    <div className="flex gap-2">
+                        <Skeleton className="h-4 w-16 rounded" />
+                        <Skeleton className="h-4 w-16 rounded" />
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
+}
+
+function ProductFilterSkeleton() {
+    return (
+        <div className="space-y-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="space-y-2">
+                    <Skeleton className="h-4 w-24 rounded" />
+                    <Skeleton className="h-8 w-full rounded" />
+                </div>
+            ))}
+            <Skeleton className="aspect-square w-full rounded-2xl" />
+        </div>
+    );
+}
 
 interface CategoryListProductMainProps {
     slug: string;
     initialCategoryLabel?: string;
     initialProducts?: CategoryProduct[];
     initialCategories?: Category[];
+    isRoomPage?: boolean;
+    isLoading?: boolean;
+    hasError?: boolean;
 }
 
 const titleFromSlug = (slug: string) =>
@@ -66,10 +118,13 @@ export default function CategoryListProductMain({
     initialCategoryLabel,
     initialProducts,
     initialCategories = [],
+    isRoomPage = false,
+    isLoading = false,
+    hasError = false,
 }: CategoryListProductMainProps) {
     const meta = categoryMeta[slug];
     const staticProducts = categoryProducts[slug];
-    const hasDynamicProducts = Array.isArray(initialProducts);
+    const hasDynamicProducts = Array.isArray(initialProducts) && initialProducts.length > 0;
     const safeProducts = useMemo(
         () => (hasDynamicProducts ? (initialProducts ?? []) : (staticProducts ?? [])),
         [hasDynamicProducts, initialProducts, staticProducts],
@@ -82,11 +137,115 @@ export default function CategoryListProductMain({
 
     const categoryLabel = initialCategoryLabel ?? meta?.label ?? titleFromSlug(slug);
 
+    if (isLoading) {
+        return (
+            <>
+                <div
+                    className="fixed inset-0 -z-50 category-background"
+                    style={{
+                        backgroundColor: '#faf8f5',
+                        background: '#faf8f5'
+                    } as React.CSSProperties}
+                />
+                <style dangerouslySetInnerHTML={{
+                    __html: `
+                        html.dark .category-background {
+                            background-color: #030712 !important;
+                            background: #030712 !important;
+                        }
+                    `
+                }} />
+                <div className="relative min-h-screen text-slate-900 dark:text-white flex flex-col">
+                    <TopBar />
+                    <Navbar initialCategories={initialCategories} />
+
+                    <main className="flex-1">
+                        <div className="bg-gray-50 dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700">
+                            <div className="container mx-auto px-4 py-3">
+                                <Skeleton className="h-6 w-32 rounded" />
+                            </div>
+                        </div>
+
+                        <div className="container mx-auto px-4 py-6 lg:py-8">
+                            <div className="flex gap-6 items-start">
+                                <aside className="hidden lg:block w-80 shrink-0">
+                                    <ProductFilterSkeleton />
+                                </aside>
+
+                                <div className="flex-1 min-w-0 space-y-4">
+                                    <TopFilterSkeleton />
+                                    <ProductGridSkeleton />
+                                </div>
+                            </div>
+                        </div>
+                    </main>
+                    <Footer />
+                </div>
+            </>
+        );
+    }
+
+    if (hasError) {
+        return (
+            <>
+                <div
+                    className="fixed inset-0 -z-50 category-background"
+                    style={{
+                        backgroundColor: '#faf8f5',
+                        background: '#faf8f5'
+                    } as React.CSSProperties}
+                />
+                <style dangerouslySetInnerHTML={{
+                    __html: `
+                        html.dark .category-background {
+                            background-color: #030712 !important;
+                            background: #030712 !important;
+                        }
+                    `
+                }} />
+                <div className="relative min-h-screen text-slate-900 dark:text-white flex flex-col">
+                    <TopBar />
+                    <Navbar initialCategories={initialCategories} />
+
+                    <main className="flex-1">
+                        <div className="bg-gray-50 dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700">
+                            <div className="container mx-auto px-4 py-3">
+                                <h1 className="text-base font-bold text-slate-800 dark:text-white">{categoryLabel}</h1>
+                            </div>
+                        </div>
+
+                        <div className="container mx-auto px-4 py-24">
+                            <div className="flex flex-col items-center justify-center text-center">
+                                <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-900/20 flex items-center justify-center mb-4">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2">
+                                        <circle cx="12" cy="12" r="10" />
+                                        <line x1="12" y1="8" x2="12" y2="12" />
+                                        <line x1="12" y1="16" x2="12.01" y2="16" />
+                                    </svg>
+                                </div>
+                                <p className="text-slate-700 dark:text-gray-200 font-semibold mb-1">Failed to load products</p>
+                                <p className="text-gray-400 dark:text-gray-500 text-sm mb-4">Something went wrong. Please try refreshing the page.</p>
+                                <button onClick={() => window.location.reload()} className="text-sm font-semibold text-orange-500 dark:text-orange-400 hover:text-orange-600 dark:hover:text-orange-300 transition-colors">
+                                    Refresh page
+                                </button>
+                            </div>
+                        </div>
+                    </main>
+                    <Footer />
+                </div>
+            </>
+        );
+    }
+
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
     const [showCount, setShowCount] = useState(16);
     const [currentPage, setCurrentPage] = useState(1);
     const [searchQuery, setSearchQuery] = useState('');
     const listingTopRef = useRef<HTMLDivElement | null>(null);
+    
+    // Share modal state
+    const [shareModalOpen, setShareModalOpen] = useState(false);
+    const [shareProduct, setShareProduct] = useState<CategoryProduct | null>(null);
     
     // Filter state for ProductFilter component
     const [filterState, setFilterState] = useState<FilterState>({
@@ -99,10 +258,12 @@ export default function CategoryListProductMain({
         search: '',
         hasPvOnly: false
     });
+    const [topSortBy, setTopSortBy] = useState('default');
 
     // Filter change handler for ProductFilter component
     const handleFilterChange = (filters: FilterState) => {
         setFilterState(filters);
+        setSearchQuery(filters.search);
     };
 
     // Reset filters function
@@ -118,6 +279,9 @@ export default function CategoryListProductMain({
             hasPvOnly: false
         });
         setSearchQuery('');
+        setTopSortBy('default');
+        setViewMode('grid');
+        setShowCount(16);
     };
 
     // Search change handler for TopFilter component
@@ -137,57 +301,71 @@ export default function CategoryListProductMain({
 
     // Sort change handler for TopFilter component
     const handleSortChange = (sort: string) => {
-        // Map TopFilter sort values to our internal values
-        const sortMapping: Record<string, 'default' | 'asc' | 'desc'> = {
-            'default': 'default',
-            'name-asc': 'asc',
-            'name-desc': 'desc',
-            'price-asc': 'asc',
-            'price-desc': 'desc'
-        };
-        
-        const newSortBy = sortMapping[sort] || 'default';
-        setFilterState(prev => ({ ...prev, sortBy: newSortBy }));
+        setTopSortBy(sort);
     };
 
     const filteredProducts = useMemo(() => {
         let result = safeProducts.filter(p => {
             // Filter by price range
             const passPrice = p.price >= filterState.priceRange[0] && p.price <= filterState.priceRange[1];
-            
+
             // Filter by search query
-            const passSearch = searchQuery === '' || 
+            const passSearch = searchQuery === '' ||
                 p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 (p.brand && p.brand.toLowerCase().includes(searchQuery.toLowerCase()));
-            
-            // Filter by stock (assuming all products are in stock for now)
-            const passStock = !filterState.inStock || true;
-            
-            // Filter by discount (assuming no discount data for now)
-            const passDiscount = !filterState.discountOnly || false;
-            
-            return passPrice && passSearch && passStock && passDiscount;
+
+            // Filter by stock
+            const srpPrice = (p.priceSrp ? Number(p.priceSrp) : undefined) ?? (p.price ? Number(p.price) : undefined) ?? 0
+            const memberPrice = (p.priceMember ? Number(p.priceMember) : undefined) ?? (p.priceDp ? Number(p.priceDp) : undefined) ?? 0
+            const hasMemberPrice = memberPrice > 0 && memberPrice < srpPrice
+            const passStock = !filterState.inStock || (p.stock !== undefined && p.stock > 0);
+
+            // Filter by discount
+            let passDiscount = true;
+            if (filterState.discountOnly) {
+                if (filterState.minDiscount > 0) {
+                    // Calculate discount percentage
+                    const discountPercent = srpPrice > 0 && memberPrice > 0 
+                        ? ((srpPrice - memberPrice) / srpPrice) * 100 
+                        : 0;
+                    passDiscount = hasMemberPrice && discountPercent >= filterState.minDiscount;
+                } else {
+                    passDiscount = hasMemberPrice;
+                }
+            }
+
+            // Filter by PV range
+            const pv = p.prodpv ? Number(p.prodpv) : 0;
+            const passPvRange = pv >= filterState.pvRange[0] && pv <= filterState.pvRange[1];
+
+            // Filter by hasPvOnly
+            const passHasPv = !filterState.hasPvOnly || pv > 0;
+
+            return passPrice && passSearch && passStock && passDiscount && passPvRange && passHasPv;
         });
 
-        // Apply sorting
-        if (filterState.sortBy === 'asc') {
-            // For simplicity, sort by price ascending
+        // Apply sorting - prioritize topSortBy, fall back to filterState.sortBy
+        const sortBy = topSortBy !== 'default' ? topSortBy : filterState.sortBy;
+
+        // Map ProductFilter 'asc'/'desc' to 'name-asc'/'name-desc'
+        const effectiveSortBy = sortBy === 'asc' ? 'name-asc' : sortBy === 'desc' ? 'name-desc' : sortBy;
+
+        if (effectiveSortBy === 'name-asc') {
+            result = [...result].sort((a, b) => a.name.localeCompare(b.name));
+        } else if (effectiveSortBy === 'name-desc') {
+            result = [...result].sort((a, b) => b.name.localeCompare(a.name));
+        } else if (effectiveSortBy === 'price-asc') {
             result = [...result].sort((a, b) => a.price - b.price);
-        }
-        if (filterState.sortBy === 'desc') {
-            // For simplicity, sort by price descending
+        } else if (effectiveSortBy === 'price-desc') {
             result = [...result].sort((a, b) => b.price - a.price);
         }
-        if (filterState.sortBy === 'default') {
-            // Keep original order (newest first)
-            result = [...result];
-        }
-        
+        // 'default' keeps original order
+
         return result;
-    }, [safeProducts, filterState, searchQuery]);
+    }, [safeProducts, filterState, searchQuery, topSortBy]);
 
     // Reset to page 1 when filters/sort/showCount change.
-    useEffect(() => { setCurrentPage(1); }, [filterState, searchQuery, showCount]);
+    useEffect(() => { setCurrentPage(1); }, [filterState, searchQuery, showCount, topSortBy]);
 
     // Reset pagination when switching to a different category route.
     useEffect(() => {
@@ -209,7 +387,10 @@ export default function CategoryListProductMain({
         filterState.discountOnly ||
         filterState.minDiscount > 0 ||
         filterState.hasPvOnly ||
-        searchQuery !== '';
+        searchQuery !== '' ||
+        topSortBy !== 'default' ||
+        viewMode !== 'grid' ||
+        showCount !== 16);
     
     const activeFilterCount = [
         filterState.priceRange[0] > 0,
@@ -259,7 +440,7 @@ export default function CategoryListProductMain({
                     <div className="flex gap-6 items-start">
 
                         {/* ─── PRODUCT FILTER SIDEBAR ─── */}
-                        <aside className="hidden lg:block w-80 shrink-0 sticky top-4">
+                        <aside className="hidden lg:block w-80 shrink-0 sticky top-4 z-10">
                             <ProductFilter
                                 onFilterChange={handleFilterChange}
                                 search={searchQuery}
@@ -290,11 +471,13 @@ export default function CategoryListProductMain({
                                     onViewTypeChange={handleViewTypeChange}
                                     onShowNumberChange={handleShowNumberChange}
                                     onSortChange={handleSortChange}
+                                    onClearFilters={resetFilters}
                                     searchValue={searchQuery}
                                     viewType={viewMode}
                                     showNumber={showCount}
-                                    sortValue={filterState.sortBy}
+                                    sortValue={topSortBy}
                                     className="mb-4"
+                                    hasActiveFilters={hasActiveFilters}
                                 />
                                 <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400">
                                     <span>
@@ -339,7 +522,7 @@ export default function CategoryListProductMain({
                                             {viewMode === 'grid' ? (
                                                 <ItemCard key={product.id} product={product} brandName={product.brand || ''} />
                                             ) : (
-                                                <ListViewProduct key={product.id} product={product} />
+                                                <ListViewProduct key={product.id} product={product} onShareClick={(p) => { setShareProduct(p); setShareModalOpen(true); }} />
                                             )}
                                         </motion.div>
                                     ))}
@@ -385,15 +568,40 @@ export default function CategoryListProductMain({
             </main>
             <Footer />
         </div>
+        {/* Share Modal */}
+        {shareProduct && shareProduct.id && (
+            <ShareModal
+                isOpen={shareModalOpen}
+                onClose={() => setShareModalOpen(false)}
+                product={{
+                    id: shareProduct.id,
+                    name: shareProduct.name,
+                    image: shareProduct.image,
+                    price: shareProduct.price,
+                    priceMember: shareProduct.priceMember,
+                    priceDp: shareProduct.priceDp,
+                    priceSrp: shareProduct.priceSrp,
+                    originalPrice: shareProduct.originalPrice,
+                    sku: shareProduct.sku,
+                    prodpv: shareProduct.prodpv,
+                    brand: shareProduct.brand,
+                }}
+                brandName={shareProduct.brand || ''}
+                shareUrl={`https://apsara-home.com/product/${shareProduct.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-i${shareProduct.id}`}
+            />
+        )}
         </>
     );
-
 }
 
-// List View Product Component
-function ListViewProduct({ product }: { product: CategoryProduct }) {
-    const srpPrice = Number(product.priceSrp ?? product.price ?? 0)
-    const memberPrice = Number(product.priceMember ?? product.priceDp ?? 0)
+interface ListViewProductProps {
+    product: CategoryProduct;
+    onShareClick: (product: CategoryProduct) => void;
+}
+
+function ListViewProduct({ product, onShareClick }: ListViewProductProps) {
+    const srpPrice = (product.priceSrp ? Number(product.priceSrp) : undefined) ?? (product.price ? Number(product.price) : undefined) ?? 0
+    const memberPrice = (product.priceMember ? Number(product.priceMember) : undefined) ?? (product.priceDp ? Number(product.priceDp) : undefined) ?? 0
     const hasMemberPrice = memberPrice > 0 && memberPrice < srpPrice
     const displayPrice = hasMemberPrice ? memberPrice : srpPrice
     const strikePrice = hasMemberPrice ? srpPrice : Number(product.originalPrice ?? 0)
@@ -409,54 +617,15 @@ function ListViewProduct({ product }: { product: CategoryProduct }) {
     return (
         <Link
             href={`/product/${product.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-i${product.id}`}
-            className="flex gap-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden hover:border-orange-500 dark:hover:border-orange-400 transition-colors group relative"
+            className="flex gap-2 sm:gap-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden hover:border-orange-500 dark:hover:border-orange-400 transition-colors group relative"
         >
-            {/* Discount Badge */}
-            {hasMemberPrice && (
-                <div className="absolute top-2 left-2 bg-orange-500 text-white text-xs font-bold px-2 py-1 z-10">
-                    {isLoggedIn ? `Enjoy ${Math.round(((srpPrice - memberPrice) / srpPrice) * 100)}% off` : `Register to get ${Math.round(((srpPrice - memberPrice) / srpPrice) * 100)}% discount`}
-                </div>
-            )}
-
-            {/* Action Icons */}
-            <div className="absolute top-2 right-2 flex flex-col gap-2 z-10">
-                <button
-                    onClick={(e) => {
-                        e.preventDefault()
-                        e.stopPropagation()
-                        // Add to wishlist functionality here
-                    }}
-                    className="p-2 rounded-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-md border border-gray-200 dark:border-gray-600 shadow-lg hover:bg-orange-500 hover:border-orange-500 dark:hover:bg-orange-500 dark:hover:border-orange-500 transition-all duration-200 cursor-pointer"
-                    title="Add to Wishlist"
-                >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-700 dark:text-gray-300 hover:text-white transition-colors">
-                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-                    </svg>
-                </button>
-                <button
-                    onClick={(e) => {
-                        e.preventDefault()
-                        e.stopPropagation()
-                        const productUrl = `${window.location.origin}/product/${product.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-i${product.id}`
-                        navigator.clipboard.writeText(productUrl).then(() => {
-                            // Show success message
-                        }).catch(() => {
-                            // Show error message
-                        })
-                    }}
-                    className="p-2 rounded-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-md border border-gray-200 dark:border-gray-600 shadow-lg hover:bg-orange-500 hover:border-orange-500 dark:hover:bg-orange-500 dark:hover:border-orange-500 transition-all duration-200 cursor-pointer"
-                    title="Share"
-                >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-700 dark:text-gray-300 hover:text-white transition-colors">
-                        <circle cx="18" cy="5" r="3" />
-                        <circle cx="6" cy="12" r="3" />
-                        <circle cx="18" cy="19" r="3" />
-                        <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
-                        <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
-                    </svg>
-                </button>
-            </div>
-            <div className="relative aspect-square w-32 bg-gray-100 dark:bg-gray-700 overflow-hidden shrink-0">
+            <div className="relative aspect-square w-20 sm:w-32 bg-gray-100 dark:bg-gray-700 overflow-hidden shrink-0 flex-shrink-0">
+                {/* Discount Badge */}
+                {hasMemberPrice && (
+                    <div className="absolute top-2 left-2 bg-orange-500 text-white text-[10px] sm:text-xs font-bold px-2 py-1 z-10 max-w-[calc(100%-16px)]">
+                        {isLoggedIn ? `Enjoy ${Math.round(((srpPrice - memberPrice) / srpPrice) * 100)}% off` : `Register to get ${Math.round(((srpPrice - memberPrice) / srpPrice) * 100)}% discount`}
+                    </div>
+                )}
                 {product.image ? (
                     <img
                         src={product.image}
@@ -465,7 +634,7 @@ function ListViewProduct({ product }: { product: CategoryProduct }) {
                     />
                 ) : (
                     <div className="flex h-full items-center justify-center text-gray-400 dark:text-gray-500">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="sm:w-12 sm:h-12">
                             <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
                             <circle cx="8.5" cy="8.5" r="1.5" />
                             <polyline points="21 15 16 10 5 21" />
@@ -473,21 +642,21 @@ function ListViewProduct({ product }: { product: CategoryProduct }) {
                     </div>
                 )}
             </div>
-            <div className="flex flex-col justify-center flex-1 p-4 relative">
-                <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-2 line-clamp-2 group-hover:text-orange-500 dark:group-hover:text-orange-400 transition-colors">{product.name}</h3>
-                <div className="flex items-baseline gap-2 mb-2">
-                    <span className="text-lg font-bold text-orange-500 dark:text-orange-400">
+            <div className="flex flex-col justify-center flex-1 p-2 sm:p-4 relative min-w-0">
+                <h3 className="text-xs sm:text-base font-semibold text-gray-900 dark:text-white mb-1 sm:mb-2 line-clamp-2 group-hover:text-orange-500 dark:group-hover:text-orange-400 transition-colors">{product.name}</h3>
+                <div className="flex items-baseline gap-1 sm:gap-2 mb-1 sm:mb-2 flex-wrap">
+                    <span className="text-sm sm:text-lg font-bold text-orange-500 dark:text-orange-400">
                         ₱{displayPrice.toLocaleString()}
                     </span>
                     {strikePrice > displayPrice && (
-                        <span className="text-sm text-gray-400 dark:text-gray-500 line-through">
+                        <span className="text-xs sm:text-sm text-gray-400 dark:text-gray-500 line-through">
                             ₱{strikePrice.toLocaleString()}
                         </span>
                     )}
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
                     {displayPv > 0 && (
-                        <span className="inline-flex items-center rounded-full border border-blue-200 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 text-[11px] font-semibold text-blue-700 dark:text-blue-300">
+                        <span className="inline-flex items-center rounded-full border border-blue-200 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/30 px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[11px] font-semibold text-blue-700 dark:text-blue-300 whitespace-nowrap">
                             PV {displayPv.toLocaleString()}
                         </span>
                     )}
@@ -515,6 +684,41 @@ function ListViewProduct({ product }: { product: CategoryProduct }) {
                         {soldCount} sold
                     </span>
                 </div>
+
+                {/* Action Icons - Bottom */}
+                <div className="flex gap-1.5 sm:gap-2 mt-1.5 sm:mt-2">
+                    <button
+                        onClick={(e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            // Add to wishlist functionality here
+                        }}
+                        className="p-1.5 rounded-full bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 hover:bg-orange-100 dark:hover:bg-orange-900/20 hover:border-orange-300 dark:hover:border-orange-600 transition-all duration-200 cursor-pointer"
+                        title="Add to Wishlist"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-700 dark:text-gray-300 hover:text-orange-500 dark:hover:text-orange-400 transition-colors">
+                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                        </svg>
+                    </button>
+                    <button
+                        onClick={(e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            onShareClick(product)
+                        }}
+                        className="p-1.5 rounded-full bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 hover:bg-orange-100 dark:hover:bg-orange-900/20 hover:border-orange-300 dark:hover:border-orange-600 transition-all duration-200 cursor-pointer"
+                        title="Share"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-700 dark:text-gray-300 hover:text-orange-500 dark:hover:text-orange-400 transition-colors">
+                            <circle cx="18" cy="5" r="3" />
+                            <circle cx="6" cy="12" r="3" />
+                            <circle cx="18" cy="19" r="3" />
+                            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+                            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+                        </svg>
+                    </button>
+                </div>
+
                 {/* Add to Cart Button */}
                 <button
                     onClick={(e) => {
@@ -522,9 +726,9 @@ function ListViewProduct({ product }: { product: CategoryProduct }) {
                         e.stopPropagation()
                         // Add to cart functionality here
                     }}
-                    className="absolute bottom-4 right-4 flex items-center justify-center gap-2 rounded-full bg-orange-500 hover:bg-orange-600 px-4 py-2 text-sm font-semibold text-white opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 cursor-pointer"
+                    className="mt-1 sm:absolute sm:bottom-4 sm:right-4 flex items-center justify-center gap-1 sm:gap-2 rounded-full bg-orange-500 hover:bg-orange-600 px-2.5 sm:px-4 py-1 sm:py-2 text-xs sm:text-sm font-semibold text-white sm:opacity-0 sm:translate-y-2 sm:group-hover:opacity-100 sm:group-hover:translate-y-0 transition-all duration-300 cursor-pointer w-full sm:w-auto"
                 >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="sm:w-4 sm:h-4">
                         <circle cx="9" cy="21" r="1" />
                         <circle cx="20" cy="21" r="1" />
                         <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />

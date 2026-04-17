@@ -17,6 +17,7 @@ export interface CategoryProduct {
     stock?: number;
     rating?: number;
     reviewCount?: number;
+    soldCount?: number;
     variants?: Array<{
         id?: number;
         sku?: string;

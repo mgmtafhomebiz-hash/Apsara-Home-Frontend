@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import Providers from "@/components/Providers";
 import ShopAiSupportGate from "@/components/ai-support/ShopAiSupportGate";
+import CustomerServiceButton from "@/components/CustomerServiceButton";
 
 export const metadata: Metadata = {
   title: "AF Home - Premium Furniture & Appliances",
@@ -37,6 +38,7 @@ export default function RootLayout({
       <body className="antialiased bg-white dark:bg-gray-900">
         <Providers>{children}</Providers>
         <ShopAiSupportGate />
+        <CustomerServiceButton />
         {/* <Script
           id="af-ai-support-base"
           strategy="afterInteractive"

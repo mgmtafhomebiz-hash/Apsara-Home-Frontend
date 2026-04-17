@@ -189,22 +189,22 @@ export default function SupplierDashboardHome() {
 
   return (
     <div className="space-y-6">
-      <section className="overflow-hidden rounded-3xl border border-cyan-100 bg-[radial-gradient(circle_at_top_left,_rgba(34,211,238,0.22),_transparent_36%),linear-gradient(135deg,_#ecfeff,_#ffffff_55%,_#f0fdfa)] p-6 shadow-sm">
+      <section className="overflow-hidden rounded-3xl border border-cyan-100 bg-[radial-gradient(circle_at_top_left,_rgba(34,211,238,0.22),_transparent_36%),linear-gradient(135deg,_#ecfeff,_#ffffff_55%,_#f0fdfa)] p-6">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-2xl">
             <p className="text-xs font-bold uppercase tracking-[0.24em] text-cyan-700">Supplier Dashboard</p>
-            <h1 className="mt-3 text-3xl font-bold tracking-tight text-slate-900">
+            <h1 className="mt-3 text-3xl font-bold tracking-tight text-gray-900">
               Welcome back, {supplierName}.
             </h1>
             <div className="mt-3 flex flex-wrap items-center gap-2">
               <span className="inline-flex rounded-full border border-cyan-200 bg-white px-3 py-1.5 text-xs font-semibold text-cyan-700">
                 {isMainSupplier ? 'Main Supplier' : 'Sub Supplier'}
               </span>
-              <span className="inline-flex rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600">
+              <span className="inline-flex rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-600">
                 {supplier?.status === 1 ? 'Company Active' : 'Company Inactive'}
               </span>
             </div>
-            <p className="mt-3 text-sm leading-6 text-slate-600">
+            <p className="mt-3 text-sm leading-6 text-gray-600">
               Use this workspace to manage your company catalog, control supplier team access,
               and review the categories assigned to your products.
             </p>
@@ -228,19 +228,19 @@ export default function SupplierDashboardHome() {
           <Link
             key={card.title}
             href={card.href}
-            className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-cyan-200 hover:shadow-md"
+            className="group rounded-2xl border border-gray-200 bg-white p-5 transition hover:-translate-y-0.5 hover:border-cyan-200"
           >
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">{card.title}</p>
-            <p className="mt-3 text-2xl font-bold text-slate-900">{card.value}</p>
-            <p className="mt-2 text-sm leading-6 text-slate-500">{card.description}</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-400">{card.title}</p>
+            <p className="mt-3 text-2xl font-bold text-gray-900">{card.value}</p>
+            <p className="mt-2 text-sm leading-6 text-gray-500">{card.description}</p>
             <span className="mt-4 inline-flex text-sm font-semibold text-cyan-700">Open</span>
           </Link>
         ))}
       </section>
 
       <section className="grid grid-cols-1 gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-bold text-slate-900">Supplier Snapshot</h2>
+        <div className="rounded-2xl border border-gray-200 bg-white p-6">
+          <h2 className="text-lg font-bold text-gray-900">Supplier Snapshot</h2>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             <SnapshotCard label="Company" value={supplier?.company || supplier?.name || 'Not linked'} />
             <SnapshotCard label="Contact" value={supplier?.contact || 'Not provided'} />
@@ -251,15 +251,15 @@ export default function SupplierDashboardHome() {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="rounded-2xl border border-gray-200 bg-white p-6">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <h2 className="text-lg font-bold text-slate-900">Quick Guidance</h2>
-              <p className="mt-1 text-sm text-slate-500">
+              <h2 className="text-lg font-bold text-gray-900">Quick Guidance</h2>
+              <p className="mt-1 text-sm text-gray-500">
                 Keep your team aligned before posting new items.
               </p>
             </div>
-            <span className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600">
+            <span className="inline-flex rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-semibold text-gray-600">
               {isMainSupplier ? 'Owner Access' : 'Staff Access'}
             </span>
           </div>
@@ -273,10 +273,10 @@ export default function SupplierDashboardHome() {
               'Keep company profile and supplier contacts up to date',
             ].map((step, index) => (
               <div key={step} className="flex gap-3">
-                <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-900 text-xs font-bold text-white">
+                <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gray-900 text-xs font-bold text-white">
                   {index + 1}
                 </span>
-                <p className="pt-1 text-sm text-slate-600">{step}</p>
+                <p className="pt-1 text-sm text-gray-600">{step}</p>
               </div>
             ))}
           </div>
@@ -284,11 +284,11 @@ export default function SupplierDashboardHome() {
       </section>
 
       <section className="grid grid-cols-1 gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="rounded-2xl border border-gray-200 bg-white p-6">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <h2 className="text-lg font-bold text-slate-900">Recent Products</h2>
-              <p className="mt-1 text-sm text-slate-500">Latest products from your supplier catalog.</p>
+              <h2 className="text-lg font-bold text-gray-900">Recent Products</h2>
+              <p className="mt-1 text-sm text-gray-500">Latest products from your supplier catalog.</p>
             </div>
             <Link href="/supplier/products" className="text-sm font-semibold text-cyan-700 hover:text-cyan-600">
               Manage
@@ -307,11 +307,11 @@ export default function SupplierDashboardHome() {
           )}
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="rounded-2xl border border-gray-200 bg-white p-6">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <h2 className="text-lg font-bold text-slate-900">Assigned Categories</h2>
-              <p className="mt-1 text-sm text-slate-500">Preview of categories you can use for product posting.</p>
+              <h2 className="text-lg font-bold text-gray-900">Assigned Categories</h2>
+              <p className="mt-1 text-sm text-gray-500">Preview of categories you can use for product posting.</p>
             </div>
             <Link href="/supplier/categories" className="text-sm font-semibold text-cyan-700 hover:text-cyan-600">
               View all
@@ -333,11 +333,11 @@ export default function SupplierDashboardHome() {
                   </span>
                 ))}
               </div>
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+              <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-gray-400">
                   Category Access Rule
                 </p>
-                <p className="mt-2 text-sm leading-6 text-slate-600">
+                <p className="mt-2 text-sm leading-6 text-gray-600">
                   Only assigned categories can be used when adding or editing supplier products.
                   If you need another category, request it from the admin team first.
                 </p>
@@ -348,11 +348,11 @@ export default function SupplierDashboardHome() {
       </section>
 
       <section className="grid grid-cols-1 gap-6 xl:grid-cols-[0.95fr_1.05fr]">
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="rounded-2xl border border-gray-200 bg-white p-6">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <h2 className="text-lg font-bold text-slate-900">Inventory Attention</h2>
-              <p className="mt-1 text-sm text-slate-500">
+              <h2 className="text-lg font-bold text-gray-900">Inventory Attention</h2>
+              <p className="mt-1 text-sm text-gray-500">
                 Products that may need an update before customers see issues.
               </p>
             </div>
@@ -370,7 +370,7 @@ export default function SupplierDashboardHome() {
             <InventoryStatusCard
               label="Inactive Products"
               value={String(effectiveInactiveProductsData?.meta?.total ?? 0)}
-              tone={(effectiveInactiveProductsData?.meta?.total ?? 0) > 0 ? 'slate' : 'emerald'}
+              tone={(effectiveInactiveProductsData?.meta?.total ?? 0) > 0 ? 'gray' : 'emerald'}
               description={
                 (effectiveInactiveProductsData?.meta?.total ?? 0) > 0
                   ? 'Products not currently live'
@@ -380,11 +380,11 @@ export default function SupplierDashboardHome() {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="rounded-2xl border border-gray-200 bg-white p-6">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <h2 className="text-lg font-bold text-slate-900">Team Access</h2>
-              <p className="mt-1 text-sm text-slate-500">
+              <h2 className="text-lg font-bold text-gray-900">Team Access</h2>
+              <p className="mt-1 text-sm text-gray-500">
                 Quick view of who owns and uses this supplier workspace.
               </p>
             </div>
@@ -417,9 +417,9 @@ export default function SupplierDashboardHome() {
 
 function SnapshotCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-      <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{label}</p>
-      <p className="mt-2 text-sm font-semibold text-slate-800">{value}</p>
+    <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+      <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">{label}</p>
+      <p className="mt-2 text-sm font-semibold text-gray-800">{value}</p>
     </div>
   )
 }
@@ -433,12 +433,12 @@ function InventoryStatusCard({
   label: string
   value: string
   description: string
-  tone: 'amber' | 'emerald' | 'slate'
+  tone: 'amber' | 'emerald' | 'gray'
 }) {
   const toneClasses = {
     amber: 'border-amber-200 bg-amber-50 text-amber-800',
     emerald: 'border-emerald-200 bg-emerald-50 text-emerald-800',
-    slate: 'border-slate-200 bg-slate-50 text-slate-800',
+    gray: 'border-gray-200 bg-gray-50 text-gray-800',
   }[tone]
 
   return (
@@ -452,10 +452,10 @@ function InventoryStatusCard({
 
 function TeamAccessRow({ label, value, badge }: { label: string; value: string; badge: string }) {
   return (
-    <div className="flex items-start justify-between gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+    <div className="flex items-start justify-between gap-4 rounded-2xl border border-gray-200 bg-gray-50 p-4">
       <div className="min-w-0">
-        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">{label}</p>
-        <p className="mt-2 text-sm font-semibold text-slate-800">{value}</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-gray-400">{label}</p>
+        <p className="mt-2 text-sm font-semibold text-gray-800">{value}</p>
       </div>
       <span className="inline-flex rounded-full border border-cyan-200 bg-cyan-50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-cyan-700">
         {badge}
@@ -468,19 +468,19 @@ function RecentProductRow({ product }: { product: Product }) {
   const updatedLabel = formatProductDate(product.updatedAt || product.createdAt)
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+    <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <p className="truncate text-sm font-semibold text-slate-900">{product.name}</p>
-          <p className="mt-1 text-xs text-slate-500">SKU: {product.sku || 'No SKU'}</p>
-          <p className="mt-1 text-xs text-slate-500">Qty: {Number(product.qty ?? 0)}</p>
-          <p className="mt-1 text-xs text-slate-500">Updated: {updatedLabel}</p>
+          <p className="truncate text-sm font-semibold text-gray-900">{product.name}</p>
+          <p className="mt-1 text-xs text-gray-500">SKU: {product.sku || 'No SKU'}</p>
+          <p className="mt-1 text-xs text-gray-500">Qty: {Number(product.qty ?? 0)}</p>
+          <p className="mt-1 text-xs text-gray-500">Updated: {updatedLabel}</p>
         </div>
         <span
           className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-semibold ${
             Number(product.status) === 1 || Number(product.status) === 2
               ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-              : 'border-slate-200 bg-white text-slate-600'
+              : 'border-gray-200 bg-white text-gray-600'
           }`}
         >
           {Number(product.status) === 1 || Number(product.status) === 2 ? 'Active' : 'Inactive'}

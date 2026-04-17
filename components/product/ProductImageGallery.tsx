@@ -108,18 +108,67 @@ const ProductImageGallery = ({ product, selectedVariantImages, preferredActiveIm
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setIsZoomed(false)}
-            className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4 cursor-zoom-out"
+            className="fixed inset-0 z-[100] bg-black/90 flex flex-col items-center justify-center p-4 cursor-zoom-out"
           >
             <motion.div
               initial={{ scale: 0.85, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.85, opacity: 0 }}
               transition={{ duration: 0.25 }}
-              className="relative w-full max-w-xl aspect-square"
+              className="relative w-full max-w-4xl aspect-square max-h-[70vh]"
               onClick={(e) => e.stopPropagation()}
             >
               <Image src={enhancedActiveSrc || activeSrc} alt={product.name} fill className="object-contain" priority />
+              
+              {/* Navigation buttons */}
+              {hasMultipleImages && (
+                <>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      goPrev();
+                    }}
+                    className="absolute left-4 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full bg-white/20 hover:bg-white/40 text-white backdrop-blur-sm transition-colors flex items-center justify-center"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <polyline points="15 18 9 12 15 6" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      goNext();
+                    }}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full bg-white/20 hover:bg-white/40 text-white backdrop-blur-sm transition-colors flex items-center justify-center"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <polyline points="9 18 15 12 9 6" />
+                    </svg>
+                  </button>
+                </>
+              )}
             </motion.div>
+
+            {/* Thumbnails */}
+            {hasMultipleImages && (
+              <div className="flex gap-3 mt-4 overflow-x-auto justify-center" style={{ scrollbarWidth: 'none' }}>
+                {desktopThumbnails.map((image, index) => (
+                  <button
+                    key={index}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      goToImage(index);
+                    }}
+                    className={`relative shrink-0 w-16 h-16 rounded-xl overflow-hidden border-2 transition-all duration-200 ${
+                      safeActiveImage === index ? 'border-orange-400 scale-110' : 'border-white/30 hover:border-white/60'
+                    }`}
+                  >
+                    <Image src={image.enhanced || image.original} alt={`View ${index + 1}`} fill className="object-cover" />
+                  </button>
+                ))}
+              </div>
+            )}
+
             <button
               onClick={() => setIsZoomed(false)}
               className="absolute top-4 right-4 text-white bg-white/20 hover:bg-white/40 rounded-full p-2.5 transition-colors backdrop-blur-sm"
@@ -134,27 +183,10 @@ const ProductImageGallery = ({ product, selectedVariantImages, preferredActiveIm
         initial={{ opacity: 0, x: -30 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.5 }}
-        className="md:sticky md:top-4"
       >
-        <div className="flex gap-4 items-start">
-          {hasMultipleImages && (
-            <div className="hidden md:flex w-[72px] shrink-0 flex-col gap-2 max-h-[640px] overflow-y-auto pr-1">
-              {desktopThumbnails.map((image, index) => (
-                <button
-                  key={index}
-                  onClick={() => goToImage(index)}
-                  className={`relative w-16 h-16 rounded-lg overflow-hidden border-2 bg-gray-100 dark:bg-gray-800 transition-all ${
-                    safeActiveImage === index ? 'border-orange-400 dark:border-orange-500' : 'border-transparent hover:border-gray-300 dark:hover:border-gray-600'
-                  }`}
-                >
-                  <Image src={image.enhanced || image.original} alt={`View ${index + 1}`} fill className="object-cover" />
-                </button>
-              ))}
-            </div>
-          )}
-
+        <div className="flex flex-col gap-4">
           <div
-            className="relative flex-1 aspect-square rounded-2xl sm:rounded-3xl overflow-hidden bg-[#ececec] dark:bg-gray-800 shadow-sm cursor-zoom-in group"
+            className="relative aspect-square rounded-2xl sm:rounded-3xl overflow-hidden bg-[#ececec] dark:bg-gray-800 shadow-sm cursor-zoom-in group"
             onClick={() => setIsZoomed(true)}
           >
             <AnimatePresence mode="wait">
@@ -171,13 +203,13 @@ const ProductImageGallery = ({ product, selectedVariantImages, preferredActiveIm
             </AnimatePresence>
 
             {hasMultipleImages && (
-              <div className="absolute bottom-4 right-4 z-10 flex items-center gap-2">
+              <>
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     goPrev();
                   }}
-                  className="h-11 w-11 rounded-full bg-white/95 dark:bg-gray-700/95 hover:bg-white dark:hover:bg-gray-700 text-slate-700 dark:text-gray-200 shadow-md transition-colors flex items-center justify-center"
+                  className="absolute left-4 top-1/2 -translate-y-1/2 z-10 h-11 w-11 rounded-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 hover:border-orange-400 dark:hover:border-orange-500 text-slate-700 dark:text-gray-200 shadow-md transition-colors flex items-center justify-center"
                   aria-label="Previous image"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
@@ -189,33 +221,33 @@ const ProductImageGallery = ({ product, selectedVariantImages, preferredActiveIm
                     e.stopPropagation();
                     goNext();
                   }}
-                  className="h-11 w-11 rounded-full bg-white/95 dark:bg-gray-700/95 hover:bg-white dark:hover:bg-gray-700 text-slate-700 dark:text-gray-200 shadow-md transition-colors flex items-center justify-center"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 z-10 h-11 w-11 rounded-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 hover:border-orange-400 dark:hover:border-orange-500 text-slate-700 dark:text-gray-200 shadow-md transition-colors flex items-center justify-center"
                   aria-label="Next image"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
                     <polyline points="9 18 15 12 9 6" />
                   </svg>
                 </button>
-              </div>
+              </>
             )}
           </div>
-        </div>
 
-        {hasMultipleImages && (
-          <div className="flex md:hidden gap-2 mt-3 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
-            {desktopThumbnails.map((image, index) => (
-              <button
-                key={index}
-                onClick={() => goToImage(index)}
-                className={`relative shrink-0 w-16 h-16 rounded-xl overflow-hidden bg-gray-50 dark:bg-gray-800 border-2 transition-all duration-200 ${
-                  activeImage === index ? 'border-orange-400 dark:border-orange-500' : 'border-gray-100 dark:border-gray-700'
-                }`}
-              >
-                <Image src={image.enhanced || image.original} alt={`View ${index + 1}`} fill className="object-cover" />
-              </button>
-            ))}
-          </div>
-        )}
+          {hasMultipleImages && (
+            <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
+              {desktopThumbnails.map((image, index) => (
+                <button
+                  key={index}
+                  onClick={() => goToImage(index)}
+                  className={`relative shrink-0 w-16 h-16 rounded-xl overflow-hidden bg-gray-50 dark:bg-gray-800 border-2 transition-all duration-200 ${
+                    safeActiveImage === index ? 'border-orange-400 dark:border-orange-500' : 'border-gray-100 dark:border-gray-700'
+                  }`}
+                >
+                  <Image src={image.enhanced || image.original} alt={`View ${index + 1}`} fill className="object-cover" />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </motion.div>
     </>
   );

@@ -43,13 +43,23 @@ export default function LandingPage() {
 
       <main>
         <HeroSection />
-        <ExperienceSection />
+        <div id="ecosystem">
+          <ExperienceSection />
+        </div>
         <HowItWorksSection />
         <ProductsBrandsSection />
-        <CommissionSection />
-        <LifetimeBenefitsSection />
-        <TeamSection />
-        <TrainingSupportSection />
+        <div id="earnings">
+          <CommissionSection />
+        </div>
+        <div id="benefits">
+          <LifetimeBenefitsSection />
+        </div>
+        <div id="team">
+          <TeamSection />
+        </div>
+        <div id="training">
+          <TrainingSupportSection />
+        </div>
         <TargetAudienceSection />
         <CTASection />
         <Testimonials />

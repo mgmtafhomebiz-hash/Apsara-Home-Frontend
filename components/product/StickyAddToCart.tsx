@@ -73,6 +73,7 @@ const StickyAddToCart = ({ product, selectedVariant }: StickyAddToCartProps) => 
 
   useEffect(() => {
     let lastScrollY = window.scrollY;
+    let scrollTimeout: NodeJS.Timeout;
     const handler = () => {
       const currentScrollY = window.scrollY;
       // Add hysteresis to prevent rapid toggling
@@ -83,8 +84,16 @@ const StickyAddToCart = ({ product, selectedVariant }: StickyAddToCartProps) => 
       }
       lastScrollY = currentScrollY;
     };
-    window.addEventListener('scroll', handler);
-    return () => window.removeEventListener('scroll', handler);
+    // Throttle scroll events to prevent rapid toggling
+    const throttledHandler = () => {
+      clearTimeout(scrollTimeout);
+      scrollTimeout = setTimeout(handler, 50);
+    };
+    window.addEventListener('scroll', throttledHandler);
+    return () => {
+      clearTimeout(scrollTimeout);
+      window.removeEventListener('scroll', throttledHandler);
+    };
   }, [visible]);
 
   const handleAddToCart = () => {
@@ -123,7 +132,7 @@ const StickyAddToCart = ({ product, selectedVariant }: StickyAddToCartProps) => 
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: -80, opacity: 0 }}
           transition={{ duration: 0.3, ease: 'easeOut' }}
-          className="fixed left-0 right-0 top-0 z-40 border-b border-gray-200 bg-white shadow-md dark:bg-gray-900 dark:border-gray-700"
+          className="fixed left-0 right-0 top-0 z-[60] border-b border-gray-200 bg-white shadow-md dark:bg-gray-900 dark:border-gray-700"
         >
           <div className="container mx-auto flex items-center gap-3 px-4 py-2.5">
             <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-gray-50 dark:bg-gray-800">

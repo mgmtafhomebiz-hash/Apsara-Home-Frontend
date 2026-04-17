@@ -248,15 +248,15 @@ const StatsGrid = () => {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: i * 0.04, duration: 0.3 }}
-          className={`group rounded-2xl border ${stat.border} ${stat.borderDark} bg-white p-4 shadow-sm transition-all duration-300 hover:shadow-md dark:bg-slate-900 dark:shadow-none`}
+          className={`group rounded-2xl border ${stat.border} ${stat.borderDark} bg-white p-4 transition-all duration-300 dark:bg-gray-800`}
         >
           <div className="flex items-start justify-between gap-2 mb-3">
-            <p className="text-[11px] font-medium leading-tight text-slate-400 dark:text-slate-500">{stat.label}</p>
+            <p className="text-[11px] font-medium leading-tight text-gray-400 dark:text-gray-500">{stat.label}</p>
             <div className={`${stat.iconBg} ${stat.iconText} ${stat.iconBgDark} ${stat.iconTextDark} flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-transform duration-200 group-hover:scale-105`}>
               {stat.icon}
             </div>
           </div>
-          <p className={`mb-2 text-xl font-bold ${stat.valColor} dark:text-slate-100`}>{stat.value}</p>
+          <p className={`mb-2 text-xl font-bold ${stat.valColor} dark:text-gray-100`}>{stat.value}</p>
           <div className="flex items-center gap-1">
             {stat.changeType === 'up' && (
               <svg className="w-3 h-3 text-emerald-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 10l7-7m0 0l7 7m-7-7v18" /></svg>
@@ -264,7 +264,7 @@ const StatsGrid = () => {
             {stat.changeType === 'down' && (
               <svg className="w-3 h-3 text-red-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 14l-7 7m0 0l-7-7m7 7V3" /></svg>
             )}
-            <span className={`text-[11px] font-medium ${stat.changeType === 'up' ? 'text-emerald-600 dark:text-emerald-300' : stat.changeType === 'down' ? 'text-red-500 dark:text-red-300' : 'text-slate-400 dark:text-slate-500'}`}>
+            <span className={`text-[11px] font-medium ${stat.changeType === 'up' ? 'text-emerald-600 dark:text-emerald-300' : stat.changeType === 'down' ? 'text-red-500 dark:text-red-300' : 'text-gray-400 dark:text-gray-500'}`}>
               {stat.change}
             </span>
           </div>
