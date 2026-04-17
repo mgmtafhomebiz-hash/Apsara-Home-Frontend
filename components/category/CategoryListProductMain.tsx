@@ -164,19 +164,42 @@ export default function CategoryListProductMain({
             const passStock = !filterState.inStock || (p.stock !== undefined && p.stock > 0);
 
             // Filter by discount
-            const passDiscount = !filterState.discountOnly || hasMemberPrice;
+            let passDiscount = true;
+            if (filterState.discountOnly) {
+                if (filterState.minDiscount > 0) {
+                    // Calculate discount percentage
+                    const discountPercent = srpPrice > 0 && memberPrice > 0 
+                        ? ((srpPrice - memberPrice) / srpPrice) * 100 
+                        : 0;
+                    passDiscount = hasMemberPrice && discountPercent >= filterState.minDiscount;
+                } else {
+                    passDiscount = hasMemberPrice;
+                }
+            }
 
-            return passPrice && passSearch && passStock && passDiscount;
+            // Filter by PV range
+            const pv = p.prodpv ? Number(p.prodpv) : 0;
+            const passPvRange = pv >= filterState.pvRange[0] && pv <= filterState.pvRange[1];
+
+            // Filter by hasPvOnly
+            const passHasPv = !filterState.hasPvOnly || pv > 0;
+
+            return passPrice && passSearch && passStock && passDiscount && passPvRange && passHasPv;
         });
 
-        // Apply sorting from TopFilter
-        if (topSortBy === 'name-asc') {
+        // Apply sorting - prioritize topSortBy, fall back to filterState.sortBy
+        const sortBy = topSortBy !== 'default' ? topSortBy : filterState.sortBy;
+
+        // Map ProductFilter 'asc'/'desc' to 'name-asc'/'name-desc'
+        const effectiveSortBy = sortBy === 'asc' ? 'name-asc' : sortBy === 'desc' ? 'name-desc' : sortBy;
+
+        if (effectiveSortBy === 'name-asc') {
             result = [...result].sort((a, b) => a.name.localeCompare(b.name));
-        } else if (topSortBy === 'name-desc') {
+        } else if (effectiveSortBy === 'name-desc') {
             result = [...result].sort((a, b) => b.name.localeCompare(a.name));
-        } else if (topSortBy === 'price-asc') {
+        } else if (effectiveSortBy === 'price-asc') {
             result = [...result].sort((a, b) => a.price - b.price);
-        } else if (topSortBy === 'price-desc') {
+        } else if (effectiveSortBy === 'price-desc') {
             result = [...result].sort((a, b) => b.price - a.price);
         }
         // 'default' keeps original order
@@ -496,7 +519,7 @@ function ListViewProduct({ product, onShareClick }: ListViewProductProps) {
                                 </svg>
                             ))}
                         </div>
-                        <span className="text-[9px] sm:text-xs text-gray-400 dark:text-gray-500">124 sold</span>
+                        <span className="text-[9px] sm:text-xs text-gray-400 dark:text-gray-500">{product.soldCount ?? 0} sold</span>
                     </div>
                 </div>
 
