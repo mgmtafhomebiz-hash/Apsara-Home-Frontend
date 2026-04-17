@@ -283,6 +283,7 @@ export default function ByBrandPageMain() {
   const [addToCart, { isLoading: isAddingToCart }] = useAddToCartMutation()
   const [hoveringShareProductId, setHoveringShareProductId] = useState<number | null>(null)
   const [shareModalOpen, setShareModalOpen] = useState(false)
+  const productsRef = useRef<HTMLDivElement>(null)
 
   // Handlers for TopFilters
   const handleSearchChange = (search: string) => {
@@ -327,7 +328,7 @@ export default function ByBrandPageMain() {
   const { data: categoriesData } = useGetCategoriesQuery({ page: 1, per_page: 100, used_only: true })
 
   const allBrands = useMemo(
-    () => (data?.brands ?? []).filter((brand) => brand.status === 0 && brand.name.trim().length > 0),
+    () => (data?.brands ?? []).filter((brand) => brand.name && brand.name.trim().length > 0),
     [data?.brands],
   )
 
@@ -356,10 +357,14 @@ export default function ByBrandPageMain() {
   const [productPage, setProductPage] = useState(1)
   const perPage = showNumber === 'all' ? 500 : (typeof showNumber === 'number' ? showNumber : 12)
 
-  const selectedBrandItem = useMemo(
-    () => (data?.brands ?? []).find((brand) => toSlug(brand.name) === selectedBrand) ?? null,
-    [data?.brands, selectedBrand],
-  )
+  const selectedBrandItem = useMemo(() => {
+    if (!selectedBrand || !data?.brands) return null
+    const found = data.brands.find((brand) => {
+      const slugged = toSlug(brand.name)
+      return slugged === selectedBrand
+    })
+    return found ?? null
+  }, [data?.brands, selectedBrand])
 
   // Reset to page 1 when brand changes or filters change
   const prevBrand = useRef(selectedBrand)
@@ -379,6 +384,15 @@ export default function ByBrandPageMain() {
   useEffect(() => {
     setProductPage(1)
   }, [showNumber])
+
+  // Auto-scroll to products section when brand changes
+  useEffect(() => {
+    if (selectedBrand && productsRef.current) {
+      setTimeout(() => {
+        productsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }, 100)
+    }
+  }, [selectedBrand])
 
   // Fetch detailed brand info including rating
   const { data: brandInfo } = useGetProductBrandQuery(selectedBrandItem?.id ?? 0, {
@@ -481,17 +495,21 @@ export default function ByBrandPageMain() {
 
   return (
     <>
-      <div 
+      <div
         className="fixed inset-0 -z-50 by-brand-background"
-        style={{ 
-          backgroundColor: '#faf8f5',
-          background: '#faf8f5'
-        } as React.CSSProperties}
       />
       <style dangerouslySetInnerHTML={{
         __html: `
+          .by-brand-background {
+            background: #ffffff;
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100vh;
+            z-index: -50;
+          }
+
           html.dark .by-brand-background {
-            background-color: #030712 !important;
             background: #030712 !important;
           }
         `
@@ -862,7 +880,7 @@ export default function ByBrandPageMain() {
             </div>
 
             {/* Right Side - Products */}
-            <div className="flex-1 rounded-lg bg-white dark:bg-gray-800 p-6 border border-gray-200 dark:border-gray-700">
+            <div ref={productsRef} className="flex-1 rounded-lg bg-white dark:bg-gray-800 p-6 border border-gray-200 dark:border-gray-700">
               <div className="flex flex-col gap-2 border-b border-gray-100 dark:border-gray-700 pb-5 sm:flex-row sm:items-end sm:justify-between">
                 <div>
                   <p className="text-xs font-bold uppercase tracking-[0.3em] text-orange-500 dark:text-orange-400">Brand Products</p>

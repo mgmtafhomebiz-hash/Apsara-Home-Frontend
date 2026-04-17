@@ -4,6 +4,13 @@ import { useState, useEffect } from 'react'
 import type { Category } from '@/store/api/categoriesApi'
 import { ROOM_OPTIONS } from '@/libs/roomConfig'
 
+const toSlug = (value: string) =>
+  value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+
 export interface FilterState {
   priceRange: [number, number]
   sortBy: 'default' | 'asc' | 'desc'
@@ -362,8 +369,8 @@ export default function ProductFilter({ onFilterChange, className = '', pvRange:
                 <button
                   key={brand.id}
                   onClick={() => {
-                    const brandSlug = brand.name.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-')
-                    window.location.href = `/by-brand?brand=${brandSlug}`
+                    const brandSlug = toSlug(brand.name)
+                    window.location.href = `/by-brand?brand=${encodeURIComponent(brandSlug)}`
                   }}
                   className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium transition-colors cursor-pointer ${
                     currentBrand === brand.name
