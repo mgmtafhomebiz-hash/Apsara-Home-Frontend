@@ -15,13 +15,15 @@ export default function AdminGeneralSettingsPageMain() {
 
   const normalizeAssetUrl = (value: string | null | undefined) => {
     if (!value) return null
+    const cleanedValue = value.trim().replace(/^"+|"+$/g, '').replace(/%22$/i, '')
+    if (!cleanedValue) return null
 
     const fallbackBase =
       process.env.NEXT_PUBLIC_LARAVEL_API_URL ||
       (typeof window !== 'undefined' ? window.location.origin : '')
 
     try {
-      const parsed = new URL(value)
+      const parsed = new URL(cleanedValue)
       const base = fallbackBase ? new URL(fallbackBase) : null
 
       // If the backend is hosted on a different domain (e.g. backend.*) but it returns a
@@ -48,9 +50,27 @@ export default function AdminGeneralSettingsPageMain() {
 
       return parsed.toString()
     } catch {
-      if (fallbackBase && value.startsWith('/')) return new URL(value, fallbackBase).toString()
-      return value
+      if (fallbackBase && cleanedValue.startsWith('/')) return new URL(cleanedValue, fallbackBase).toString()
+      return cleanedValue
     }
+  }
+
+  const uploadSettingsAsset = async (file: File): Promise<string> => {
+    const payload = new FormData()
+    payload.append('file', file)
+    payload.append('folder', 'web-content')
+
+    const response = await fetch('/api/admin/upload', {
+      method: 'POST',
+      body: payload,
+    })
+
+    const json = await response.json()
+    if (!response.ok || typeof json?.url !== 'string') {
+      throw new Error(typeof json?.error === 'string' ? json.error : 'Image upload failed.')
+    }
+
+    return json.url
   }
 
   const [systemName, setSystemName] = useState('Apsara Home')
@@ -416,6 +436,28 @@ export default function AdminGeneralSettingsPageMain() {
           type="button"
           onClick={async () => {
             const payload = new FormData()
+            let nextLogoUrl: string | null = logoUrl
+            let nextFaviconUrl: string | null = faviconUrl
+            let nextWebsiteQrCodeUrl: string | null = websiteQrCodeUrl
+
+            try {
+              if (logoFile) {
+                nextLogoUrl = await uploadSettingsAsset(logoFile)
+              }
+
+              if (faviconFile) {
+                nextFaviconUrl = await uploadSettingsAsset(faviconFile)
+              }
+
+              if (websiteQrCodeFile) {
+                nextWebsiteQrCodeUrl = await uploadSettingsAsset(websiteQrCodeFile)
+              }
+            } catch (error) {
+              console.error(error)
+              showErrorToast((error as Error)?.message || 'Failed to upload image. Please try again.')
+              return
+            }
+
             payload.append('system_name', systemName)
             payload.append('company_name', companyName)
             payload.append('support_email', supportEmail)
@@ -427,22 +469,15 @@ export default function AdminGeneralSettingsPageMain() {
             payload.append('date_format', dateFormat)
             payload.append('language', language)
             payload.append('enable_test_payments', enableTestPayments ? '1' : '0')
-
-            if (logoFile) {
-              payload.append('logo', logoFile)
-            }
-            if (faviconFile) {
-              payload.append('favicon', faviconFile)
-            }
-            if (websiteQrCodeFile) {
-              payload.append('website_qr_code', websiteQrCodeFile)
-            }
+            if (nextLogoUrl) payload.append('logo_url', nextLogoUrl)
+            if (nextFaviconUrl) payload.append('favicon_url', nextFaviconUrl)
+            if (nextWebsiteQrCodeUrl) payload.append('website_qr_code_url', nextWebsiteQrCodeUrl)
 
             try {
               const response = await saveSettings(payload).unwrap()
-               setLogoUrl(normalizeAssetUrl(response.settings.logo_url))
-               setFaviconUrl(normalizeAssetUrl(response.settings.favicon_url))
-               setWebsiteQrCodeUrl(normalizeAssetUrl(response.settings.website_qr_code_url))
+              setLogoUrl(normalizeAssetUrl(response.settings.logo_url))
+              setFaviconUrl(normalizeAssetUrl(response.settings.favicon_url))
+              setWebsiteQrCodeUrl(normalizeAssetUrl(response.settings.website_qr_code_url))
               setLogoFile(null)
               setFaviconFile(null)
               setWebsiteQrCodeFile(null)
