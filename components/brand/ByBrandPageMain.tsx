@@ -18,6 +18,7 @@ import ScrollToTop from '@/components/landing-page/ScrollToTop'
 import ItemCard from '@/components/item/ItemCard'
 import ProductFilter, { FilterState } from '@/components/item/ProductFilter'
 import TopFilter from '@/components/item/TopFilter'
+import ShareModal from '@/components/ui/ShareModal'
 import toast from 'react-hot-toast'
 
 const toSlug = (value: string) =>
@@ -104,7 +105,7 @@ export default function ByBrandPageMain() {
   const letterFilterParam = searchParams.get('letter')
   const sortByParam = searchParams.get('sort')
   const [currentSlide, setCurrentSlide] = useState(0)
-  const selectedBrand = searchParams.get('brand')?.trim().toLowerCase() ?? ''
+  const selectedBrand = decodeURIComponent(searchParams.get('brand') || '').trim().toLowerCase()
   const [letterFilter, setLetterFilter] = useState<string>('ALL')
   const [searchQuery, setSearchQuery] = useState('')
   const [sortBy, setSortBy] = useState<'name-asc' | 'name-desc' | 'price-asc' | 'price-desc' | 'default'>('default')
@@ -124,6 +125,7 @@ export default function ByBrandPageMain() {
   const isLoggedIn = Boolean(session?.user)
   const [addToCart, { isLoading: isAddingToCart }] = useAddToCartMutation()
   const [hoveringShareProductId, setHoveringShareProductId] = useState<number | null>(null)
+  const [shareModalOpen, setShareModalOpen] = useState(false)
 
   // Handlers for TopFilters
   const handleSearchChange = (search: string) => {
@@ -341,14 +343,7 @@ export default function ByBrandPageMain() {
           <>
             <div className="rounded-lg bg-white dark:bg-gray-800 p-6 border border-gray-200 dark:border-gray-700 relative">
               <button
-                onClick={() => {
-                  const brandUrl = window.location.href
-                  navigator.clipboard.writeText(brandUrl).then(() => {
-                    toast.success('Brand link copied to clipboard')
-                  }).catch(() => {
-                    toast.error('Failed to copy link')
-                  })
-                }}
+                onClick={() => setShareModalOpen(true)}
                 className="absolute top-4 right-4 p-2 rounded-full border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 hover:bg-orange-500 hover:border-orange-500 dark:hover:bg-orange-500 dark:hover:border-orange-500 hover:text-white transition-all duration-200 cursor-pointer"
                 title="Share Brand"
               >
@@ -397,8 +392,8 @@ export default function ByBrandPageMain() {
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <OutlineButton href="/by-brand" className="shrink-0 !px-4 !py-2.5 !text-sm">
-                    ← Back to All Brands
+                  <OutlineButton onClick={() => router.back()} className="shrink-0 !px-4 !py-2.5 !text-sm">
+                    ← Back
                   </OutlineButton>
                 </div>
               </div>
@@ -941,6 +936,21 @@ export default function ByBrandPageMain() {
       </div>
       <Footer />
       <ScrollToTop />
+      {/* Share Modal */}
+      {selectedBrandItem && (
+        <ShareModal
+          isOpen={shareModalOpen}
+          onClose={() => setShareModalOpen(false)}
+          product={{
+            id: selectedBrandItem.id,
+            name: selectedBrandItem.name,
+            image: selectedBrandItem.image || '',
+            price: 0,
+          }}
+          brandName={selectedBrandItem.name}
+          shareUrl={`https://afhome.ph/by-brand?brand=${encodeURIComponent(toSlug(selectedBrandItem.name))}`}
+        />
+      )}
     </main>
     </>
   )
