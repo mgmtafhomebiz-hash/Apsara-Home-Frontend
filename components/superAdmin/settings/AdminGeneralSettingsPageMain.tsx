@@ -24,6 +24,14 @@ export default function AdminGeneralSettingsPageMain() {
       const parsed = new URL(value)
       const base = fallbackBase ? new URL(fallbackBase) : null
 
+      // If the backend is hosted on a different domain (e.g. backend.*) but it returns a
+      // /storage/* URL pointing at the frontend host, rewrite it to the API host.
+      if (base && parsed.pathname.startsWith('/storage/') && parsed.host !== base.host) {
+        parsed.protocol = base.protocol
+        parsed.host = base.host
+        return parsed.toString()
+      }
+
       const isLocalhost = parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1'
       if (isLocalhost && base) {
         parsed.protocol = base.protocol
