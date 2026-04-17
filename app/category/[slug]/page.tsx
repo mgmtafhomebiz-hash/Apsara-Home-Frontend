@@ -307,6 +307,18 @@ function CategoryLoadingFallback({ slug }: { slug: string }) {
       slug={slug}
       isLoading={true}
       initialCategories={[]}
+      initialProducts={[]}
+    />
+  );
+}
+
+function CategoryErrorFallback({ slug }: { slug: string }) {
+  return (
+    <CategoryListProductMain
+      slug={slug}
+      hasError={true}
+      initialCategories={[]}
+      initialProducts={[]}
     />
   );
 }

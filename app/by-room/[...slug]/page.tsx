@@ -195,6 +195,7 @@ function RoomLoadingFallback({ roomSlug }: { roomSlug: string }) {
       slug={roomSlug}
       isLoading={true}
       initialCategories={[]}
+      initialProducts={[]}
       isRoomPage={true}
     />
   )

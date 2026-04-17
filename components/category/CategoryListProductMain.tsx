@@ -103,6 +103,7 @@ interface CategoryListProductMainProps {
     initialCategories?: Category[];
     isRoomPage?: boolean;
     isLoading?: boolean;
+    hasError?: boolean;
 }
 
 const titleFromSlug = (slug: string) =>
@@ -119,6 +120,7 @@ export default function CategoryListProductMain({
     initialCategories = [],
     isRoomPage = false,
     isLoading = false,
+    hasError = false,
 }: CategoryListProductMainProps) {
     const meta = categoryMeta[slug];
     const staticProducts = categoryProducts[slug];
@@ -130,7 +132,7 @@ export default function CategoryListProductMain({
 
     const categoryLabel = initialCategoryLabel ?? meta?.label ?? titleFromSlug(slug);
 
-    if (isLoading || (!hasDynamicProducts && !staticProducts)) {
+    if (isLoading) {
         return (
             <>
                 <div
@@ -169,6 +171,58 @@ export default function CategoryListProductMain({
                                     <TopFilterSkeleton />
                                     <ProductGridSkeleton />
                                 </div>
+                            </div>
+                        </div>
+                    </main>
+                    <Footer />
+                </div>
+            </>
+        );
+    }
+
+    if (hasError) {
+        return (
+            <>
+                <div
+                    className="fixed inset-0 -z-50 category-background"
+                    style={{
+                        backgroundColor: '#faf8f5',
+                        background: '#faf8f5'
+                    } as React.CSSProperties}
+                />
+                <style dangerouslySetInnerHTML={{
+                    __html: `
+                        html.dark .category-background {
+                            background-color: #030712 !important;
+                            background: #030712 !important;
+                        }
+                    `
+                }} />
+                <div className="relative min-h-screen text-slate-900 dark:text-white flex flex-col">
+                    <TopBar />
+                    <Navbar initialCategories={initialCategories} />
+
+                    <main className="flex-1">
+                        <div className="bg-gray-50 dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700">
+                            <div className="container mx-auto px-4 py-3">
+                                <h1 className="text-base font-bold text-slate-800 dark:text-white">{categoryLabel}</h1>
+                            </div>
+                        </div>
+
+                        <div className="container mx-auto px-4 py-24">
+                            <div className="flex flex-col items-center justify-center text-center">
+                                <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-900/20 flex items-center justify-center mb-4">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2">
+                                        <circle cx="12" cy="12" r="10" />
+                                        <line x1="12" y1="8" x2="12" y2="12" />
+                                        <line x1="12" y1="16" x2="12.01" y2="16" />
+                                    </svg>
+                                </div>
+                                <p className="text-slate-700 dark:text-gray-200 font-semibold mb-1">Failed to load products</p>
+                                <p className="text-gray-400 dark:text-gray-500 text-sm mb-4">Something went wrong. Please try refreshing the page.</p>
+                                <button onClick={() => window.location.reload()} className="text-sm font-semibold text-orange-500 dark:text-orange-400 hover:text-orange-600 dark:hover:text-orange-300 transition-colors">
+                                    Refresh page
+                                </button>
                             </div>
                         </div>
                     </main>
