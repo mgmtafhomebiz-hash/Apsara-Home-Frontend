@@ -275,56 +275,57 @@ export default function ItemCard({ product, brandName }: ItemCardProps) {
       </div>
 
       {/* Product Info */}
-      <div className="mt-1.5 flex flex-col gap-1 p-3">
+      <div className="mt-1 flex flex-col gap-1 px-2.5 sm:px-3 py-2.5 sm:py-3">
         {/* Brand Name */}
         {brandName && (
-          <p className="text-xs text-gray-500 dark:text-gray-400 font-medium uppercase tracking-wide">
+          <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 font-medium uppercase tracking-wide">
             {brandName}
           </p>
         )}
         {/* Product Name */}
-        <h3 className="line-clamp-2 text-sm text-gray-800 dark:text-gray-200 leading-snug min-h-[2.5rem]">
+        <h3 className="line-clamp-2 text-xs sm:text-sm text-gray-800 dark:text-gray-200 leading-snug min-h-[2.5rem]">
           {product.name}
         </h3>
 
         {/* Price */}
-        <div className="flex items-baseline justify-between gap-2">
-          <div className="flex items-baseline gap-2">
-            <span className="text-base font-bold text-orange-500 dark:text-orange-400">
+        <div className="flex items-baseline justify-between gap-1.5 sm:gap-2">
+          <div className="flex items-baseline gap-1.5 sm:gap-2">
+            <span className="text-sm sm:text-base font-bold text-orange-500 dark:text-orange-400">
               ₱{displayPrice.toLocaleString()}
             </span>
             {strikePrice > displayPrice && (
-              <span className="text-sm text-gray-400 dark:text-gray-500 line-through">
+              <span className="text-xs sm:text-sm text-gray-400 dark:text-gray-500 line-through">
                 ₱{strikePrice.toLocaleString()}
               </span>
             )}
           </div>
           {displayPv > 0 && (
-            <span className="rounded-full border border-blue-200 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 text-[11px] font-semibold text-blue-700 dark:text-blue-300 shrink-0">
+            <span className="rounded-full border border-blue-200 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/30 px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[11px] font-semibold text-blue-700 dark:text-blue-300 shrink-0 whitespace-nowrap">
               PV {displayPv.toLocaleString()}
             </span>
           )}
         </div>
 
         {/* Sales/Ratings */}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-0.5 sm:gap-1">
           <div className="flex items-center">
             {[1, 2, 3, 4, 5].map((star) => (
               <svg
                 key={star}
                 xmlns="http://www.w3.org/2000/svg"
-                width="10"
-                height="10"
+                width="9"
+                height="9"
                 viewBox="0 0 24 24"
                 fill="#f97316"
                 stroke="#f97316"
                 strokeWidth="2"
+                className="sm:w-[10px] sm:h-[10px]"
               >
                 <path d="M12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
               </svg>
             ))}
           </div>
-          <span className="text-xs text-gray-400 dark:text-gray-500">
+          <span className="text-[10px] sm:text-xs text-gray-400 dark:text-gray-500">
             {product.soldCount ?? 0} sold
           </span>
         </div>
