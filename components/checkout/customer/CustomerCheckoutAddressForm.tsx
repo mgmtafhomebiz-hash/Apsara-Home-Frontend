@@ -10,6 +10,7 @@ import {
     type CustomerAddress,
 } from "@/store/api/userApi";
 import { CheckoutAddressDraft, FormErrors, GuestForm } from "@/types/CustomerCheckout/types";
+import { MapPin, Plus, X, AlertCircle, Check } from 'lucide-react';
 
 interface CustomerCheckoutAddressFormProps {
     form: GuestForm;
@@ -43,7 +44,7 @@ const Field = ({ label, value, onChange, placeholder, required = false, error, f
     disabled?: boolean;
 }) => (
     <div data-error-field={fieldKey} className="transition-transform duration-200">
-        <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+        <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">
             {label}{required && <span className="text-red-500 ml-0.5">*</span>}
         </label>
         <input
@@ -52,11 +53,11 @@ const Field = ({ label, value, onChange, placeholder, required = false, error, f
             onChange={e => onChange(e.target.value)}
             placeholder={placeholder}
             disabled={disabled}
-            className={`w-full px-3.5 py-2.5 bg-slate-50 border rounded-xl text-sm text-slate-700 placeholder-slate-300 focus:outline-none focus:ring-2 transition-all disabled:opacity-60 disabled:cursor-not-allowed ${error ? 'border-red-300 focus:ring-red-200 focus:border-red-400'
-                : 'border-slate-200 focus:ring-orange-200 focus:border-orange-400'
+            className={`w-full px-3.5 py-2.5 bg-white dark:bg-slate-900 border rounded-xl text-sm text-slate-700 dark:text-slate-200 placeholder-slate-300 dark:placeholder-slate-500 focus:outline-none focus:ring-2 transition-all disabled:opacity-60 disabled:cursor-not-allowed ${error ? 'border-red-300 dark:border-red-600 focus:ring-red-200 dark:focus:ring-red-900 focus:border-red-400 dark:focus:border-red-500'
+                : 'border-slate-200 dark:border-slate-700 focus:ring-orange-200 dark:focus:ring-orange-900 focus:border-orange-400 dark:focus:border-orange-500'
                 }`}
         />
-        {error && <p className="text-red-500 text-[11px] mt-1">{error}</p>}
+        {error && <p className="text-red-500 dark:text-red-400 text-[11px] mt-1">{error}</p>}
     </div>
 );
 
@@ -82,14 +83,14 @@ function AddressCard({
             transition={{ duration: 0.25, delay: index * 0.06, ease: 'easeOut' }}
             whileHover={{ y: -1 }}
             className={`w-full rounded-2xl border px-4 py-4 text-left transition-all cursor-pointer ${active
-                ? 'border-orange-300 bg-linear-to-br from-orange-50 to-amber-50 shadow-md shadow-orange-100'
-                : 'border-slate-200 bg-white hover:border-orange-200 hover:shadow-sm'
+                ? 'border-orange-300 dark:border-orange-600 bg-linear-to-br from-orange-50 dark:from-orange-900/20 to-amber-50 dark:to-amber-900/10 shadow-md shadow-orange-100 dark:shadow-none'
+                : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-orange-200 dark:hover:border-orange-700 hover:'
                 }`}
             onClick={() => onSelect(address)}
         >
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div className="flex items-start gap-3">
-                    <div className={`mt-0.5 h-5 w-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all duration-200 ${active ? 'border-orange-500' : 'border-slate-300'}`}>
+                    <div className={`mt-0.5 h-5 w-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all duration-200 ${active ? 'border-orange-500 dark:border-orange-400' : 'border-slate-300 dark:border-slate-600'}`}>
                         <AnimatePresence>
                             {active && (
                                 <motion.div
@@ -104,20 +105,20 @@ function AddressCard({
                     </div>
                     <div>
                         <div className="flex flex-wrap items-center gap-1.5">
-                            <p className="text-sm font-bold text-slate-900">{address.full_name}</p>
-                            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                            <p className="text-sm font-bold text-slate-900 dark:text-white">{address.full_name}</p>
+                            <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                                 {address.address_type || 'Address'}
                             </span>
                             {address.is_default ? (
-                                <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-700">
+                                <span className="rounded-full bg-emerald-100 dark:bg-emerald-900/30 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
                                     Default
                                 </span>
                             ) : null}
                         </div>
-                        <p className="text-sm text-slate-500 mt-0.5">{address.phone}</p>
-                        <p className="text-sm text-slate-600 mt-1 leading-relaxed">{address.full_address}</p>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{address.phone}</p>
+                        <p className="text-sm text-slate-600 dark:text-slate-300 mt-1 leading-relaxed">{address.full_address}</p>
                         {address.notes ? (
-                            <p className="text-xs text-slate-400 mt-1.5 italic">Note: {address.notes}</p>
+                            <p className="text-xs text-slate-400 dark:text-slate-500 mt-1.5 italic">Note: {address.notes}</p>
                         ) : null}
                     </div>
                 </div>
@@ -126,7 +127,7 @@ function AddressCard({
                     <button
                         type="button"
                         onClick={(e) => { e.stopPropagation(); void onMakeDefault(address); }}
-                        className="inline-flex items-center justify-center rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 hover:border-slate-300 transition-colors shrink-0"
+                        className="inline-flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-700 px-3 py-2 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-600 transition-colors shrink-0"
                     >
                         {settingDefault ? 'Saving...' : 'Make default'}
                     </button>
@@ -138,11 +139,11 @@ function AddressCard({
 
 function SkeletonCard() {
     return (
-        <div className="rounded-2xl border border-slate-100 bg-white px-5 py-5 animate-pulse">
-            <div className="h-3 w-16 bg-slate-200 rounded-full mb-3" />
-            <div className="h-5 w-40 bg-slate-200 rounded-full mb-2" />
-            <div className="h-4 w-28 bg-slate-100 rounded-full mb-2" />
-            <div className="h-4 w-64 bg-slate-100 rounded-full" />
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-5 py-5 animate-pulse">
+            <div className="h-3 w-16 bg-slate-200 dark:bg-slate-700 rounded-full mb-3" />
+            <div className="h-5 w-40 bg-slate-200 dark:bg-slate-700 rounded-full mb-2" />
+            <div className="h-4 w-28 bg-slate-100 dark:bg-slate-800 rounded-full mb-2" />
+            <div className="h-4 w-64 bg-slate-100 dark:bg-slate-800 rounded-full" />
         </div>
     );
 }
@@ -274,8 +275,8 @@ export default function CustomerCheckoutAddressForm({
     /* ─── Guest mode ─── */
     if (!isLoggedIn) {
         return (
-            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
-                <h2 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2.5">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700  p-6">
+                <h2 className="text-sm font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2.5">
                     <div className="h-6 w-6 rounded-full bg-orange-500 text-white text-xs font-bold flex items-center justify-center shrink-0">2</div>
                     Delivery Address
                 </h2>
@@ -290,7 +291,7 @@ export default function CustomerCheckoutAddressForm({
                         fieldKey="address"
                     />
                     <div data-error-field="region" className="transition-transform duration-200">
-                        <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+                        <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">
                             Region<span className="text-red-500 ml-0.5">*</span>
                         </label>
                         <select
@@ -299,19 +300,19 @@ export default function CustomerCheckoutAddressForm({
                                 const option = e.target.options[e.target.selectedIndex];
                                 ph.setRegion(e.target.value, option.text);
                             }}
-                            className={`w-full px-3.5 py-2.5 bg-slate-50 border rounded-xl text-sm text-slate-700 focus:outline-none focus:ring-2 transition-all ${errors.region ? 'border-red-300 focus:ring-red-200 focus:border-red-400' : 'border-slate-200 focus:ring-orange-200 focus:border-orange-400'}`}
+                            className={`w-full px-3.5 py-2.5 bg-white dark:bg-slate-900 border rounded-xl text-sm text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 transition-all ${errors.region ? 'border-red-300 dark:border-red-600 focus:ring-red-200 dark:focus:ring-red-900 focus:border-red-400 dark:focus:border-red-500' : 'border-slate-200 dark:border-slate-700 focus:ring-orange-200 dark:focus:ring-orange-900 focus:border-orange-400 dark:focus:border-orange-500'}`}
                         >
                             <option value="">- Select Region -</option>
                             {ph.regions.map((region) => (
                                 <option key={region.code} value={region.code}>{region.name}</option>
                             ))}
                         </select>
-                        {errors.region && <p className="text-red-500 text-[11px] mt-1">{errors.region}</p>}
+                        {errors.region && <p className="text-red-500 dark:text-red-400 text-[11px] mt-1">{errors.region}</p>}
                     </div>
 
                     {!ph.noProvince ? (
                         <div data-error-field="province" className="transition-transform duration-200">
-                            <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+                            <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">
                                 Province<span className="text-red-500 ml-0.5">*</span>
                             </label>
                             <select
@@ -321,20 +322,20 @@ export default function CustomerCheckoutAddressForm({
                                     const option = e.target.options[e.target.selectedIndex];
                                     ph.setProvince(e.target.value, option.text);
                                 }}
-                                className={`w-full px-3.5 py-2.5 bg-slate-50 border rounded-xl text-sm text-slate-700 focus:outline-none focus:ring-2 transition-all ${errors.province ? 'border-red-300 focus:ring-red-200 focus:border-red-400' : 'border-slate-200 focus:ring-orange-200 focus:border-orange-400'}`}
+                                className={`w-full px-3.5 py-2.5 bg-white dark:bg-slate-900 border rounded-xl text-sm text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 transition-all disabled:opacity-60 ${errors.province ? 'border-red-300 dark:border-red-600 focus:ring-red-200 dark:focus:ring-red-900 focus:border-red-400 dark:focus:border-red-500' : 'border-slate-200 dark:border-slate-700 focus:ring-orange-200 dark:focus:ring-orange-900 focus:border-orange-400 dark:focus:border-orange-500'}`}
                             >
                                 <option value="">{ph.loadingProvinces ? 'Loading provinces...' : '- Select Province -'}</option>
                                 {ph.provinces.map((province) => (
                                     <option key={province.code} value={province.code}>{province.name}</option>
                                 ))}
                             </select>
-                            {errors.province && <p className="text-red-500 text-[11px] mt-1">{errors.province}</p>}
+                            {errors.province && <p className="text-red-500 dark:text-red-400 text-[11px] mt-1">{errors.province}</p>}
                         </div>
                     ) : null}
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div data-error-field="city" className="transition-transform duration-200">
-                            <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+                            <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">
                                 City / Municipality<span className="text-red-500 ml-0.5">*</span>
                             </label>
                             <select
@@ -344,42 +345,40 @@ export default function CustomerCheckoutAddressForm({
                                     const option = e.target.options[e.target.selectedIndex];
                                     ph.setCity(e.target.value, option.text);
                                 }}
-                                className={`w-full px-3.5 py-2.5 bg-slate-50 border rounded-xl text-sm text-slate-700 focus:outline-none focus:ring-2 transition-all ${errors.city ? 'border-red-300 focus:ring-red-200 focus:border-red-400' : 'border-slate-200 focus:ring-orange-200 focus:border-orange-400'}`}
+                                className={`w-full px-3.5 py-2.5 bg-white dark:bg-slate-900 border rounded-xl text-sm text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 transition-all disabled:opacity-60 ${errors.city ? 'border-red-300 dark:border-red-600 focus:ring-red-200 dark:focus:ring-red-900 focus:border-red-400 dark:focus:border-red-500' : 'border-slate-200 dark:border-slate-700 focus:ring-orange-200 dark:focus:ring-orange-900 focus:border-orange-400 dark:focus:border-orange-500'}`}
                             >
                                 <option value="">{ph.loadingCities || ph.loadingProvinces ? 'Loading cities...' : '- Select City / Municipality -'}</option>
                                 {ph.cities.map((city) => (
                                     <option key={city.code} value={city.code}>{city.name}</option>
                                 ))}
                             </select>
-                            {errors.city && <p className="text-red-500 text-[11px] mt-1">{errors.city}</p>}
+                            {errors.city && <p className="text-red-500 dark:text-red-400 text-[11px] mt-1">{errors.city}</p>}
                         </div>
 
                         <div data-error-field="barangay" className="transition-transform duration-200">
-                            <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+                            <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">
                                 Barangay<span className="text-red-500 ml-0.5">*</span>
                             </label>
                             <select
                                 value={ph.address.barangay}
                                 disabled={!ph.cityCode || ph.loadingBarangays}
                                 onChange={(e) => ph.setBarangay(e.target.value)}
-                                className={`w-full px-3.5 py-2.5 bg-slate-50 border rounded-xl text-sm text-slate-700 focus:outline-none focus:ring-2 transition-all ${errors.barangay ? 'border-red-300 focus:ring-red-200 focus:border-red-400' : 'border-slate-200 focus:ring-orange-200 focus:border-orange-400'}`}
+                                className={`w-full px-3.5 py-2.5 bg-white dark:bg-slate-900 border rounded-xl text-sm text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 transition-all disabled:opacity-60 ${errors.barangay ? 'border-red-300 dark:border-red-600 focus:ring-red-200 dark:focus:ring-red-900 focus:border-red-400 dark:focus:border-red-500' : 'border-slate-200 dark:border-slate-700 focus:ring-orange-200 dark:focus:ring-orange-900 focus:border-orange-400 dark:focus:border-orange-500'}`}
                             >
                                 <option value="">{ph.loadingBarangays ? 'Loading barangays...' : '- Select Barangay -'}</option>
                                 {ph.barangays.map((barangay) => (
                                     <option key={barangay.code} value={barangay.name}>{barangay.name}</option>
                                 ))}
                             </select>
-                            {errors.barangay && <p className="text-red-500 text-[11px] mt-1">{errors.barangay}</p>}
+                            {errors.barangay && <p className="text-red-500 dark:text-red-400 text-[11px] mt-1">{errors.barangay}</p>}
                         </div>
                     </div>
 
                     <Field label="ZIP Code" value={form.zip} onChange={v => setField('zip', v)} placeholder="e.g. 1234" fieldKey="zip" />
 
-                    <div className="flex items-start gap-2.5 p-3 bg-amber-50 rounded-xl border border-orange-100 mt-1">
-                        <svg className="w-4 h-4 text-orange-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <p className="text-xs text-orange-700 leading-relaxed">
+                    <div className="flex items-start gap-2.5 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-orange-100 dark:border-orange-900/30 mt-1">
+                        <AlertCircle className="w-4 h-4 text-orange-500 dark:text-orange-400 mt-0.5 shrink-0" />
+                        <p className="text-xs text-orange-700 dark:text-orange-300 leading-relaxed">
                             Nationwide delivery available. Delivery time may vary per location.
                         </p>
                     </div>
@@ -395,17 +394,17 @@ export default function CustomerCheckoutAddressForm({
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3, ease: 'easeOut' }}
-                className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden"
+                className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700  overflow-hidden"
             >
                 {/* Header */}
-                <div className="px-6 pt-5 pb-4 border-b border-slate-50">
+                <div className="px-6 pt-5 pb-4 border-b border-slate-200 dark:border-slate-700">
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div>
-                            <h2 className="text-sm font-bold text-slate-800 flex items-center gap-2.5">
+                            <h2 className="text-sm font-bold text-slate-800 dark:text-white flex items-center gap-2.5">
                                 <div className="h-6 w-6 rounded-full bg-orange-500 text-white text-xs font-bold flex items-center justify-center shrink-0">2</div>
                                 Shipping Address
                             </h2>
-                            <p className="text-xs text-slate-400 mt-1 ml-8.5">Your default address is preselected.</p>
+                            <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 ml-8.5">Your default address is preselected.</p>
                         </div>
                         <div className="flex gap-2">
                             <motion.button
@@ -413,7 +412,7 @@ export default function CustomerCheckoutAddressForm({
                                 whileHover={{ scale: 1.02 }}
                                 whileTap={{ scale: 0.97 }}
                                 onClick={openAddressList}
-                                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 hover:border-slate-300 transition-colors"
+                                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3.5 py-2 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-600 transition-colors"
                             >
                                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" />
@@ -425,11 +424,9 @@ export default function CustomerCheckoutAddressForm({
                                 whileHover={{ scale: 1.02 }}
                                 whileTap={{ scale: 0.97 }}
                                 onClick={openAddAddress}
-                                className="inline-flex items-center gap-1.5 rounded-xl border border-orange-200 bg-orange-50 px-3.5 py-2 text-xs font-semibold text-orange-600 hover:bg-orange-100 transition-colors"
+                                className="inline-flex items-center gap-1.5 rounded-xl border border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-900/20 px-3.5 py-2 text-xs font-semibold text-orange-600 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-900/40 transition-colors"
                             >
-                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                                </svg>
+                                <Plus className="w-3.5 h-3.5" />
                                 Add new
                             </motion.button>
                         </div>
@@ -475,52 +472,49 @@ export default function CustomerCheckoutAddressForm({
                                     transition={{ duration: 0.28, ease: 'easeOut' }}
                                     className="relative rounded-2xl overflow-hidden"
                                 >
-                                    {/* Gradient background */}
-                                    <div className="absolute inset-0 bg-linear-to-br from-orange-50 via-amber-50/60 to-white rounded-2xl" />
-                                    <div className="absolute inset-0 rounded-2xl border border-orange-200" />
+                                    {/* Solid background */}
+                                    <div className="absolute inset-0 bg-orange-50 dark:bg-orange-900/20 rounded-2xl" />
+                                    <div className="absolute inset-0 rounded-2xl border border-orange-200 dark:border-orange-800" />
 
                                     <div className="relative px-5 py-5">
                                         <div className="flex items-start justify-between gap-4">
                                             <div className="flex items-start gap-3 min-w-0">
                                                 {/* Pin icon */}
-                                                <div className="mt-0.5 h-9 w-9 rounded-xl bg-orange-100 flex items-center justify-center shrink-0">
-                                                    <svg className="w-4.5 h-4.5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                    </svg>
+                                                <div className="mt-0.5 h-9 w-9 rounded-xl bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center shrink-0">
+                                                    <MapPin className="w-4.5 h-4.5 text-orange-500 dark:text-orange-400" />
                                                 </div>
 
                                                 <div className="min-w-0">
                                                     {/* Badges */}
                                                     <div className="flex flex-wrap items-center gap-1.5 mb-2">
-                                                        <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-orange-500">Deliver to</span>
+                                                        <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-orange-500 dark:text-orange-400">Deliver to</span>
                                                         {selectedAddress.is_default && (
                                                             <motion.span
                                                                 initial={{ scale: 0.8, opacity: 0 }}
                                                                 animate={{ scale: 1, opacity: 1 }}
-                                                                className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-700"
+                                                                className="rounded-full bg-emerald-100 dark:bg-emerald-900/30 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-700 dark:text-emerald-300"
                                                             >
                                                                 Default
                                                             </motion.span>
                                                         )}
-                                                        <span className="rounded-full border border-orange-100 bg-white/80 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                                                        <span className="rounded-full border border-orange-100 dark:border-orange-900 bg-white dark:bg-slate-800 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                                                             {selectedAddress.address_type || 'Address'}
                                                         </span>
                                                     </div>
 
-                                                    <p className="text-base font-bold text-slate-900 leading-tight">{selectedAddress.full_name}</p>
-                                                    <p className="text-sm text-slate-500 mt-0.5">{selectedAddress.phone}</p>
-                                                    <p className="text-sm text-slate-600 mt-1.5 leading-relaxed">{selectedAddress.full_address}</p>
+                                                    <p className="text-base font-bold text-slate-900 dark:text-white leading-tight">{selectedAddress.full_name}</p>
+                                                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{selectedAddress.phone}</p>
+                                                    <p className="text-sm text-slate-600 dark:text-slate-300 mt-1.5 leading-relaxed">{selectedAddress.full_address}</p>
                                                     {selectedAddress.notes && (
-                                                        <p className="text-xs text-slate-400 mt-1.5 italic">Note: {selectedAddress.notes}</p>
+                                                        <p className="text-xs text-slate-400 dark:text-slate-500 mt-1.5 italic">Note: {selectedAddress.notes}</p>
                                                     )}
                                                 </div>
                                             </div>
 
                                             {/* Saved addresses count */}
-                                            <div className="rounded-xl border border-orange-100 bg-white/80 px-3 py-2 text-center shrink-0">
-                                                <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400 leading-tight">Saved</p>
-                                                <p className="text-xl font-bold text-slate-900 leading-tight">{addresses.length}</p>
+                                            <div className="rounded-xl border border-orange-100 dark:border-orange-900 bg-white dark:bg-slate-800 px-3 py-2 text-center shrink-0">
+                                                <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500 leading-tight">Saved</p>
+                                                <p className="text-xl font-bold text-slate-900 dark:text-white leading-tight">{addresses.length}</p>
                                             </div>
                                         </div>
                                     </div>
@@ -535,7 +529,7 @@ export default function CustomerCheckoutAddressForm({
                                 initial={{ opacity: 0, y: -6 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, y: -6 }}
-                                className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600"
+                                className="mt-4 rounded-2xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-600 dark:text-red-400"
                             >
                                 {actionError}
                             </motion.div>
@@ -564,13 +558,13 @@ export default function CustomerCheckoutAddressForm({
                             className="w-full max-w-2xl rounded-3xl bg-white shadow-2xl border border-slate-100 overflow-hidden max-h-[92vh] flex flex-col"
                         >
                             {/* Modal header */}
-                            <div className="flex items-start justify-between gap-4 px-6 py-5 border-b border-slate-100">
+                            <div className="flex items-start justify-between gap-4 px-6 py-5 border-b border-slate-200 dark:border-slate-700">
                                 <div>
-                                    <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-orange-500">Shipping Address</p>
-                                    <h3 className="text-lg font-bold text-slate-900 mt-0.5">
+                                    <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-orange-500 dark:text-orange-400">Shipping Address</p>
+                                    <h3 className="text-lg font-bold text-slate-900 dark:text-white mt-0.5">
                                         {modalView === 'list' ? 'Choose an address' : 'Add new address'}
                                     </h3>
-                                    <p className="text-xs text-slate-400 mt-0.5">
+                                    <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
                                         {modalView === 'list'
                                             ? 'Pick from your saved addresses or add a new one.'
                                             : 'This will be saved to your address book.'}
@@ -581,28 +575,26 @@ export default function CustomerCheckoutAddressForm({
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
                                     onClick={() => setIsModalOpen(false)}
-                                    className="h-9 w-9 rounded-full border border-slate-200 text-slate-400 hover:text-slate-600 hover:border-slate-300 transition-colors flex items-center justify-center shrink-0"
+                                    className="h-9 w-9 rounded-full border border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-400 hover:border-slate-300 dark:hover:border-slate-600 transition-colors flex items-center justify-center shrink-0"
                                 >
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                    </svg>
+                                    <X className="w-4 h-4" />
                                 </motion.button>
                             </div>
 
                             {/* Tab switcher */}
                             <div className="px-6 pt-4">
-                                <div className="flex gap-0 rounded-xl bg-slate-100 p-1">
+                                <div className="flex gap-0 rounded-xl bg-slate-100 dark:bg-slate-800 p-1">
                                     {(['list', 'add'] as const).map(tab => (
                                         <button
                                             key={tab}
                                             type="button"
                                             onClick={() => setModalView(tab)}
-                                            className={`relative flex-1 rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${modalView === tab ? 'text-slate-900' : 'text-slate-500 hover:text-slate-700'}`}
+                                            className={`relative flex-1 rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${modalView === tab ? 'text-slate-900 dark:text-white' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'}`}
                                         >
                                             {modalView === tab && (
                                                 <motion.div
                                                     layoutId="tab-bg"
-                                                    className="absolute inset-0 bg-white rounded-lg shadow-sm"
+                                                    className="absolute inset-0 bg-white dark:bg-slate-700 rounded-lg "
                                                     transition={{ type: 'spring', stiffness: 400, damping: 35 }}
                                                 />
                                             )}
