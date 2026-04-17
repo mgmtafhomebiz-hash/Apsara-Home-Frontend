@@ -18,6 +18,7 @@ import { useGetPublicGeneralSettingsQuery } from "@/store/api/adminSettingsApi";
 import { getStoredReferralCode } from "@/libs/referral";
 import { useMeQuery } from "@/store/api/userApi";
 import type { Category } from '@/store/api/categoriesApi';
+import { User, ArrowLeft } from 'lucide-react';
 
 const defaultForm: GuestForm = {
     name: '',
@@ -337,29 +338,25 @@ const CustomerCheckoutMain = ({ initialCategories = [] }: { initialCategories?: 
     }
 
     return (
-        <div className="min-h-screen bg-slate-50 flex flex-col">
+        <div className="min-h-screen bg-white dark:bg-slate-900 flex flex-col">
             <TopBar />
             <Navbar initialCategories={initialCategories} />
             <main className="flex-1">
-                <div className="bg-linear-to-r from-orange-500 to-orange-600 shadow-sm">
+                <div className="bg-white dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800">
                     <div className="container mx-auto px-4 py-4 flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                            <div className="h-10 w-10 rounded-2xl bg-white/15 border border-white/25 flex items-center justify-center shrink-0">
-                                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                </svg>
+                            <div className="h-10 w-10 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center shrink-0">
+                                <User className="w-5 h-5 text-slate-700 dark:text-slate-300" />
                             </div>
                             <div>
-                                <p className="text-orange-100 text-[10px] font-bold uppercase tracking-widest">AF Home Secure Checkout</p>
-                                <h1 className="text-white font-bold text-lg leading-tight">
+                                <p className="text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-widest">AF Home Secure Checkout</p>
+                                <h1 className="text-slate-900 dark:text-white font-bold text-lg leading-tight">
                                     {isLoggedIn ? 'Checkout Details' : 'Guest Checkout'}
                                 </h1>
                             </div>
                         </div>
-                        <Link href="/shop" className="flex items-center gap-1.5 text-white/80 hover:text-white text-xs font-semibold transition-colors bg-white/10 hover:bg-white/20 px-3 py-2 rounded-xl border border-white/20">
-                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                            </svg>
+                        <Link href="/shop" className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white text-xs font-semibold transition-colors bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700">
+                            <ArrowLeft className="w-3.5 h-3.5" />
                             Back to shop
                         </Link>
                     </div>
