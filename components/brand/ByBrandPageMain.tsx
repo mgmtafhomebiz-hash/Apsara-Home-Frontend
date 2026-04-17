@@ -197,7 +197,7 @@ export default function ByBrandPageMain() {
   }, [allBrands, selectedBrand, letterFilter, searchQuery, sortBy])
 
   const [productPage, setProductPage] = useState(1)
-  const PER_PAGE = 12
+  const perPage = showNumber === 'all' ? 500 : (typeof showNumber === 'number' ? showNumber : 12)
 
   const selectedBrandItem = useMemo(
     () => (data?.brands ?? []).find((brand) => toSlug(brand.name) === selectedBrand) ?? null,
@@ -219,9 +219,13 @@ export default function ByBrandPageMain() {
     }
   }, [selectedBrand, filters])
 
+  useEffect(() => {
+    setProductPage(1)
+  }, [showNumber])
+
   const { data: brandProductsData, isFetching: isFetchingProducts } = useGetPublicProductsQuery(
     selectedBrandItem
-      ? { page: productPage, perPage: PER_PAGE, status: '1', brandType: selectedBrandItem.id }
+      ? { page: productPage, perPage: perPage, status: '1', brandType: selectedBrandItem.id }
       : undefined,
     { skip: !selectedBrandItem },
   )
@@ -699,7 +703,7 @@ export default function ByBrandPageMain() {
                 />
                 <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400 mt-4">
                   <span>
-                    Showing <span className="font-semibold text-slate-700 dark:text-gray-200">{brandProducts.slice(0, showNumber === 'all' ? brandProducts.length : showNumber).length}</span> of{' '}
+                    Showing <span className="font-semibold text-slate-700 dark:text-gray-200">{brandProducts.length}</span> of{' '}
                     <span className="font-semibold text-slate-700 dark:text-gray-200">{productsMeta?.total ?? brandProducts.length}</span> products
                   </span>
                 </div>
@@ -718,7 +722,7 @@ export default function ByBrandPageMain() {
                   </div>
                 ) : (
                   <div className={viewType === 'grid' ? 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4 pb-6' : 'flex flex-col gap-4 pb-6'}>
-                    {brandProducts.slice(0, showNumber === 'all' ? brandProducts.length : showNumber).map((product) => (
+                    {brandProducts.map((product) => (
                       viewType === 'grid' ? (
                         <ItemCard key={product.id} product={product} brandName={selectedBrandItem.name} />
                       ) : (

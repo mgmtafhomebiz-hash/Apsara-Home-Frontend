@@ -16,7 +16,7 @@ interface TopFilterProps {
   hasActiveFilters?: boolean
 }
 
-const SHOW_NUMBER_OPTIONS = ['all', 12, 24, 48, 96]
+const SHOW_NUMBER_OPTIONS = ['all', 12, 16, 24, 48, 96]
 const SORT_OPTIONS = [
   { value: 'default', label: 'Default' },
   { value: 'name-asc', label: 'Name: A to Z' },
