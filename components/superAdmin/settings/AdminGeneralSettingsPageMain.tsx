@@ -13,6 +13,38 @@ export default function AdminGeneralSettingsPageMain() {
   const hasHydrated = useRef(false)
   const branchesTouched = useRef(false)
 
+  const normalizeAssetUrl = (value: string | null | undefined) => {
+    if (!value) return null
+
+    const fallbackBase =
+      process.env.NEXT_PUBLIC_LARAVEL_API_URL ||
+      (typeof window !== 'undefined' ? window.location.origin : '')
+
+    try {
+      const parsed = new URL(value)
+      const base = fallbackBase ? new URL(fallbackBase) : null
+
+      const isLocalhost = parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1'
+      if (isLocalhost && base) {
+        parsed.protocol = base.protocol
+        parsed.host = base.host
+        return parsed.toString()
+      }
+
+      if (typeof window !== 'undefined' && window.location.protocol === 'https:' && parsed.protocol === 'http:' && base) {
+        if (parsed.host === base.host || parsed.host === window.location.host) {
+          parsed.protocol = 'https:'
+          return parsed.toString()
+        }
+      }
+
+      return parsed.toString()
+    } catch {
+      if (fallbackBase && value.startsWith('/')) return new URL(value, fallbackBase).toString()
+      return value
+    }
+  }
+
   const [systemName, setSystemName] = useState('Apsara Home')
   const [companyName, setCompanyName] = useState('')
   const [supportEmail, setSupportEmail] = useState('')
@@ -67,9 +99,9 @@ export default function AdminGeneralSettingsPageMain() {
     } catch {
       if (!branchesTouched.current) setBranches([])
     }
-    setLogoUrl(settings.logo_url ?? null)
-    setFaviconUrl(settings.favicon_url ?? null)
-    setWebsiteQrCodeUrl(settings.website_qr_code_url ?? null)
+    setLogoUrl(normalizeAssetUrl(settings.logo_url))
+    setFaviconUrl(normalizeAssetUrl(settings.favicon_url))
+    setWebsiteQrCodeUrl(normalizeAssetUrl(settings.website_qr_code_url))
     setTimezone(settings.timezone || 'Asia/Manila')
     setCurrency(settings.currency || 'PHP')
     setDateFormat(settings.date_format || 'MM/DD/YYYY')
@@ -400,9 +432,9 @@ export default function AdminGeneralSettingsPageMain() {
 
             try {
               const response = await saveSettings(payload).unwrap()
-              setLogoUrl(response.settings.logo_url ?? null)
-              setFaviconUrl(response.settings.favicon_url ?? null)
-              setWebsiteQrCodeUrl(response.settings.website_qr_code_url ?? null)
+               setLogoUrl(normalizeAssetUrl(response.settings.logo_url))
+               setFaviconUrl(normalizeAssetUrl(response.settings.favicon_url))
+               setWebsiteQrCodeUrl(normalizeAssetUrl(response.settings.website_qr_code_url))
               setLogoFile(null)
               setFaviconFile(null)
               setWebsiteQrCodeFile(null)
