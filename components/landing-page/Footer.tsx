@@ -29,27 +29,30 @@ const getSettingValue = (value: string | null | undefined, fallback: string): st
 
 const footerLinks = {
   shop: [
-    { name: 'Living Room', href: '#' },
-    { name: 'Bedroom', href: '#' },
-    { name: 'Dining', href: '#' },
-    { name: 'Home Office', href: '#' },
-    { name: 'Outdoor', href: '#' },
+    { name: 'Living Room', href: '/by-room/living-room' },
+    { name: 'Bedroom', href: '/by-room/bedroom' },
+    { name: 'Dining', href: '/by-room/dining' },
+    { name: 'Home Office', href: '/by-room/home-office' },
+    { name: 'Outdoor', href: '/by-room/outdoor' },
   ],
   company: [
     { name: 'Home', href: '/' },
-    { name: 'Ecosystem', href: '#ecosystem' },
-    { name: 'Earnings', href: '#earnings' },
-    { name: 'Benefits', href: '#benefits' },
-    { name: 'Team', href: '#team' },
-    { name: 'Training', href: '#training' },
+    { name: 'Shop', href: '/shop' },
+    { name: 'Blog', href: '/blog' },
+    { name: 'Community', href: '/community' },
+    { name: 'Ecosystem', href: '/#ecosystem' },
+    { name: 'Earnings', href: '/#earnings' },
+    { name: 'Benefits', href: '/#benefits' },
+    { name: 'Team', href: '/#team' },
+    { name: 'Training', href: '/#training' },
   ],
   support: [
-    { name: 'Contact Us', href: '#contact' },
+    { name: 'Contact Us', href: '/#contact' },
     { name: 'Our Branches', href: '/branches' },
+    { name: 'Track Order', href: '/track-order' },
     { name: 'FAQs', href: '#' },
     { name: 'Shipping Info', href: '#' },
     { name: 'Returns', href: '#' },
-    { name: 'Track Order', href: '#' },
   ],
 };
 
