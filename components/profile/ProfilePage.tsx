@@ -20,11 +20,11 @@ const TIER_BADGE_IMAGE: Record<MemberTier, string> = {
 };
 
 const TIER_COVER: Record<MemberTier, { gradient: string; glow: string; pill: string }> = {
-  'Home Starter':         { gradient: 'from-orange-400 to-amber-500',           glow: 'rgba(251,146,60,0.5)',   pill: 'bg-white/80 text-orange-700 border-orange-200' },
+  'Home Starter':         { gradient: 'from-sky-400 to-sky-500',           glow: 'rgba(251,146,60,0.5)',   pill: 'bg-white/80 text-sky-700 border-sky-200' },
   'Home Builder':         { gradient: 'from-emerald-400 to-teal-500',           glow: 'rgba(52,211,153,0.5)',   pill: 'bg-white/80 text-emerald-700 border-emerald-200' },
   'Home Stylist':         { gradient: 'from-sky-400 to-blue-500',               glow: 'rgba(56,189,248,0.5)',   pill: 'bg-white/80 text-sky-700 border-sky-200' },
   'Lifestyle Consultant': { gradient: 'from-violet-500 to-purple-600',          glow: 'rgba(167,139,250,0.5)',  pill: 'bg-white/80 text-violet-700 border-violet-200' },
-  'Lifestyle Elite':      { gradient: 'from-amber-400 via-orange-400 to-rose-400', glow: 'rgba(251,191,36,0.6)', pill: 'bg-white/80 text-amber-700 border-amber-300' },
+  'Lifestyle Elite':      { gradient: 'from-sky-400 via-sky-400 to-rose-400', glow: 'rgba(251,191,36,0.6)', pill: 'bg-white/80 text-sky-700 border-sky-300' },
 };
 
 const rankToTier = (rank: number): MemberTier => {
@@ -155,7 +155,7 @@ const ReferralShareCard = ({
 
   const qrWrapperClass = compact ? 'h-24 w-24' : 'h-36 w-36';
   const qrImageClass = compact
-    ? 'h-24 w-24 rounded-xl border border-orange-200 dark:border-orange-800 dark:bg-gray-800 p-1.5'
+    ? 'h-24 w-24 rounded-xl border border-sky-200 dark:border-sky-800 dark:bg-gray-800 p-1.5'
     : 'h-36 w-36 rounded-xl border border-slate-200 dark:border-slate-700 dark:bg-gray-800 p-2';
 
   return (
@@ -174,8 +174,8 @@ const ReferralShareCard = ({
             <div className={`relative ${qrWrapperClass} shrink-0`}>
               {qrStatus !== 'ready' && <QrSkeleton sizeClass={`${qrWrapperClass} ${compact ? 'p-1.5 shadow-sm' : 'p-2'}`} />}
               {qrStatus === 'error' ? (
-                <div className={`flex ${qrWrapperClass} items-center justify-center rounded-xl border border-amber-200 dark:border-amber-800 dark:bg-amber-900/30 p-3 text-center`}>
-                  <p className={`font-medium leading-snug text-amber-700 ${compact ? 'text-[9px]' : 'text-[11px]'}`}>QR is still loading.</p>
+                <div className={`flex ${qrWrapperClass} items-center justify-center rounded-xl border border-sky-200 dark:border-sky-800 dark:bg-sky-900/30 p-3 text-center`}>
+                  <p className={`font-medium leading-snug text-sky-700 ${compact ? 'text-[9px]' : 'text-[11px]'}`}>QR is still loading.</p>
                 </div>
               ) : (
                 <img
@@ -207,7 +207,7 @@ const ReferralShareCard = ({
                     </svg>
                     Copy Link
                   </button>
-                  <button type="button" onClick={onShare} className="flex items-center gap-1.5 rounded-xl bg-orange-500 px-3.5 py-2 text-xs font-semibold text-white hover:bg-orange-600 dark:hover:bg-orange-700 transition-colors">
+                  <button type="button" onClick={onShare} className="flex items-center gap-1.5 rounded-xl bg-sky-500 px-3.5 py-2 text-xs font-semibold text-white hover:bg-sky-600 dark:hover:bg-sky-700 transition-colors">
                     <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
                       <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13" />
                     </svg>
@@ -225,7 +225,7 @@ const ReferralShareCard = ({
                 <p className="text-[11px] text-slate-600 dark:text-gray-300 font-medium break-all leading-snug">{link}</p>
               </div>
               <div className="grid grid-cols-2 gap-2">
-                <button type="button" onClick={onShare} className="flex items-center justify-center gap-1.5 rounded-xl bg-orange-500 px-2 py-2 text-xs font-semibold text-white hover:bg-orange-600 dark:hover:bg-orange-700 transition-colors">
+                <button type="button" onClick={onShare} className="flex items-center justify-center gap-1.5 rounded-xl bg-sky-500 px-2 py-2 text-xs font-semibold text-white hover:bg-sky-600 dark:hover:bg-sky-700 transition-colors">
                   <svg className="h-3.5 w-3.5 shrink-0" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
                     <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13" />
                   </svg>
@@ -454,7 +454,7 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
   );
   const verificationBadgeClass = (status?: string) => {
     if (status === 'verified') return 'bg-emerald-100 text-emerald-700';
-    if (status === 'pending_review') return 'bg-amber-100 text-amber-700';
+    if (status === 'pending_review') return 'bg-sky-100 text-sky-700';
     if (status === 'blocked') return 'bg-red-100 text-red-700';
     return 'bg-slate-100 text-slate-600';
   };
@@ -644,7 +644,7 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
 
   const verificationColor = (status?: string) => {
     if (status === 'verified') return { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200', dot: 'bg-emerald-400' };
-    if (status === 'pending_review') return { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200', dot: 'bg-amber-400' };
+    if (status === 'pending_review') return { bg: 'bg-sky-50', text: 'text-sky-700', border: 'border-sky-200', dot: 'bg-sky-400' };
     if (status === 'blocked') return { bg: 'bg-red-50', text: 'text-red-600', border: 'border-red-200', dot: 'bg-red-400' };
     return { bg: 'bg-slate-100', text: 'text-slate-500', border: 'border-slate-200', dot: 'bg-slate-400' };
   };
@@ -722,7 +722,7 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
               </div>
 
               <div className="flex items-center gap-2 mt-2 flex-wrap">
-                <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-amber-50 border border-amber-100 text-[11px] font-bold text-amber-700">
+                <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-sky-50 border border-sky-100 text-[11px] font-bold text-sky-700">
                   PV {Number(node.total_earnings ?? 0).toLocaleString()}
                 </span>
                 {(node.children_count ?? children.length) > 0 && (
@@ -893,7 +893,7 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
       return;
     }
     if (!/^[A-Za-z]+$/.test(nextUsername)) {
-      setUsernameMsg({ type: 'error', text: 'Username must contain letters only (A–Z).' });
+      setUsernameMsg({ type: 'error', text: 'Username must contain letters only (A-Z).' });
       return;
     }
     if (containsBlockedWord(nextUsername)) {
@@ -1058,7 +1058,7 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Manage your personal information, security, and preferences.</p>
         </div>
 
-        {/* Tab navigation bar — mobile: 4×2 grid, desktop: horizontal bar */}
+        {/* Tab navigation bar - mobile: 4x2 grid, desktop: horizontal bar */}
         <div className="sticky top-16 z-20 -mx-4 mb-6 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm border-b border-gray-100 dark:border-gray-700">
           {/* Mobile/tablet horizontal scroll (hidden on xl+) */}
           <nav className="flex overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden xl:hidden px-3 py-1 gap-1 md:justify-center md:gap-2">
@@ -1086,11 +1086,11 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
                       isProfileHome
                         ? 'border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-500 cursor-default opacity-50'
                         : activeTab === key
-                          ? 'border-orange-500 dark:border-orange-600 bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400'
+                          ? 'border-sky-500 dark:border-sky-600 bg-sky-50 dark:bg-sky-900/20 text-sky-600 dark:text-sky-400'
                           : 'border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700/50 hover:text-gray-700 dark:hover:text-gray-200'
                     }`}
                   >
-                    <TabIcon className={`h-5 w-5 md:h-6 md:w-6 ${activeTab === key && !isProfileHome ? 'text-orange-500 dark:text-orange-400' : 'text-gray-400 dark:text-gray-500'}`} />
+                    <TabIcon className={`h-5 w-5 md:h-6 md:w-6 ${activeTab === key && !isProfileHome ? 'text-sky-500 dark:text-sky-400' : 'text-gray-400 dark:text-gray-500'}`} />
                     {shortLabel[key]}
                   </button>
                 );
@@ -1107,11 +1107,11 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
                 onClick={() => handleTabChange(key)}
                 className={`shrink-0 inline-flex items-center gap-2 px-4 py-3.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
                   activeTab === key
-                    ? 'border-orange-500 dark:border-orange-500 text-orange-600 dark:text-orange-400'
+                    ? 'border-sky-500 dark:border-sky-500 text-sky-600 dark:text-sky-400'
                     : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:border-gray-300 dark:hover:border-gray-600'
                 }`}
               >
-                <TabIcon className={`h-4 w-4 ${activeTab === key ? 'text-orange-600 dark:text-orange-400' : 'text-gray-400 dark:text-gray-500'}`} />
+                <TabIcon className={`h-4 w-4 ${activeTab === key ? 'text-sky-600 dark:text-sky-400' : 'text-gray-400 dark:text-gray-500'}`} />
                 {label}
               </button>
             ))}
@@ -1129,14 +1129,14 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
               custom={0}
               className="rounded-2xl border border-slate-200 dark:border-slate-700 dark:bg-gray-800 overflow-hidden"
             >
-              {/* Cover banner — tier-specific gradient */}
+              {/* Cover banner - tier-specific gradient */}
               <div className={`h-36 bg-gradient-to-br ${TIER_COVER[loyaltyTier].gradient} relative overflow-hidden`}>
                 {/* Shine overlays */}
                 <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(circle at 18% 65%, rgba(255,255,255,0.28) 0%, transparent 55%), radial-gradient(circle at 82% 18%, rgba(255,255,255,0.18) 0%, transparent 50%)' }} />
                 {/* Decorative blur circles */}
                 <div className="absolute -bottom-10 -left-10 h-36 w-36 rounded-full bg-white/10 blur-2xl pointer-events-none" />
                 <div className="absolute -top-6 left-1/3 h-24 w-24 rounded-full bg-white/8 blur-xl pointer-events-none" />
-                {/* Badge — top right with glass frame */}
+                {/* Badge - top right with glass frame */}
                 <div className="absolute top-3 right-3 flex flex-col items-center gap-1.5">
                   <div className="rounded-2xl bg-white/25 backdrop-blur-md p-1.5 border border-white/40 shadow-xl">
                     <img
@@ -1151,11 +1151,11 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
                 </div>
               </div>
 
-              {/* Avatar — centered, floating over banner */}
+              {/* Avatar - centered, floating over banner */}
               <div className="flex flex-col items-center -mt-12 pb-5 px-5">
                 <div className="relative group mb-3">
                   {isUploadingAvatar && (
-                    <span className="pointer-events-none absolute -inset-1.5 rounded-full border-[3px] border-transparent border-t-orange-400 border-r-amber-300 animate-spin z-10" />
+                    <span className="pointer-events-none absolute -inset-1.5 rounded-full border-[3px] border-transparent border-t-sky-400 border-r-sky-300 animate-spin z-10" />
                   )}
                   {profileData?.avatar_url ? (
                     <img
@@ -1164,7 +1164,7 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
                       className="h-24 w-24 rounded-full object-cover ring-4 ring-white shadow-xl"
                     />
                   ) : (
-                    <div className="h-24 w-24 rounded-full bg-gradient-to-br from-orange-400 to-amber-400 text-white text-2xl font-bold flex items-center justify-center ring-4 ring-white shadow-xl">
+                    <div className="h-24 w-24 rounded-full bg-gradient-to-br from-sky-400 to-sky-400 text-white text-2xl font-bold flex items-center justify-center ring-4 ring-white shadow-xl">
                       {initials}
                     </div>
                   )}
@@ -1190,7 +1190,7 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
                   <span className="text-[11px] font-bold">{loyaltyTier}</span>
                 </div>
 
-                {/* User info — centered */}
+                {/* User info - centered */}
                 <h2 className="text-lg font-bold text-slate-900 dark:text-white text-center leading-tight">
                   {form.name || 'AF Home User'}
                 </h2>
@@ -1202,27 +1202,27 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
                 )}
 
                 {isUploadingAvatar && (
-                  <p className="mt-2 text-xs text-orange-500 font-medium">Uploading photo...</p>
+                  <p className="mt-2 text-xs text-sky-500 font-medium">Uploading photo...</p>
                 )}
                 {profileData?.avatar_url && (
                   <button
                     type="button"
                     onClick={() => setIsAvatarPreviewOpen(true)}
-                    className="mt-1.5 text-xs font-semibold text-orange-500 hover:text-orange-600 hover:underline"
+                    className="mt-1.5 text-xs font-semibold text-sky-500 hover:text-sky-600 hover:underline"
                   >
                     View Photo
                   </button>
                 )}
 
                 {/* Profile completion */}
-                <div className="mt-4 w-full p-3.5 rounded-xl border border-slate-200 dark:border-orange-800 dark:bg-orange-900/20">
+                <div className="mt-4 w-full p-3.5 rounded-xl border border-slate-200 dark:border-sky-800 dark:bg-sky-900/20">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-xs font-semibold text-slate-600 dark:text-gray-400">Profile Completion</span>
-                    <span className="text-xs font-bold text-orange-600 dark:text-orange-400">{completion}%</span>
+                    <span className="text-xs font-bold text-sky-600 dark:text-sky-400">{completion}%</span>
                   </div>
-                  <div className="h-2 rounded-full bg-orange-100 dark:bg-orange-900/30 overflow-hidden">
+                  <div className="h-2 rounded-full bg-sky-100 dark:bg-sky-900/30 overflow-hidden">
                     <motion.div
-                      className="h-full rounded-full bg-gradient-to-r from-orange-400 to-amber-400"
+                      className="h-full rounded-full bg-gradient-to-r from-sky-400 to-sky-400"
                       initial={{ width: 0 }}
                       animate={{ width: `${completion}%` }}
                       transition={{ duration: 0.7, ease: 'easeOut' }}
@@ -1233,7 +1233,7 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
                       ? 'Fully verified account.'
                       : completion < 60
                       ? 'Fill in your details to unlock all features.'
-                      : 'Almost there — just a few fields left.'}
+                      : 'Almost there - just a few fields left.'}
                   </p>
                 </div>
               </div>
@@ -1296,7 +1296,7 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
                       <div className="flex items-center justify-between gap-2 mb-3">
                         <p className="text-xs font-bold text-slate-700 dark:text-gray-300">Affiliate Network</p>
                         {!isReferralTreeLoading && (
-                          <span className="text-[10px] font-semibold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 px-2 py-0.5 rounded-full">
+                          <span className="text-[10px] font-semibold text-sky-700 dark:text-sky-400 bg-sky-50 dark:bg-sky-900/30 border border-sky-200 dark:border-sky-700 px-2 py-0.5 rounded-full">
                             {referralTree?.summary?.total_network ?? 0} members
                           </span>
                         )}
@@ -1306,9 +1306,9 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
                           <p className="text-[10px] text-slate-500 dark:text-gray-400 font-medium mb-0.5">Direct</p>
                           <p className="text-base font-bold text-slate-800 dark:text-gray-200">{referralTree?.summary?.direct_count ?? 0}</p>
                         </div>
-                        <div className="rounded-xl border border-orange-200 dark:border-orange-800 dark:bg-orange-900/30 px-2 py-2.5 text-center">
-                          <p className="text-[10px] text-orange-500 dark:text-orange-400 font-medium mb-0.5">Level 2</p>
-                          <p className="text-base font-bold text-orange-700 dark:text-orange-300">{referralTree?.summary?.second_level_count ?? 0}</p>
+                        <div className="rounded-xl border border-sky-200 dark:border-sky-800 dark:bg-sky-900/30 px-2 py-2.5 text-center">
+                          <p className="text-[10px] text-sky-500 dark:text-sky-400 font-medium mb-0.5">Level 2</p>
+                          <p className="text-base font-bold text-sky-700 dark:text-sky-300">{referralTree?.summary?.second_level_count ?? 0}</p>
                         </div>
                         <div className="rounded-xl border border-emerald-200 dark:border-emerald-800 dark:bg-emerald-900/30 px-2 py-2.5 text-center">
                           <p className="text-[10px] text-emerald-500 dark:text-emerald-400 font-medium mb-0.5">Total</p>
@@ -1324,7 +1324,7 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
                             handleTabChange('referrals');
                           }
                         }}
-                        className="w-full flex items-center justify-center gap-2 rounded-xl bg-orange-500 px-3 py-2.5 text-xs font-semibold text-white hover:bg-orange-600 transition-colors shadow-sm"
+                        className="w-full flex items-center justify-center gap-2 rounded-xl bg-sky-500 px-3 py-2.5 text-xs font-semibold text-white hover:bg-sky-600 transition-colors shadow-sm"
                       >
                         <svg className="h-3.5 w-3.5 shrink-0" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
                           <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
@@ -1353,9 +1353,9 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
                     key={item.label}
                     type="button"
                     onClick={item.onClick}
-                    className="group rounded-xl border border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-gray-800 hover:border-orange-200 dark:hover:border-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/30 px-3 py-3 text-left transition-colors"
+                    className="group rounded-xl border border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-gray-800 hover:border-sky-200 dark:hover:border-sky-600 hover:bg-sky-50 dark:hover:bg-sky-900/30 px-3 py-3 text-left transition-colors"
                   >
-                    <item.Icon className="h-4 w-4 text-slate-400 group-hover:text-orange-500 transition-colors" />
+                    <item.Icon className="h-4 w-4 text-slate-400 group-hover:text-sky-500 transition-colors" />
                     <p className="text-lg font-bold text-slate-800 dark:text-gray-200 mt-1.5 leading-none">{item.value}</p>
                     <p className="text-[11px] text-slate-500 dark:text-gray-400 mt-0.5">{item.label}</p>
                   </button>
@@ -1382,9 +1382,9 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
                     key={item.label}
                     type="button"
                     onClick={() => router.push(item.href)}
-                    className="group w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-gray-800 hover:bg-orange-50 dark:hover:bg-orange-900/30 hover:text-orange-600 dark:hover:text-orange-400 text-sm font-medium text-slate-700 dark:text-gray-300 transition-colors"
+                    className="group w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-gray-800 hover:bg-sky-50 dark:hover:bg-sky-900/30 hover:text-sky-600 dark:hover:text-sky-400 text-sm font-medium text-slate-700 dark:text-gray-300 transition-colors"
                   >
-                    <item.Icon className="h-4 w-4 text-slate-400 dark:text-gray-500 group-hover:text-orange-500 dark:group-hover:text-orange-400 transition-colors" />
+                    <item.Icon className="h-4 w-4 text-slate-400 dark:text-gray-500 group-hover:text-sky-500 dark:group-hover:text-sky-400 transition-colors" />
                     {item.label}
                   </button>
                 ))}
@@ -1392,7 +1392,7 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
             </motion.div>
           </aside>
 
-          {/* â"€â"€ Main content â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ */}
+          {/* --- Main content --- */}
           <div
             ref={mainContentRef}
             className={`
@@ -1404,7 +1404,7 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
               xl:translate-x-0 xl:pointer-events-auto xl:transition-none xl:block
             `}
           >
-            {/* Mobile back header — only shown in mobile full-screen view */}
+            {/* Mobile back header - only shown in mobile full-screen view */}
             {isMobileViewOpen && (
               <div className="sticky top-0 z-10 bg-white border-b border-slate-100 px-4 py-3 flex items-center gap-3 xl:hidden">
                 <button
@@ -1423,7 +1423,7 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
             )}
             <div className={isMobileViewOpen ? 'px-4 py-4 pb-8 space-y-5 xl:px-0 xl:py-0 xl:space-y-0' : ''}>
             <AnimatePresence mode="wait">
-              {/* â"€â"€ Profile tab â"€â"€ */}
+              {/* --- Profile tab --- */}
               {activeTab === 'profile' && (
                 <motion.div key="profile" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.25 }} className="space-y-5">
 
@@ -1434,7 +1434,7 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
                         <h3 className="text-base font-bold text-slate-900 dark:text-white">Personal Information</h3>
                         <p className="text-xs text-slate-500 dark:text-gray-400 mt-0.5">Update your name and contact details. Username changes require approval.</p>
                       </div>
-                      <span className="text-xs px-2.5 py-1 rounded-full bg-orange-50 text-orange-600 font-medium border border-orange-100 whitespace-nowrap">
+                      <span className="text-xs px-2.5 py-1 rounded-full bg-sky-50 text-sky-600 font-medium border border-sky-100 whitespace-nowrap">
                         Editable
                       </span>
                     </div>
@@ -1475,7 +1475,7 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
                             {isEmail && (
                               profileData?.email_verified
                                 ? <span className="normal-case tracking-normal font-semibold text-[10px] text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 rounded-full px-1.5 py-0.5 leading-none">&#10003; Verified</span>
-                                : <span className="normal-case tracking-normal font-semibold text-[10px] text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-full px-1.5 py-0.5 leading-none">&#9888; Not Verified</span>
+                                : <span className="normal-case tracking-normal font-semibold text-[10px] text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-900/30 border border-sky-200 dark:border-sky-800 rounded-full px-1.5 py-0.5 leading-none">&#9888; Not Verified</span>
                             )}
                             {disabled && !isEmail && (
                               <span className="normal-case tracking-normal font-normal text-[11px] text-slate-400 dark:text-gray-500 ml-1">(cannot change)</span>
@@ -1487,7 +1487,7 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
                             onChange={disabled ? undefined : onChange(field)}
                             disabled={disabled}
                             placeholder={placeholder}
-                            className={`w-full rounded-xl border px-3.5 py-2.5 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-800/50 focus:border-orange-300 dark:focus:border-orange-600 ${
+                            className={`w-full rounded-xl border px-3.5 py-2.5 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-sky-200 dark:focus:ring-sky-800/50 focus:border-sky-300 dark:focus:border-sky-600 ${
                               disabled
                                 ? 'border-slate-200 dark:border-slate-700 dark:bg-gray-800 text-slate-400 dark:text-gray-500 cursor-not-allowed'
                                 : 'border-slate-200 dark:border-slate-700 text-slate-800 dark:text-gray-200 dark:bg-gray-900 hover:border-slate-300 dark:hover:border-slate-600'
@@ -1506,7 +1506,7 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
                           onChange={(e) => setBio(e.target.value)}
                           rows={3}
                           maxLength={200}
-                          className="w-full rounded-xl border border-slate-200 dark:border-slate-700 px-3.5 py-2.5 text-sm text-slate-800 dark:text-gray-200 dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-800/50 focus:border-orange-300 dark:focus:border-orange-600 resize-none"
+                          className="w-full rounded-xl border border-slate-200 dark:border-slate-700 px-3.5 py-2.5 text-sm text-slate-800 dark:text-gray-200 dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-sky-200 dark:focus:ring-sky-800/50 focus:border-sky-300 dark:focus:border-sky-600 resize-none"
                           placeholder="Tell us something about your style, home setup, or shopping preferences"
                         />
                         <p className="text-[11px] text-slate-400 dark:text-gray-500 text-right">{bio.length}/200</p>
@@ -1533,7 +1533,7 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
                       <button
                         type="submit"
                         disabled={isSaving || !hasChanges}
-                        className="inline-flex items-center gap-2 rounded-xl bg-orange-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-orange-600 dark:hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        className="inline-flex items-center gap-2 rounded-xl bg-sky-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-sky-600 dark:hover:bg-sky-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                       >
                         {isSaving ? (
                           <>
@@ -1557,7 +1557,7 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
                       <button
                         type="button"
                         onClick={handleOpenAddressModal}
-                        className="inline-flex items-center gap-1.5 text-sm font-semibold text-orange-400 dark:text-orange-500 hover:text-orange-300 dark:hover:text-orange-400 transition-colors px-3 py-1.5 rounded-lg hover:bg-orange-500/10 dark:hover:bg-orange-500/20"
+                        className="inline-flex items-center gap-1.5 text-sm font-semibold text-sky-400 dark:text-sky-500 hover:text-sky-300 dark:hover:text-sky-400 transition-colors px-3 py-1.5 rounded-lg hover:bg-sky-500/10 dark:hover:bg-sky-500/20"
                       >
                         {addresses.length ? '+ Edit Address' : '+ Add Address'}
                       </button>
@@ -1566,16 +1566,16 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
                     {addresses.length ? (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {addresses.map((addr) => (
-                        <div key={addr.id} className="group relative rounded-xl border border-slate-200 dark:border-slate-700 dark:bg-gray-800 hover:border-orange-200 dark:hover:border-orange-600 dark:hover:bg-orange-900/30 p-4 transition-colors">
+                        <div key={addr.id} className="group relative rounded-xl border border-slate-200 dark:border-slate-700 dark:bg-gray-800 hover:border-sky-200 dark:hover:border-sky-600 dark:hover:bg-sky-900/30 p-4 transition-colors">
                           <div className="flex items-start justify-between gap-2">
                             <div className="flex items-center gap-2">
-                              <p className="text-xs font-semibold uppercase tracking-wide text-orange-600 dark:text-orange-400">{addr.label}</p>
+                              <p className="text-xs font-semibold uppercase tracking-wide text-sky-600 dark:text-sky-400">{addr.label}</p>
                               {addr.isDefault && (
-                                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 font-medium">Default</span>
+                                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-sky-100 dark:bg-sky-900/30 text-sky-600 dark:text-sky-400 font-medium">Default</span>
                               )}
                             </div>
                             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <button type="button" onClick={handleOpenAddressModal} className="p-1 rounded-lg text-slate-400 dark:text-gray-500 hover:text-orange-600 dark:hover:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-900/30 transition-colors">
+                              <button type="button" onClick={handleOpenAddressModal} className="p-1 rounded-lg text-slate-400 dark:text-gray-500 hover:text-sky-600 dark:hover:text-sky-400 hover:bg-sky-100 dark:hover:bg-sky-900/30 transition-colors">
                                 <Icon.Edit className="h-3.5 w-3.5" />
                               </button>
                             </div>
@@ -1596,7 +1596,7 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
                 </motion.div>
               )}
 
-              {/* â"€â"€ Security tab â"€â"€ */}
+              {/* --- Security tab --- */}
               {activeTab === 'security' && (
                 <motion.div key="security" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.25 }} className="space-y-5">
 
@@ -1605,7 +1605,7 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
                       <h3 className="text-base font-bold text-slate-900 dark:text-white">Change Password</h3>
                       <p className="text-xs text-slate-500 dark:text-gray-400 mt-0.5">Use a strong, unique password for your account.</p>
                       {(passwordChangeRequired || passwordChangeRequiredFromQuery) && (
-                        <div className="mt-3 rounded-2xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/30 px-4 py-3 text-sm text-amber-800 dark:text-amber-300">
+                        <div className="mt-3 rounded-2xl border border-sky-200 dark:border-sky-800 bg-sky-50 dark:bg-sky-900/30 px-4 py-3 text-sm text-sky-800 dark:text-sky-300">
                           Your account was signed in using a legacy password. Change it now to continue to the shop page.
                         </div>
                       )}
@@ -1685,7 +1685,7 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
                       <button
                         type="submit"
                         disabled={!security.currentPassword || !security.newPassword || !security.confirmPassword || isChangingPassword}
-                        className="inline-flex items-center gap-2 rounded-xl bg-orange-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm shadow-orange-200"
+                        className="inline-flex items-center gap-2 rounded-xl bg-sky-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-sky-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm shadow-sky-200"
                       >
                         {isChangingPassword ? 'Updating Password...' : 'Update Password'}
                       </button>
@@ -1753,7 +1753,7 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
                 </motion.div>
               )}
 
-              {/* â"€â"€ Preferences tab â"€â"€ */}
+              {/* --- Preferences tab --- */}
               {activeTab === 'preferences' && (
                 <motion.div key="preferences" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.25 }} className="space-y-5">
 
@@ -1791,10 +1791,10 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
                         <select
                           value={prefs.language}
                           onChange={(e) => setPrefs((p) => ({ ...p, language: e.target.value as 'en' | 'fil' }))}
-                          className="w-full rounded-xl border border-slate-200 dark:border-slate-700 px-3.5 py-2.5 text-sm text-slate-800 dark:text-gray-200 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-800/50 focus:border-orange-300 dark:focus:border-orange-600"
+                          className="w-full rounded-xl border border-slate-200 dark:border-slate-700 px-3.5 py-2.5 text-sm text-slate-800 dark:text-gray-200 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-sky-200 dark:focus:ring-sky-800/50 focus:border-sky-300 dark:focus:border-sky-600"
                         >
-                          <option value="en">🌐 English</option>
-                          <option value="fil">🇵🇭 Filipino</option>
+                          <option value="en">English</option>
+                          <option value="fil">Filipino</option>
                         </select>
                       </div>
                       <div className="space-y-1.5">
@@ -1802,9 +1802,9 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
                         <select
                           value={prefs.currency}
                           onChange={(e) => setPrefs((p) => ({ ...p, currency: e.target.value as 'PHP' | 'USD' }))}
-                          className="w-full rounded-xl border border-slate-200 dark:border-slate-700 px-3.5 py-2.5 text-sm text-slate-800 dark:text-gray-200 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-800/50 focus:border-orange-300 dark:focus:border-orange-600"
+                          className="w-full rounded-xl border border-slate-200 dark:border-slate-700 px-3.5 py-2.5 text-sm text-slate-800 dark:text-gray-200 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-sky-200 dark:focus:ring-sky-800/50 focus:border-sky-300 dark:focus:border-sky-600"
                         >
-                          <option value="PHP">₱ Philippine Peso (PHP)</option>
+                          <option value="PHP">Philippine Peso (PHP)</option>
                           <option value="USD">$ US Dollar (USD)</option>
                         </select>
                       </div>
@@ -1813,7 +1813,7 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
                     <div className="mt-5 flex justify-end">
                       <button
                         type="button"
-                        className="inline-flex items-center gap-2 rounded-xl bg-orange-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-orange-600 dark:hover:bg-orange-700 transition-colors shadow-sm shadow-orange-200 dark:shadow-orange-900/30"
+                        className="inline-flex items-center gap-2 rounded-xl bg-sky-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-sky-600 dark:hover:bg-sky-700 transition-colors shadow-sm shadow-sky-200 dark:shadow-sky-900/30"
                       >
                         Save Preferences
                       </button>
@@ -1886,9 +1886,9 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
                       {[
                         { label: 'Direct Referrals', value: referralTree?.summary?.direct_count ?? 0, border: 'border-sky-200 dark:border-sky-800', text: 'text-sky-600 dark:text-sky-400', dbg: 'dark:bg-sky-900/30', val: 'text-sky-800 dark:text-sky-300' },
-                        { label: 'Level 2', value: referralTree?.summary?.second_level_count ?? 0, border: 'border-orange-200 dark:border-orange-800', text: 'text-orange-600 dark:text-orange-400', dbg: 'dark:bg-orange-900/30', val: 'text-orange-800 dark:text-orange-300' },
+                        { label: 'Level 2', value: referralTree?.summary?.second_level_count ?? 0, border: 'border-sky-200 dark:border-sky-800', text: 'text-sky-600 dark:text-sky-400', dbg: 'dark:bg-sky-900/30', val: 'text-sky-800 dark:text-sky-300' },
                         { label: 'Total Network', value: referralTree?.summary?.total_network ?? 0, border: 'border-emerald-200 dark:border-emerald-800', text: 'text-emerald-600 dark:text-emerald-400', dbg: 'dark:bg-emerald-900/30', val: 'text-emerald-800 dark:text-emerald-300' },
-                        { label: 'Total PV Earned', value: (referralTree?.summary as { total_pv?: number } | undefined)?.total_pv ?? 0, border: 'border-amber-200 dark:border-amber-800', text: 'text-amber-600 dark:text-amber-400', dbg: 'dark:bg-amber-900/30', val: 'text-amber-800 dark:text-amber-300' },
+                        { label: 'Total PV Earned', value: (referralTree?.summary as { total_pv?: number } | undefined)?.total_pv ?? 0, border: 'border-sky-200 dark:border-sky-800', text: 'text-sky-600 dark:text-sky-400', dbg: 'dark:bg-sky-900/30', val: 'text-sky-800 dark:text-sky-300' },
                       ].map((stat) => (
                         <div key={stat.label} className={`rounded-xl border ${stat.border} ${stat.dbg} px-4 py-3`}>
                           <p className={`text-[11px] font-medium ${stat.text} mb-1`}>{stat.label}</p>
@@ -1963,14 +1963,14 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
                             <button
                               type="button"
                               onClick={handleExpandAllTreeNodes}
-                              className="flex-1 sm:flex-none rounded-xl border border-slate-200 dark:border-slate-700 px-3 py-2.5 text-sm font-semibold text-slate-600 dark:text-gray-300 hover:border-orange-300 hover:text-orange-600 dark:hover:bg-gray-700 transition-colors"
+                              className="flex-1 sm:flex-none rounded-xl border border-slate-200 dark:border-slate-700 px-3 py-2.5 text-sm font-semibold text-slate-600 dark:text-gray-300 hover:border-sky-300 hover:text-sky-600 dark:hover:bg-gray-700 transition-colors"
                             >
                               Expand All
                             </button>
                             <button
                               type="button"
                               onClick={handleCollapseAllTreeNodes}
-                              className="flex-1 sm:flex-none rounded-xl border border-slate-200 dark:border-slate-700 px-3 py-2.5 text-sm font-semibold text-slate-600 dark:text-gray-300 hover:border-orange-300 hover:text-orange-600 dark:hover:bg-gray-700 transition-colors"
+                              className="flex-1 sm:flex-none rounded-xl border border-slate-200 dark:border-slate-700 px-3 py-2.5 text-sm font-semibold text-slate-600 dark:text-gray-300 hover:border-sky-300 hover:text-sky-600 dark:hover:bg-gray-700 transition-colors"
                             >
                               Collapse
                             </button>
@@ -1987,7 +1987,7 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
                               <div className="flex items-center justify-between mb-4">
                                 <p className="text-xs text-slate-500 dark:text-gray-400">
                                   {filteredReferralChildren.length > 0
-                                    ? <>Showing <span className="font-semibold text-slate-700 dark:text-gray-300">{pageStart + 1}–{Math.min(pageEnd, filteredReferralChildren.length)}</span> of <span className="font-semibold text-slate-700 dark:text-gray-300">{filteredReferralChildren.length}</span> referral{filteredReferralChildren.length !== 1 ? 's' : ''}</>
+                                    ? <>Showing <span className="font-semibold text-slate-700 dark:text-gray-300">{pageStart + 1}-{Math.min(pageEnd, filteredReferralChildren.length)}</span> of <span className="font-semibold text-slate-700 dark:text-gray-300">{filteredReferralChildren.length}</span> referral{filteredReferralChildren.length !== 1 ? 's' : ''}</>
                                     : 'No referrals found'
                                   }
                                 </p>
@@ -2069,7 +2069,7 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
                           custom={i}
                           className="flex items-start gap-3.5 rounded-xl border border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-gray-800/50 px-4 py-3.5 hover:border-slate-200 dark:hover:border-slate-600 transition-colors"
                         >
-                          <div className="mt-0.5 h-7 w-7 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-500 dark:text-orange-400 flex items-center justify-center shrink-0">
+                          <div className="mt-0.5 h-7 w-7 rounded-full bg-sky-100 dark:bg-sky-900/30 text-sky-500 dark:text-sky-400 flex items-center justify-center shrink-0">
                             {getActivityIcon(item.title)}
                           </div>
                           <div className="flex-1 min-w-0">
@@ -2089,12 +2089,12 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
                     </div>
                     <div className="rounded-xl border border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-gray-800 px-4 py-3.5 flex items-center justify-between gap-4">
                       <div className="flex items-center gap-3">
-                        <div className="h-8 w-8 rounded-lg bg-orange-100 dark:bg-orange-900/30 text-orange-500 dark:text-orange-400 flex items-center justify-center">
+                        <div className="h-8 w-8 rounded-lg bg-sky-100 dark:bg-sky-900/30 text-sky-500 dark:text-sky-400 flex items-center justify-center">
                           <Icon.Shield className="h-4 w-4" />
                         </div>
                         <div>
                           <p className="text-sm font-semibold text-slate-800 dark:text-gray-200">Current Device</p>
-                          <p className="text-xs text-slate-500 dark:text-gray-400">Windows Â· Chrome Â· Manila, PH</p>
+                          <p className="text-xs text-slate-500 dark:text-gray-400">Windows - Chrome - Manila, PH</p>
                         </div>
                       </div>
                       <span className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-100 dark:border-emerald-700 px-2 py-1 rounded-full">
@@ -2139,7 +2139,7 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
                               ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800'
                               : latestUsernameRequest.status === 'rejected'
                                 ? 'bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 border border-rose-100 dark:border-rose-800'
-                                : 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border border-amber-100 dark:border-amber-800'
+                                : 'bg-sky-50 dark:bg-sky-900/30 text-sky-700 dark:text-sky-400 border border-sky-100 dark:border-sky-800'
                           }`}>
                             {latestUsernameRequest.status === 'pending_review' ? 'Pending' : latestUsernameRequest.status}
                           </span>
@@ -2150,7 +2150,7 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
                       </div>
                     )}
                     {hasPendingUsernameRequest && (
-                      <p className="mb-4 text-xs text-amber-700 dark:text-amber-400">You already have a pending request. Please wait for admin approval before submitting another.</p>
+                      <p className="mb-4 text-xs text-sky-700 dark:text-sky-400">You already have a pending request. Please wait for admin approval before submitting another.</p>
                     )}
 
                     <form onSubmit={handleSubmitUsernameChange} className="space-y-4">
@@ -2171,14 +2171,14 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
                             }}
                             placeholder="your.username"
                             disabled={hasPendingUsernameRequest}
-                            className={`w-full rounded-xl border px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-900/50 focus:border-orange-300 ${
+                            className={`w-full rounded-xl border px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-200 dark:focus:ring-sky-900/50 focus:border-sky-300 ${
                               hasPendingUsernameRequest
                                 ? 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-gray-700/40 text-slate-400 dark:text-gray-500 cursor-not-allowed'
                                 : 'border-slate-200 dark:border-slate-700 text-slate-800 dark:text-white bg-white dark:bg-gray-900'
                             }`}
                           />
                         </div>
-                        <p className="text-[11px] text-slate-400 dark:text-gray-500">Letters only (A–Z). Changing your username will update your referral link after approval.</p>
+                        <p className="text-[11px] text-slate-400 dark:text-gray-500">Letters only (A-Z). Changing your username will update your referral link after approval.</p>
                       </div>
 
                       <div className="flex flex-wrap items-center gap-3">
@@ -2186,7 +2186,7 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
                           type="button"
                           onClick={handleSendUsernameOtp}
                           disabled={hasPendingUsernameRequest || isSendingUsernameOtp}
-                          className="inline-flex items-center gap-2 rounded-xl bg-orange-500 dark:bg-orange-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-orange-600 dark:hover:bg-orange-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                          className="inline-flex items-center gap-2 rounded-xl bg-sky-500 dark:bg-sky-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-sky-600 dark:hover:bg-sky-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                         >
                           {isSendingUsernameOtp ? (
                             <>
@@ -2215,10 +2215,10 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
                       </div>
 
                       {usernameOtpToken && !hasPendingUsernameRequest && (
-                        <div className="rounded-xl border border-orange-100 dark:border-orange-800 bg-orange-50/60 dark:bg-orange-900/20 px-4 py-3 space-y-3">
+                        <div className="rounded-xl border border-sky-100 dark:border-sky-800 bg-sky-50/60 dark:bg-sky-900/20 px-4 py-3 space-y-3">
                           <div>
-                            <p className="text-xs font-semibold text-orange-700 dark:text-orange-300">Enter OTP</p>
-                            <p className="text-[11px] text-orange-600 dark:text-orange-400">
+                            <p className="text-xs font-semibold text-sky-700 dark:text-sky-300">Enter OTP</p>
+                            <p className="text-[11px] text-sky-600 dark:text-sky-400">
                               {usernameOtpSentTo ? `We sent the code to ${usernameOtpSentTo}.` : 'Check your email for the 4-digit code.'}
                             </p>
                           </div>
@@ -2228,7 +2228,7 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
                             maxLength={4}
                             value={usernameOtp}
                             onChange={(e) => setUsernameOtp(e.target.value.replace(/\\D/g, ''))}
-                            className="w-full rounded-xl border border-orange-200 dark:border-orange-800 dark:bg-gray-900 dark:text-white bg-white px-3.5 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-900/50 focus:border-orange-300"
+                            className="w-full rounded-xl border border-sky-200 dark:border-sky-800 dark:bg-gray-900 dark:text-white bg-white px-3.5 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-200 dark:focus:ring-sky-900/50 focus:border-sky-300"
                             placeholder="4-digit code"
                           />
                           <button
@@ -2276,7 +2276,7 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
             >
               <div className="mb-5 flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-orange-500">Address</p>
+                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-sky-500">Address</p>
                   <h3 className="mt-1 text-lg font-bold text-slate-900">Add or Update Address</h3>
                 </div>
                 <button
@@ -2295,7 +2295,7 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
                     type="text"
                     value={addressForm.address}
                     onChange={(e) => setAddressForm((prev) => ({ ...prev, address: e.target.value }))}
-                    className="w-full rounded-xl border border-slate-200 dark:border-slate-700 px-3.5 py-2.5 text-sm text-slate-800 dark:text-gray-200 dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-800/50 focus:border-orange-300 dark:focus:border-orange-600"
+                    className="w-full rounded-xl border border-slate-200 dark:border-slate-700 px-3.5 py-2.5 text-sm text-slate-800 dark:text-gray-200 dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-sky-200 dark:focus:ring-sky-800/50 focus:border-sky-300 dark:focus:border-sky-600"
                     placeholder="House no., street, building, unit"
                   />
                 </div>
@@ -2309,7 +2309,7 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
                         const option = e.target.options[e.target.selectedIndex];
                         phAddress.setRegion(e.target.value, option.text);
                       }}
-                      className="w-full rounded-xl border border-slate-200 dark:border-slate-700 px-3.5 py-2.5 text-sm text-slate-800 dark:text-gray-200 dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-800/50 focus:border-orange-300 dark:focus:border-orange-600 disabled:bg-slate-50 dark:disabled:bg-gray-800 disabled:text-slate-400 dark:disabled:text-gray-500"
+                      className="w-full rounded-xl border border-slate-200 dark:border-slate-700 px-3.5 py-2.5 text-sm text-slate-800 dark:text-gray-200 dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-sky-200 dark:focus:ring-sky-800/50 focus:border-sky-300 dark:focus:border-sky-600 disabled:bg-slate-50 dark:disabled:bg-gray-800 disabled:text-slate-400 dark:disabled:text-gray-500"
                     >
                       <option value="">Select Region</option>
                       {phAddress.regions.map((region) => (
@@ -2328,7 +2328,7 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
                           const option = e.target.options[e.target.selectedIndex];
                           phAddress.setProvince(e.target.value, option.text);
                         }}
-                        className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300 disabled:bg-slate-50 disabled:text-slate-400"
+                        className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-sky-200 focus:border-sky-300 disabled:bg-slate-50 disabled:text-slate-400"
                       >
                         <option value="">{phAddress.loadingProvinces ? 'Loading provinces...' : 'Select Province'}</option>
                         {phAddress.provinces.map((province) => (
@@ -2356,7 +2356,7 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
                         const option = e.target.options[e.target.selectedIndex];
                         phAddress.setCity(e.target.value, option.text);
                       }}
-                      className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300 disabled:bg-slate-50 disabled:text-slate-400"
+                      className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-sky-200 focus:border-sky-300 disabled:bg-slate-50 disabled:text-slate-400"
                     >
                       <option value="">{phAddress.loadingCities || phAddress.loadingProvinces ? 'Loading cities...' : 'Select City / Municipality'}</option>
                       {phAddress.cities.map((city) => (
@@ -2371,7 +2371,7 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
                       value={phAddress.address.barangay}
                       disabled={!phAddress.cityCode || phAddress.loadingBarangays}
                       onChange={(e) => phAddress.setBarangay(e.target.value)}
-                      className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300 disabled:bg-slate-50 disabled:text-slate-400"
+                      className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-sky-200 focus:border-sky-300 disabled:bg-slate-50 disabled:text-slate-400"
                     >
                       <option value="">{phAddress.loadingBarangays ? 'Loading barangays...' : 'Select Barangay'}</option>
                       {phAddress.barangays.map((barangay) => (
@@ -2386,7 +2386,7 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
                       type="text"
                       value={addressForm.zipCode}
                       onChange={(e) => setAddressForm((prev) => ({ ...prev, zipCode: e.target.value }))}
-                      className="w-full rounded-xl border border-slate-200 dark:border-slate-700 px-3.5 py-2.5 text-sm text-slate-800 dark:text-gray-200 dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-800/50 focus:border-orange-300 dark:focus:border-orange-600 disabled:bg-slate-50 dark:disabled:bg-gray-800 disabled:text-slate-400 dark:disabled:text-gray-500"
+                      className="w-full rounded-xl border border-slate-200 dark:border-slate-700 px-3.5 py-2.5 text-sm text-slate-800 dark:text-gray-200 dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-sky-200 dark:focus:ring-sky-800/50 focus:border-sky-300 dark:focus:border-sky-600 disabled:bg-slate-50 dark:disabled:bg-gray-800 disabled:text-slate-400 dark:disabled:text-gray-500"
                       placeholder="ZIP Code"
                     />
                   </div>
@@ -2403,7 +2403,7 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
                   <button
                     type="submit"
                     disabled={isSaving}
-                    className="rounded-xl bg-orange-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-orange-600 disabled:opacity-50"
+                    className="rounded-xl bg-sky-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-sky-600 disabled:opacity-50"
                   >
                     {isSaving ? 'Saving...' : 'Save Address'}
                   </button>
@@ -2440,7 +2440,7 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
               </div>
               {isVerified && (
                 <span className="text-[10px] px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 font-semibold">
-                  ✓ Verified
+                  Verified
                 </span>
               )}
             </div>
@@ -2451,9 +2451,9 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
               <div className="grid grid-cols-2 gap-3">
                 {[
                   { label: 'Direct Referrals', value: referralTree?.summary?.direct_count ?? 0, bg: 'bg-sky-50', text: 'text-sky-600', border: 'border-sky-100', val: 'text-sky-800' },
-                  { label: 'Level 2', value: referralTree?.summary?.second_level_count ?? 0, bg: 'bg-orange-50', text: 'text-orange-600', border: 'border-orange-100', val: 'text-orange-800' },
+                  { label: 'Level 2', value: referralTree?.summary?.second_level_count ?? 0, bg: 'bg-sky-50', text: 'text-sky-600', border: 'border-sky-100', val: 'text-sky-800' },
                   { label: 'Total Network', value: referralTree?.summary?.total_network ?? 0, bg: 'bg-emerald-50', text: 'text-emerald-600', border: 'border-emerald-100', val: 'text-emerald-800' },
-                  { label: 'Total PV Earned', value: (referralTree?.summary as { total_pv?: number } | undefined)?.total_pv ?? 0, bg: 'bg-amber-50', text: 'text-amber-600', border: 'border-amber-100', val: 'text-amber-800' },
+                  { label: 'Total PV Earned', value: (referralTree?.summary as { total_pv?: number } | undefined)?.total_pv ?? 0, bg: 'bg-sky-50', text: 'text-sky-600', border: 'border-sky-100', val: 'text-sky-800' },
                 ].map((stat) => (
                   <div key={stat.label} className={`rounded-xl border ${stat.border} ${stat.bg} px-4 py-3`}>
                     <p className={`text-[11px] font-medium ${stat.text} mb-1`}>{stat.label}</p>
@@ -2527,14 +2527,14 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
                         <button
                           type="button"
                           onClick={handleExpandAllTreeNodes}
-                          className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-600 hover:border-orange-300 hover:text-orange-600 transition-colors"
+                          className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-600 hover:border-sky-300 hover:text-sky-600 transition-colors"
                         >
                           Expand
                         </button>
                         <button
                           type="button"
                           onClick={handleCollapseAllTreeNodes}
-                          className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-600 hover:border-orange-300 hover:text-orange-600 transition-colors"
+                          className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-600 hover:border-sky-300 hover:text-sky-600 transition-colors"
                         >
                           Collapse
                         </button>
@@ -2551,7 +2551,7 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
                           <div className="flex items-center justify-between mb-4">
                             <p className="text-xs text-slate-500">
                               {filteredReferralChildren.length > 0
-                                ? <>Showing <span className="font-semibold text-slate-700">{pageStart + 1}–{Math.min(pageEnd, filteredReferralChildren.length)}</span> of <span className="font-semibold text-slate-700">{filteredReferralChildren.length}</span> referral{filteredReferralChildren.length !== 1 ? 's' : ''}</>
+                                ? <>Showing <span className="font-semibold text-slate-700">{pageStart + 1}-{Math.min(pageEnd, filteredReferralChildren.length)}</span> of <span className="font-semibold text-slate-700">{filteredReferralChildren.length}</span> referral{filteredReferralChildren.length !== 1 ? 's' : ''}</>
                                 : 'No referrals found'
                               }
                             </p>
@@ -2661,3 +2661,4 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
 };
 
 export default ProfilePage;
+

@@ -41,7 +41,7 @@ function WalletRow({ wallet, onAdjust }: { wallet: MemberWallet; onAdjust: () =>
         <p className="text-[10px] text-slate-400 mt-0.5">
           <span className="text-teal-600">+{php(wallet.cashCredits)}</span>
           {' / '}
-          <span className="text-rose-500">−{php(wallet.cashDebits)}</span>
+          <span className="text-rose-500">-{php(wallet.cashDebits)}</span>
         </p>
       </td>
 
@@ -52,7 +52,7 @@ function WalletRow({ wallet, onAdjust }: { wallet: MemberWallet; onAdjust: () =>
 
       {/* Locked */}
       <td className="px-4 py-3.5">
-        <span className="text-sm font-semibold text-amber-700">{php(wallet.lockedAmount)}</span>
+        <span className="text-sm font-semibold text-sky-700">{php(wallet.lockedAmount)}</span>
       </td>
 
       {/* Available */}

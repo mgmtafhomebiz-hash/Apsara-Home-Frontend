@@ -11,7 +11,7 @@ interface PrimaryButtonProps {
 }
 
 export default function PrimaryButton({ href, onClick, children, className = '', type = 'button', disabled }: PrimaryButtonProps) {
-  const base = `inline-flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold rounded-full px-8 py-4 text-base cursor-pointer ${className}`;
+  const base = `inline-flex items-center justify-center gap-2 bg-sky-500 hover:bg-sky-600 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold rounded-full px-8 py-4 text-base cursor-pointer ${className}`;
 
   if (href) {
     return (

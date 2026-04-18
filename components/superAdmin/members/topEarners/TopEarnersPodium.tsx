@@ -23,7 +23,7 @@ function PodiumCard({ earner, rank }: PodiumCardProps) {
       }`}
     >
       {rank === 1 && (
-        <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-gradient-to-r from-yellow-400 to-amber-400 text-white text-[10px] font-bold shadow-sm tracking-wide whitespace-nowrap">
+        <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-gradient-to-r from-yellow-400 to-sky-400 text-white text-[10px] font-bold shadow-sm tracking-wide whitespace-nowrap">
           TOP EARNER
         </div>
       )}

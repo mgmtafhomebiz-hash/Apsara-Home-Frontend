@@ -185,7 +185,7 @@ const BuyNowOptionsModal = ({
               className="mx-auto max-h-[calc(100vh-1.5rem)] w-full max-w-5xl overflow-y-auto rounded-3xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 sm:max-h-[90vh]"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="flex items-center justify-between bg-orange-500 dark:bg-orange-600 px-5 py-4 sm:px-7">
+              <div className="flex items-center justify-between bg-sky-500 dark:bg-sky-600 px-5 py-4 sm:px-7">
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/25 bg-white/15 shrink-0">
                     <svg className="h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -193,7 +193,7 @@ const BuyNowOptionsModal = ({
                     </svg>
                   </div>
                   <div>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-orange-100">AF Home · Secure Checkout</p>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-sky-100">AF Home | Secure Checkout</p>
                     <h2 className="text-lg font-bold leading-tight text-white">Review Before Checkout</h2>
                   </div>
                 </div>
@@ -218,9 +218,9 @@ const BuyNowOptionsModal = ({
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="line-clamp-2 text-sm font-bold leading-snug text-gray-900 dark:text-white">{product.name}</p>
-                      <p className="mt-1.5 text-[15px] font-extrabold text-orange-500">P{unitPrice.toLocaleString()}</p>
+                      <p className="mt-1.5 text-[15px] font-extrabold text-sky-500">P{unitPrice.toLocaleString()}</p>
                       <div className="mt-1.5 flex flex-wrap items-center gap-1">
-                        <span className="rounded-full border border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-900/30 px-2 py-0.5 text-[10px] font-bold text-orange-600 dark:text-orange-400">
+                        <span className="rounded-full border border-sky-200 dark:border-sky-800 bg-sky-50 dark:bg-sky-900/30 px-2 py-0.5 text-[10px] font-bold text-sky-600 dark:text-sky-400">
                           Qty: {quantity}
                         </span>
                         {activeSelectedColor ? <span className="rounded-full border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-2 py-0.5 text-[10px] font-semibold text-gray-600 dark:text-gray-300">{activeSelectedColor}</span> : null}
@@ -261,9 +261,9 @@ const BuyNowOptionsModal = ({
                         </span>
                       </div>
                     </div>
-                    <div className="flex items-center justify-between border-t border-gray-200 dark:border-gray-700 bg-orange-50 dark:bg-orange-900/20 px-4 py-3">
+                    <div className="flex items-center justify-between border-t border-gray-200 dark:border-gray-700 bg-sky-50 dark:bg-sky-900/20 px-4 py-3">
                       <span className="text-sm font-bold text-gray-900 dark:text-white">Total Amount</span>
-                      <span className="text-xl font-extrabold text-orange-500 dark:text-orange-400">P{total.toLocaleString()}</span>
+                      <span className="text-xl font-extrabold text-sky-500 dark:text-sky-400">P{total.toLocaleString()}</span>
                     </div>
                   </div>
 
@@ -307,16 +307,16 @@ const BuyNowOptionsModal = ({
                         transition={{ duration: 0.22, ease: 'easeOut' }}
                         className="overflow-hidden"
                       >
-                        <div className="mt-3 rounded-2xl border border-orange-200 dark:border-orange-900 bg-orange-50 dark:bg-orange-900/20 p-4">
+                        <div className="mt-3 rounded-2xl border border-sky-200 dark:border-sky-900 bg-sky-50 dark:bg-sky-900/20 p-4">
                           <div className="flex items-start justify-between gap-3">
                             <div>
-                              <p className="flex items-center gap-1.5 text-xs font-bold text-orange-700 dark:text-orange-400">
+                              <p className="flex items-center gap-1.5 text-xs font-bold text-sky-700 dark:text-sky-400">
                                 <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
                                 </svg>
                                 Variant Selection
                               </p>
-                              <p className="mt-1 text-[11px] text-orange-600 dark:text-orange-400">
+                              <p className="mt-1 text-[11px] text-sky-600 dark:text-sky-400">
                                 Checkout will use the exact variant you select here.
                               </p>
                             </div>
@@ -331,10 +331,10 @@ const BuyNowOptionsModal = ({
 
                           {(activeSelectedType || activeSelectedSize || activeSelectedColor || activeVariant?.sku) ? (
                             <div className="mt-3 flex flex-wrap gap-1.5">
-                              {activeSelectedType ? <span className="rounded-full border border-orange-200 dark:border-orange-800 bg-white dark:bg-gray-800 px-2.5 py-1 text-[10px] font-bold text-gray-700 dark:text-gray-300">{activeSelectedType}</span> : null}
-                              {activeSelectedSize ? <span className="rounded-full border border-orange-200 dark:border-orange-800 bg-white dark:bg-gray-800 px-2.5 py-1 text-[10px] font-bold text-gray-700 dark:text-gray-300">{activeSelectedSize}</span> : null}
-                              {activeSelectedColor ? <span className="rounded-full border border-orange-200 dark:border-orange-800 bg-white dark:bg-gray-800 px-2.5 py-1 text-[10px] font-bold text-gray-700 dark:text-gray-300">{activeSelectedColor}</span> : null}
-                              {activeVariant?.sku ? <span className="rounded-full border border-orange-200 dark:border-orange-800 bg-white dark:bg-gray-800 px-2.5 py-1 text-[10px] font-bold text-gray-700 dark:text-gray-300">{activeVariant.sku}</span> : null}
+                              {activeSelectedType ? <span className="rounded-full border border-sky-200 dark:border-sky-800 bg-white dark:bg-gray-800 px-2.5 py-1 text-[10px] font-bold text-gray-700 dark:text-gray-300">{activeSelectedType}</span> : null}
+                              {activeSelectedSize ? <span className="rounded-full border border-sky-200 dark:border-sky-800 bg-white dark:bg-gray-800 px-2.5 py-1 text-[10px] font-bold text-gray-700 dark:text-gray-300">{activeSelectedSize}</span> : null}
+                              {activeSelectedColor ? <span className="rounded-full border border-sky-200 dark:border-sky-800 bg-white dark:bg-gray-800 px-2.5 py-1 text-[10px] font-bold text-gray-700 dark:text-gray-300">{activeSelectedColor}</span> : null}
+                              {activeVariant?.sku ? <span className="rounded-full border border-sky-200 dark:border-sky-800 bg-white dark:bg-gray-800 px-2.5 py-1 text-[10px] font-bold text-gray-700 dark:text-gray-300">{activeVariant.sku}</span> : null}
                             </div>
                           ) : null}
 
@@ -355,7 +355,7 @@ const BuyNowOptionsModal = ({
                                       variant.size?.trim() || '',
                                       variant.color?.trim() || '',
                                       variant.sku?.trim() || '',
-                                    ].filter(Boolean).join(' • ');
+                                    ].filter(Boolean).join(' ? ');
 
                                     return (
                                       <button
@@ -368,8 +368,8 @@ const BuyNowOptionsModal = ({
                                         }}
                                         className={`w-full rounded-2xl border px-3.5 py-3 text-left transition-all ${
                                           isActive
-                                            ? 'border-orange-400 dark:border-orange-700 bg-white dark:bg-gray-800'
-                                            : 'border-orange-100 dark:border-orange-900/50 bg-white dark:bg-gray-800 hover:border-orange-300 dark:hover:border-orange-700 hover:bg-orange-50 dark:hover:bg-orange-900/10'
+                                            ? 'border-sky-400 dark:border-sky-700 bg-white dark:bg-gray-800'
+                                            : 'border-sky-100 dark:border-sky-900/50 bg-white dark:bg-gray-800 hover:border-sky-300 dark:hover:border-sky-700 hover:bg-sky-50 dark:hover:bg-sky-900/10'
                                         }`}
                                       >
                                         <div className="flex items-start gap-3">
@@ -384,7 +384,7 @@ const BuyNowOptionsModal = ({
                                           <div className="min-w-0 flex-1">
                                             <div className="flex items-center gap-2">
                                               <p className="truncate text-sm font-bold text-gray-800 dark:text-white">{variantLabel}</p>
-                                              {isActive ? <span className="rounded-full bg-orange-100 dark:bg-orange-900/40 px-2 py-0.5 text-[10px] font-bold text-orange-600 dark:text-orange-400">Selected</span> : null}
+                                              {isActive ? <span className="rounded-full bg-sky-100 dark:bg-sky-900/40 px-2 py-0.5 text-[10px] font-bold text-sky-600 dark:text-sky-400">Selected</span> : null}
                                             </div>
                                             {variantMeta ? <p className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">{variantMeta}</p> : null}
                                           </div>
@@ -411,7 +411,7 @@ const BuyNowOptionsModal = ({
                       ].map((step) => (
                         <div key={step.n} className="flex items-start gap-3">
                           <div className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${
-                            step.active ? 'bg-orange-500 text-white' : 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400'
+                            step.active ? 'bg-sky-500 text-white' : 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400'
                           }`}>
                             {step.n}
                           </div>
@@ -429,12 +429,12 @@ const BuyNowOptionsModal = ({
                         initial={{ opacity: 0, y: -8 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -8 }}
-                        className="mt-3 flex items-start gap-2.5 rounded-xl border border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-900/20 px-4 py-3"
+                        className="mt-3 flex items-start gap-2.5 rounded-xl border border-sky-200 dark:border-sky-900 bg-sky-50 dark:bg-sky-900/20 px-4 py-3"
                       >
-                        <svg className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="mt-0.5 h-4 w-4 shrink-0 text-sky-600 dark:text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                         </svg>
-                        <p className="text-xs font-medium text-amber-800 dark:text-amber-300">{notice}</p>
+                        <p className="text-xs font-medium text-sky-800 dark:text-sky-300">{notice}</p>
                       </motion.div>
                     ) : null}
                   </AnimatePresence>
@@ -451,9 +451,9 @@ const BuyNowOptionsModal = ({
                               type="button"
                               onClick={handleProceed}
                               disabled={loading}
-                              className="group flex flex-col items-center gap-2 p-4 transition-all duration-200 hover:bg-orange-50 dark:hover:bg-orange-900/10 disabled:opacity-60"
+                              className="group flex flex-col items-center gap-2 p-4 transition-all duration-200 hover:bg-sky-50 dark:hover:bg-sky-900/10 disabled:opacity-60"
                             >
-                              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-orange-500 dark:bg-orange-600 transition-all hover:bg-orange-600 dark:hover:bg-orange-700">
+                              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-sky-500 dark:bg-sky-600 transition-all hover:bg-sky-600 dark:hover:bg-sky-700">
                                 <svg className="h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                                 </svg>
@@ -461,12 +461,12 @@ const BuyNowOptionsModal = ({
                               {loading ? (
                                 <div className="flex items-center gap-1.5">
                                   <Loading size={12} />
-                                  <span className="text-[11px] font-bold text-orange-600 dark:text-orange-400">Processing...</span>
+                                  <span className="text-[11px] font-bold text-sky-600 dark:text-sky-400">Processing...</span>
                                 </div>
                               ) : (
                                 <>
-                                  <span className="text-xs font-bold text-gray-800 dark:text-white transition-colors group-hover:text-orange-600 dark:group-hover:text-orange-400">Sign In & Checkout</span>
-                                  <span className="text-center text-[10px] leading-tight text-gray-400 dark:text-gray-500">Earn PV · Track orders</span>
+                                  <span className="text-xs font-bold text-gray-800 dark:text-white transition-colors group-hover:text-sky-600 dark:group-hover:text-sky-400">Sign In & Checkout</span>
+                                  <span className="text-center text-[10px] leading-tight text-gray-400 dark:text-gray-500">Earn PV  ??  Track orders</span>
                                 </>
                               )}
                             </button>
@@ -485,9 +485,9 @@ const BuyNowOptionsModal = ({
                               <span className="text-center text-[10px] leading-tight text-gray-400 dark:text-gray-500">No account needed</span>
                             </button>
                           </div>
-                          <div className="flex items-center justify-between border-t border-gray-200 dark:border-gray-700 bg-orange-50 dark:bg-orange-900/20 px-4 py-2">
-                            <span className="text-[11px] font-medium text-orange-700 dark:text-orange-400">Order Total</span>
-                            <span className="text-sm font-extrabold text-orange-600 dark:text-orange-400">P{total.toLocaleString()}</span>
+                          <div className="flex items-center justify-between border-t border-gray-200 dark:border-gray-700 bg-sky-50 dark:bg-sky-900/20 px-4 py-2">
+                            <span className="text-[11px] font-medium text-sky-700 dark:text-sky-400">Order Total</span>
+                            <span className="text-sm font-extrabold text-sky-600 dark:text-sky-400">P{total.toLocaleString()}</span>
                           </div>
                         </div>
 
@@ -524,7 +524,7 @@ const BuyNowOptionsModal = ({
                               <svg className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 00-2-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                               </svg>
-                              <span>Continue to Checkout · P{total.toLocaleString()}</span>
+                              <span>Continue to Checkout  ??  P{total.toLocaleString()}</span>
                             </>
                           )}
                         </PrimaryButton>
@@ -536,7 +536,7 @@ const BuyNowOptionsModal = ({
                     <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                     </svg>
-                    Secured by <span className="font-semibold text-gray-500 dark:text-gray-400">PayMongo</span> · SSL Encrypted · PCI DSS Compliant
+                    Secured by <span className="font-semibold text-gray-500 dark:text-gray-400">PayMongo</span>  ??  SSL Encrypted  ??  PCI DSS Compliant
                   </p>
                 </div>
               </div>

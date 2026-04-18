@@ -104,7 +104,7 @@ const StickyAddToCart = ({ product, selectedVariant }: StickyAddToCartProps) => 
       selectedVariant?.style?.trim(),
       selectedVariant?.size?.trim(),
       selectedVariant?.color ? displayColorName(selectedVariant.color) : '',
-    ].filter(Boolean).join(' • ');
+    ].filter(Boolean).join(' ?? ');
     const cartItemIdBase = product.id ? String(product.id) : product.name.toLowerCase().replace(/\s+/g, '-');
     const cartItemId = selectedVariant?.sku ? `${cartItemIdBase}::${selectedVariant.sku}` : cartItemIdBase;
 
@@ -141,7 +141,7 @@ const StickyAddToCart = ({ product, selectedVariant }: StickyAddToCartProps) => 
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-bold text-slate-800 dark:text-gray-200">{displayName}</p>
               <div className="flex items-center gap-2">
-                <p className="text-sm font-bold text-orange-500">₱{displayPrice.toLocaleString()}</p>
+                <p className="text-sm font-bold text-sky-500">{'\u20b1'}{displayPrice.toLocaleString()}</p>
                 {canSeePv && !selectedVariant && (
                   <span className="rounded-full border border-blue-200 dark:border-blue-900/30 bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 text-[10px] font-semibold text-blue-700 dark:text-blue-400">
                     PV {displayPv.toLocaleString()}

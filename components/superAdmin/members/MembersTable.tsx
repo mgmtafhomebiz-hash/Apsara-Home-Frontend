@@ -13,7 +13,7 @@ import { createPortal } from "react-dom"
 
 const avatarColors = [
   'bg-teal-500', 'bg-blue-500', 'bg-purple-500', 'bg-pink-500',
-  'bg-orange-500', 'bg-green-500', 'bg-indigo-500', 'bg-rose-500',
+  'bg-sky-500', 'bg-green-500', 'bg-indigo-500', 'bg-rose-500',
 ]
 const getAvatarColor = (name: string) => {
   const safeName = name.trim()
@@ -347,7 +347,7 @@ function MemberDetailsModal({
       return <Chip size="sm" variant="soft" className="bg-emerald-50 text-emerald-700">Verified</Chip>
     }
     if (status === 'pending_review') {
-      return <Chip size="sm" variant="soft" className="bg-amber-50 text-amber-700">Pending Review</Chip>
+      return <Chip size="sm" variant="soft" className="bg-sky-50 text-sky-700">Pending Review</Chip>
     }
     if (status === 'blocked') {
       return <Chip size="sm" variant="soft" className="bg-red-50 text-red-700">Blocked</Chip>
@@ -425,10 +425,10 @@ function MemberDetailsModal({
           </div>
         )}
 
-        <div className="mb-4 rounded-xl border border-orange-100 bg-orange-50/70 p-4">
+        <div className="mb-4 rounded-xl border border-sky-100 bg-sky-50/70 p-4">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-orange-600">Security</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-sky-600">Security</p>
               <p className="mt-1 text-sm font-semibold text-slate-900">Generate Temporary Password</p>
               <p className="mt-1 text-xs text-slate-500">
                 Use this when the member forgot their password. They can sign in once with the generated password,
@@ -438,15 +438,15 @@ function MemberDetailsModal({
             <Button
               onPress={handleGeneratePassword}
               isDisabled={isLoading}
-              className="rounded-xl bg-orange-500 text-white transition hover:bg-orange-600 disabled:bg-orange-300"
+              className="rounded-xl bg-sky-500 text-white transition hover:bg-sky-600 disabled:bg-sky-300"
             >
               {isLoading ? 'Generating...' : 'Generate Password'}
             </Button>
           </div>
 
           {generatedPassword ? (
-            <div className="mt-4 rounded-2xl border border-orange-200 bg-white px-4 py-3">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-orange-500">Temporary Password</p>
+            <div className="mt-4 rounded-2xl border border-sky-200 bg-white px-4 py-3">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-sky-500">Temporary Password</p>
               <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
                 <code className="rounded-xl bg-slate-900 px-3 py-2 text-sm font-semibold text-white">{generatedPassword}</code>
                 <Button
@@ -519,7 +519,7 @@ function MemberDetailsModal({
   )
 }
 
-/* ── Portal dropdown ─────────────────────────────────────── */
+/* -- Portal dropdown --------------------------------------- */
 
 function MemberMenuPortal({
   member,
@@ -905,12 +905,12 @@ const MembersTable = ({
 
                     {/* Total Spent */}
                     <td className="px-5 py-3.5 hidden md:table-cell">
-                      <span className="text-slate-800 font-semibold">₱ {member.totalSpent.toLocaleString()}</span>
+                      <span className="text-slate-800 font-semibold">? {member.totalSpent.toLocaleString()}</span>
                     </td>
 
                     {/* Earnings */}
                     <td className="px-5 py-3.5 hidden lg:table-cell">
-                      <span className="text-teal-700 font-semibold">₱ {member.earnings.toLocaleString()}</span>
+                      <span className="text-teal-700 font-semibold">? {member.earnings.toLocaleString()}</span>
                     </td>
 
                     {/* Wallet Credits */}
@@ -1050,7 +1050,7 @@ const MembersTable = ({
             >
               <div className="flex items-start gap-4">
                 <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${
-                  banTarget.status === 'blocked' ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'
+                  banTarget.status === 'blocked' ? 'bg-emerald-100 text-emerald-600' : 'bg-sky-100 text-sky-600'
                 }`}>
                   <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     {banTarget.status === 'blocked' ? (
@@ -1081,7 +1081,7 @@ const MembersTable = ({
                   type="button"
                   onPress={handleBanToggle}
                   isDisabled={isUpdating}
-                  className={`rounded-xl text-white transition disabled:opacity-60 ${banTarget.status === 'blocked' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-amber-500 hover:bg-amber-600'}`}
+                  className={`rounded-xl text-white transition disabled:opacity-60 ${banTarget.status === 'blocked' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-sky-500 hover:bg-sky-600'}`}
                 >
                   {isUpdating ? (banTarget.status === 'blocked' ? 'Unbanning...' : 'Banning...') : (banTarget.status === 'blocked' ? 'Unban Member' : 'Ban Member')}
                 </Button>

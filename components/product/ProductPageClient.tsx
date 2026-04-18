@@ -100,7 +100,7 @@ const BrandCardComponent = ({ productId, toSlugBrand }: { productId?: number; to
             {/* Share Button */}
             <button
                 onClick={() => setShareModalOpen(true)}
-                className="absolute top-4 right-4 p-2 rounded-full border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 hover:bg-orange-500 hover:border-orange-500 dark:hover:bg-orange-500 dark:hover:border-orange-500 hover:text-white transition-all duration-200 cursor-pointer"
+                className="absolute top-4 right-4 p-2 rounded-full border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 hover:bg-sky-500 hover:border-sky-500 dark:hover:bg-sky-500 dark:hover:border-sky-500 hover:text-white transition-all duration-200 cursor-pointer"
                 title="Share Brand"
             >
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-700 dark:text-gray-300 hover:text-white transition-colors">
@@ -181,7 +181,7 @@ const BrandCardComponent = ({ productId, toSlugBrand }: { productId?: number; to
             <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
                 <a
                     href={`/by-brand?brand=${encodeURIComponent(brandSlug)}`}
-                    className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold border border-orange-400 dark:border-orange-500 bg-transparent hover:bg-orange-50 dark:hover:bg-orange-900 text-orange-500 dark:text-orange-400 rounded-lg cursor-pointer transition-colors"
+                    className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold border border-sky-400 dark:border-sky-500 bg-transparent hover:bg-sky-50 dark:hover:bg-sky-900 text-sky-500 dark:text-sky-400 rounded-lg cursor-pointer transition-colors"
                 >
                     View Brand
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

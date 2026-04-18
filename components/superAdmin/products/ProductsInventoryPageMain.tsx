@@ -262,7 +262,7 @@ export default function ProductsInventoryPageMain() {
   }, [products, filter])
 
   const selectedProduct = useMemo(
-    () => (typeof selectedProductId === 'number' ? products.find((product) => product.id === selectedProductId) ?? null : null),
+    () => (typeof selectedProductId === 'number' ? (products.find((product) => product.id === selectedProductId) ?? null) : null),
     [products, selectedProductId],
   )
 

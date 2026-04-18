@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useMemo, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -13,7 +13,7 @@ import {
 } from '@/store/api/encashmentApi'
 import { showErrorToast, showSuccessToast } from '@/libs/toast'
 
-/* ─── config ────────────────────────────────────────────────── */
+/* â”€â”€â”€ config â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 const FILTER_LABELS: Record<string, string> = {
   all:               'All Requests',
@@ -34,7 +34,7 @@ const STATUS_CONFIG: Record<AdminEncashmentStatus, { dot: string; badge: string;
 
 type ActionType = 'approve' | 'release' | 'reject'
 
-/* ─── helpers ───────────────────────────────────────────────── */
+/* â”€â”€â”€ helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 const formatMoney = (value: number) =>
   new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', maximumFractionDigits: 2 }).format(value || 0)
@@ -53,7 +53,7 @@ const getInitials = (name?: string | null) => {
   return name.split(' ').map(p => p[0]).join('').slice(0, 2).toUpperCase()
 }
 
-/* ─── stat card ─────────────────────────────────────────────── */
+/* â”€â”€â”€ stat card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 function StatCard({ label, value, bg, text, border, icon }: {
   label: string; value: number; bg: string; text: string; border: string; icon: React.ReactNode
@@ -69,7 +69,7 @@ function StatCard({ label, value, bg, text, border, icon }: {
   )
 }
 
-/* ─── detail modal ──────────────────────────────────────────── */
+/* â”€â”€â”€ detail modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 function DetailModal({ item, onClose, onAction, canApprove, canRelease }: {
   item: AdminEncashmentItem
@@ -104,7 +104,7 @@ function DetailModal({ item, onClose, onAction, canApprove, canRelease }: {
             </div>
             <div>
               <h2 className="text-sm font-bold text-slate-800">{item.affiliate_name || 'Affiliate'}</h2>
-              <p className="text-xs text-slate-400">{item.reference_no} · {item.affiliate_email || 'No email'}</p>
+              <p className="text-xs text-slate-400">{item.reference_no} Â· {item.affiliate_email || 'No email'}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -245,7 +245,7 @@ function DetailModal({ item, onClose, onAction, canApprove, canRelease }: {
   )
 }
 
-/* ─── action modal ──────────────────────────────────────────── */
+/* â”€â”€â”€ action modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 const ACTION_META = {
   approve: { title: 'Approve Request',   icon: 'bg-blue-50 text-blue-600',    btn: 'bg-blue-600 hover:bg-blue-700',       label: 'Confirm Approval'  },
@@ -299,7 +299,7 @@ function ActionModal({ action, busy, uploading, notes, proofUrl, proofFileName, 
               value={notes}
               onChange={e => onNotes(e.target.value)}
               rows={4}
-              placeholder="Write clear reason / details (min 5 characters)…"
+              placeholder="Write clear reason / details (min 5 characters)â€¦"
               className="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-400 bg-slate-50 text-slate-700 placeholder-slate-400 transition resize-none"
             />
           </div>
@@ -331,7 +331,7 @@ function ActionModal({ action, busy, uploading, notes, proofUrl, proofFileName, 
               {uploading && (
                 <p className="text-xs text-teal-600 mt-1.5 flex items-center gap-1.5">
                   <span className="h-1.5 w-1.5 rounded-full bg-teal-500 animate-pulse" />
-                  Uploading proof…
+                  Uploading proofâ€¦
                 </p>
               )}
               {proofUrl && !uploading && (
@@ -340,7 +340,7 @@ function ActionModal({ action, busy, uploading, notes, proofUrl, proofFileName, 
                   className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 hover:underline"
                 >
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                  Proof uploaded — view file
+                  Proof uploaded â€” view file
                 </a>
               )}
             </div>
@@ -359,7 +359,7 @@ function ActionModal({ action, busy, uploading, notes, proofUrl, proofFileName, 
             disabled={busy || uploading}
             className={`flex-1 py-2.5 rounded-xl text-sm font-bold text-white disabled:opacity-60 transition-all ${meta.btn}`}
           >
-            {uploading ? 'Uploading…' : busy ? 'Processing…' : meta.label}
+            {uploading ? 'Uploadingâ€¦' : busy ? 'Processingâ€¦' : meta.label}
           </button>
         </div>
       </motion.div>
@@ -367,7 +367,7 @@ function ActionModal({ action, busy, uploading, notes, proofUrl, proofFileName, 
   )
 }
 
-/* ─── main page ─────────────────────────────────────────────── */
+/* â”€â”€â”€ main page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 interface Props { initialFilter?: string }
 
@@ -464,7 +464,7 @@ export default function EncashmentPageMain({ initialFilter = 'all' }: Props) {
 
   return (
     <div className="space-y-6">
-      {/* ── Header ── */}
+      {/* â”€â”€ Header â”€â”€ */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
@@ -490,7 +490,7 @@ export default function EncashmentPageMain({ initialFilter = 'all' }: Props) {
         </div>
       </motion.div>
 
-      {/* ── Stat Cards ── */}
+      {/* â”€â”€ Stat Cards â”€â”€ */}
       {counts && (
         <motion.div
           initial={{ opacity: 0, y: 12 }}
@@ -510,7 +510,7 @@ export default function EncashmentPageMain({ initialFilter = 'all' }: Props) {
         </motion.div>
       )}
 
-      {/* ── Toolbar ── */}
+      {/* â”€â”€ Toolbar â”€â”€ */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
@@ -524,7 +524,7 @@ export default function EncashmentPageMain({ initialFilter = 'all' }: Props) {
           <input
             value={search}
             onChange={e => { setSearch(e.target.value); setPage(1) }}
-            placeholder="Search reference, affiliate, email…"
+            placeholder="Search reference, affiliate, emailâ€¦"
             className="w-full pl-9 pr-4 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-400 bg-slate-50 text-slate-700 placeholder-slate-400 transition"
           />
         </div>
@@ -533,7 +533,7 @@ export default function EncashmentPageMain({ initialFilter = 'all' }: Props) {
         </span>
       </motion.div>
 
-      {/* ── Error ── */}
+      {/* â”€â”€ Error â”€â”€ */}
       {isError && (
         <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 flex items-center gap-2">
           <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -543,7 +543,7 @@ export default function EncashmentPageMain({ initialFilter = 'all' }: Props) {
         </div>
       )}
 
-      {/* ── Loading ── */}
+      {/* â”€â”€ Loading â”€â”€ */}
       {isLoading ? (
         <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden animate-pulse">
           <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800">
@@ -633,7 +633,7 @@ export default function EncashmentPageMain({ initialFilter = 'all' }: Props) {
                             <p>Locked: {formatMoney(row.wallet_locked_amount ?? 0)}</p>
                             <p>Avail: {formatMoney(row.wallet_available_amount ?? 0)}</p>
                             {row.can_release_by_balance === false && (
-                              <p className="text-red-500 font-semibold">−{formatMoney(row.balance_shortfall ?? 0)}</p>
+                              <p className="text-red-500 font-semibold">-{formatMoney(row.balance_shortfall ?? 0)}</p>
                             )}
                           </td>
 
@@ -722,7 +722,7 @@ export default function EncashmentPageMain({ initialFilter = 'all' }: Props) {
             <div className="px-5 py-3.5 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400">
               <span>
                 Showing{' '}
-                <span className="font-semibold text-slate-600">{data?.meta?.from ?? 0}–{data?.meta?.to ?? 0}</span>
+                <span className="font-semibold text-slate-600">{data?.meta?.from ?? 0}â€“{data?.meta?.to ?? 0}</span>
                 {' '}of <span className="font-semibold text-slate-600">{data?.meta?.total ?? 0}</span>
               </span>
               <div className="flex items-center gap-1.5">
@@ -747,7 +747,7 @@ export default function EncashmentPageMain({ initialFilter = 'all' }: Props) {
         </motion.div>
       )}
 
-      {/* ── Detail Modal ── */}
+      {/* â”€â”€ Detail Modal â”€â”€ */}
       <AnimatePresence>
         {selectedRow && (
           <DetailModal
@@ -760,7 +760,7 @@ export default function EncashmentPageMain({ initialFilter = 'all' }: Props) {
         )}
       </AnimatePresence>
 
-      {/* ── Action Modal ── */}
+      {/* â”€â”€ Action Modal â”€â”€ */}
       <AnimatePresence>
         {actionModal.open && (
           <ActionModal
@@ -780,3 +780,5 @@ export default function EncashmentPageMain({ initialFilter = 'all' }: Props) {
     </div>
   )
 }
+
+

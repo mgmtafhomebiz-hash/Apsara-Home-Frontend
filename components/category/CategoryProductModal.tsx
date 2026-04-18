@@ -120,7 +120,7 @@
 
 //                         {/* Products Grid */}
 //                         <div className="overflow-y-auto flex-1 px-5 md:px-8 py-6">
-//                             {products.length === 0 ? (
+//                             {products.length === 0 ?? (
 //                                 <div className="flex flex-col items-center justify-center py-16 text-gray-400">
 //                                     <p className="mt-3 text-sm font-medium">No products yet for this category.</p>
 //                                 </div>

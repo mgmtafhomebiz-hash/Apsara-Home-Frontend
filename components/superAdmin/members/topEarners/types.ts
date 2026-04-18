@@ -1,4 +1,4 @@
-export interface TopEarner {
+﻿export interface TopEarner {
   id: number
   name: string
   email: string
@@ -18,20 +18,20 @@ export const TIER_COLORS: Record<string, string> = {
   'Lifestyle Elite':      'bg-purple-100 text-purple-700 border-purple-200',
   'Lifestyle Consultant': 'bg-blue-100   text-blue-700   border-blue-200',
   'Home Stylist':         'bg-teal-100   text-teal-700   border-teal-200',
-  'Home Builder':         'bg-amber-100  text-amber-700  border-amber-200',
+  'Home Builder':         'bg-sky-100  text-sky-700  border-sky-200',
   'Home Starter':         'bg-slate-100  text-slate-600  border-slate-200',
 }
 
 export const STATUS_CONFIG: Record<string, { dot: string; text: string; label: string }> = {
   active:  { dot: 'bg-emerald-400', text: 'text-emerald-600', label: 'Active'  },
-  pending: { dot: 'bg-amber-400',   text: 'text-amber-600',   label: 'Pending' },
+  pending: { dot: 'bg-sky-400',   text: 'text-sky-600',   label: 'Pending' },
   blocked: { dot: 'bg-red-400',     text: 'text-red-500',     label: 'Blocked' },
 }
 
 export const MEDALS: Record<number, { emoji: string; ring: string; bg: string }> = {
-  1: { emoji: '🥇', ring: 'ring-2 ring-yellow-400', bg: 'bg-gradient-to-br from-yellow-400 to-amber-500' },
-  2: { emoji: '🥈', ring: 'ring-2 ring-slate-400',  bg: 'bg-gradient-to-br from-slate-400 to-slate-500'  },
-  3: { emoji: '🥉', ring: 'ring-2 ring-amber-600',  bg: 'bg-gradient-to-br from-amber-600 to-amber-700'  },
+  1: { emoji: '#1', ring: 'ring-2 ring-yellow-400', bg: 'bg-gradient-to-br from-yellow-400 to-sky-500' },
+  2: { emoji: '#2', ring: 'ring-2 ring-slate-400',  bg: 'bg-gradient-to-br from-slate-400 to-slate-500'  },
+  3: { emoji: '#3', ring: 'ring-2 ring-sky-600',  bg: 'bg-gradient-to-br from-sky-600 to-sky-700'  },
 }
 
 export const TIERS = [

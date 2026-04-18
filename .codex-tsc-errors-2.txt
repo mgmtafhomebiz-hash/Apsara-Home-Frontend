@@ -1,0 +1,52 @@
+app/api/admin/upload/route.ts(76,5): error TS1005: ':' expected.
+app/supplier/products/page.tsx(65,5): error TS1005: ':' expected.
+app/supplier/products/page.tsx(103,3): error TS1005: ':' expected.
+app/supplier/products/page.tsx(106,3): error TS1005: ':' expected.
+components/assembly/AssemblyGuidesPageClient.tsx(31,5): error TS1005: ':' expected.
+components/category/CategoryListProductMain.tsx(604,5): error TS1005: ':' expected.
+components/category/CategoryListProductMain.tsx(605,5): error TS1005: ':' expected.
+components/item/ItemCard.tsx(130,3): error TS1005: ':' expected.
+components/item/ItemCard.tsx(131,3): error TS1005: ':' expected.
+components/item/ItemCard.tsx(132,3): error TS1005: ':' expected.
+components/item/ProductFilter.tsx(289,19): error TS1128: Declaration or statement expected.
+components/item/ProductFilter.tsx(291,15): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+components/item/ProductFilter.tsx(291,16): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+components/item/ProductFilter.tsx(297,13): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+components/item/ProductFilter.tsx(299,15): error TS17002: Expected corresponding JSX closing tag for 'div'.
+components/item/ProductFilter.tsx(300,13): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+components/item/ProductFilter.tsx(302,7): error TS1005: ')' expected.
+components/item/ProductFilter.tsx(621,5): error TS1128: Declaration or statement expected.
+components/item/ProductFilter.tsx(622,3): error TS1109: Expression expected.
+components/item/ProductFilter.tsx(623,1): error TS1128: Declaration or statement expected.
+components/profile/ProfilePage.tsx(1478,33): error TS1005: ')' expected.
+components/profile/ProfilePage.tsx(1479,30): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+components/SignUpForm.tsx(174,5): error TS1005: ':' expected.
+components/SignUpForm.tsx(175,5): error TS1005: ':' expected.
+components/SignUpForm.tsx(176,5): error TS1005: ':' expected.
+components/SignUpForm.tsx(178,5): error TS1005: ':' expected.
+components/superAdmin/encashment/EncashmentPageMain.tsx(394,5): error TS1005: ':' expected.
+components/superAdmin/expenses/ExpensesPageMain.tsx(100,3): error TS1005: ':' expected.
+components/superAdmin/members/MembersPageMain.tsx(222,5): error TS1005: ':' expected.
+components/superAdmin/members/MembersPageMain.tsx(223,5): error TS1005: ':' expected.
+components/superAdmin/orders/AdminOrdersPageMain.tsx(289,3): error TS1005: ':' expected.
+components/superAdmin/orders/AdminOrdersPageMain.tsx(376,5): error TS1005: ':' expected.
+components/superAdmin/orders/AdminOrdersPageMain.tsx(928,23): error TS1005: ':' expected.
+components/superAdmin/orders/AdminOrdersPageMain.tsx(933,23): error TS1005: ':' expected.
+components/superAdmin/orders/AdminOrdersPageMain.tsx(937,23): error TS1005: ':' expected.
+components/superAdmin/orders/AdminOrdersPageMain.tsx(941,23): error TS1005: ':' expected.
+components/superAdmin/products/AddProductModal.tsx(1514,5): error TS1005: ':' expected.
+components/superAdmin/products/AddProductModal.tsx(2741,103): error TS1005: ':' expected.
+components/superAdmin/products/categories/CategoriesPageMain.tsx(243,3): error TS1005: ':' expected.
+components/superAdmin/products/categories/CategoriesPageMain.tsx(245,3): error TS1005: ':' expected.
+components/superAdmin/products/EditProductModal.tsx(1842,5): error TS1005: ':' expected.
+components/superAdmin/products/EditProductModal.tsx(3174,109): error TS1005: ':' expected.
+components/superAdmin/products/ProductsInventoryPageMain.tsx(265,126): error TS1005: ':' expected.
+components/superAdmin/products/ProductsPageMain.tsx(584,7): error TS1005: ':' expected.
+components/superAdmin/products/ProductsTable.tsx(262,5): error TS1005: ':' expected.
+components/superAdmin/profile/AdminProfilePageMain.tsx(120,3): error TS1005: ':' expected.
+components/superAdmin/profile/AdminProfilePageMain.tsx(122,3): error TS1005: ':' expected.
+components/superAdmin/settings/AdminUsersPageMain.tsx(867,3): error TS1005: ':' expected.
+components/superAdmin/webpages/PartnerStorefrontStudio.tsx(224,7): error TS1005: ':' expected.
+components/superAdmin/webpages/ShopBuilderStudio.tsx(241,1): error TS1005: ':' expected.
+components/ui/ProductCard.tsx(231,16): error TS1005: ':' expected.
+components/verification/GlobalVerificationPrompt.tsx(27,3): error TS1005: ':' expected.

@@ -11,7 +11,7 @@ function CheckoutFailedPage() {
           The payment was not completed. You can retry the checkout flow anytime.
         </p>
         <div className="mt-6 flex gap-2">
-          <Link href="/" className="rounded-xl bg-orange-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-orange-600">
+          <Link href="/" className="rounded-xl bg-sky-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-sky-600">
             Back to Home
           </Link>
           <Link href="/checkout" className="rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-gray-50">

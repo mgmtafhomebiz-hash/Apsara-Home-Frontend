@@ -44,11 +44,11 @@ const renderAdBlock = () => (
 )
 
 const GRADIENT_PALETTES = [
-  'from-orange-400 to-rose-400',
+  'from-sky-400 to-rose-400',
   'from-violet-400 to-purple-500',
   'from-sky-400 to-blue-500',
   'from-emerald-400 to-teal-500',
-  'from-amber-400 to-orange-500',
+  'from-sky-400 to-sky-500',
   'from-pink-400 to-rose-500',
   'from-indigo-400 to-violet-500',
   'from-cyan-400 to-sky-500',
@@ -522,7 +522,7 @@ export default function ByBrandPageMain() {
         <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
           <div className="container mx-auto px-4 py-6">
             <div className="mt-4">
-              <p className="text-xs font-bold uppercase tracking-[0.35em] text-orange-500 dark:text-orange-400">Shop by Brand</p>
+              <p className="text-xs font-bold uppercase tracking-[0.35em] text-sky-500 dark:text-sky-400">Shop by Brand</p>
               <h1 className="mt-2 text-3xl font-bold text-gray-900 dark:text-white sm:text-4xl">
                 {selectedBrand && selectedBrandItem ? selectedBrandItem.name : 'All Brands'}
               </h1>
@@ -535,7 +535,7 @@ export default function ByBrandPageMain() {
       )}
 
       <div className="container mx-auto px-4 py-8 space-y-8">
-        {/* Brand Profile Card — only when brand selected */}
+        {/* Brand Profile Card - only when brand selected */}
         {selectedBrandItem && isFetchingProducts && (
           <BrandProfileSkeleton />
         )}
@@ -545,7 +545,7 @@ export default function ByBrandPageMain() {
             <div className="rounded-lg bg-white dark:bg-gray-800 p-6 border border-gray-200 dark:border-gray-700 relative">
               <button
                 onClick={() => setShareModalOpen(true)}
-                className="absolute top-4 right-4 p-2 rounded-full border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 hover:bg-orange-500 hover:border-orange-500 dark:hover:bg-orange-500 dark:hover:border-orange-500 hover:text-white transition-all duration-200 cursor-pointer"
+                className="absolute top-4 right-4 p-2 rounded-full border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 hover:bg-sky-500 hover:border-sky-500 dark:hover:bg-sky-500 dark:hover:border-sky-500 hover:text-white transition-all duration-200 cursor-pointer"
                 title="Share Brand"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-700 dark:text-gray-300 hover:text-white transition-colors">
@@ -615,20 +615,20 @@ export default function ByBrandPageMain() {
                 </div>
                 <div className="flex items-center gap-3">
                   <OutlineButton onClick={() => router.back()} className="shrink-0 !px-4 !py-2.5 !text-sm">
-                    ← Back
+                    ?? Back
                   </OutlineButton>
                 </div>
               </div>
             </div>
 
             {/* Promotional Banner */}
-            {/* <div className="relative rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 bg-gradient-to-r from-orange-500 to-orange-600 dark:from-orange-600 dark:to-orange-700">
+            {/* <div className="relative rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 bg-gradient-to-r from-sky-500 to-sky-600 dark:from-sky-600 dark:to-sky-700">
               <div className="px-6 py-8">
-                <p className="text-xs font-bold uppercase tracking-[0.3em] text-orange-100">Special Offer</p>
+                <p className="text-xs font-bold uppercase tracking-[0.3em] text-sky-100">Special Offer</p>
                 <h2 className="mt-2 text-2xl font-bold text-white">
                   Get {selectedBrandItem.name} products at exclusive prices!
                 </h2>
-                <p className="mt-2 text-sm text-orange-100">
+                <p className="mt-2 text-sm text-sky-100">
                   Limited time offer - Shop now and save up to 30%
                 </p>
               </div>
@@ -636,7 +636,7 @@ export default function ByBrandPageMain() {
           </>
         )}
 
-        {/* Search + Filters — only when no brand selected */}
+        {/* Search + Filters - only when no brand selected */}
         {!selectedBrand && (
           <div className="rounded-xl bg-white dark:bg-gray-800 p-6 border border-gray-200 dark:border-gray-700">
             <div className="flex flex-col gap-6">
@@ -650,7 +650,7 @@ export default function ByBrandPageMain() {
                   value={searchQuery}
                   onChange={(e) => { setSearchQuery(e.target.value); setLetterFilter('ALL') }}
                   placeholder="Search brands..."
-                  className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 py-3 pl-12 pr-12 text-base text-gray-700 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-orange-400 focus:bg-white dark:focus:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-orange-400/30 transition-all"
+                  className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 py-3 pl-12 pr-12 text-base text-gray-700 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-sky-400 focus:bg-white dark:focus:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-sky-400/30 transition-all"
                 />
                 {searchQuery && (
                   <button
@@ -664,7 +664,7 @@ export default function ByBrandPageMain() {
 
               {/* Filters row */}
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                {/* Letter filter — hidden when searching */}
+                {/* Letter filter - hidden when searching */}
                 {!searchQuery && (
                   <div className="flex flex-wrap gap-2">
                     <span className="px-3 py-2 text-sm font-semibold text-gray-500 dark:text-gray-400">Filter:</span>
@@ -674,8 +674,8 @@ export default function ByBrandPageMain() {
                         onClick={() => setLetterFilter(letter)}
                         className={`rounded-lg px-4 py-2 text-sm font-semibold cursor-pointer transition-all ${
                           letterFilter === letter
-                            ? 'bg-orange-500 text-white'
-                            : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-orange-100 dark:hover:bg-orange-500/20 hover:text-orange-600 dark:hover:text-orange-400'
+                            ? 'bg-sky-500 text-white'
+                            : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-sky-100 dark:hover:bg-sky-500/20 hover:text-sky-600 dark:hover:text-sky-400'
                         }`}
                       >
                         {letter}
@@ -690,7 +690,7 @@ export default function ByBrandPageMain() {
                   <select
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value as 'name-asc' | 'name-desc' | 'default')}
-                    className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-700 px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-200 focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-400/30 transition-all"
+                    className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-700 px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-200 focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-400/30 transition-all"
                   >
                     <option value="default">Default</option>
                     <option value="name-asc">Name: A to Z</option>
@@ -702,7 +702,7 @@ export default function ByBrandPageMain() {
           </div>
         )}
 
-        {/* Brand Grid — only when no brand selected */}
+        {/* Brand Grid - only when no brand selected */}
         {!selectedBrand && (
           <>
             {isFetching ? (
@@ -729,7 +729,7 @@ export default function ByBrandPageMain() {
                       <Link
                         key={brand.id}
                         href={`/by-brand?brand=${encodeURIComponent(brandSlug)}`}
-                        className="group flex flex-col items-center rounded-lg border border-gray-200 dark:border-gray-700 p-4 text-center hover:border-orange-500 dark:hover:border-orange-400 transition-colors"
+                        className="group flex flex-col items-center rounded-lg border border-gray-200 dark:border-gray-700 p-4 text-center hover:border-sky-500 dark:hover:border-sky-400 transition-colors"
                       >
                         <div className="relative flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded">
                           {brand.image ? (
@@ -761,7 +761,7 @@ export default function ByBrandPageMain() {
               brandProducts.length > 0 && (
                 <div className="rounded-lg bg-white dark:bg-gray-800 p-6 border border-gray-200 dark:border-gray-700">
                   <div className="mb-4">
-                    <p className="text-xs font-bold uppercase tracking-[0.3em] text-orange-500 dark:text-orange-400">Featured</p>
+                    <p className="text-xs font-bold uppercase tracking-[0.3em] text-sky-500 dark:text-sky-400">Featured</p>
                     <h3 className="mt-1 text-xl font-bold text-gray-900 dark:text-white">Featured Products</h3>
                   </div>
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -808,7 +808,7 @@ export default function ByBrandPageMain() {
             ))}
 
             {/* Left Content Overlay */}
-            <div className="absolute left-0 top-0 bottom-0 w-48 md:w-64 bg-gradient-to-r from-orange-500 to-orange-500/10 flex flex-col justify-center px-6 z-10">
+            <div className="absolute left-0 top-0 bottom-0 w-48 md:w-64 bg-gradient-to-r from-sky-500 to-sky-500/10 flex flex-col justify-center px-6 z-10">
               <p className="text-xs font-bold uppercase tracking-[0.3em] text-white/90">Featured</p>
               <h2 className="mt-2 text-xl font-bold text-white">
                 {selectedBrandItem.name}
@@ -819,7 +819,7 @@ export default function ByBrandPageMain() {
             </div>
 
             {/* Right Content Overlay */}
-            <div className="absolute right-0 top-0 bottom-0 w-48 md:w-64 bg-gradient-to-l from-orange-400 to-orange-400/10 flex flex-col justify-center items-end px-6 text-right z-10">
+            <div className="absolute right-0 top-0 bottom-0 w-48 md:w-64 bg-gradient-to-l from-sky-400 to-sky-400/10 flex flex-col justify-center items-end px-6 text-right z-10">
               <p className="text-xs font-bold uppercase tracking-[0.3em] text-white/90">Exclusive</p>
               <p className="mt-2 text-sm text-white/80">
                 Limited Edition
@@ -833,7 +833,7 @@ export default function ByBrandPageMain() {
                   key={index}
                   onClick={() => setCurrentSlide(index)}
                   className={`w-3 h-3 rounded-full transition-colors border-2 cursor-pointer ${
-                    currentSlide === index ? 'bg-orange-500 border-orange-500' : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700'
+                    currentSlide === index ? 'bg-sky-500 border-sky-500' : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700'
                   }`}
                 />
               ))}
@@ -883,11 +883,11 @@ export default function ByBrandPageMain() {
             <div ref={productsRef} className="flex-1 rounded-lg bg-white dark:bg-gray-800 p-6 border border-gray-200 dark:border-gray-700">
               <div className="flex flex-col gap-2 border-b border-gray-100 dark:border-gray-700 pb-5 sm:flex-row sm:items-end sm:justify-between">
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.3em] text-orange-500 dark:text-orange-400">Brand Products</p>
+                  <p className="text-xs font-bold uppercase tracking-[0.3em] text-sky-500 dark:text-sky-400">Brand Products</p>
                   <h2 className="mt-2 text-2xl font-bold text-gray-900 dark:text-white">{selectedBrandItem.name}</h2>
                 </div>
-                <span className="inline-flex items-center rounded-full bg-orange-50 dark:bg-orange-500/10 px-3 py-1 text-xs font-semibold text-orange-600 dark:text-orange-400 ring-1 ring-orange-200 dark:ring-orange-500/30">
-                  {isFetchingProducts ? 'Loading…' : `${productsMeta?.total ?? brandProducts.length} product${(productsMeta?.total ?? brandProducts.length) !== 1 ? 's' : ''}`}
+                <span className="inline-flex items-center rounded-full bg-sky-50 dark:bg-sky-500/10 px-3 py-1 text-xs font-semibold text-sky-600 dark:text-sky-400 ring-1 ring-sky-200 dark:ring-sky-500/30">
+                  {isFetchingProducts ? 'Loading...' : `${productsMeta?.total ?? brandProducts.length} product${(productsMeta?.total ?? brandProducts.length) !== 1 ? 's' : ''}`}
                 </span>
               </div>
 
@@ -928,7 +928,7 @@ export default function ByBrandPageMain() {
                   <>
                     {brandProducts.length === 0 ? (
                       <div className="flex flex-col items-center justify-center py-20 text-center">
-                        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700 text-2xl">📦</div>
+                        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700 text-2xl">ðŸ“¦</div>
                         <p className="mt-4 font-semibold text-gray-700 dark:text-gray-300">No products yet</p>
                         <p className="mt-1 text-sm text-gray-400 dark:text-gray-500">No products assigned to this brand yet.</p>
                       </div>
@@ -941,7 +941,7 @@ export default function ByBrandPageMain() {
                         <Link
                           key={product.id}
                           href={`/product/${toSlug(product.name)}-i${product.id}`}
-                          className="flex gap-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden hover:border-orange-500 dark:hover:border-orange-400 transition-colors group relative"
+                          className="flex gap-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden hover:border-sky-500 dark:hover:border-sky-400 transition-colors group relative"
                         >
                           {/* Action Icons */}
                           <div className="absolute top-2 right-2 flex flex-col gap-2 z-10">
@@ -951,7 +951,7 @@ export default function ByBrandPageMain() {
                                 e.stopPropagation()
                                 toast.success('Added to wishlist')
                               }}
-                              className="p-2 rounded-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-md border border-gray-200 dark:border-gray-600 shadow-lg hover:bg-orange-500 hover:border-orange-500 dark:hover:bg-orange-500 dark:hover:border-orange-500 transition-all duration-200 cursor-pointer"
+                              className="p-2 rounded-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-md border border-gray-200 dark:border-gray-600 shadow-lg hover:bg-sky-500 hover:border-sky-500 dark:hover:bg-sky-500 dark:hover:border-sky-500 transition-all duration-200 cursor-pointer"
                               title="Add to Wishlist"
                             >
                               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-700 dark:text-gray-300 hover:text-white transition-colors">
@@ -971,7 +971,7 @@ export default function ByBrandPageMain() {
                               }}
                               onMouseEnter={() => setHoveringShareProductId(product.id)}
                               onMouseLeave={() => setHoveringShareProductId(null)}
-                              className="p-2 rounded-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-md border border-gray-200 dark:border-gray-600 shadow-lg hover:bg-orange-500 hover:border-orange-500 dark:hover:bg-orange-500 dark:hover:border-orange-500 transition-all duration-200 cursor-pointer"
+                              className="p-2 rounded-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-md border border-gray-200 dark:border-gray-600 shadow-lg hover:bg-sky-500 hover:border-sky-500 dark:hover:bg-sky-500 dark:hover:border-sky-500 transition-all duration-200 cursor-pointer"
                               title="Share"
                             >
                               {hoveringShareProductId === product.id ? (
@@ -1010,14 +1010,14 @@ export default function ByBrandPageMain() {
                             )}
                           </div>
                           <div className="flex flex-col justify-center flex-1 p-4 relative">
-                            <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-2 line-clamp-2 group-hover:text-orange-500 dark:group-hover:text-orange-400 transition-colors">{product.name}</h3>
+                            <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-2 line-clamp-2 group-hover:text-sky-500 dark:group-hover:text-sky-400 transition-colors">{product.name}</h3>
                             <div className="flex items-baseline gap-2 mb-2">
-                              <span className="text-lg font-bold text-orange-500 dark:text-orange-400">
-                                ₱{Number(product.priceSrp ?? product.priceDp ?? 0).toLocaleString()}
+                              <span className="text-lg font-bold text-sky-500 dark:text-sky-400">
+                                {'\u20b1'}{Number(product.priceSrp ?? product.priceDp ?? 0).toLocaleString()}
                               </span>
                               {product.priceMember && Number(product.priceMember) > 0 && Number(product.priceMember) < Number(product.priceSrp ?? product.priceDp ?? 0) && (
                                 <span className="text-sm text-gray-400 dark:text-gray-500 line-through">
-                                  ₱{Number(product.priceSrp ?? product.priceDp ?? 0).toLocaleString()}
+                                  {'\u20b1'}{Number(product.priceSrp ?? product.priceDp ?? 0).toLocaleString()}
                                 </span>
                               )}
                             </div>
@@ -1038,8 +1038,8 @@ export default function ByBrandPageMain() {
                                     width="10"
                                     height="10"
                                     viewBox="0 0 24 24"
-                                    fill={star <= 4 ? '#f97316' : 'none'}
-                                    stroke={star <= 4 ? '#f97316' : '#d1d5db'}
+                                    fill={star <= 4 ? '#38bdf8' : 'none'}
+                                    stroke={star <= 4 ? '#38bdf8' : '#d1d5db'}
                                     strokeWidth="2"
                                   >
                                     <path d="M12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
@@ -1052,7 +1052,7 @@ export default function ByBrandPageMain() {
                             <button
                               onClick={(e) => handleAddToCart(product.id, e)}
                               disabled={isAddingToCart}
-                              className="absolute bottom-4 right-4 flex items-center justify-center gap-2 rounded-full bg-orange-500 hover:bg-orange-600 px-4 py-2 text-sm font-semibold text-white opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                              className="absolute bottom-4 right-4 flex items-center justify-center gap-2 rounded-full bg-sky-500 hover:bg-sky-600 px-4 py-2 text-sm font-semibold text-white opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                               {isAddingToCart ? (
                                 <>
@@ -1093,7 +1093,7 @@ export default function ByBrandPageMain() {
                     <button
                       onClick={() => setProductPage((p) => Math.max(1, p - 1))}
                       disabled={productPage === 1}
-                      className="flex h-9 w-9 items-center justify-center rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-700 text-gray-500 dark:text-gray-400 transition hover:border-orange-300 dark:hover:border-orange-500 hover:text-orange-500 dark:hover:text-orange-400 cursor-pointer disabled:cursor-not-allowed disabled:opacity-40"
+                      className="flex h-9 w-9 items-center justify-center rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-700 text-gray-500 dark:text-gray-400 transition hover:border-sky-300 dark:hover:border-sky-500 hover:text-sky-500 dark:hover:text-sky-400 cursor-pointer disabled:cursor-not-allowed disabled:opacity-40"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="15 18 9 12 15 6" /></svg>
                     </button>
@@ -1108,15 +1108,15 @@ export default function ByBrandPageMain() {
                       }, [])
                       .map((item, idx) =>
                         item === 'ellipsis' ? (
-                          <span key={`e-${idx}`} className="flex h-9 w-9 items-center justify-center text-sm text-gray-400 dark:text-gray-500">…</span>
+                          <span key={`e-${idx}`} className="flex h-9 w-9 items-center justify-center text-sm text-gray-400 dark:text-gray-500">...</span>
                         ) : (
                           <button
                             key={item}
                             onClick={() => setProductPage(item as number)}
                             className={`flex h-9 w-9 items-center justify-center rounded-xl text-sm font-semibold transition-all cursor-pointer ${
                               productPage === item
-                                ? 'bg-orange-500 text-white shadow-sm shadow-orange-200 dark:shadow-orange-900'
-                                : 'border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:border-orange-300 dark:hover:border-orange-500 hover:text-orange-500 dark:hover:text-orange-400'
+                                ? 'bg-sky-500 text-white shadow-sm shadow-sky-200 dark:shadow-sky-900'
+                                : 'border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:border-sky-300 dark:hover:border-sky-500 hover:text-sky-500 dark:hover:text-sky-400'
                             }`}
                           >
                             {item}
@@ -1128,7 +1128,7 @@ export default function ByBrandPageMain() {
                     <button
                       onClick={() => setProductPage((p) => Math.min(totalPages, p + 1))}
                       disabled={productPage === totalPages}
-                      className="flex h-9 w-9 items-center justify-center rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-700 text-gray-500 dark:text-gray-400 transition hover:border-orange-300 dark:hover:border-orange-500 hover:text-orange-500 dark:hover:text-orange-400 cursor-pointer disabled:cursor-not-allowed disabled:opacity-40"
+                      className="flex h-9 w-9 items-center justify-center rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-700 text-gray-500 dark:text-gray-400 transition hover:border-sky-300 dark:hover:border-sky-500 hover:text-sky-500 dark:hover:text-sky-400 cursor-pointer disabled:cursor-not-allowed disabled:opacity-40"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6" /></svg>
                     </button>
@@ -1139,11 +1139,11 @@ export default function ByBrandPageMain() {
           </div>
         )}
 
-        {/* You May Also Like — only when brand selected */}
+        {/* You May Also Like - only when brand selected */}
         {selectedBrandItem && (
           <div className="rounded-lg bg-white dark:bg-gray-800 p-6 border border-gray-200 dark:border-gray-700">
             <div className="mb-6">
-              <p className="text-xs font-bold uppercase tracking-[0.3em] text-orange-500 dark:text-orange-400">You May Also Like</p>
+              <p className="text-xs font-bold uppercase tracking-[0.3em] text-sky-500 dark:text-sky-400">You May Also Like</p>
               <h2 className="mt-2 text-2xl font-bold text-gray-900 dark:text-white">Other Brands</h2>
             </div>
             {isFetching ? (
@@ -1166,7 +1166,7 @@ export default function ByBrandPageMain() {
                       <Link
                         key={brand.id}
                         href={`/by-brand?brand=${encodeURIComponent(brandSlug)}`}
-                        className="group flex flex-col items-center rounded-lg border border-gray-200 dark:border-gray-700 p-4 text-center hover:border-orange-500 dark:hover:border-orange-400 transition-colors"
+                        className="group flex flex-col items-center rounded-lg border border-gray-200 dark:border-gray-700 p-4 text-center hover:border-sky-500 dark:hover:border-sky-400 transition-colors"
                       >
                         <div className="relative flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded">
                           {brand.image ? (

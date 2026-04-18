@@ -49,7 +49,7 @@ export default function MembersStats({ stats, onCardClick }: MembersStatsProps) 
       key: 'pending' as const,
       label: 'Pending / KYC',
       value: stats ? stats.pending.toLocaleString() : '-',
-      bg: 'bg-amber-50 dark:bg-amber-500/20', text: 'text-amber-600 dark:text-amber-200', border: 'border-amber-100 dark:border-amber-500/30', val: 'text-amber-700 dark:text-amber-200',
+      bg: 'bg-sky-50 dark:bg-sky-500/20', text: 'text-sky-600 dark:text-sky-200', border: 'border-sky-100 dark:border-sky-500/30', val: 'text-sky-700 dark:text-sky-200',
       sub: 'Click to trace pending members',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

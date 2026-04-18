@@ -18,7 +18,7 @@ const toSlug = (value: string) =>
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
 
-const formatPeso = (value: number) => `₱${Number(value || 0).toLocaleString('en-PH', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`
+const formatPeso = (value: number) => `\u20b1${Number(value || 0).toLocaleString('en-PH', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`
 
 interface Product {
   id: number
@@ -140,7 +140,7 @@ export default function ItemCard({ product, brandName }: ItemCardProps) {
 
   return (
     <>
-    <Link href={href} className="flex flex-col group bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden hover:border-orange-500 dark:hover:border-orange-400 transition-colors cursor-pointer">
+    <Link href={href} className="flex flex-col group bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden hover:border-sky-500 dark:hover:border-sky-400 transition-colors cursor-pointer">
       {/* Product Image */}
       <div className="relative aspect-square w-full bg-gray-100 dark:bg-gray-700 overflow-hidden border-b border-gray-200 dark:border-gray-700">
         {/* Action Icons */}
@@ -151,8 +151,8 @@ export default function ItemCard({ product, brandName }: ItemCardProps) {
             disabled={isAddingToWishlist || isRemovingFromWishlist}
             className={`p-2 rounded-full backdrop-blur-md border shadow-lg transition-all duration-200 cursor-pointer hover:cursor-hand ${
               isInWishlist 
-                ? 'bg-orange-500 border-orange-500 hover:bg-orange-600 hover:border-orange-600' 
-                : 'bg-white/90 dark:bg-gray-800/90 border-gray-200 dark:border-gray-600 hover:bg-orange-500 hover:border-orange-500 dark:hover:bg-orange-500 dark:hover:border-orange-500'
+                ? 'bg-sky-500 border-sky-500 hover:bg-sky-600 hover:border-sky-600' 
+                : 'bg-white/90 dark:bg-gray-800/90 border-gray-200 dark:border-gray-600 hover:bg-sky-500 hover:border-sky-500 dark:hover:bg-sky-500 dark:hover:border-sky-500'
             } ${isAddingToWishlist || isRemovingFromWishlist ? 'opacity-50 cursor-not-allowed' : ''}`}
             title={isInWishlist ? "Remove from Wishlist" : "Add to Wishlist"}
           >
@@ -178,7 +178,7 @@ export default function ItemCard({ product, brandName }: ItemCardProps) {
           </div>
           <button
             onClick={handleShare}
-            className="p-2 rounded-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-md border border-gray-200 dark:border-gray-600 shadow-lg hover:bg-orange-500 hover:border-orange-500 dark:hover:bg-orange-500 dark:hover:border-orange-500 transition-all duration-200 cursor-pointer hover:cursor-hand"
+            className="p-2 rounded-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-md border border-gray-200 dark:border-gray-600 shadow-lg hover:bg-sky-500 hover:border-sky-500 dark:hover:bg-sky-500 dark:hover:border-sky-500 transition-all duration-200 cursor-pointer hover:cursor-hand"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-700 dark:text-gray-300 hover:text-white transition-colors">
               <circle cx="18" cy="5" r="3" />
@@ -210,7 +210,7 @@ export default function ItemCard({ product, brandName }: ItemCardProps) {
 
         {/* Discount Badge */}
         {hasMemberPrice ? (
-          <div className="absolute top-0 left-0 bg-orange-500 text-white text-xs font-bold px-2 py-1">
+          <div className="absolute top-0 left-0 bg-sky-500 text-white text-xs font-bold px-2 py-1">
             {isLoggedIn ? `Enjoy ${Math.round(((srpPrice - memberPrice) / srpPrice) * 100)}% off` : `Register to get ${Math.round(((srpPrice - memberPrice) / srpPrice) * 100)}% discount`}
           </div>
         ) : null}
@@ -226,7 +226,7 @@ export default function ItemCard({ product, brandName }: ItemCardProps) {
         <button
           onClick={handleAddToCart}
           disabled={isAddingToCart}
-          className="absolute bottom-3 right-3 flex items-center justify-center gap-2 rounded-full bg-orange-500 hover:bg-orange-600 px-4 py-2 text-sm font-semibold text-white opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 cursor-pointer hover:cursor-hand disabled:opacity-50 disabled:cursor-not-allowed"
+          className="absolute bottom-3 right-3 flex items-center justify-center gap-2 rounded-full bg-sky-500 hover:bg-sky-600 px-4 py-2 text-sm font-semibold text-white opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 cursor-pointer hover:cursor-hand disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isAddingToCart ? (
             <>
@@ -264,12 +264,12 @@ export default function ItemCard({ product, brandName }: ItemCardProps) {
         {/* Price */}
         <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-1 sm:gap-2">
           <div className="flex items-baseline gap-1.5 sm:gap-2 flex-wrap">
-            <span className="text-sm sm:text-base font-bold text-orange-500 dark:text-orange-400">
-              ₱{displayPrice.toLocaleString()}
+            <span className="text-sm sm:text-base font-bold text-sky-500 dark:text-sky-400">
+              {'\u20b1'}{displayPrice.toLocaleString()}
             </span>
             {strikePrice > displayPrice && (
               <span className="text-xs sm:text-sm text-gray-400 dark:text-gray-500 line-through">
-                ₱{strikePrice.toLocaleString()}
+                {'\u20b1'}{strikePrice.toLocaleString()}
               </span>
             )}
           </div>
@@ -290,8 +290,8 @@ export default function ItemCard({ product, brandName }: ItemCardProps) {
                 width="9"
                 height="9"
                 viewBox="0 0 24 24"
-                fill={hasRating && star <= filledStars ? '#f97316' : 'none'}
-                stroke={hasRating && star <= filledStars ? '#f97316' : '#d1d5db'}
+                fill={hasRating && star <= filledStars ? '#38bdf8' : 'none'}
+                stroke={hasRating && star <= filledStars ? '#38bdf8' : '#d1d5db'}
                 strokeWidth="2"
                 className="sm:w-[10px] sm:h-[10px]"
               >
@@ -300,7 +300,7 @@ export default function ItemCard({ product, brandName }: ItemCardProps) {
             ))}
           </div>
           <span className="text-xs text-gray-400 dark:text-gray-500">
-            {hasRating ? `${averageRating.toFixed(1)} • ` : 'No rating yet • '}
+            {hasRating ? `${averageRating.toFixed(1)} ?? ` : 'No rating yet ?? '}
             {soldCount} sold
           </span>
         </div>

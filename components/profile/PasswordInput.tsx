@@ -19,8 +19,8 @@ const PasswordInput = ({
         type={show ? 'text' : 'password'}
         value={value}
         onChange={onChange}
-        placeholder={placeholder ?? '••••••••'}
-        className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 pr-10 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300"
+        placeholder={placeholder ?? '********'}
+        className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 pr-10 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-sky-200 focus:border-sky-300"
       />
       <button
         type="button"

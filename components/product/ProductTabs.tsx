@@ -117,7 +117,7 @@ const ProductTabs = ({ product, defaultTab = 'description', onTabChange, reviews
                     if (product.pswidth  && product.pswidth  > 0) dimParts.push(`W: ${product.pswidth} cm`)
                     if (product.pslenght && product.pslenght > 0) dimParts.push(`D: ${product.pslenght} cm`)
                     if (product.psheight && product.psheight > 0) dimParts.push(`H: ${product.psheight} cm`)
-                    const dimensions = dimParts.length > 0 ? dimParts.join(' × ') : null
+                    const dimensions = dimParts.length > 0 ? dimParts.join(' ?? ') : null
 
                     const colorSet = new Set<string>()
                     product.variants?.forEach(v => { if (v.color) colorSet.add(displayColorName(v.color, v.colorHex)) })
@@ -154,9 +154,9 @@ const ProductTabs = ({ product, defaultTab = 'description', onTabChange, reviews
             <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
                 <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-3">Reviews ({reviewCount})</h3>
                 <div className="space-y-3">
-                    <div className="flex items-center gap-4 bg-orange-50 dark:bg-orange-900/20 rounded-xl p-4">
+                    <div className="flex items-center gap-4 bg-sky-50 dark:bg-sky-900/20 rounded-xl p-4">
                         <div className="text-center shrink-0">
-                            <div className="text-3xl font-bold text-orange-500 dark:text-orange-400">{avgRating}</div>
+                            <div className="text-3xl font-bold text-sky-500 dark:text-sky-400">{avgRating}</div>
                             <StarRating rating={Math.round(Number(avgRating))} size={12} />
                             <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">{reviewCount} reviews</div>
                         </div>
@@ -167,7 +167,7 @@ const ProductTabs = ({ product, defaultTab = 'description', onTabChange, reviews
                                 return (
                                     <div key={star} className="flex items-center gap-2 text-xs">
                                         <span className="w-3 text-gray-500 dark:text-gray-400">{star}</span>
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="8" height="8" viewBox="0 0 24 24" fill="#f97316" className="shrink-0">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="8" height="8" viewBox="0 0 24 24" fill="#38bdf8" className="shrink-0">
                                             <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                                         </svg>
                                         <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 overflow-hidden">
@@ -175,7 +175,7 @@ const ProductTabs = ({ product, defaultTab = 'description', onTabChange, reviews
                                                 initial={{ width: 0 }}
                                                 animate={{ width: `${pct}%` }}
                                                 transition={{ duration: 0.6, delay: star * 0.05 }}
-                                                className="bg-orange-400 dark:bg-orange-500 h-full rounded-full"
+                                                className="bg-sky-400 dark:bg-sky-500 h-full rounded-full"
                                             />
                                         </div>
                                         <span className="w-4 text-gray-400 dark:text-gray-500 text-right">{count}</span>
@@ -192,7 +192,7 @@ const ProductTabs = ({ product, defaultTab = 'description', onTabChange, reviews
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: index * 0.05 }}
-                                className="border border-gray-100 dark:border-gray-700 rounded-xl p-4 hover:border-orange-100 dark:hover:border-orange-900/50 transition-all"
+                                className="border border-gray-100 dark:border-gray-700 rounded-xl p-4 hover:border-sky-100 dark:hover:border-sky-900/50 transition-all"
                             >
                                 <div className="flex items-start gap-3 mb-2">
                                     {review.customer_avatar ? (
@@ -200,10 +200,10 @@ const ProductTabs = ({ product, defaultTab = 'description', onTabChange, reviews
                                         <img
                                             src={review.customer_avatar}
                                             alt={review.customer_name}
-                                            className="w-8 h-8 rounded-full object-cover border border-orange-100 dark:border-orange-900/50 shrink-0"
+                                            className="w-8 h-8 rounded-full object-cover border border-sky-100 dark:border-sky-900/50 shrink-0"
                                         />
                                     ) : (
-                                        <div className="w-8 h-8 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center text-orange-600 dark:text-orange-400 text-xs font-bold shrink-0">
+                                        <div className="w-8 h-8 rounded-full bg-sky-100 dark:bg-sky-900/30 flex items-center justify-center text-sky-600 dark:text-sky-400 text-xs font-bold shrink-0">
                                             {getInitials(review.customer_name)}
                                         </div>
                                     )}

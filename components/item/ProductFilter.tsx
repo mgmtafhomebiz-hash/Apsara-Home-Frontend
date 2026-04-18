@@ -64,10 +64,10 @@ export default function ProductFilter({ onFilterChange, className = '', pvRange:
   ]
 
   const pricePresets = [
-    { label: 'Under ₱1,000', min: 0, max: 1000 },
-    { label: '₱1,000 - ₱5,000', min: 1000, max: 5000 },
-    { label: '₱5,000 - ₱10,000', min: 5000, max: 10000 },
-    { label: 'Over ₱10,000', min: 10000, max: 999999 },
+    { label: 'Under \u20b11,000', min: 0, max: 1000 },
+    { label: '\u20b11,000 - \u20b15,000', min: 1000, max: 5000 },
+    { label: '\u20b15,000 - \u20b110,000', min: 5000, max: 10000 },
+    { label: 'Over \u20b110,000', min: 10000, max: 999999 },
   ]
 
   const pvPresets = [
@@ -274,8 +274,8 @@ export default function ProductFilter({ onFilterChange, className = '', pvRange:
             }}
             className={`px-3 py-1 rounded-full text-sm font-medium transition-colors cursor-pointer ${
               !currentCategory && !propSearch 
-                ? 'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400' 
-                : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 hover:bg-orange-100 hover:text-orange-600 dark:hover:bg-orange-900/30 dark:hover:text-orange-400'
+                ? 'bg-sky-100 text-sky-600 dark:bg-sky-900/30 dark:text-sky-400' 
+                : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 hover:bg-sky-100 hover:text-sky-600 dark:hover:bg-sky-900/30 dark:hover:text-sky-400'
             }`}
           >
             All Category
@@ -291,8 +291,8 @@ export default function ProductFilter({ onFilterChange, className = '', pvRange:
               }}
               className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium transition-colors cursor-pointer ${
                 currentCategory === category.name || propSearch === category.name
-                  ? 'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400'
-                  : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 hover:bg-orange-100 hover:text-orange-600 dark:hover:bg-orange-900/30 dark:hover:text-orange-400'
+                  ? 'bg-sky-100 text-sky-600 dark:bg-sky-900/30 dark:text-sky-400'
+                  : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 hover:bg-sky-100 hover:text-sky-600 dark:hover:bg-sky-900/30 dark:hover:text-sky-400'
               }`}
             >
               {category.name}
@@ -313,8 +313,8 @@ export default function ProductFilter({ onFilterChange, className = '', pvRange:
             }}
             className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium transition-colors cursor-pointer ${
               !currentRoom
-                ? 'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400'
-                : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 hover:bg-orange-100 hover:text-orange-600 dark:hover:bg-orange-900/30 dark:hover:text-orange-400'
+                ? 'bg-sky-100 text-sky-600 dark:bg-sky-900/30 dark:text-sky-400'
+                : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 hover:bg-sky-100 hover:text-sky-600 dark:hover:bg-sky-900/30 dark:hover:text-sky-400'
             }`}
           >
             All Room
@@ -328,8 +328,8 @@ export default function ProductFilter({ onFilterChange, className = '', pvRange:
               }}
               className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium transition-colors cursor-pointer ${
                 currentRoom === room.slug
-                  ? 'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400'
-                  : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 hover:bg-orange-100 hover:text-orange-600 dark:hover:bg-orange-900/30 dark:hover:text-orange-400'
+                  ? 'bg-sky-100 text-sky-600 dark:bg-sky-900/30 dark:text-sky-400'
+                  : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 hover:bg-sky-100 hover:text-sky-600 dark:hover:bg-sky-900/30 dark:hover:text-sky-400'
               }`}
             >
               {room.label}
@@ -351,7 +351,7 @@ export default function ProductFilter({ onFilterChange, className = '', pvRange:
             placeholder="Search brands..."
             value={brandSearch}
             onChange={(e) => setBrandSearch(e.target.value)}
-            className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-xs sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
+            className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-xs sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-sky-500"
           />
         </div>
 
@@ -368,8 +368,8 @@ export default function ProductFilter({ onFilterChange, className = '', pvRange:
                 }}
                 className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium transition-colors cursor-pointer ${
                   !currentBrand
-                    ? 'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400'
-                    : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 hover:bg-orange-100 hover:text-orange-600 dark:hover:bg-orange-900/30 dark:hover:text-orange-400'
+                    ? 'bg-sky-100 text-sky-600 dark:bg-sky-900/30 dark:text-sky-400'
+                    : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 hover:bg-sky-100 hover:text-sky-600 dark:hover:bg-sky-900/30 dark:hover:text-sky-400'
                 }`}
               >
                 All Brands
@@ -383,8 +383,8 @@ export default function ProductFilter({ onFilterChange, className = '', pvRange:
                   }}
                   className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium transition-colors cursor-pointer ${
                     currentBrand === brand.name
-                      ? 'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400'
-                      : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 hover:bg-orange-100 hover:text-orange-600 dark:hover:bg-orange-900/30 dark:hover:text-orange-400'
+                      ? 'bg-sky-100 text-sky-600 dark:bg-sky-900/30 dark:text-sky-400'
+                      : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 hover:bg-sky-100 hover:text-sky-600 dark:hover:bg-sky-900/30 dark:hover:text-sky-400'
                   }`}
                 >
                   {brand.name}
@@ -393,7 +393,7 @@ export default function ProductFilter({ onFilterChange, className = '', pvRange:
               {filteredBrands.length > 8 && (
                 <button
                   onClick={() => setShowAllBrands(!showAllBrands)}
-                  className="px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium transition-colors cursor-pointer bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 hover:bg-orange-100 hover:text-orange-600 dark:hover:bg-orange-900/30 dark:hover:text-orange-400"
+                  className="px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium transition-colors cursor-pointer bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 hover:bg-sky-100 hover:text-sky-600 dark:hover:bg-sky-900/30 dark:hover:text-sky-400"
                 >
                   {showAllBrands ? 'See Less' : `See More (+${filteredBrands.length - 8})`}
                 </button>
@@ -419,7 +419,7 @@ export default function ProductFilter({ onFilterChange, className = '', pvRange:
               type="number"
               value={priceRange[0] || ''}
               onChange={(e) => handleRangeInputChange('min', Number(e.target.value))}
-              className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-sky-500"
               placeholder="0"
             />
           </div>
@@ -430,7 +430,7 @@ export default function ProductFilter({ onFilterChange, className = '', pvRange:
               type="number"
               value={priceRange[1] || ''}
               onChange={(e) => handleRangeInputChange('max', Number(e.target.value))}
-              className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-sky-500"
               placeholder="10000"
             />
           </div>
@@ -444,8 +444,8 @@ export default function ProductFilter({ onFilterChange, className = '', pvRange:
               onClick={() => handlePresetClick(preset)}
               className={`w-full text-left px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors cursor-pointer ${
                 priceRange[0] === preset.min && priceRange[1] === preset.max
-                  ? 'bg-orange-500 text-white'
-                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-orange-100 dark:hover:bg-orange-500/20 hover:text-orange-600 dark:hover:text-orange-400'
+                  ? 'bg-sky-500 text-white'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-sky-100 dark:hover:bg-sky-500/20 hover:text-sky-600 dark:hover:text-sky-400'
               }`}
             >
               {preset.label}
@@ -462,8 +462,8 @@ export default function ProductFilter({ onFilterChange, className = '', pvRange:
             onClick={() => handleSortChange('default')}
             className={`w-full text-left px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors cursor-pointer ${
               sortBy === 'default'
-                ? 'bg-orange-500 text-white'
-                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-orange-100 dark:hover:bg-orange-500/20 hover:text-orange-600 dark:hover:text-orange-400'
+                ? 'bg-sky-500 text-white'
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-sky-100 dark:hover:bg-sky-500/20 hover:text-sky-600 dark:hover:text-sky-400'
             }`}
           >
             Default
@@ -472,8 +472,8 @@ export default function ProductFilter({ onFilterChange, className = '', pvRange:
             onClick={() => handleSortChange('asc')}
             className={`w-full text-left px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors cursor-pointer ${
               sortBy === 'asc'
-                ? 'bg-orange-500 text-white'
-                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-orange-100 dark:hover:bg-orange-500/20 hover:text-orange-600 dark:hover:text-orange-400'
+                ? 'bg-sky-500 text-white'
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-sky-100 dark:hover:bg-sky-500/20 hover:text-sky-600 dark:hover:text-sky-400'
             }`}
           >
             A to Z
@@ -482,8 +482,8 @@ export default function ProductFilter({ onFilterChange, className = '', pvRange:
             onClick={() => handleSortChange('desc')}
             className={`w-full text-left px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors cursor-pointer ${
               sortBy === 'desc'
-                ? 'bg-orange-500 text-white'
-                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-orange-100 dark:hover:bg-orange-500/20 hover:text-orange-600 dark:hover:text-orange-400'
+                ? 'bg-sky-500 text-white'
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-sky-100 dark:hover:bg-sky-500/20 hover:text-sky-600 dark:hover:text-sky-400'
             }`}
           >
             Z to A
@@ -498,7 +498,7 @@ export default function ProductFilter({ onFilterChange, className = '', pvRange:
             type="checkbox"
             checked={discountOnly}
             onChange={handleDiscountToggle}
-            className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-orange-500 focus:ring-orange-500"
+            className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sky-500 focus:ring-sky-500"
           />
           <span className="text-xs sm:text-sm text-gray-700 dark:text-gray-300">Discounted Items Only</span>
         </label>
@@ -515,8 +515,8 @@ export default function ProductFilter({ onFilterChange, className = '', pvRange:
                 onClick={() => handleDiscountPercentageChange(preset.value)}
                 className={`w-full text-left px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors cursor-pointer ${
                   minDiscount === preset.value
-                    ? 'bg-orange-500 text-white'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-orange-100 dark:hover:bg-orange-500/20 hover:text-orange-600 dark:hover:text-orange-400'
+                    ? 'bg-sky-500 text-white'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-sky-100 dark:hover:bg-sky-500/20 hover:text-sky-600 dark:hover:text-sky-400'
                 }`}
               >
                 {preset.label}
@@ -533,7 +533,7 @@ export default function ProductFilter({ onFilterChange, className = '', pvRange:
             type="checkbox"
             checked={hasPvOnly}
             onChange={handleHasPvOnlyToggle}
-            className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-orange-500 focus:ring-orange-500"
+            className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sky-500 focus:ring-sky-500"
           />
           <span className="text-xs sm:text-sm text-gray-700 dark:text-gray-300">Has Performance Value</span>
           <div className="relative group flex items-center">
@@ -569,8 +569,8 @@ export default function ProductFilter({ onFilterChange, className = '', pvRange:
                 onClick={() => handlePvPresetClick(preset)}
                 className={`w-full text-left px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors cursor-pointer ${
                   pvRange[0] === preset.min && pvRange[1] === preset.max
-                    ? 'bg-orange-500 text-white'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-orange-100 dark:hover:bg-orange-500/20 hover:text-orange-600 dark:hover:text-orange-400'
+                    ? 'bg-sky-500 text-white'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-sky-100 dark:hover:bg-sky-500/20 hover:text-sky-600 dark:hover:text-sky-400'
                 }`}
               >
                 {preset.label}
@@ -587,7 +587,7 @@ export default function ProductFilter({ onFilterChange, className = '', pvRange:
             type="checkbox"
             checked={inStockOnly}
             onChange={handleInStockToggle}
-            className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-orange-500 focus:ring-orange-500"
+            className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sky-500 focus:ring-sky-500"
           />
           <span className="text-xs sm:text-sm text-gray-700 dark:text-gray-300">In Stock Only</span>
         </label>
@@ -614,7 +614,7 @@ export default function ProductFilter({ onFilterChange, className = '', pvRange:
             hasPvOnly: false
           })
         }}
-        className="w-full rounded-lg py-2 text-sm font-semibold transition-colors cursor-pointer bg-orange-500 text-white hover:bg-orange-600 dark:hover:bg-orange-600"
+        className="w-full rounded-lg py-2 text-sm font-semibold transition-colors cursor-pointer bg-sky-500 text-white hover:bg-sky-600 dark:hover:bg-sky-600"
       >
         Clear Filters
       </button>

@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
@@ -200,7 +200,7 @@ const CompleteTheLook = ({ currentCategory, currentCategoryId, currentCategoryLa
                   type="button"
                   onClick={() => toggleItem(item.id)}
                   className={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-all ${
-                    isSelected ? 'bg-orange-500 border-orange-500' : 'border-gray-300 dark:border-gray-600 hover:border-orange-300 dark:hover:border-orange-400'
+                    isSelected ? 'bg-sky-500 border-sky-500' : 'border-gray-300 dark:border-gray-600 hover:border-sky-300 dark:hover:border-sky-400'
                   }`}
                 >
                   {isSelected ? (
@@ -215,10 +215,10 @@ const CompleteTheLook = ({ currentCategory, currentCategoryId, currentCategoryLa
                 </Link>
 
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs text-orange-500 dark:text-orange-400 font-semibold uppercase tracking-wide mb-0.5">
+                  <p className="text-xs text-sky-500 dark:text-sky-400 font-semibold uppercase tracking-wide mb-0.5">
                     {currentCategoryLabel || 'Recommended'}
                   </p>
-                  <Link href={productPath} className="text-sm font-semibold text-slate-800 dark:text-gray-200 hover:text-orange-500 dark:hover:text-orange-400 transition-colors line-clamp-1">
+                  <Link href={productPath} className="text-sm font-semibold text-slate-800 dark:text-gray-200 hover:text-sky-500 dark:hover:text-sky-400 transition-colors line-clamp-1">
                     {item.name}
                   </Link>
                   {item.brand ? <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{item.brand}</p> : null}
@@ -241,7 +241,7 @@ const CompleteTheLook = ({ currentCategory, currentCategoryId, currentCategoryLa
               {selected.size} item{selected.size !== 1 ? 's' : ''} selected
             </p>
             <p className="text-lg font-bold text-slate-900 dark:text-gray-100">
-              Total: <span className="text-orange-500 dark:text-orange-400">{formatMoney(total)}</span>
+              Total: <span className="text-sky-500 dark:text-sky-400">{formatMoney(total)}</span>
             </p>
           </div>
           <PrimaryButton

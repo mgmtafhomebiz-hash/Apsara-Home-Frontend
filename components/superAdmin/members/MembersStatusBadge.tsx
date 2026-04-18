@@ -4,7 +4,7 @@ import { MemberStatus } from "@/types/members/types"
 
 const statusMap: Record<MemberStatus, { label: string; className: string; dot: string }> = {
   active:     { label: 'Active',     className: 'bg-emerald-100 text-emerald-700', dot: 'bg-emerald-500' },
-  pending:    { label: 'Pending',    className: 'bg-amber-100  text-amber-700',    dot: 'bg-amber-500'   },
+  pending:    { label: 'Pending',    className: 'bg-sky-100  text-sky-700',    dot: 'bg-sky-500'   },
   blocked:    { label: 'Blocked',    className: 'bg-red-100    text-red-700',      dot: 'bg-red-500'     },
   kyc_review: { label: 'KYC Review', className: 'bg-sky-100    text-sky-700',      dot: 'bg-sky-500'     },
 }

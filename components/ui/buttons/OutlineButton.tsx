@@ -11,7 +11,7 @@ interface OutlineButtonProps {
 }
 
 export default function OutlineButton({ href, onClick, children, className = '', type = 'button', disabled }: OutlineButtonProps) {
-  const base = `inline-flex items-center justify-center gap-2 border border-orange-400 dark:border-orange-500 bg-transparent hover:bg-orange-50 dark:hover:bg-orange-900 disabled:opacity-60 disabled:cursor-not-allowed text-orange-500 dark:text-orange-400 font-semibold rounded-full px-8 py-4 text-base cursor-pointer transition-colors ${className}`;
+  const base = `inline-flex items-center justify-center gap-2 border border-sky-400 dark:border-sky-500 bg-transparent hover:bg-sky-50 dark:hover:bg-sky-900 disabled:opacity-60 disabled:cursor-not-allowed text-sky-500 dark:text-sky-400 font-semibold rounded-full px-8 py-4 text-base cursor-pointer transition-colors ${className}`;
 
   if (href) {
     return (

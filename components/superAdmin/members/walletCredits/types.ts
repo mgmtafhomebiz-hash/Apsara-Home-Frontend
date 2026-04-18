@@ -21,13 +21,13 @@ export const TIER_COLORS: Record<string, string> = {
   'Lifestyle Elite':      'bg-purple-100 text-purple-700 border-purple-200',
   'Lifestyle Consultant': 'bg-blue-100   text-blue-700   border-blue-200',
   'Home Stylist':         'bg-teal-100   text-teal-700   border-teal-200',
-  'Home Builder':         'bg-amber-100  text-amber-700  border-amber-200',
+  'Home Builder':         'bg-sky-100  text-sky-700  border-sky-200',
   'Home Starter':         'bg-slate-100  text-slate-600  border-slate-200',
 }
 
 export const STATUS_CONFIG: Record<string, { dot: string; text: string; label: string }> = {
   active:  { dot: 'bg-emerald-400', text: 'text-emerald-600', label: 'Active'  },
-  pending: { dot: 'bg-amber-400',   text: 'text-amber-600',   label: 'Pending' },
+  pending: { dot: 'bg-sky-400',   text: 'text-sky-600',   label: 'Pending' },
   blocked: { dot: 'bg-red-400',     text: 'text-red-500',     label: 'Blocked' },
 }
 

@@ -28,7 +28,7 @@ const RelatedProducts = ({ products, category }: RelatedProductProps) => {
                 <h2 className="text-xl font-bold text-slate-900 dark:text-gray-100">You Might Also Like</h2>
                 <Link
                     href={`/category/${category}`}
-                    className="text-sm text-orange-500 dark:text-orange-400 hover:text-orange-600 dark:hover:text-orange-300 font-semibold transition-colors flex items-center gap-1"
+                    className="text-sm text-sky-500 dark:text-sky-400 hover:text-sky-600 dark:hover:text-sky-300 font-semibold transition-colors flex items-center gap-1"
                 >
                     View all <ChevronRight />
                 </Link>

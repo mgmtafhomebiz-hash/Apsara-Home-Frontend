@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -50,7 +50,7 @@ export default function AdjustWalletModal({ member, onClose, onSubmit }: AdjustW
             <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
               <div>
                 <h2 className="text-sm font-bold text-slate-800">Adjust Wallet</h2>
-                <p className="text-xs text-slate-400 mt-0.5">{member.name} · {member.email}</p>
+                <p className="text-xs text-slate-400 mt-0.5">{member.name} Â· {member.email}</p>
               </div>
               <button
                 onClick={onClose}
@@ -68,7 +68,7 @@ export default function AdjustWalletModal({ member, onClose, onSubmit }: AdjustW
                 <div className="bg-emerald-50 border border-emerald-100 rounded-xl px-3 py-2.5">
                   <p className="text-[10px] text-emerald-600 font-semibold uppercase tracking-wide">Cash Balance</p>
                   <p className="text-sm font-bold text-emerald-700 mt-0.5">
-                    ₱{member.cashBalance.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                    â‚±{member.cashBalance.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
                   </p>
                 </div>
                 <div className="bg-blue-50 border border-blue-100 rounded-xl px-3 py-2.5">
@@ -119,7 +119,7 @@ export default function AdjustWalletModal({ member, onClose, onSubmit }: AdjustW
                           : 'border-slate-200 text-slate-500 hover:border-slate-300'
                       }`}
                     >
-                      {a === 'credit' ? '+ Credit' : '− Debit'}
+                      {a === 'credit' ? '+ Credit' : '- Debit'}
                     </button>
                   ))}
                 </div>
@@ -132,7 +132,7 @@ export default function AdjustWalletModal({ member, onClose, onSubmit }: AdjustW
                 </label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400 font-medium">
-                    {walletType === 'cash' ? '₱' : 'PV'}
+                    {walletType === 'cash' ? 'â‚±' : 'PV'}
                   </span>
                   <input
                     type="number"
@@ -152,7 +152,7 @@ export default function AdjustWalletModal({ member, onClose, onSubmit }: AdjustW
                 <label className="text-xs font-semibold text-slate-600 mb-1.5 block">Note / Reason</label>
                 <textarea
                   rows={2}
-                  placeholder="e.g. Manual adjustment for bonus payout…"
+                  placeholder="e.g. Manual adjustment for bonus payoutâ€¦"
                   value={note}
                   onChange={e => setNote(e.target.value)}
                   className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-400 bg-slate-50 text-slate-700 placeholder-slate-400 transition resize-none"
@@ -186,3 +186,5 @@ export default function AdjustWalletModal({ member, onClose, onSubmit }: AdjustW
     </AnimatePresence>
   )
 }
+
+

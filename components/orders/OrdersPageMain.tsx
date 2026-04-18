@@ -96,7 +96,7 @@ const OrdersPageMain = ({ initialCategories }: OrdersPageMainProps) => {
               type="button"
               onClick={() => router.push('/shop')}
               suppressHydrationWarning
-              className="inline-flex items-center gap-2 rounded-xl bg-orange-500 dark:bg-orange-600 hover:bg-orange-600 dark:hover:bg-orange-700 px-4 py-2.5 text-sm font-semibold text-white transition-colors whitespace-nowrap"
+              className="inline-flex items-center gap-2 rounded-xl bg-sky-500 dark:bg-sky-600 hover:bg-sky-600 dark:hover:bg-sky-700 px-4 py-2.5 text-sm font-semibold text-white transition-colors whitespace-nowrap"
             >
               <Icon.ShoppingBag className="h-4 w-4" />
               Shop More
@@ -111,7 +111,7 @@ const OrdersPageMain = ({ initialCategories }: OrdersPageMainProps) => {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by order number or item name..."
-            className="w-full rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-gray-900 pl-10 pr-4 py-2.5 text-sm text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-900/50 focus:border-orange-300 placeholder:text-gray-400 dark:placeholder:text-gray-500"
+            className="w-full rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-gray-900 pl-10 pr-4 py-2.5 text-sm text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-sky-200 dark:focus:ring-sky-900/50 focus:border-sky-300 placeholder:text-gray-400 dark:placeholder:text-gray-500"
           />
           {search && (
             <button
@@ -135,7 +135,7 @@ const OrdersPageMain = ({ initialCategories }: OrdersPageMainProps) => {
                 type="button"
                 onClick={() => setActiveTab(tab.key)}
                 className={`flex items-center gap-1.5 whitespace-nowrap rounded-xl px-3.5 py-2 text-sm font-medium transition-all ${active
-                    ? 'bg-orange-500 dark:bg-orange-600 text-white'
+                    ? 'bg-sky-500 dark:bg-sky-600 text-white'
                     : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-800 dark:hover:text-gray-200'
                   }`}
               >
@@ -152,7 +152,7 @@ const OrdersPageMain = ({ initialCategories }: OrdersPageMainProps) => {
           <motion.div
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-4 rounded-2xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/30 px-4 py-3 text-sm text-amber-800 dark:text-amber-400"
+            className="mb-4 rounded-2xl border border-sky-200 dark:border-sky-800 bg-sky-50 dark:bg-sky-900/30 px-4 py-3 text-sm text-sky-800 dark:text-sky-300"
           >
             Sign in required to view your checkout history.
           </motion.div>
@@ -201,7 +201,7 @@ const OrdersPageMain = ({ initialCategories }: OrdersPageMainProps) => {
                 exit={{ opacity: 0 }}
                 className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-gray-200 dark:border-slate-700 bg-white dark:bg-gray-800 py-16 text-center"
               >
-                <div className="h-16 w-16 rounded-2xl bg-orange-50 dark:bg-orange-900/30 text-orange-300 dark:text-orange-500 flex items-center justify-center mb-4">
+                <div className="h-16 w-16 rounded-2xl bg-sky-50 dark:bg-sky-900/30 text-sky-300 dark:text-sky-500 flex items-center justify-center mb-4">
                   <Icon.Package className="h-8 w-8" />
                 </div>
                 <p className="text-base font-bold text-gray-800 dark:text-white">No orders</p>
@@ -214,7 +214,7 @@ const OrdersPageMain = ({ initialCategories }: OrdersPageMainProps) => {
                     setActiveTab('all');
                     router.push(authStatus === 'authenticated' ? '/' : '/login');
                   }}
-                  className="mt-5 inline-flex items-center gap-2 rounded-xl bg-orange-500 dark:bg-orange-600 hover:bg-orange-600 dark:hover:bg-orange-700 px-4 py-2.5 text-sm font-semibold text-white transition-colors"
+                  className="mt-5 inline-flex items-center gap-2 rounded-xl bg-sky-500 dark:bg-sky-600 hover:bg-sky-600 dark:hover:bg-sky-700 px-4 py-2.5 text-sm font-semibold text-white transition-colors"
                 >
                   <Icon.ShoppingBag className="h-4 w-4" />
                   {authStatus === 'authenticated' ? 'Start Shopping' : 'Go to Login'}

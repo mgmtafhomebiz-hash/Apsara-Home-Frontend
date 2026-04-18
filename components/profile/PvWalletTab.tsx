@@ -34,7 +34,7 @@ function statusClasses(status: PvHistoryItem['status']) {
     case 'approved':
       return 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 ring-1 ring-emerald-200 dark:ring-emerald-800'
     case 'pending':
-      return 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 ring-1 ring-amber-200 dark:ring-amber-800'
+      return 'bg-sky-50 dark:bg-sky-900/30 text-sky-700 dark:text-sky-400 ring-1 ring-sky-200 dark:ring-sky-800'
     case 'cancelled':
       return 'bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 ring-1 ring-rose-200 dark:ring-rose-800'
     default:
@@ -74,7 +74,7 @@ const PvWalletTab = ({
         <PvStatCard 
             label="Yearly Purchases"
             value={yearlyPurchasePv}
-            accent="amber"
+            accent="sky"
             helper="Your credited PV purchases accumulated this year"
         />
         <PvStatCard 
@@ -96,7 +96,7 @@ const PvWalletTab = ({
           label="Group Purchase Bonus"
           value={groupPv}
           accent="blue"
-          helper="Bonus from your group’s purchases"
+          helper="Bonus from your group's purchases"
         />
         <PvStatCard
           label="Monthly Purchase Points"
@@ -107,7 +107,7 @@ const PvWalletTab = ({
         <PvStatCard
           label="Total Bonus"
           value={currentCv}
-          accent="amber"
+          accent="sky"
           helper="Total earnings from all bonus sources"
         />
       </div>
@@ -116,7 +116,7 @@ const PvWalletTab = ({
         <PvStatCard
           label="Pending Referral Earnings"
           value={pendingReferralEarnings}
-          accent="amber"
+          accent="sky"
           helper="Paid referred purchases waiting for delivery release"
         />
         <PvStatCard

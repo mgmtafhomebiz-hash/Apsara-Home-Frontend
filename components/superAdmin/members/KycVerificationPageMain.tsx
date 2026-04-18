@@ -11,7 +11,7 @@ import {
 } from '@/store/api/membersApi'
 import { showErrorToast, showSuccessToast } from '@/libs/toast'
 
-/* ─── helpers ─────────────────────────────────────────────── */
+/* --- helpers ----------------------------------------------- */
 
 const formatDate = (value?: string | null) => {
   if (!value) return 'N/A'
@@ -31,9 +31,9 @@ const getInitials = (name?: string | null) => {
 const STATUS_CONFIG: Record<MemberKycStatus, { label: string; dot: string; badge: string; tab: string }> = {
   pending_review: {
     label: 'Pending Review',
-    dot:   'bg-amber-400',
-    badge: 'bg-amber-50 text-amber-700 border-amber-200',
-    tab:   'bg-amber-50 text-amber-700 border-amber-200',
+    dot:   'bg-sky-400',
+    badge: 'bg-sky-50 text-sky-700 border-sky-200',
+    tab:   'bg-sky-50 text-sky-700 border-sky-200',
   },
   approved: {
     label: 'Approved',
@@ -66,7 +66,7 @@ const FILTER_TABS: { key: FilterKey; label: string }[] = [
   { key: 'all',            label: 'All'      },
 ]
 
-/* ─── stat card ───────────────────────────────────────────── */
+/* --- stat card --------------------------------------------- */
 
 function StatCard({
   label, value, icon, bg, text, border,
@@ -87,7 +87,7 @@ function StatCard({
   )
 }
 
-/* ─── document card ───────────────────────────────────────── */
+/* --- document card ----------------------------------------- */
 
 function DocCard({ label, url }: { label: string; url?: string | null }) {
   const hasUrl = !!url
@@ -116,7 +116,7 @@ function DocCard({ label, url }: { label: string; url?: string | null }) {
   )
 }
 
-/* ─── detail modal ────────────────────────────────────────── */
+/* --- detail modal ------------------------------------------ */
 
 function DetailModal({ item, onClose, onAction }: {
   item: MemberKycItem
@@ -151,7 +151,7 @@ function DetailModal({ item, onClose, onAction }: {
             </div>
             <div>
               <h2 className="text-sm font-bold text-slate-800">{name}</h2>
-              <p className="text-xs text-slate-400">{item.reference_no} · {email}</p>
+              <p className="text-xs text-slate-400">{item.reference_no}  ??  {email}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -243,7 +243,7 @@ function DetailModal({ item, onClose, onAction }: {
   )
 }
 
-/* ─── action modal ────────────────────────────────────────── */
+/* --- action modal ------------------------------------------ */
 
 function ActionModal({ action, busy, notes, onNotes, onConfirm, onClose }: {
   action: ActionType; busy: boolean; notes: string
@@ -300,7 +300,7 @@ function ActionModal({ action, busy, notes, onNotes, onConfirm, onClose }: {
             value={notes}
             onChange={e => onNotes(e.target.value)}
             rows={4}
-            placeholder={isApprove ? 'Optional note for audit trail…' : 'Explain rejection reason (min 5 characters)…'}
+            placeholder={isApprove ? 'Optional note for audit trail...' : 'Explain rejection reason (min 5 characters)...'}
             className="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-400 bg-slate-50 text-slate-700 placeholder-slate-400 transition resize-none"
           />
         </div>
@@ -319,7 +319,7 @@ function ActionModal({ action, busy, notes, onNotes, onConfirm, onClose }: {
               isApprove ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-red-500 hover:bg-red-600'
             }`}
           >
-            {busy ? 'Processing…' : isApprove ? 'Confirm Approval' : 'Confirm Rejection'}
+            {busy ? 'Processing...' : isApprove ? 'Confirm Approval' : 'Confirm Rejection'}
           </button>
         </div>
       </motion.div>
@@ -327,7 +327,7 @@ function ActionModal({ action, busy, notes, onNotes, onConfirm, onClose }: {
   )
 }
 
-/* ─── table row ───────────────────────────────────────────── */
+/* --- table row --------------------------------------------- */
 
 function KycRow({ row, onView, onAction, isBusy }: {
   row: MemberKycItem
@@ -415,7 +415,7 @@ function KycRow({ row, onView, onAction, isBusy }: {
   )
 }
 
-/* ─── main page ───────────────────────────────────────────── */
+/* --- main page --------------------------------------------- */
 
 export default function KycVerificationPageMain() {
   const [search,  setSearch]  = useState('')
@@ -472,7 +472,7 @@ export default function KycVerificationPageMain() {
 
   return (
     <div className="space-y-6">
-      {/* ── Header ── */}
+      {/* -- Header -- */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
@@ -490,7 +490,7 @@ export default function KycVerificationPageMain() {
         </button>
       </motion.div>
 
-      {/* ── Stat Cards ── */}
+      {/* -- Stat Cards -- */}
       {counts && (
         <motion.div
           initial={{ opacity: 0, y: 12 }}
@@ -500,7 +500,7 @@ export default function KycVerificationPageMain() {
         >
           <StatCard
             label="Pending Review" value={counts.pending_review}
-            bg="bg-amber-50" text="text-amber-600" border="border-amber-100"
+            bg="bg-sky-50" text="text-sky-600" border="border-sky-100"
             icon={
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -537,7 +537,7 @@ export default function KycVerificationPageMain() {
         </motion.div>
       )}
 
-      {/* ── Toolbar ── */}
+      {/* -- Toolbar -- */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
@@ -552,7 +552,7 @@ export default function KycVerificationPageMain() {
           <input
             value={search}
             onChange={e => { setSearch(e.target.value); setPage(1) }}
-            placeholder="Search reference, full name, ID number…"
+            placeholder="Search reference, full name, ID number..."
             className="w-full pl-9 pr-4 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-400 bg-slate-50 text-slate-700 placeholder-slate-400 transition"
           />
         </div>
@@ -585,7 +585,7 @@ export default function KycVerificationPageMain() {
         </div>
       </motion.div>
 
-      {/* ── Error ── */}
+      {/* -- Error -- */}
       {isError && (
         <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 flex items-center gap-2">
           <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -595,7 +595,7 @@ export default function KycVerificationPageMain() {
         </div>
       )}
 
-      {/* ── Loading skeleton ── */}
+      {/* -- Loading skeleton -- */}
       {isLoading ? (
         <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden animate-pulse">
           <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800 flex gap-3">
@@ -678,7 +678,7 @@ export default function KycVerificationPageMain() {
               <span>
                 Showing{' '}
                 <span className="font-semibold text-slate-600">
-                  {data?.meta?.from ?? 0}–{data?.meta?.to ?? 0}
+                  {data?.meta?.from ?? 0}-{data?.meta?.to ?? 0}
                 </span>{' '}
                 of <span className="font-semibold text-slate-600">{data?.meta?.total ?? 0}</span>
               </span>
@@ -706,7 +706,7 @@ export default function KycVerificationPageMain() {
         </motion.div>
       )}
 
-      {/* ── Detail Modal ── */}
+      {/* -- Detail Modal -- */}
       <AnimatePresence>
         {selected && (
           <DetailModal
@@ -717,7 +717,7 @@ export default function KycVerificationPageMain() {
         )}
       </AnimatePresence>
 
-      {/* ── Action Modal ── */}
+      {/* -- Action Modal -- */}
       <AnimatePresence>
         {actionModal.open && (
           <ActionModal

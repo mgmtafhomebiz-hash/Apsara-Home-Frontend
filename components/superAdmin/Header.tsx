@@ -25,7 +25,7 @@ interface HeaderProps {
 }
 
 const getInitials = (name?: string | null) => {
-    const value = (name ?? '').trim();
+    const value = String(name ?? '').trim();
     if (!value) return 'AD';
     const parts = value.split(/\s+/).filter(Boolean);
     if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
@@ -239,7 +239,7 @@ const Header = ({ onMenuClick }: HeaderProps) => {
                             draft.items.splice(existingIndex, 1);
                         }
                         draft.items.unshift(nextItem);
-                        draft.unread_count = (draft.unread_count ?? 0) + 1;
+                        draft.unread_count = Number(draft.unread_count ?? 0) + 1;
                     })
                 );
             }

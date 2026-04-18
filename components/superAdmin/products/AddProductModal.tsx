@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import Image from 'next/image'
@@ -18,7 +18,7 @@ import { mergeVariantOptionLabelsMeta } from '@/libs/productVariantOptions'
 import { ROOM_OPTIONS, inferRoomTypeFromCategory } from '@/libs/roomConfig'
 import { Button, Card, ListBox, ListBoxItem, Select } from '@heroui/react'
 
-/* ─── types ──────────────────────────────────────────────── */
+/* â”€â”€â”€ types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 interface AddProductModalProps {
   isOpen: boolean
@@ -95,7 +95,7 @@ interface AddProductDraft {
   roomTouched: boolean
 }
 
-/* ─── constants ──────────────────────────────────────────── */
+/* â”€â”€â”€ constants â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 const defaultForm: FormState = {
   pd_name: '',
@@ -190,7 +190,7 @@ const WARRANTY_OPTIONS = [
 
 const ADD_PRODUCT_DRAFT_KEY = 'afhome:add-product-draft'
 
-/* ─── helpers ────────────────────────────────────────────── */
+/* â”€â”€â”€ helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 const generateSkuFromName = (name: string) => {
   const letters = name.toUpperCase().replace(/[^A-Z]/g, '')
@@ -527,7 +527,7 @@ function CalcRow({
 }: {
   label: string
   a: string
-  op: '×' | '−' | '+'
+  op: 'x' | '-' | '+'
   b: string
   result: string
   resultAccent?: 'teal' | 'emerald' | 'rose' | 'blue'
@@ -580,35 +580,35 @@ function PricingSummaryPanel({
 
   return (
     <div className="rounded-2xl border border-blue-100 overflow-hidden shadow-sm">
-      {/* ── Header ── */}
+      {/* â”€â”€ Header â”€â”€ */}
       <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-500">
         <div className="flex items-center gap-2">
           <svg className="w-3.5 h-3.5 text-white/80 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 11h.01M12 11h.01M15 11h.01M4 19h16a2 2 0 002-2V7a2 2 0 00-2-2H4a2 2 0 00-2 2v10a2 2 0 002 2z"/>
           </svg>
           <span className="text-[10px] md:text-xs font-bold uppercase tracking-widest text-white">{title}</span>
-          <span className="text-[10px] md:text-xs text-blue-200">— live computation</span>
+          <span className="text-[10px] md:text-xs text-blue-200">â€” live computation</span>
         </div>
         <div className="text-right shrink-0">
           <p className="text-[9px] md:text-[11px] font-semibold uppercase tracking-wide text-blue-200">Member Price</p>
           <p className="text-sm md:text-base font-bold text-white leading-none mt-0.5">
-            {summary.effectiveMemberPrice > 0 ? `₱ ${mp}` : <span className="text-blue-300 text-xs italic">—</span>}
+            {summary.effectiveMemberPrice > 0 ? `â‚± ${mp}` : <span className="text-blue-300 text-xs italic">â€”</span>}
           </p>
         </div>
       </div>
 
       <div className="bg-gradient-to-br from-slate-50 to-blue-50/60 divide-y divide-slate-100 dark:divide-slate-800/70">
 
-        {/* ── Section 1: PV Computation (hero) ── */}
+        {/* â”€â”€ Section 1: PV Computation (hero) â”€â”€ */}
         <div className="px-4 py-3">
           <p className="text-[9px] md:text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-2">PV Computation</p>
           <div className="rounded-xl bg-white border border-teal-100 px-3 py-3">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="text-[10px] md:text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Transfer Price × Reversed PV Multiplier = PV Product</p>
+                <p className="text-[10px] md:text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Transfer Price x Reversed PV Multiplier = PV Product</p>
                 <div className="flex items-center gap-2 font-mono text-sm md:text-base flex-wrap">
                   <span className="font-semibold text-slate-700">{transfer}</span>
-                  <span className="text-slate-300 text-base md:text-lg">×</span>
+                  <span className="text-slate-300 text-base md:text-lg">x</span>
                   <span className="font-semibold text-slate-700">{mult}</span>
                   <span className="text-slate-300 text-base md:text-lg">=</span>
                   <span className="font-bold text-teal-600 text-base md:text-lg">{formulaPvStr} PV</span>
@@ -624,29 +624,29 @@ function PricingSummaryPanel({
           </div>
         </div>
 
-        {/* ── Section 2: Price breakdown ── */}
+        {/* â”€â”€ Section 2: Price breakdown â”€â”€ */}
         <div className="px-4 py-3">
           <p className="text-[9px] md:text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-2">Low-End Price Breakdown</p>
           <div className="rounded-xl bg-white border border-slate-100 overflow-hidden divide-y divide-slate-100 dark:divide-slate-800/70 dark:divide-slate-800/70">
             <CalcRow
               label="Retail Profit (SRP - Member Price)"
-              a={`SRP ₱${fmt(summary.retailProfit + summary.effectiveMemberPrice)}`}
-              op="−"
-              b={`MP ₱${mp}`}
-              result={`₱ ${fmt(summary.retailProfit)}`}
+              a={`SRP â‚±${fmt(summary.retailProfit + summary.effectiveMemberPrice)}`}
+              op="-"
+              b={`MP â‚±${mp}`}
+              result={`â‚± ${fmt(summary.retailProfit)}`}
               resultAccent={summary.retailProfit >= 0 ? 'emerald' : 'rose'}
             />
             <CalcRow
               label="VAT (12% of Member Price)"
-              a={`₱${mp}`}
-              op="×"
+              a={`â‚±${mp}`}
+              op="x"
               b="12%"
-              result={`₱ ${fmt(summary.vatOnMemberPrice)}`}
+              result={`â‚± ${fmt(summary.vatOnMemberPrice)}`}
             />
           </div>
         </div>
 
-        {/* ── Section 3: Bonus distribution ── */}
+        {/* â”€â”€ Section 3: Bonus distribution â”€â”€ */}
         <div className="px-4 py-3">
           <div className="flex items-center justify-between mb-2">
             <p className="text-[9px] md:text-[11px] font-bold uppercase tracking-widest text-slate-400">Reference Bonus Distribution</p>
@@ -661,11 +661,11 @@ function PricingSummaryPanel({
                     <span className="text-[11px] md:text-sm font-semibold text-slate-600 truncate">{label}</span>
                   </div>
                   <p className="font-mono text-[11px] md:text-xs text-slate-400 mt-0.5">
-                    {pvStr} PV <span className="text-slate-300">×</span> {rate} <span className="text-slate-300">=</span> <span className="font-semibold text-slate-600">₱ {fmt(value)}</span>
+                    {pvStr} PV <span className="text-slate-300">x</span> {rate} <span className="text-slate-300">=</span> <span className="font-semibold text-slate-600">â‚± {fmt(value)}</span>
                   </p>
                   <p className="text-[10px] md:text-[11px] text-slate-400 mt-1">{note}</p>
                 </div>
-                <span className="shrink-0 text-sm md:text-base font-bold text-slate-800 tabular-nums">₱ {fmt(value)}</span>
+                <span className="shrink-0 text-sm md:text-base font-bold text-slate-800 tabular-nums">â‚± {fmt(value)}</span>
               </div>
             ))}
             <div className="flex items-center justify-between px-3 py-2.5 bg-blue-600">
@@ -673,10 +673,10 @@ function PricingSummaryPanel({
                 <span className="shrink-0 rounded-full bg-white/20 px-1.5 py-0.5 text-[9px] md:text-[11px] font-bold text-white">15%</span>
                 <div>
                   <p className="text-[11px] md:text-sm font-semibold text-white">Total Reference Allocation</p>
-                  <p className="font-mono text-[10px] md:text-xs text-blue-200">{pvStr} PV × 15%</p>
+                  <p className="font-mono text-[10px] md:text-xs text-blue-200">{pvStr} PV x 15%</p>
                 </div>
               </div>
-              <span className="text-base md:text-lg font-bold text-white tabular-nums">₱ {fmt(summary.totalAllocation)}</span>
+              <span className="text-base md:text-lg font-bold text-white tabular-nums">â‚± {fmt(summary.totalAllocation)}</span>
             </div>
           </div>
         </div>
@@ -711,7 +711,7 @@ const hasAddDraftContent = (draft: AddProductDraft) => {
   return hasFormContent || draft.variants.length > 0 || (draft.globalColors?.length ?? 0) > 0 || (draft.globalPrimaryValues?.length ?? 0) > 0 || (draft.globalSizeValues?.length ?? 0) > 0 || draft.uploadedUrls.length > 0 || draft.roomTouched
 }
 
-/* ─── small components ───────────────────────────────────── */
+/* â”€â”€â”€ small components â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
@@ -878,7 +878,7 @@ const scrollToFirstErrorField = (container: HTMLElement | null) => {
   })
 }
 
-/* ─── main component ─────────────────────────────────────── */
+/* â”€â”€â”€ main component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 export default function AddProductModal({ isOpen, onClose, onSaved }: AddProductModalProps) {
   const [entryMode, setEntryMode] = useState<'manual' | 'csv'>('manual')
@@ -1120,7 +1120,7 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
   }, [globalColors, globalPrimaryValues, globalSizeValues, hasVariants])
   const visibleImagePreviews = imageFiles.length > 0 ? imagePreviews : uploadedUrls
 
-  /* ── image handlers ── */
+  /* â”€â”€ image handlers â”€â”€ */
   const applySelectedImages = (files: File[]) => {
     if (!files.length) return
     setImageError('')
@@ -1204,7 +1204,7 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
     setActiveImageAdjustIndex(null)
   }
 
-  /* ── variant handlers ── */
+  /* â”€â”€ variant handlers â”€â”€ */
   const addVariant    = () => setVariants(prev => [...prev, { ...emptyVariant(), pv_colors: globalColors.map((color) => ({ ...color })) }])
   const removeVariant = (index: number) => {
     setVariants(prev => prev.filter((_, i) => i !== index))
@@ -1387,7 +1387,7 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
     void uploadVariantImages(index, Array.from(e.dataTransfer.files ?? []))
   }
 
-  /* ── validation ── */
+  /* â”€â”€ validation â”€â”€ */
   const validate = (): Errors => {
     const e: Errors = {}
     if (!form.pd_name.trim())                                              e.pd_name      = 'Product name is required'
@@ -1468,7 +1468,7 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
       }))
     })
 
-  /* ── submit ── */
+  /* â”€â”€ submit â”€â”€ */
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setServerError('')
@@ -1575,7 +1575,7 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
 
   const isBusy = isLoading || isUploading
 
-  /* ─── render ─────────────────────────────────────────────── */
+  /* â”€â”€â”€ render â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   return (
     <AnimatePresence>
       {isOpen && (
@@ -1595,7 +1595,7 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
               onClick={e => e.stopPropagation()}
               className="flex max-h-[94vh] w-full max-w-6xl flex-col overflow-hidden rounded-[32px] border border-white/70 bg-white shadow-[0_32px_100px_-36px_rgba(15,23,42,0.55)]"
             >
-              {/* ── Header ── */}
+              {/* â”€â”€ Header â”€â”€ */}
               <div className="shrink-0 border-b border-slate-200/80 bg-gradient-to-r from-teal-50 via-white to-cyan-50 px-4 py-4 sm:px-6 sm:py-5">
                 <div className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
@@ -1645,7 +1645,7 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
                 </div>
               </div>
 
-              {/* ── Scrollable form body ── */}
+              {/* â”€â”€ Scrollable form body â”€â”€ */}
               <form onSubmit={entryMode === 'manual' ? handleSubmit : (event) => event.preventDefault()} className="flex flex-col flex-1 min-h-0">
                 {entryMode === 'csv' ? (
                   <BulkProductImportPanel
@@ -1676,7 +1676,7 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
                     </div>
                   )}
 
-                  {/* ── Section: Product Image ── */}
+                  {/* â”€â”€ Section: Product Image â”€â”€ */}
                   <SectionLabel>Product Image</SectionLabel>
                   <input
                     ref={fileInputRef}
@@ -1703,7 +1703,7 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
                       </div>
                       <div className="text-center">
                         <p className="text-sm font-medium text-slate-600 group-hover:text-teal-600 transition-colors">Click or drag to upload image</p>
-                        <p className="text-xs text-slate-400 mt-0.5">JPEG, PNG, WEBP, GIF · max 5MB each (up to 10)</p>
+                        <p className="text-xs text-slate-400 mt-0.5">JPEG, PNG, WEBP, GIF Â· max 5MB each (up to 10)</p>
                       </div>
                     </label>
                   ) : (
@@ -1763,7 +1763,7 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
                         )}
                       </div>
                       <div className="flex items-center gap-2 mt-2">
-                        <p className="text-xs text-slate-400 flex-1">{imagePreviews.length} image{imagePreviews.length !== 1 ? 's' : ''} selected · drag to reorder · first image is the main</p>
+                        <p className="text-xs text-slate-400 flex-1">{imagePreviews.length} image{imagePreviews.length !== 1 ? 's' : ''} selected Â· drag to reorder Â· first image is the main</p>
                         <button
                           type="button"
                           onClick={handleClearAllImages}
@@ -1786,7 +1786,7 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
                     </p>
                   )}
 
-                  {/* ── Section: Product Information ── */}
+                  {/* â”€â”€ Section: Product Information â”€â”€ */}
                   <SectionLabel>Product Information</SectionLabel>
                   <Card variant="default" className={sectionCardCls}>
                     <Card.Content className={`${sectionCardBodyCls} space-y-5`}>
@@ -1942,7 +1942,7 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
                     </div>
                   </Field>
 
-                  {/* ── Section: Product Details ── */}
+                  {/* â”€â”€ Section: Product Details â”€â”€ */}
                   <SectionLabel>Product Details</SectionLabel>
                   <div className="grid grid-cols-2 gap-3">
                     <Field label="Material">
@@ -1971,7 +1971,7 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
                       }`}
                     >
                       <span className={`text-sm font-semibold ${form.pd_assembly_required ? 'text-teal-700' : 'text-slate-500'}`}>
-                        {form.pd_assembly_required ? 'Yes — Assembly Required' : 'No Assembly Required'}
+                        {form.pd_assembly_required ? 'Yes â€” Assembly Required' : 'No Assembly Required'}
                       </span>
                       <div className={`relative h-5 w-9 rounded-full transition-colors ${form.pd_assembly_required ? 'bg-teal-500' : 'bg-slate-200'}`}>
                         <div className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${form.pd_assembly_required ? 'left-4' : 'left-0.5'}`}/>
@@ -1979,7 +1979,7 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
                     </button>
                   </Field>
 
-                  {/* ── Section: Pricing ── */}
+                  {/* â”€â”€ Section: Pricing â”€â”€ */}
                   <SectionLabel>Pricing</SectionLabel>
                   <div className="grid grid-cols-2 gap-3 lg:grid-cols-6">
                     <Field label="PV Pricing Tier">
@@ -1993,16 +1993,16 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
                         <p className="text-[11px] text-slate-500">Low-End is active for the current formula. High-End will follow once its formula is finalized.</p>
                       </div>
                     </Field>
-                    <Field label="SRP Price (₱)" required error={errors.pd_price_srp}>
+                    <Field label="SRP Price (â‚±)" required error={errors.pd_price_srp}>
                       <input type="number" value={form.pd_price_srp} onChange={e => set('pd_price_srp', e.target.value)} placeholder="0.00" className={inputCls(!!errors.pd_price_srp)}/>
                     </Field>
-                    <Field label="Member Price (₱)" error={errors.pd_price_member}>
+                    <Field label="Member Price (â‚±)" error={errors.pd_price_member}>
                       <div className="space-y-1">
                         <input type="number" value={form.pd_price_member} onChange={e => set('pd_price_member', e.target.value)} placeholder="0.00" className={inputCls(!!errors.pd_price_member)}/>
                         <p className="text-[11px] text-slate-500">Shown to member accounts. If blank, SRP will be used.</p>
                       </div>
                     </Field>
-                    <Field label="Dealer Price (₱)" error={errors.pd_price_dp}>
+                    <Field label="Dealer Price (â‚±)" error={errors.pd_price_dp}>
                       <div className="space-y-1">
                         <input type="number" value={form.pd_price_dp} onChange={e => set('pd_price_dp', e.target.value)} placeholder="0.00" className={inputCls(!!errors.pd_price_dp)}/>
                         <p className="text-[11px] text-slate-500">Separate dealer pricing. Optional.</p>
@@ -2017,19 +2017,19 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
                           disabled
                           className={`${inputCls()} bg-slate-50 text-slate-600 cursor-not-allowed`}
                         />
-                        <p className="text-[11px] text-slate-500">Auto-computed from Dealer Price × Reversed PV Multiplier.</p>
+                        <p className="text-[11px] text-slate-500">Auto-computed from Dealer Price x Reversed PV Multiplier.</p>
                       </div>
                     </Field>
                     <Field label="Reversed PV Multiplier" error={errors.pd_prodpv}>
                       <div className="space-y-1">
                         <input type="number" value={form.pd_reversed_pv_multiplier} onChange={e => set('pd_reversed_pv_multiplier', e.target.value)} placeholder="e.g. 0.2" className={inputCls(!!errors.pd_prodpv)}/>
-                        <p className="text-[11px] text-slate-500">Formula: PV = Transfer Price × Multiplier.</p>
+                        <p className="text-[11px] text-slate-500">Formula: PV = Transfer Price x Multiplier.</p>
                       </div>
                     </Field>
                   </div>
                   <PricingSummaryPanel summary={mainPricingSummary} memberFallbackToSrp={!form.pd_price_member.trim()} />
 
-                  {/* ── Section: Stock & Shipping ── */}
+                  {/* â”€â”€ Section: Stock & Shipping â”€â”€ */}
                   <SectionLabel>Stock & Shipping</SectionLabel>
                   <div className="grid grid-cols-2 gap-3">
                     <Field label="Quantity" error={errors.pd_qty}>
@@ -2056,7 +2056,7 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
                     </Field>
                   </div>
 
-                  {/* ── Section: Settings ── */}
+                  {/* â”€â”€ Section: Settings â”€â”€ */}
                   <SectionLabel>Settings</SectionLabel>
                   <div className="grid grid-cols-2 gap-3">
                     {/* Status */}
@@ -2120,7 +2120,7 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
                     </Field>
                   </div>
 
-                  {/* ── Section: Product Badges ── */}
+                  {/* â”€â”€ Section: Product Badges â”€â”€ */}
                   <SectionLabel>Product Badges</SectionLabel>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                     {FLAG_CARDS.map(flag => {
@@ -2154,7 +2154,7 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
                     })}
                   </div>
 
-                  {/* ── Section: Variants ── */}
+                  {/* â”€â”€ Section: Variants â”€â”€ */}
                   {hasVariants && (
                     <>
                       <SectionLabel>Variants</SectionLabel>
@@ -2357,11 +2357,11 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
                                     <p className="text-xs font-bold text-slate-700">
                                       {variant.pv_name.trim() || `Variant #${index + 1}`}
                                       {variantStyles.length > 1 && <span className="text-slate-400 font-normal ml-1">(+{variantStyles.length - 1} more styles)</span>}
-                                      {variant.pv_style && <span className="text-slate-400 font-normal ml-1">· {variant.pv_style}</span>}
-                                      {variant.pv_size && <span className="text-slate-400 font-normal ml-1">· {variant.pv_size}</span>}
+                                      {variant.pv_style && <span className="text-slate-400 font-normal ml-1">Â· {variant.pv_style}</span>}
+                                      {variant.pv_size && <span className="text-slate-400 font-normal ml-1">Â· {variant.pv_size}</span>}
                                       {(variant.pv_width || variant.pv_dimension || variant.pv_height) && (
                                         <span className="text-slate-400 font-normal ml-1">
-                                          · {variant.pv_width || '-'}W x {variant.pv_dimension || '-'}D x {variant.pv_height || '-'}H
+                                          Â· {variant.pv_width || '-'}W x {variant.pv_dimension || '-'}D x {variant.pv_height || '-'}H
                                         </span>
                                       )}
                                       {variant.pv_colors.length > 0 && (
@@ -2390,7 +2390,7 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
 
                                 <div className="divide-y divide-slate-100 dark:divide-slate-800/70">
 
-                                  {/* ── Identity ── */}
+                                  {/* â”€â”€ Identity â”€â”€ */}
                                   <div className="px-4 py-3.5 space-y-2.5">
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Identity</p>
                                     <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -2461,7 +2461,7 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
                                     </div>
                                   </div>
 
-                                  {/* ── Colors ── */}
+                                  {/* â”€â”€ Colors â”€â”€ */}
                                   <div className="px-4 py-3.5 space-y-2.5">
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Colors / Extra Option Values</p>
                                     {variant.pv_colors.length > 0 && (
@@ -2531,20 +2531,20 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
                                     </div>
                                   </div>
 
-                                  {/* ── Pricing ── */}
+                                  {/* â”€â”€ Pricing â”€â”€ */}
                                   <div className="px-4 py-3.5 space-y-2.5">
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Pricing</p>
                                     <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
                                       <div className="space-y-1">
-                                        <label className="text-[11px] font-semibold text-slate-500 block">SRP (₱)</label>
+                                        <label className="text-[11px] font-semibold text-slate-500 block">SRP (â‚±)</label>
                                         <input type="number" value={variant.pv_price_srp} onChange={e => setVariant(index, 'pv_price_srp', e.target.value)} onBlur={e => setVariant(index, 'pv_price_srp', toOptionalPositiveNumber(e.target.value)?.toString() ?? '')} placeholder="0.00" className={variantInputCls}/>
                                       </div>
                                       <div className="space-y-1">
-                                        <label className="text-[11px] font-semibold text-slate-500 block">Dealer (₱)</label>
+                                        <label className="text-[11px] font-semibold text-slate-500 block">Dealer (â‚±)</label>
                                         <input type="number" value={variant.pv_price_dp} onChange={e => setVariant(index, 'pv_price_dp', e.target.value)} onBlur={e => setVariant(index, 'pv_price_dp', toOptionalPositiveNumber(e.target.value)?.toString() ?? '')} placeholder="Inherit" className={variantInputCls}/>
                                       </div>
                                       <div className="space-y-1">
-                                        <label className="text-[11px] font-semibold text-slate-500 block">Member (₱)</label>
+                                        <label className="text-[11px] font-semibold text-slate-500 block">Member (â‚±)</label>
                                         <input type="number" value={variant.pv_price_member} onChange={e => setVariant(index, 'pv_price_member', e.target.value)} onBlur={e => setVariant(index, 'pv_price_member', toOptionalPositiveNumber(e.target.value)?.toString() ?? '')} placeholder="Inherit" className={variantInputCls}/>
                                       </div>
                                       <div className="space-y-1">
@@ -2599,7 +2599,7 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
                                     />
                                   </div>
 
-                                  {/* ── Inventory & Status ── */}
+                                  {/* â”€â”€ Inventory & Status â”€â”€ */}
                                   <div className="px-4 py-3.5 space-y-2.5">
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Inventory & Status</p>
                                     <div className="grid grid-cols-2 gap-3">
@@ -2631,7 +2631,7 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
                                     </div>
                                   </div>
 
-                                  {/* ── Images ── */}
+                                  {/* â”€â”€ Images â”€â”€ */}
                                   <div className="px-4 py-3.5 space-y-2.5">
                                     <div className="flex items-center justify-between">
                                       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Images</p>
@@ -2694,7 +2694,7 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
                 </div>
                 )}
 
-                {/* ── Sticky footer ── */}
+                {/* â”€â”€ Sticky footer â”€â”€ */}
                 {entryMode === 'manual' && <div className="flex shrink-0 items-center gap-3 border-t border-slate-200/80 bg-white/95 px-4 py-3 sm:px-6 sm:py-4">
                   <p className="text-xs text-slate-400 flex-1">
                     Fields marked <span className="text-red-400 font-semibold">*</span> are required
@@ -2719,7 +2719,7 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
                         </svg>
-                        {isUploading ? 'Uploading…' : 'Saving…'}
+                        {isUploading ? 'Uploadingâ€¦' : 'Savingâ€¦'}
                       </>
                     ) : (
                       <>
@@ -2738,7 +2738,7 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
       )}
       <ImagePositionEditorModal
         isOpen={activeImageAdjustIndex != null}
-        imageSrc={activeImageAdjustIndex != null ? imagePreviews[activeImageAdjustIndex] ?? null : null}
+        imageSrc={activeImageAdjustIndex != null ? (imagePreviews[activeImageAdjustIndex] ?? null) : null}
         fileName={activeImageAdjustIndex != null ? imageFiles[activeImageAdjustIndex]?.name : undefined}
         onClose={() => setActiveImageAdjustIndex(null)}
         onSave={handleApplyAdjustedImage}
@@ -2746,3 +2746,5 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
     </AnimatePresence>
   )
 }
+
+

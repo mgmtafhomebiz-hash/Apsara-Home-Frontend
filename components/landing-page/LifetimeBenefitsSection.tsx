@@ -36,7 +36,7 @@ export default function LifetimeBenefitsSection() {
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-orange-100 dark:bg-orange-500/10 text-orange-700 dark:text-orange-300 font-semibold text-sm mb-6"
+              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-sky-100 dark:bg-sky-500/10 text-sky-700 dark:text-sky-300 font-semibold text-sm mb-6"
             >
               <Tag size={14} />
               LIFETIME DISCOUNTS & PERSONAL BENEFITS
@@ -50,7 +50,7 @@ export default function LifetimeBenefitsSection() {
               className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-6 leading-tight"
             >
               Save for Life, <br />
-              <span className="text-orange-600">Not Just Once.</span>
+              <span className="text-sky-600">Not Just Once.</span>
             </motion.h2>
             
             <motion.p
@@ -60,7 +60,7 @@ export default function LifetimeBenefitsSection() {
               transition={{ delay: 0.2 }}
               className="text-xl text-gray-600 dark:text-gray-400 mb-10 leading-relaxed"
             >
-              As an AF Home Affiliate, you enjoy lifetime member discounts on products—whether you’re buying for yourself, your family, or your projects.
+              As an AF Home Affiliate, you enjoy lifetime member discounts on products-whether you're buying for yourself, your family, or your projects.
             </motion.p>
             
             <motion.div
@@ -114,7 +114,7 @@ export default function LifetimeBenefitsSection() {
                     {/* Regular Price Row */}
                     <div className="flex justify-between items-center p-4 bg-gray-50 dark:bg-gray-700 rounded-xl">
                         <span className="text-gray-500 dark:text-gray-300 font-medium">Regular Price</span>
-                        <span className="text-gray-400 font-medium text-lg line-through decoration-red-400">₱25,000</span>
+                        <span className="text-gray-400 font-medium text-lg line-through decoration-red-400">?25,000</span>
                     </div>
                     
                     {/* Member Price Row - Highlighted */}
@@ -125,7 +125,7 @@ export default function LifetimeBenefitsSection() {
                             </div>
                             <span className="text-green-800 dark:text-green-200 font-bold">Your Price</span>
                         </div>
-                        <span className="relative z-10 text-green-700 dark:text-green-300 font-bold text-2xl">₱20,000</span>
+                        <span className="relative z-10 text-green-700 dark:text-green-300 font-bold text-2xl">?20,000</span>
                         
                         {/* Shimmer Effect */}
                         <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-transparent via-white to-transparent opacity-50 -skew-x-12 translate-x-[-200%] animate-shimmer" />
@@ -138,13 +138,13 @@ export default function LifetimeBenefitsSection() {
                         <p className="text-xs text-gray-500 dark:text-gray-400">Instant discount applied</p>
                     </div>
                     <div className="text-right">
-                        <span className="block text-3xl font-bold text-red-500">₱5,000</span>
+                        <span className="block text-3xl font-bold text-red-500">?5,000</span>
                     </div>
                  </div>
              </motion.div>
 
              {/* Background Blob */}
-             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-gradient-to-tr from-orange-100/50 via-yellow-50/50 dark:from-orange-500/10 dark:via-yellow-400/10 to-transparent rounded-full filter blur-3xl -z-10" />
+             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-gradient-to-tr from-sky-100/50 via-yellow-50/50 dark:from-sky-500/10 dark:via-yellow-400/10 to-transparent rounded-full filter blur-3xl -z-10" />
           </div>
 
         </div>

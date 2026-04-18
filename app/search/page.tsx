@@ -35,11 +35,11 @@ function SearchListViewProduct({ product, toSlug }: { product: Product; toSlug: 
   return (
     <Link
       href={`/product/${toSlug(product.name)}-i${product.id}`}
-      className="flex gap-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden hover:border-orange-500 dark:hover:border-orange-400 transition-colors group relative"
+      className="flex gap-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden hover:border-sky-500 dark:hover:border-sky-400 transition-colors group relative"
     >
       {/* Discount Badge */}
       {hasMemberPrice && (
-        <div className="absolute top-2 left-2 bg-orange-500 text-white text-xs font-bold px-2 py-1 z-10">
+        <div className="absolute top-2 left-2 bg-sky-500 text-white text-xs font-bold px-2 py-1 z-10">
           {isLoggedIn ? `Enjoy ${Math.round(((srpPrice - memberPrice) / srpPrice) * 100)}% off` : `Register to get ${Math.round(((srpPrice - memberPrice) / srpPrice) * 100)}% discount`}
         </div>
       )}
@@ -52,7 +52,7 @@ function SearchListViewProduct({ product, toSlug }: { product: Product; toSlug: 
             e.stopPropagation()
             // Add to wishlist functionality here
           }}
-          className="p-2 rounded-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-md border border-gray-200 dark:border-gray-600 shadow-lg hover:bg-orange-500 hover:border-orange-500 dark:hover:bg-orange-500 dark:hover:border-orange-500 transition-all duration-200 cursor-pointer"
+          className="p-2 rounded-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-md border border-gray-200 dark:border-gray-600 shadow-lg hover:bg-sky-500 hover:border-sky-500 dark:hover:bg-sky-500 dark:hover:border-sky-500 transition-all duration-200 cursor-pointer"
           title="Add to Wishlist"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-700 dark:text-gray-300 hover:text-white transition-colors">
@@ -70,7 +70,7 @@ function SearchListViewProduct({ product, toSlug }: { product: Product; toSlug: 
               // Show error message
             })
           }}
-          className="p-2 rounded-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-md border border-gray-200 dark:border-gray-600 shadow-lg hover:bg-orange-500 hover:border-orange-500 dark:hover:bg-orange-500 dark:hover:border-orange-500 transition-all duration-200 cursor-pointer"
+          className="p-2 rounded-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-md border border-gray-200 dark:border-gray-600 shadow-lg hover:bg-sky-500 hover:border-sky-500 dark:hover:bg-sky-500 dark:hover:border-sky-500 transition-all duration-200 cursor-pointer"
           title="Share"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-700 dark:text-gray-300 hover:text-white transition-colors">
@@ -102,14 +102,14 @@ function SearchListViewProduct({ product, toSlug }: { product: Product; toSlug: 
       </div>
 
       <div className="flex flex-col justify-center flex-1 p-4 relative">
-        <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-2 line-clamp-2 group-hover:text-orange-500 dark:group-hover:text-orange-400 transition-colors">{product.name}</h3>
+        <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-2 line-clamp-2 group-hover:text-sky-500 dark:group-hover:text-sky-400 transition-colors">{product.name}</h3>
         <div className="flex items-baseline gap-2 mb-2">
-          <span className="text-lg font-bold text-orange-500 dark:text-orange-400">
-            ₱{displayPrice.toLocaleString()}
+          <span className="text-lg font-bold text-sky-500 dark:text-sky-400">
+            {'\u20b1'}{displayPrice.toLocaleString()}
           </span>
           {strikePrice > displayPrice && (
             <span className="text-sm text-gray-400 dark:text-gray-500 line-through">
-              ₱{strikePrice.toLocaleString()}
+              {'\u20b1'}{strikePrice.toLocaleString()}
             </span>
           )}
         </div>
@@ -130,8 +130,8 @@ function SearchListViewProduct({ product, toSlug }: { product: Product; toSlug: 
                 width="10"
                 height="10"
                 viewBox="0 0 24 24"
-                fill={star <= 4 ? '#f97316' : 'none'}
-                stroke={star <= 4 ? '#f97316' : '#d1d5db'}
+                fill={star <= 4 ? '#38bdf8' : 'none'}
+                stroke={star <= 4 ? '#38bdf8' : '#d1d5db'}
                 strokeWidth="2"
               >
                 <path d="M12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
@@ -147,7 +147,7 @@ function SearchListViewProduct({ product, toSlug }: { product: Product; toSlug: 
             e.stopPropagation()
             // Add to cart functionality here
           }}
-          className="absolute bottom-4 right-4 flex items-center justify-center gap-2 rounded-full bg-orange-500 hover:bg-orange-600 px-4 py-2 text-sm font-semibold text-white opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 cursor-pointer"
+          className="absolute bottom-4 right-4 flex items-center justify-center gap-2 rounded-full bg-sky-500 hover:bg-sky-600 px-4 py-2 text-sm font-semibold text-white opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 cursor-pointer"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <circle cx="9" cy="21" r="1" />
@@ -318,7 +318,7 @@ export default function SearchPage() {
         <div className="container mx-auto px-4 py-8">
           {isLoading ? (
             <div className="flex justify-center items-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500" />
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-500" />
             </div>
           ) : filteredProducts.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
@@ -329,7 +329,7 @@ export default function SearchPage() {
               </div>
               <p className="text-gray-700 dark:text-gray-300 font-semibold mb-1">No products found</p>
               <p className="text-gray-400 dark:text-gray-500 text-sm mb-6">Try searching with different keywords or adjusting filters</p>
-              <Link href="/" className="text-orange-500 hover:text-orange-600 font-semibold">
+              <Link href="/" className="text-sky-500 hover:text-sky-600 font-semibold">
                 Back to home
               </Link>
             </div>
@@ -401,7 +401,7 @@ export default function SearchPage() {
                         onClick={() => setCurrentPage(page)}
                         className={`px-3 py-2 rounded-lg font-medium transition-colors ${
                           currentPage === page
-                            ? 'bg-orange-500 text-white'
+                            ? 'bg-sky-500 text-white'
                             : 'border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800'
                         }`}
                       >

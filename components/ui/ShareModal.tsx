@@ -147,7 +147,7 @@ export default function ShareModal({ isOpen, onClose, product, brandName, shareU
                 </div>
                 <button
                   onClick={onClose}
-                  className="h-9 w-9 rounded-full border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:text-orange-600 dark:hover:text-orange-400 hover:border-orange-200 dark:hover:border-orange-900/50 transition-colors"
+                  className="h-9 w-9 rounded-full border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:text-sky-600 dark:hover:text-sky-400 hover:border-sky-200 dark:hover:border-sky-900/50 transition-colors"
                   type="button"
                 >
                   <span className="sr-only">Close</span>
@@ -184,12 +184,12 @@ export default function ShareModal({ isOpen, onClose, product, brandName, shareU
                   <h4 className="font-semibold text-gray-900 dark:text-white line-clamp-2 text-sm">{product.name}</h4>
                   {displayPrice > 0 && (
                     <div className="mt-2 flex items-baseline gap-2 flex-wrap">
-                      <span className="text-lg font-bold text-orange-500 dark:text-orange-400">
-                        ₱{displayPrice.toLocaleString()}
+                      <span className="text-lg font-bold text-sky-500 dark:text-sky-400">
+                        {'\u20b1'}{displayPrice.toLocaleString()}
                       </span>
                       {hasMemberPrice && (
                         <span className="text-sm text-gray-400 dark:text-gray-500 line-through">
-                          ₱{srpPrice.toLocaleString()}
+                          {'\u20b1'}{srpPrice.toLocaleString()}
                         </span>
                       )}
                     </div>
@@ -211,7 +211,7 @@ export default function ShareModal({ isOpen, onClose, product, brandName, shareU
                   <button
                     key={item.id}
                     onClick={item.action}
-                    className="flex flex-col items-center gap-2 text-center text-xs font-semibold text-slate-600 dark:text-gray-400 hover:text-orange-600 dark:hover:text-orange-400 transition-colors"
+                    className="flex flex-col items-center gap-2 text-center text-xs font-semibold text-slate-600 dark:text-gray-400 hover:text-sky-600 dark:hover:text-sky-400 transition-colors"
                     type="button"
                   >
                     <span className="flex h-14 w-14 items-center justify-center rounded-full border border-gray-200 dark:border-gray-600 text-slate-600 dark:text-gray-400">
@@ -239,7 +239,7 @@ export default function ShareModal({ isOpen, onClose, product, brandName, shareU
                   <span className="text-xs text-slate-600 dark:text-gray-400 truncate">{href}</span>
                   <button
                     onClick={handleCopyShareLink}
-                    className="text-xs font-semibold text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300"
+                    className="text-xs font-semibold text-sky-600 dark:text-sky-400 hover:text-sky-700 dark:hover:text-sky-300"
                     type="button"
                   >
                     {shareCopied ? 'Copied' : 'Copy'}

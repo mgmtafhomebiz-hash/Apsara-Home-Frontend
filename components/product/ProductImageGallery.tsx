@@ -18,8 +18,8 @@ const HeartIcon = ({ filled }: { filled: boolean }) => (
     width="18"
     height="18"
     viewBox="0 0 24 24"
-    fill={filled ? '#f97316' : 'none'}
-    stroke={filled ? '#f97316' : 'currentColor'}
+    fill={filled ? '#38bdf8' : 'none'}
+    stroke={filled ? '#38bdf8' : 'currentColor'}
     strokeWidth="2"
   >
     <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
@@ -160,7 +160,7 @@ const ProductImageGallery = ({ product, selectedVariantImages, preferredActiveIm
                       goToImage(index);
                     }}
                     className={`relative shrink-0 w-16 h-16 rounded-xl overflow-hidden border-2 transition-all duration-200 ${
-                      safeActiveImage === index ? 'border-orange-400 scale-110' : 'border-white/30 hover:border-white/60'
+                      safeActiveImage === index ? 'border-sky-400 scale-110' : 'border-white/30 hover:border-white/60'
                     }`}
                   >
                     <Image src={image.enhanced || image.original} alt={`View ${index + 1}`} fill className="object-cover" />
@@ -209,7 +209,7 @@ const ProductImageGallery = ({ product, selectedVariantImages, preferredActiveIm
                     e.stopPropagation();
                     goPrev();
                   }}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 z-10 h-11 w-11 rounded-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 hover:border-orange-400 dark:hover:border-orange-500 text-slate-700 dark:text-gray-200 shadow-md transition-colors flex items-center justify-center"
+                  className="absolute left-4 top-1/2 -translate-y-1/2 z-10 h-11 w-11 rounded-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 hover:border-sky-400 dark:hover:border-sky-500 text-slate-700 dark:text-gray-200 shadow-md transition-colors flex items-center justify-center"
                   aria-label="Previous image"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
@@ -221,7 +221,7 @@ const ProductImageGallery = ({ product, selectedVariantImages, preferredActiveIm
                     e.stopPropagation();
                     goNext();
                   }}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 z-10 h-11 w-11 rounded-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 hover:border-orange-400 dark:hover:border-orange-500 text-slate-700 dark:text-gray-200 shadow-md transition-colors flex items-center justify-center"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 z-10 h-11 w-11 rounded-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 hover:border-sky-400 dark:hover:border-sky-500 text-slate-700 dark:text-gray-200 shadow-md transition-colors flex items-center justify-center"
                   aria-label="Next image"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
@@ -239,7 +239,7 @@ const ProductImageGallery = ({ product, selectedVariantImages, preferredActiveIm
                   key={index}
                   onClick={() => goToImage(index)}
                   className={`relative shrink-0 w-16 h-16 rounded-xl overflow-hidden bg-gray-50 dark:bg-gray-800 border-2 transition-all duration-200 ${
-                    safeActiveImage === index ? 'border-orange-400 dark:border-orange-500' : 'border-gray-100 dark:border-gray-700'
+                    safeActiveImage === index ? 'border-sky-400 dark:border-sky-500' : 'border-gray-100 dark:border-gray-700'
                   }`}
                 >
                   <Image src={image.enhanced || image.original} alt={`View ${index + 1}`} fill className="object-cover" />

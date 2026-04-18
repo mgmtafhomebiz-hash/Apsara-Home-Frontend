@@ -41,7 +41,7 @@ export default function WishlistDrawer() {
               <div className="flex items-center gap-3">
                 <h2 className="text-lg font-bold text-slate-900 dark:text-white">My Wishlist</h2>
                 {wishlist.length > 0 && (
-                  <span className="rounded-full bg-orange-500 px-2 py-0.5 text-xs font-bold text-white">
+                  <span className="rounded-full bg-sky-500 px-2 py-0.5 text-xs font-bold text-white">
                     {wishlist.length}
                   </span>
                 )}
@@ -75,7 +75,7 @@ export default function WishlistDrawer() {
                 </div>
               ) : isLoading ? (
                 <div className="flex h-full items-center justify-center">
-                  <div className="h-8 w-8 animate-spin rounded-full border-2 border-orange-200 border-t-orange-500" />
+                  <div className="h-8 w-8 animate-spin rounded-full border-2 border-sky-200 border-t-sky-500" />
                 </div>
               ) : error ? (
                 <div className="flex h-full flex-col items-center justify-center gap-4 text-center">
