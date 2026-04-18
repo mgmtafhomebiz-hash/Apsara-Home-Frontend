@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import Image from 'next/image';
 import { useCart } from "@/context/CartContext";
@@ -36,8 +36,8 @@ const ShareIcon = () => (
 );
 const HeartIcon = ({ filled }: { filled: boolean }) => (
     <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24"
-        fill={filled ? '#f97316' : 'none'}
-        stroke={filled ? '#f97316' : 'currentColor'}
+        fill={filled ? '#38bdf8' : 'none'}
+        stroke={filled ? '#38bdf8' : 'currentColor'}
         strokeWidth="2">
         <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
     </svg>
@@ -309,7 +309,7 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, 
             map.set(groupKey, {
                 key: groupKey,
                 label: sizeLabel || (variant.name ?? '').trim() || `Variant ${index + 1}`,
-                meta: metaParts.join(' • '),
+                meta: metaParts.join(' ? '),
                 groupVariants: [variant],
             });
 
@@ -340,7 +340,7 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, 
             return [{
                 key: buildVariantGroupKey(variant, index),
                 label: sizeLabel,
-                meta: metaParts.join(' • '),
+                meta: metaParts.join(' ? '),
                 variant,
             } satisfies SizeChoice];
         });
@@ -544,7 +544,7 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, 
             selectedVariant?.style?.trim(),
             selectedVariant?.size?.trim(),
             selectedVariant?.color ? displayColorName(selectedVariant.color) : '',
-        ].filter(Boolean).join(' • ');
+        ].filter(Boolean).join(' ? ');
         const cartItemIdBase = product.id ? String(product.id) : product.name.toLocaleLowerCase().replace(/\s+/g, '-');
         const cartItemId = selectedVariant?.sku ? `${cartItemIdBase}::${selectedVariant.sku}` : cartItemIdBase;
 
@@ -587,7 +587,7 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, 
             <div className="flex items-start justify-between gap-4 pb-4 border-b border-gray-200 dark:border-gray-700">
                 <div className="flex-1">
                     {product.brand && (
-                        <span className="text-xs font-bold text-orange-500 uppercase tracking-wider">{product.brand}</span>
+                        <span className="text-xs font-bold text-sky-500 uppercase tracking-wider">{product.brand}</span>
                     )}
                     <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white leading-tight mt-1">{displayTitle}</h1>
                 </div>
@@ -598,8 +598,8 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, 
                         whileTap={{ scale: 0.8 }}
                         className={`p-2 rounded-xl border transition-all cursor-pointer ${
                             wishlisted
-                                ? 'border-orange-200 text-orange-500 dark:border-orange-900/50 dark:text-orange-400'
-                                : 'border-gray-200 text-gray-400 dark:border-gray-700 dark:text-gray-500 hover:border-orange-200 hover:text-orange-500 dark:hover:border-orange-900/50 dark:hover:text-orange-400'
+                                ? 'border-sky-200 text-sky-500 dark:border-sky-900/50 dark:text-sky-400'
+                                : 'border-gray-200 text-gray-400 dark:border-gray-700 dark:text-gray-500 hover:border-sky-200 hover:text-sky-500 dark:hover:border-sky-900/50 dark:hover:text-sky-400'
                         } ${isWishlistLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                         title={wishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
                     >
@@ -610,7 +610,7 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, 
                         ) : <HeartIcon filled={wishlisted} />}
                     </motion.button>
                     <button
-                        className="p-2 rounded-xl border border-gray-200 text-gray-400 dark:border-gray-700 dark:text-gray-500 hover:border-orange-200 hover:text-orange-500 dark:hover:border-orange-900/50 dark:hover:text-orange-400 transition-all cursor-pointer"
+                        className="p-2 rounded-xl border border-gray-200 text-gray-400 dark:border-gray-700 dark:text-gray-500 hover:border-sky-200 hover:text-sky-500 dark:hover:border-sky-900/50 dark:hover:text-sky-400 transition-all cursor-pointer"
                         onClick={() => setIsShareOpen(true)}
                         type="button"
                     >
@@ -625,7 +625,7 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, 
                     <span className="text-sm font-bold text-slate-700 dark:text-gray-300">{avgRating}</span>
                     <button
                         onClick={() => onReviewsClick?.()}
-                        className="text-sm text-gray-400 dark:text-gray-500 hover:text-orange-500 dark:hover:text-orange-400 transition-colors"
+                        className="text-sm text-gray-400 dark:text-gray-500 hover:text-sky-500 dark:hover:text-sky-400 transition-colors"
                     >
                         ({reviewCount} review{reviewCount === 1 ? '' : 's'})
                     </button>
@@ -633,7 +633,7 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, 
                 <div className="flex items-center gap-2">
                     {product.verified !== false && (
                         <span className="inline-flex items-center gap-1 rounded-full border border-green-200 px-2.5 py-1 text-[11px] font-semibold text-green-700">
-                            ✓ Verified
+                            Verified
                         </span>
                     )}
                     {showNewBadge && (
@@ -642,7 +642,7 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, 
                         </span>
                     )}
                     {categoryLabel && (
-                        <span className="rounded-full border border-orange-200 dark:border-orange-900/50 px-2.5 py-1 text-[11px] font-semibold text-orange-600 dark:text-orange-400">
+                        <span className="rounded-full border border-sky-200 dark:border-sky-900/50 px-2.5 py-1 text-[11px] font-semibold text-sky-600 dark:text-sky-400">
                             {categoryLabel}
                         </span>
                     )}
@@ -653,31 +653,31 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, 
                 <div className="flex flex-wrap gap-2 pb-4 border-b border-gray-200 dark:border-gray-700">
                     {product.musthave && (
                         <span className="inline-flex items-center gap-1 rounded-full border border-rose-200 px-3 py-1 text-xs font-semibold text-rose-700">
-                            ★ Must Have
+                            Must Have
                         </span>
                     )}
                     {product.bestseller && (
-                        <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 px-3 py-1 text-xs font-semibold text-amber-700">
-                            🔥 Best Seller
+                        <span className="inline-flex items-center gap-1 rounded-full border border-sky-200 px-3 py-1 text-xs font-semibold text-sky-700">
+                            Best Seller
                         </span>
                     )}
                     {product.salespromo && (
                         <span className="inline-flex items-center gap-1 rounded-full border border-rose-200 px-3 py-1 text-xs font-semibold text-rose-700">
-                            🏷 On Sale
+                            On Sale
                         </span>
                     )}
                 </div>
             )}
 
             {/* Price Section */}
-            <div className="bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 rounded-2xl p-6 border border-orange-100 dark:border-orange-900/30 mb-6">
+            <div className="bg-gradient-to-r from-sky-50 to-sky-50 dark:from-sky-900/20 dark:to-sky-900/20 rounded-2xl p-6 border border-sky-100 dark:border-sky-900/30 mb-6">
                 <div className="flex items-baseline gap-3 flex-wrap mb-3">
-                    <span className="text-3xl sm:text-4xl font-bold text-orange-600 dark:text-orange-400">₱{displayPrice.toLocaleString()}</span>
+                    <span className="text-3xl sm:text-4xl font-bold text-sky-600 dark:text-sky-400">{'\u20b1'}{displayPrice.toLocaleString()}</span>
                     {displayOriginalPrice && (
                         <>
-                            <span className="text-lg text-gray-400 dark:text-gray-500 line-through">₱{displayOriginalPrice.toLocaleString()}</span>
+                            <span className="text-lg text-gray-400 dark:text-gray-500 line-through">{'\u20b1'}{displayOriginalPrice.toLocaleString()}</span>
                             <span className="text-sm font-semibold text-green-600 dark:text-green-400 border border-green-200 dark:border-green-900/50 px-3 py-1 rounded-full">
-                                Save ₱{(displayOriginalPrice - displayPrice).toLocaleString()}
+                                Save {'\u20b1'}{(displayOriginalPrice - displayPrice).toLocaleString()}
                             </span>
                         </>
                     )}
@@ -685,12 +685,12 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, 
                 <div className="flex items-center gap-2 flex-wrap">
                     {canUseMemberPrice && hasMemberPrice && (
                         <span className="inline-flex items-center rounded-full border border-emerald-200 px-3 py-1 text-[11px] font-semibold text-emerald-700">
-                            ✓ Member Price Applied
+                            Member Price Applied
                         </span>
                     )}
                     {!canUseMemberPrice && hasMemberPrice && (
-                        <span className="inline-flex items-center rounded-full border border-orange-200 dark:border-orange-900/50 bg-orange-50 dark:bg-orange-900/20 px-3 py-1 text-[11px] font-semibold text-orange-700 dark:text-orange-400">
-                            ✨ Sign in or Register to claim {Math.round(((variantSrp - variantMember) / variantSrp) * 100)}% savings!
+                        <span className="inline-flex items-center rounded-full border border-sky-200 dark:border-sky-900/50 bg-sky-50 dark:bg-sky-900/20 px-3 py-1 text-[11px] font-semibold text-sky-700 dark:text-sky-400">
+                            Sign in or Register to claim {Math.round(((variantSrp - variantMember) / variantSrp) * 100)}% savings!
                         </span>
                     )}
                     {variantPv > 0 && (
@@ -700,9 +700,9 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, 
                     )}
                 </div>
                 {hasMemberPrice && (
-                    <div className="mt-2 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-900/50 rounded-lg">
-                        <p className="text-xs text-amber-800 dark:text-amber-700">
-                            <span className="font-semibold">💡 Note:</span> The price shown above is our member discount price. {!canUseMemberPrice ? 'Sign in or create an account to enjoy this price at checkout.' : 'You\'re enjoying this exclusive member price!'}
+                    <div className="mt-2 p-3 bg-sky-50 dark:bg-sky-900/20 border border-sky-200 dark:border-sky-900/50 rounded-lg">
+                        <p className="text-xs text-sky-800 dark:text-sky-700">
+                            <span className="font-semibold">Note:</span> The price shown above is our member discount price. {!canUseMemberPrice ? 'Sign in or create an account to enjoy this price at checkout.' : 'You\'re enjoying this exclusive member price!'}
                         </p>
                     </div>
                 )}
@@ -726,7 +726,7 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, 
                         )}
                         <div className="flex items-center gap-1">
                             <span className="text-gray-500 dark:text-gray-400">Type:</span>
-                            <span className="font-semibold text-orange-500 dark:text-orange-400">{productTypeLabel}</span>
+                            <span className="font-semibold text-sky-500 dark:text-sky-400">{productTypeLabel}</span>
                         </div>
                     </div>
                 )}
@@ -736,7 +736,7 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, 
                         {isInStock ? 'In Stock' : 'Out of Stock'}
                     </span>
                     {isInStock && typeof displayStock === 'number' && displayStock <= 10 && (
-                        <span className="text-sm text-orange-600 dark:text-orange-400 font-medium">Only {displayStock} left</span>
+                        <span className="text-sm text-sky-600 dark:text-sky-400 font-medium">Only {displayStock} left</span>
                     )}
                 </div>
             </div>
@@ -745,9 +745,9 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, 
             {hasRealVariants && (
                 <div className="space-y-4 pb-4 border-b border-gray-200 dark:border-gray-700">
                     {selectedVariantLabel || hasDisplayDimensions || selectedVariantImage ? (
-                        <div className="flex items-center gap-3 rounded-xl border border-orange-200 dark:border-orange-900/50 bg-orange-50 dark:bg-orange-900/20 p-3">
+                        <div className="flex items-center gap-3 rounded-xl border border-sky-200 dark:border-sky-900/50 bg-sky-50 dark:bg-sky-900/20 p-3">
                             {selectedVariantImage ? (
-                                <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg border border-orange-200 dark:border-orange-900/50">
+                                <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg border border-sky-200 dark:border-sky-900/50">
                                     <Image
                                         src={selectedVariantImage}
                                         alt={selectedVariantLabel || product.name}
@@ -760,12 +760,12 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, 
                             <div className="flex min-w-0 flex-col gap-1">
                                 {selectedVariantLabel && (
                                     <span className="text-sm font-semibold text-slate-700 dark:text-gray-300">
-                                        Selected: <span className="text-orange-600 dark:text-orange-400">{selectedVariantLabel}</span>
+                                        Selected: <span className="text-sky-600 dark:text-sky-400">{selectedVariantLabel}</span>
                                     </span>
                                 )}
                                 {hasDisplayDimensions && (
                                     <span className="text-xs text-slate-600 dark:text-gray-400">
-                                        {displayWidth ? `W ${displayWidth} cm` : 'W -'} × {displayDimension ? `D ${displayDimension} cm` : 'D -'} × {displayHeight ? `H ${displayHeight} cm` : 'H -'}
+                                        {displayWidth ? `W ${displayWidth} cm` : 'W -'} ?? {displayDimension ? `D ${displayDimension} cm` : 'D -'} ?? {displayHeight ? `H ${displayHeight} cm` : 'H -'}
                                     </span>
                                 )}
                             </div>
@@ -787,7 +787,7 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, 
                                         title={c.name}
                                         onClick={() => setSelectedColor(c.name)}
                                         className={`w-10 h-10 rounded-full transition-all duration-200 hover:scale-110 ${
-                                            effectiveSelectedColor === c.name ? 'ring-4 ring-orange-400 dark:ring-orange-500' : 'ring-2 ring-transparent'
+                                            effectiveSelectedColor === c.name ? 'ring-4 ring-sky-400 dark:ring-sky-500' : 'ring-2 ring-transparent'
                                         }`}
                                         style={{
                                             backgroundColor: c.hex ?? '#E5E7EB',
@@ -810,8 +810,8 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, 
                                         onClick={() => setSelectedVariantName(variantOption.name)}
                                         className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg border-2 font-medium transition-all ${
                                             effectiveSelectedPrimaryName === variantOption.name
-                                                ? 'border-orange-400 text-orange-600 dark:border-orange-500 dark:text-orange-400'
-                                                : 'border-gray-200 text-slate-600 dark:border-gray-700 dark:text-gray-300 hover:border-orange-200 dark:hover:border-orange-900/50'
+                                                ? 'border-sky-400 text-sky-600 dark:border-sky-500 dark:text-sky-400'
+                                                : 'border-gray-200 text-slate-600 dark:border-gray-700 dark:text-gray-300 hover:border-sky-200 dark:hover:border-sky-900/50'
                                         }`}
                                     >
                                         {variantOption.image && (
@@ -845,8 +845,8 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, 
                                         }}
                                         className={`rounded-lg border-2 px-3 py-2 text-left transition-all ${
                                             effectiveSelectedSizeKey === sizeChoice.key
-                                                ? 'border-orange-400 text-orange-600 dark:border-orange-500 dark:text-orange-400'
-                                                : 'border-gray-200 text-slate-600 dark:border-gray-700 dark:text-gray-300 hover:border-orange-200 dark:hover:border-orange-900/50'
+                                                ? 'border-sky-400 text-sky-600 dark:border-sky-500 dark:text-sky-400'
+                                                : 'border-gray-200 text-slate-600 dark:border-gray-700 dark:text-gray-300 hover:border-sky-200 dark:hover:border-sky-900/50'
                                         }`}
                                     >
                                         <span className="block text-sm font-medium">{sizeChoice.label}</span>
@@ -869,8 +869,8 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, 
                     <h4 className="text-sm font-semibold text-slate-700 dark:text-gray-200 mb-3">Shipping & Delivery</h4>
                     <div className="space-y-2">
                         {[
-                            { icon: <Package size={16} className="text-orange-500" />, text: 'Ships within 1–3 business days' },
-                            { icon: <Truck size={16} className="text-orange-500" />, text: 'Nationwide delivery via LBC / J&T' },
+                            { icon: <Package size={16} className="text-sky-500" />, text: 'Ships within 1-3 business days' },
+                            { icon: <Truck size={16} className="text-sky-500" />, text: 'Nationwide delivery via LBC / J&T' },
                             { icon: <CheckCircle size={16} className="text-green-500" />, text: 'Free assembly for Metro Manila orders' },
                         ].map(item => (
                             <div key={item.text} className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300">
@@ -916,16 +916,16 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, 
                     <div className="flex items-center border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
                         <button
                             onClick={() => setQuantity(qty => Math.max(1, qty - 1))}
-                            className="px-4 py-2.5 text-gray-500 dark:text-gray-400 hover:text-orange-500 dark:hover:text-orange-400 transition-colors text-lg font-medium"
+                            className="px-4 py-2.5 text-gray-500 dark:text-gray-400 hover:text-sky-500 dark:hover:text-sky-400 transition-colors text-lg font-medium"
                         >
-                            −
+                            -
                         </button>
                         <span className="px-5 py-2.5 text-sm font-bold text-slate-800 dark:text-gray-200 min-w-12 text-center border-x border-gray-200 dark:border-gray-700">
                             {quantity}
                         </span>
                         <button
                             onClick={() => setQuantity(qty => qty + 1)}
-                            className="px-4 py-2.5 text-gray-500 dark:text-gray-400 hover:text-orange-500 dark:hover:text-orange-400 transition-colors text-lg font-medium"
+                            className="px-4 py-2.5 text-gray-500 dark:text-gray-400 hover:text-sky-500 dark:hover:text-sky-400 transition-colors text-lg font-medium"
                         >
                             +
                         </button>
@@ -938,7 +938,7 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, 
                         disabled={!isInStock || !isCheckoutAvailable}
                         className="flex-1"
                     >
-                        {added ? '✓ Added!' : <><CartIcon /> Add to Cart</>}
+                        {added ? 'Added!' : <><CartIcon /> Add to Cart</>}
                     </OutlineButton>
                     <PrimaryButton
                         onClick={() => {
@@ -952,7 +952,7 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, 
                     </PrimaryButton>
                 </div>
                 {isManualCheckoutOnly ? (
-                    <p className="text-sm font-medium text-amber-700">
+                    <p className="text-sm font-medium text-sky-700">
                         This product is not available for checkout at the moment
                     </p>
                 ) : null}
@@ -996,4 +996,5 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, 
 };
 
 export default ProductInfo;
+
 

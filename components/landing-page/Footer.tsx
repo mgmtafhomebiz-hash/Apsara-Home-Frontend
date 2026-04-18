@@ -174,23 +174,6 @@ export default function Footer() {
             </div>
           </motion.div>
 
-          {/* Shop Links */}
-          <motion.div variants={itemVariants}>
-            <h4 className="font-display font-semibold text-lg mb-6">Shop</h4>
-            <ul className="space-y-3">
-              {footerLinks.shop.map((link) => (
-                <li key={link.name}>
-                  <Link
-                    href={link.href}
-                    className="text-gray-600 dark:text-white/70 hover:text-orange-500 dark:hover:text-orange-400 transition-colors text-sm"
-                  >
-                    {link.name}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </motion.div>
-
           {/* Company Links */}
           <motion.div variants={itemVariants}>
             <h4 className="font-display font-semibold text-lg mb-6">Navigation</h4>

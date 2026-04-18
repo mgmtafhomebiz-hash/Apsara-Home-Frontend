@@ -33,7 +33,7 @@ export interface CreateCategoryPayload {
 const normalizeCategoryText = (value: string) => {
   const trimmed = (value ?? '').trim()
   if (!trimmed) return ''
-  if (trimmed.includes('Ã') || trimmed.includes('Â')) {
+  if (/[\u00C2\u00C3]/.test(trimmed)) {
     try {
       const decoded = decodeURIComponent(escape(trimmed))
       if (decoded) return decoded

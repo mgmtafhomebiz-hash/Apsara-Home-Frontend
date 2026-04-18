@@ -13,13 +13,13 @@ const TIER_COLORS: Record<string, string> = {
   'Lifestyle Elite': 'border-fuchsia-200 bg-fuchsia-50 text-fuchsia-700',
   'Lifestyle Consultant': 'border-blue-200 bg-blue-50 text-blue-700',
   'Home Stylist': 'border-teal-200 bg-teal-50 text-teal-700',
-  'Home Builder': 'border-amber-200 bg-amber-50 text-amber-700',
+  'Home Builder': 'border-sky-200 bg-sky-50 text-sky-700',
   'Home Starter': 'border-slate-200 bg-slate-50 text-slate-600',
 }
 
 const STATUS_CONFIG: Record<ReferralStatus, { dot: string; label: string; text: string; soft: string }> = {
   active: { dot: 'bg-emerald-400', label: 'Active', text: 'text-emerald-700', soft: 'bg-emerald-50' },
-  pending: { dot: 'bg-amber-400', label: 'Pending', text: 'text-amber-700', soft: 'bg-amber-50' },
+  pending: { dot: 'bg-sky-400', label: 'Pending', text: 'text-sky-700', soft: 'bg-sky-50' },
   blocked: { dot: 'bg-rose-400', label: 'Blocked', text: 'text-rose-700', soft: 'bg-rose-50' },
   kyc_review: { dot: 'bg-sky-400', label: 'KYC Review', text: 'text-sky-700', soft: 'bg-sky-50' },
 }
@@ -470,7 +470,7 @@ export default function ReferralTreePageMain() {
           { label: 'Total Commission Paid', value: php(summary?.totalCommissionPaid ?? 0), accent: 'from-cyan-500 to-teal-500' },
           { label: 'Active Members', value: String(summary?.activeMembers ?? 0), accent: 'from-blue-500 to-sky-500' },
           { label: 'Total Referrals', value: String(summary?.totalReferrals ?? 0), accent: 'from-fuchsia-500 to-violet-500' },
-          { label: 'Avg. Commission/Member', value: php(summary?.avgCommissionPerMember ?? 0), accent: 'from-amber-500 to-orange-500' },
+          { label: 'Avg. Commission/Member', value: php(summary?.avgCommissionPerMember ?? 0), accent: 'from-sky-500 to-sky-500' },
         ].map((stat) => (
           <div key={stat.label} className="group relative overflow-hidden rounded-[28px] border border-slate-200 bg-white p-4 shadow-[0_18px_50px_rgba(15,23,42,0.05)]">
             <div className={`absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${stat.accent}`} />

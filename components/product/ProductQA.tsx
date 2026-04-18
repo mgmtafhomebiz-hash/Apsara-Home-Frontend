@@ -6,11 +6,11 @@ import { useState } from "react";
 const faqs = [
     {
         q: 'How long does delivery take?',
-        a: 'Standard delivery takes 3–7 business days within Metro Manila, and 5–10 business days for provincial areas via LBC or J&T Express. You will receive a tracking number once your order has been dispatched.'
+        a: 'Standard delivery takes 3-7 business days within Metro Manila, and 5-10 business days for provincial areas via LBC or J&T Express. You will receive a tracking number once your order has been dispatched.'
     },
     {
         q: 'Is assembly required and do you offer assembly services?',
-        a: 'Most items require minimal assembly and come with all required tools and an instruction manual. Free assembly is available for orders delivered within Metro Manila — just request it at checkout.'
+        a: 'Most items require minimal assembly and come with all required tools and an instruction manual. Free assembly is available for orders delivered within Metro Manila - just request it at checkout.'
     },
     {
         q: 'What is your return and refund policy?',
@@ -26,7 +26,7 @@ const faqs = [
     },
     {
         q: 'What payment methods do you accept?',
-        a: 'We accept GCash, Maya, Visa, Mastercard, and Cash on Delivery (COD). For orders above ₱10,000, installment options via credit card are also available at checkout.'
+        a: 'We accept GCash, Maya, Visa, Mastercard, and Cash on Delivery (COD). For orders above \u20b110,000, installment options via credit card are also available at checkout.'
     },
 ];
 
@@ -66,10 +66,10 @@ const ProductQA = () => {
                             onClick={() => toggle(i)}
                             className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left hover:bg-gray-50/60 dark:hover:bg-gray-800/60 transition-colors"
                         >
-                            <span className={`text-sm font-semibold transition-colors ${openIndex === i ? 'text-orange-500 dark:text-orange-400' : 'text-slate-800 dark:text-gray-200'}`}>
+                            <span className={`text-sm font-semibold transition-colors ${openIndex === i ? 'text-sky-500 dark:text-sky-400' : 'text-slate-800 dark:text-gray-200'}`}>
                                 {faq.q}
                             </span>
-                            <span className={`shrink-0 transition-colors ${openIndex === i ? 'text-orange-400 dark:text-orange-300' : 'text-gray-400 dark:text-gray-500'}`}>
+                            <span className={`shrink-0 transition-colors ${openIndex === i ? 'text-sky-400 dark:text-sky-300' : 'text-gray-400 dark:text-gray-500'}`}>
                                 <ChevronIcon open={openIndex === i} />
                             </span>
                         </button>

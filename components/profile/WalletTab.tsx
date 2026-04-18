@@ -97,7 +97,7 @@ export default function WalletTab({ isVerified = false }: WalletTabProps) {
       { label: 'Cash Credits', value: summary.cash_credits, total: Math.max(summary.cash_credits + summary.cash_debits, 1), color: 'bg-emerald-500', isPv: false },
       { label: 'Cash Debits', value: summary.cash_debits, total: Math.max(summary.cash_credits + summary.cash_debits, 1), color: 'bg-rose-500', isPv: false },
       { label: 'PV Credits', value: summary.pv_credits, total: Math.max(summary.pv_credits + summary.pv_debits, 1), color: 'bg-blue-500', isPv: true },
-      { label: 'PV Debits', value: summary.pv_debits, total: Math.max(summary.pv_credits + summary.pv_debits, 1), color: 'bg-amber-500', isPv: true },
+      { label: 'PV Debits', value: summary.pv_debits, total: Math.max(summary.pv_credits + summary.pv_debits, 1), color: 'bg-sky-500', isPv: true },
     ];
     return items.map((item) => ({
       ...item,
@@ -124,7 +124,7 @@ export default function WalletTab({ isVerified = false }: WalletTabProps) {
                 }}
                 className={`rounded-xl px-3.5 py-1.5 text-xs font-semibold transition-all ${
                   walletType === item.key
-                    ? 'bg-orange-500 text-white'
+                    ? 'bg-sky-500 text-white'
                     : 'border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-gray-300 hover:bg-slate-50 dark:hover:bg-gray-700'
                 }`}
               >
@@ -218,8 +218,8 @@ export default function WalletTab({ isVerified = false }: WalletTabProps) {
                   {[
                     { label: 'Cash Balance',         value: peso(summary?.cash_balance ?? 0),          sub: 'Available for encashment',       border: 'border-emerald-200 dark:border-emerald-800', dbg: 'dark:bg-emerald-900/30', text: 'text-emerald-700 dark:text-emerald-400', val: 'text-emerald-900 dark:text-emerald-300' },
                     { label: 'PV Balance',            value: `${numberFmt(summary?.pv_balance ?? 0)} PV`, sub: 'Credits after order approval',  border: 'border-blue-200 dark:border-blue-800',    dbg: 'dark:bg-blue-900/30',    text: 'text-blue-700 dark:text-blue-400',    val: 'text-blue-900 dark:text-blue-300'    },
-                    { label: 'Locked Encashment',     value: peso(summary?.encashment_locked ?? 0),     sub: 'Pending & ready-for-release',    border: 'border-amber-200 dark:border-amber-800',   dbg: 'dark:bg-amber-900/30',   text: 'text-amber-700 dark:text-amber-400',   val: 'text-amber-900 dark:text-amber-300'   },
-                    { label: 'Encashment Available',  value: peso(summary?.encashment_available ?? 0),  sub: 'Can be requested now',           border: 'border-orange-200 dark:border-orange-800',  dbg: 'dark:bg-orange-900/30',  text: 'text-orange-700 dark:text-orange-400',  val: 'text-orange-900 dark:text-orange-300'  },
+                    { label: 'Locked Encashment',     value: peso(summary?.encashment_locked ?? 0),     sub: 'Pending & ready-for-release',    border: 'border-sky-200 dark:border-sky-800',   dbg: 'dark:bg-sky-900/30',   text: 'text-sky-700 dark:text-sky-400',   val: 'text-sky-900 dark:text-sky-300'   },
+                    { label: 'Encashment Available',  value: peso(summary?.encashment_available ?? 0),  sub: 'Can be requested now',           border: 'border-sky-200 dark:border-sky-800',  dbg: 'dark:bg-sky-900/30',  text: 'text-sky-700 dark:text-sky-400',  val: 'text-sky-900 dark:text-sky-300'  },
                   ].map(({ label, value, sub, border, dbg, text, val }) => (
                     <div key={label} className={`rounded-2xl border ${border} ${dbg} p-4`}>
                       <p className={`text-[10px] font-semibold uppercase tracking-wide ${text}`}>{label}</p>
@@ -238,7 +238,7 @@ export default function WalletTab({ isVerified = false }: WalletTabProps) {
                       </span>
                     </div>
                     <div className="h-2 overflow-hidden rounded-full bg-slate-200 dark:bg-gray-700">
-                      <div className="h-full rounded-full bg-gradient-to-r from-amber-400 to-orange-500 transition-all" style={{ width: `${utilizationPct}%` }} />
+                      <div className="h-full rounded-full bg-gradient-to-r from-sky-400 to-sky-500 transition-all" style={{ width: `${utilizationPct}%` }} />
                     </div>
                     <div className="mt-2 flex items-center justify-between text-xs text-slate-500 dark:text-gray-400">
                       <span>Locked: {peso(summary?.encashment_locked ?? 0)}</span>
@@ -279,7 +279,7 @@ export default function WalletTab({ isVerified = false }: WalletTabProps) {
             </div>
             <div className="flex items-center gap-2">
               {isFetching && (
-                <span className="text-[11px] font-medium text-slate-400 dark:text-gray-500 animate-pulse">Refreshing…</span>
+                <span className="text-[11px] font-medium text-slate-400 dark:text-gray-500 animate-pulse">Refreshing...</span>
               )}
               <span className="rounded-full border border-slate-200 dark:border-slate-700 dark:bg-gray-900 px-3 py-1 text-xs font-semibold text-slate-600 dark:text-gray-400">
                 {meta?.total ?? 0} entries
@@ -314,8 +314,8 @@ export default function WalletTab({ isVerified = false }: WalletTabProps) {
                     const isCredit = row.entry_type === 'credit';
                     const amountLabel =
                       row.wallet_type === 'pv'
-                        ? `${isCredit ? '+' : '−'}${numberFmt(row.amount)} PV`
-                        : `${isCredit ? '+' : '−'}${peso(row.amount)}`;
+                        ? `${isCredit ? '+' : '-'}${numberFmt(row.amount)} PV`
+                        : `${isCredit ? '+' : '-'}${peso(row.amount)}`;
                     return (
                       <tr key={row.id} className="hover:bg-slate-50/60 dark:hover:bg-gray-700/50 transition-colors">
                         <td className="py-3.5 pr-4 text-xs text-slate-500 dark:text-gray-400 whitespace-nowrap">{formatDate(row.created_at)}</td>
@@ -339,10 +339,10 @@ export default function WalletTab({ isVerified = false }: WalletTabProps) {
                             {isCredit ? 'Credit' : 'Debit'}
                           </span>
                         </td>
-                        <td className="py-3.5 pr-4 text-xs text-slate-500 dark:text-gray-400">{row.source_type ?? '—'}</td>
+                        <td className="py-3.5 pr-4 text-xs text-slate-500 dark:text-gray-400">{row.source_type ?? '-'}</td>
                         <td className="py-3.5 pr-4 max-w-50">
                           <p className="truncate text-xs text-slate-600 dark:text-gray-300" title={row.reference_no ?? ''}>
-                            {row.reference_no || row.notes || '—'}
+                            {row.reference_no || row.notes || '-'}
                           </p>
                         </td>
                         <td className={`py-3.5 text-right text-sm font-bold ${isCredit ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
@@ -360,7 +360,7 @@ export default function WalletTab({ isVerified = false }: WalletTabProps) {
           <div className="mt-4 flex items-center justify-between border-t border-slate-100 dark:border-slate-700 pt-4">
             <p className="text-xs text-slate-500 dark:text-gray-400">
               Showing{' '}
-              <span className="font-semibold text-slate-700 dark:text-gray-300">{meta?.from ?? 0}–{meta?.to ?? 0}</span>
+              <span className="font-semibold text-slate-700 dark:text-gray-300">{meta?.from ?? 0}-{meta?.to ?? 0}</span>
               {' '}of{' '}
               <span className="font-semibold text-slate-700 dark:text-gray-300">{meta?.total ?? 0}</span>
             </p>

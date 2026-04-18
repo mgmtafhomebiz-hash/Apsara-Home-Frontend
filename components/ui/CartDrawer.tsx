@@ -105,7 +105,7 @@ export default function CartDrawer() {
               <div className="flex items-center gap-3">
                 <h2 className="text-lg font-bold text-slate-900 dark:text-white">Your Cart</h2>
                 {cartCount > 0 && (
-                  <span className="rounded-full bg-orange-500 px-2 py-0.5 text-xs font-bold text-white">
+                  <span className="rounded-full bg-sky-500 px-2 py-0.5 text-xs font-bold text-white">
                     {cartCount}
                   </span>
                 )}
@@ -159,7 +159,7 @@ export default function CartDrawer() {
                                   setSelection(selectedIds.filter((id) => !removeIds.has(id)))
                                 }
                               }}
-                              className="h-4 w-4 rounded border-gray-300 text-orange-500 focus:ring-orange-200 cursor-pointer"
+                              className="h-4 w-4 rounded border-gray-300 text-sky-500 focus:ring-sky-200 cursor-pointer"
                               style={{ cursor: 'pointer' }}
                             />
                             <span className="flex items-center gap-1.5 font-bold uppercase tracking-[0.2em] text-slate-700 dark:text-gray-300">
@@ -185,7 +185,7 @@ export default function CartDrawer() {
                                 type="checkbox"
                                 checked={selectedIds.includes(item.id)}
                                 onChange={() => toggleItemSelected(item.id)}
-                                className="h-4 w-4 rounded border-gray-300 text-orange-500 focus:ring-orange-200 cursor-pointer"
+                                className="h-4 w-4 rounded border-gray-300 text-sky-500 focus:ring-sky-200 cursor-pointer"
                                 style={{ cursor: 'pointer' }}
                               />
                             </label>
@@ -215,12 +215,12 @@ export default function CartDrawer() {
         </div>
       ) : null}
       <div className="mt-0.5 flex flex-wrap items-center gap-2">
-        <p className="text-sm font-bold text-orange-500 dark:text-orange-400">
-          {'₱'}{item.price.toLocaleString()}
+        <p className="text-sm font-bold text-sky-500 dark:text-sky-400">
+          {'\u20b1'}{item.price.toLocaleString()}
         </p>
         {typeof item.originalPrice === 'number' && item.originalPrice > item.price && (
           <p className="text-xs font-semibold text-slate-400 dark:text-gray-500 line-through">
-            {'₱'}{item.originalPrice.toLocaleString()}
+            {'\u20b1'}{item.originalPrice.toLocaleString()}
           </p>
         )}
         {typeof item.prodpv === 'number' && item.prodpv > 0 && (
@@ -232,14 +232,14 @@ export default function CartDrawer() {
       <div className="mt-2 flex items-center gap-2">
         <button
           onClick={() => updateQuantity(item.id, item.quantity - 1)}
-          className="flex h-7 w-7 items-center justify-center rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-lg font-bold leading-none transition-colors hover:border-orange-400 hover:text-orange-500 dark:hover:border-orange-500 dark:hover:text-orange-400 text-slate-700 dark:text-gray-300"
+          className="flex h-7 w-7 items-center justify-center rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-lg font-bold leading-none transition-colors hover:border-sky-400 hover:text-sky-500 dark:hover:border-sky-500 dark:hover:text-sky-400 text-slate-700 dark:text-gray-300"
         >
-          −
+          -
         </button>
         <span className="w-5 text-center text-sm font-semibold text-slate-700 dark:text-gray-300">{item.quantity}</span>
         <button
           onClick={() => updateQuantity(item.id, item.quantity + 1)}
-          className="flex h-7 w-7 items-center justify-center rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-lg font-bold leading-none transition-colors hover:border-orange-400 hover:text-orange-500 dark:hover:border-orange-500 dark:hover:text-orange-400 text-slate-700 dark:text-gray-300"
+          className="flex h-7 w-7 items-center justify-center rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-lg font-bold leading-none transition-colors hover:border-sky-400 hover:text-sky-500 dark:hover:border-sky-500 dark:hover:text-sky-400 text-slate-700 dark:text-gray-300"
         >
           +
         </button>
@@ -260,7 +260,7 @@ export default function CartDrawer() {
         </svg>
       </button>
       <p className="text-sm font-bold text-slate-900 dark:text-white">
-        {'₱'}{(item.price * item.quantity).toLocaleString()}
+        {'\u20b1'}{(item.price * item.quantity).toLocaleString()}
       </p>
     </div>
   </motion.div>

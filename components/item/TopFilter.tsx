@@ -105,7 +105,7 @@ export default function TopFilter({
             value={search}
             onChange={(e) => handleSearchChange(e.target.value)}
             placeholder="Search..."
-            className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 py-2 sm:py-3 pl-9 sm:pl-12 pr-9 sm:pr-12 text-sm sm:text-base text-gray-700 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-orange-400 focus:bg-white dark:focus:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-orange-400/30 transition-all"
+            className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 py-2 sm:py-3 pl-9 sm:pl-12 pr-9 sm:pr-12 text-sm sm:text-base text-gray-700 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-sky-400 focus:bg-white dark:focus:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-sky-400/30 transition-all"
           />
           {search && (
             <button
@@ -127,7 +127,7 @@ export default function TopFilter({
             onClick={() => onClearFilters?.()}
             className={`inline-flex items-center gap-1.5 text-xs sm:text-sm font-medium px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg border transition-colors ${
               hasActiveFilters
-                ? 'text-orange-500 dark:text-orange-400 hover:text-orange-600 dark:hover:text-orange-300 border-orange-200 dark:border-orange-900/30 bg-orange-50 dark:bg-orange-900/10 hover:bg-orange-100 dark:hover:bg-orange-900/20 cursor-pointer'
+                ? 'text-sky-500 dark:text-sky-400 hover:text-sky-600 dark:hover:text-sky-300 border-sky-200 dark:border-sky-900/30 bg-sky-50 dark:bg-sky-900/10 hover:bg-sky-100 dark:hover:bg-sky-900/20 cursor-pointer'
                 : 'text-gray-400 dark:text-gray-600 border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 cursor-not-allowed opacity-50'
             }`}
             disabled={!hasActiveFilters}
@@ -146,7 +146,7 @@ export default function TopFilter({
             <select
               value={currentSort}
               onChange={(e) => handleSortChange(e.target.value)}
-              className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-700 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-200 focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-400/30 transition-all cursor-pointer hover:border-orange-300"
+              className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-700 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-200 focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-400/30 transition-all cursor-pointer hover:border-sky-300"
             >
               {SORT_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -162,7 +162,7 @@ export default function TopFilter({
             <select
               value={currentShowNumber}
               onChange={(e) => handleShowNumberChange(e.target.value === 'all' ? 'all' : Number(e.target.value))}
-              className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-700 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-200 focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-400/30 transition-all cursor-pointer hover:border-orange-300"
+              className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-700 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-200 focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-400/30 transition-all cursor-pointer hover:border-sky-300"
             >
               {SHOW_NUMBER_OPTIONS.map((option) => (
                 <option key={option} value={option}>
@@ -179,8 +179,8 @@ export default function TopFilter({
                 onClick={() => handleViewTypeChange('grid')}
                 className={`p-1.5 sm:p-2 rounded-md transition-colors cursor-pointer hover:scale-105 ${
                   currentViewType === 'grid'
-                    ? 'bg-white dark:bg-gray-600 text-orange-500 shadow-sm'
-                    : 'text-gray-600 dark:text-gray-300 hover:text-orange-500 dark:hover:text-orange-400'
+                    ? 'bg-white dark:bg-gray-600 text-sky-500 shadow-sm'
+                    : 'text-gray-600 dark:text-gray-300 hover:text-sky-500 dark:hover:text-sky-400'
                 }`}
                 onMouseEnter={() => setShowGridTooltip(true)}
                 onMouseLeave={() => setShowGridTooltip(false)}
@@ -204,8 +204,8 @@ export default function TopFilter({
                 onClick={() => handleViewTypeChange('list')}
                 className={`p-1.5 sm:p-2 rounded-md transition-colors cursor-pointer hover:scale-105 ${
                   currentViewType === 'list'
-                    ? 'bg-white dark:bg-gray-600 text-orange-500 shadow-sm'
-                    : 'text-gray-600 dark:text-gray-300 hover:text-orange-500 dark:hover:text-orange-400'
+                    ? 'bg-white dark:bg-gray-600 text-sky-500 shadow-sm'
+                    : 'text-gray-600 dark:text-gray-300 hover:text-sky-500 dark:hover:text-sky-400'
                 }`}
                 onMouseEnter={() => setShowListTooltip(true)}
                 onMouseLeave={() => setShowListTooltip(false)}

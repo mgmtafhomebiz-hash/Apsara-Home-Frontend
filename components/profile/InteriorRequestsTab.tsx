@@ -23,15 +23,15 @@ import {
   useGetMyInteriorRequestsQuery,
 } from '@/store/api/interiorRequestsApi';
 
-/* ─── Config ─────────────────────────────────────────────────────────────────── */
+/* --- Config --- */
 const statusMeta: Record<
   InteriorRequestStatus,
   { label: string; pill: string; icon: React.ReactNode; tone: string }
 > = {
   pending: {
     label: 'Pending Review',
-    tone: 'text-amber-700 dark:text-amber-400',
-    pill: 'bg-amber-50 dark:bg-amber-900/30 border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-400',
+    tone: 'text-sky-700 dark:text-sky-400',
+    pill: 'bg-sky-50 dark:bg-sky-900/30 border-sky-200 dark:border-sky-800 text-sky-700 dark:text-sky-400',
     icon: <Clock className="h-3 w-3" />,
   },
   reviewing: {
@@ -96,7 +96,7 @@ const statusOrder: InteriorRequestStatus[] = [
   'pending', 'reviewing', 'estimate_ready', 'scheduled', 'completed', 'cancelled',
 ];
 
-/* ─── Helpers ────────────────────────────────────────────────────────────────── */
+/* --- Helpers --- */
 const formatDateTime = (date?: string | null, time?: string | null) => {
   if (!date && !time) return 'Awaiting confirmation';
   if (!date) return time || 'Awaiting confirmation';
@@ -104,7 +104,7 @@ const formatDateTime = (date?: string | null, time?: string | null) => {
   const displayDate = Number.isNaN(parsed.getTime())
     ? date
     : parsed.toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' });
-  return time ? `${displayDate} · ${time}` : displayDate;
+  return time ? `${displayDate} - ${time}` : displayDate;
 };
 
 const formatTimestamp = (value?: string | null) => {
@@ -121,7 +121,7 @@ const formatTimestamp = (value?: string | null) => {
   });
 };
 
-/* ─── Main component ─────────────────────────────────────────────────────────── */
+/* --- Main component --- */
 export default function InteriorRequestsTab() {
   const searchParams = useSearchParams();
   const highlightedRequest = Number(searchParams.get('request') ?? 0);
@@ -148,8 +148,8 @@ export default function InteriorRequestsTab() {
     return (
       <div className="flex items-center justify-center rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-gray-800 p-16">
         <div className="text-center">
-          <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-orange-500 border-t-transparent" />
-          <p className="mt-3 text-sm text-slate-500 dark:text-gray-400">Loading your interior requests…</p>
+          <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-sky-500 border-t-transparent" />
+          <p className="mt-3 text-sm text-slate-500 dark:text-gray-400">Loading your interior requests...</p>
         </div>
       </div>
     );
@@ -168,8 +168,8 @@ export default function InteriorRequestsTab() {
     return (
       <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-gray-800 p-8">
         <div className="flex items-start gap-4">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-50 dark:bg-orange-900/30">
-            <Inbox className="h-5 w-5 text-orange-500 dark:text-orange-400" />
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sky-50 dark:bg-sky-900/30">
+            <Inbox className="h-5 w-5 text-sky-500 dark:text-sky-400" />
           </div>
           <div>
             <h3 className="text-base font-bold text-slate-900 dark:text-white">Interior Requests</h3>
@@ -185,12 +185,12 @@ export default function InteriorRequestsTab() {
   return (
     <div className="space-y-5">
 
-      {/* ── Header + Status summary ── */}
+      {/* --- Header + Status summary --- */}
       <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-gray-800 p-5 md:p-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="flex items-start gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-50 dark:bg-orange-900/30">
-              <Inbox className="h-5 w-5 text-orange-500 dark:text-orange-400" />
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sky-50 dark:bg-sky-900/30">
+              <Inbox className="h-5 w-5 text-sky-500 dark:text-sky-400" />
             </div>
             <div>
               <h3 className="text-base font-bold text-slate-900 dark:text-white sm:text-lg">Interior Requests</h3>
@@ -199,7 +199,7 @@ export default function InteriorRequestsTab() {
               </p>
             </div>
           </div>
-          <span className="rounded-full border border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-900/30 px-3 py-1 text-xs font-semibold text-orange-700 dark:text-orange-400">
+          <span className="rounded-full border border-sky-200 dark:border-sky-800 bg-sky-50 dark:bg-sky-900/30 px-3 py-1 text-xs font-semibold text-sky-700 dark:text-sky-400">
             Authenticated access only
           </span>
         </div>
@@ -223,7 +223,7 @@ export default function InteriorRequestsTab() {
         </div>
       </div>
 
-      {/* ── Requests list + Detail ── */}
+      {/* --- Requests list + Detail --- */}
       <div className="grid gap-5 xl:grid-cols-[minmax(0,300px)_minmax(0,1fr)]">
 
         {/* Request list */}
@@ -247,7 +247,7 @@ export default function InteriorRequestsTab() {
                   onClick={() => setSelectedRequestId(request.id)}
                   className={`w-full rounded-xl border p-3.5 text-left transition-all ${
                     active
-                      ? 'border-orange-300 dark:border-orange-800 bg-orange-50 dark:bg-orange-900/30'
+                      ? 'border-sky-300 dark:border-sky-800 bg-sky-50 dark:bg-sky-900/30'
                       : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-gray-900/40 hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50 dark:hover:bg-gray-700/50'
                   }`}
                 >
@@ -266,13 +266,13 @@ export default function InteriorRequestsTab() {
                     </span>
                   </div>
                   <p className="mt-2 text-[11px] text-slate-500 dark:text-gray-400">
-                    {request.service_type} · {request.property_type || 'Property TBD'}
+                    {request.service_type} - {request.property_type || 'Property TBD'}
                   </p>
                   <p className="mt-2 line-clamp-2 text-[11px] leading-relaxed text-slate-400 dark:text-gray-500">
                     {request.latest_update?.message || 'Waiting for the next admin update.'}
                   </p>
                   {active && (
-                    <div className="mt-2 flex items-center gap-1 text-[10px] font-semibold text-orange-600 dark:text-orange-400">
+                    <div className="mt-2 flex items-center gap-1 text-[10px] font-semibold text-sky-600 dark:text-sky-400">
                       <span>Viewing</span>
                       <ChevronRight className="h-3 w-3" />
                     </div>
@@ -353,31 +353,31 @@ export default function InteriorRequestsTab() {
             </div>
 
             {/* Next steps */}
-            <div className="rounded-2xl border border-orange-200 dark:border-orange-800 bg-gradient-to-br from-orange-50 dark:from-orange-900/20 to-amber-50 dark:to-amber-900/20 p-5 md:p-6">
+            <div className="rounded-2xl border border-sky-200 dark:border-sky-800 bg-gradient-to-br from-sky-50 dark:from-sky-900/20 to-sky-50 dark:to-sky-900/20 p-5 md:p-6">
               <h4 className="text-base font-bold text-slate-900 dark:text-white">What Happens Next</h4>
               <p className="mt-0.5 text-xs text-slate-500 dark:text-gray-400">Your admin team will walk you through each step below.</p>
               <div className="mt-4 grid gap-3 md:grid-cols-3">
                 {[
                   {
-                    icon: <FileText className="h-4 w-4 text-orange-500 dark:text-orange-400" />,
+                    icon: <FileText className="h-4 w-4 text-sky-500 dark:text-sky-400" />,
                     label: 'Estimate',
                     desc: 'Review costing and scope once the admin uploads your quotation.',
                   },
                   {
-                    icon: <Eye className="h-4 w-4 text-orange-500 dark:text-orange-400" />,
+                    icon: <Eye className="h-4 w-4 text-sky-500 dark:text-sky-400" />,
                     label: 'Design Files',
                     desc: 'Concept directions and design updates stay tied to this request.',
                   },
                   {
-                    icon: <CalendarCheck className="h-4 w-4 text-orange-500 dark:text-orange-400" />,
+                    icon: <CalendarCheck className="h-4 w-4 text-sky-500 dark:text-sky-400" />,
                     label: 'Schedule',
                     desc: 'Consultation and site-visit confirmations appear here and in your email.',
                   },
                 ].map((item) => (
-                  <div key={item.label} className="rounded-xl border border-orange-200 dark:border-orange-800 bg-white/80 dark:bg-gray-700/40 px-4 py-3.5">
+                  <div key={item.label} className="rounded-xl border border-sky-200 dark:border-sky-800 bg-white/80 dark:bg-gray-700/40 px-4 py-3.5">
                     <div className="flex items-center gap-2">
                       {item.icon}
-                      <p className="text-xs font-bold uppercase tracking-wide text-orange-600 dark:text-orange-400">{item.label}</p>
+                      <p className="text-xs font-bold uppercase tracking-wide text-sky-600 dark:text-sky-400">{item.label}</p>
                     </div>
                     <p className="mt-2 text-sm leading-relaxed text-slate-600 dark:text-gray-300">{item.desc}</p>
                   </div>
@@ -392,7 +392,7 @@ export default function InteriorRequestsTab() {
   );
 }
 
-/* ─── Request header sub-component ──────────────────────────────────────────── */
+/* --- Request header sub-component --- */
 function RequestHeader({ selectedRequest }: { selectedRequest: InteriorRequestItem }) {
   return (
     <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-gray-800 p-5 md:p-6">

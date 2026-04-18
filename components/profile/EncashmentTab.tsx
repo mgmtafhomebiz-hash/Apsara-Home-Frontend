@@ -50,7 +50,7 @@ const formatCooldownRemaining = (minutes: number) => {
 };
 
 const statusStyle: Record<string, string> = {
-  pending: 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800',
+  pending: 'bg-sky-50 dark:bg-sky-900/30 text-sky-700 dark:text-sky-400 border-sky-200 dark:border-sky-800',
   approved: 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800',
   rejected: 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800',
   released: 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800',
@@ -131,7 +131,7 @@ function VerificationField({
 }) {
   return (
     <label className="space-y-1.5">
-      <span className={`block text-xs font-semibold ${error ? 'text-red-700 dark:text-red-400' : 'text-amber-900 dark:text-amber-300'}`}>
+      <span className={`block text-xs font-semibold ${error ? 'text-red-700 dark:text-red-400' : 'text-sky-900 dark:text-sky-300'}`}>
         {label}
         {required ? <span className="ml-1 text-red-500 dark:text-red-400">*</span> : null}
       </span>
@@ -400,7 +400,7 @@ const EncashmentTab = () => {
       'w-full rounded-xl px-3.5 py-2.5 text-sm bg-white/90 dark:bg-gray-900/90 focus:outline-none focus:ring-2 transition-colors',
       verificationErrors[field]
         ? 'border border-red-300 dark:border-red-800 text-red-900 dark:text-red-300 placeholder:text-red-300 dark:placeholder:text-red-700 focus:ring-red-200 dark:focus:ring-red-900/50'
-        : 'border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-100 dark:placeholder:text-amber-700 focus:ring-amber-200 dark:focus:ring-amber-900/50',
+        : 'border border-sky-200 dark:border-sky-800 text-sky-900 dark:text-sky-100 dark:placeholder:text-sky-700 focus:ring-sky-200 dark:focus:ring-sky-900/50',
       extra,
     ].join(' ');
 
@@ -800,7 +800,7 @@ const EncashmentTab = () => {
         </div>
         <div className="rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-800 p-4">
           <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Pending Requests</p>
-          <p className="mt-1 text-lg font-bold text-amber-700 dark:text-amber-400">{summary.pending}</p>
+          <p className="mt-1 text-lg font-bold text-sky-700 dark:text-sky-400">{summary.pending}</p>
         </div>
         <div className="rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-800 p-4">
           <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Total Released</p>
@@ -857,7 +857,7 @@ const EncashmentTab = () => {
                 <p className="text-xs text-red-700 dark:text-red-400 mt-0.5">{eligibility.message}</p>
               )}
               {eligibility.remaining_cooldown_minutes > 0 && (
-                <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">
+                <p className="text-xs text-sky-700 dark:text-sky-400 mt-0.5">
                   Cooldown remaining: {formatCooldownRemaining(eligibility.remaining_cooldown_minutes)}
                 </p>
               )}
@@ -900,7 +900,7 @@ const EncashmentTab = () => {
               <select
                 value={selectedMethodId}
                 onChange={(e) => applyMethodToForm(e.target.value)}
-                className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-900/50 focus:border-orange-300"
+                className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-sky-200 dark:focus:ring-sky-900/50 focus:border-sky-300"
               >
                 <option value="">Manual entry (no saved method)</option>
                 {methods.map((method) => (
@@ -934,7 +934,7 @@ const EncashmentTab = () => {
               type="text"
               value={methodForm.label}
               onChange={(e) => setMethodForm((prev) => ({ ...prev, label: e.target.value }))}
-              className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-900/50 focus:border-orange-300"
+              className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-sky-200 dark:focus:ring-sky-900/50 focus:border-sky-300"
               placeholder="Label (ex: Main GCash / Payroll Bank)"
             />
             <select
@@ -947,7 +947,7 @@ const EncashmentTab = () => {
                   channel: mapMethodTypeToChannel(methodType),
                 }));
               }}
-              className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-900/50 focus:border-orange-300"
+              className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-sky-200 dark:focus:ring-sky-900/50 focus:border-sky-300"
             >
               <option value="gcash">GCash</option>
               <option value="maya">Maya</option>
@@ -962,21 +962,21 @@ const EncashmentTab = () => {
                 type="text"
                 value={methodForm.accountName}
                 onChange={(e) => setMethodForm((prev) => ({ ...prev, accountName: e.target.value }))}
-                className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-900/50 focus:border-orange-300"
+                className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-sky-200 dark:focus:ring-sky-900/50 focus:border-sky-300"
                 placeholder="Account Name"
               />
               <input
                 type="text"
                 value={methodForm.mobileNumber}
                 onChange={(e) => setMethodForm((prev) => ({ ...prev, mobileNumber: e.target.value }))}
-                className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-900/50 focus:border-orange-300"
+                className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-sky-200 dark:focus:ring-sky-900/50 focus:border-sky-300"
                 placeholder="Mobile Number (09xxxxxxxxx)"
               />
               <input
                 type="email"
                 value={methodForm.emailAddress}
                 onChange={(e) => setMethodForm((prev) => ({ ...prev, emailAddress: e.target.value }))}
-                className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-900/50 focus:border-orange-300"
+                className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-sky-200 dark:focus:ring-sky-900/50 focus:border-sky-300"
                 placeholder="Email (optional)"
               />
             </div>
@@ -988,34 +988,34 @@ const EncashmentTab = () => {
                 type="text"
                 value={methodForm.bankName}
                 onChange={(e) => setMethodForm((prev) => ({ ...prev, bankName: e.target.value }))}
-                className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-900/50 focus:border-orange-300"
+                className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-sky-200 dark:focus:ring-sky-900/50 focus:border-sky-300"
                 placeholder="Bank Name"
               />
               <input
                 type="text"
                 value={methodForm.bankCode}
                 onChange={(e) => setMethodForm((prev) => ({ ...prev, bankCode: e.target.value }))}
-                className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-900/50 focus:border-orange-300"
+                className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-sky-200 dark:focus:ring-sky-900/50 focus:border-sky-300"
                 placeholder="Bank Code (optional)"
               />
               <input
                 type="text"
                 value={methodForm.accountName}
                 onChange={(e) => setMethodForm((prev) => ({ ...prev, accountName: e.target.value }))}
-                className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-900/50 focus:border-orange-300"
+                className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-sky-200 dark:focus:ring-sky-900/50 focus:border-sky-300"
                 placeholder="Account Name"
               />
               <input
                 type="text"
                 value={methodForm.accountNumber}
                 onChange={(e) => setMethodForm((prev) => ({ ...prev, accountNumber: e.target.value }))}
-                className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-900/50 focus:border-orange-300"
+                className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-sky-200 dark:focus:ring-sky-900/50 focus:border-sky-300"
                 placeholder="Account Number"
               />
               <select
                 value={methodForm.accountType}
                 onChange={(e) => setMethodForm((prev) => ({ ...prev, accountType: e.target.value as '' | 'savings' | 'checking' }))}
-                className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-900/50 focus:border-orange-300"
+                className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-sky-200 dark:focus:ring-sky-900/50 focus:border-sky-300"
               >
                 <option value="">Account Type</option>
                 <option value="savings">Savings</option>
@@ -1030,13 +1030,13 @@ const EncashmentTab = () => {
                 type="text"
                 value={methodForm.cardHolderName}
                 onChange={(e) => setMethodForm((prev) => ({ ...prev, cardHolderName: e.target.value }))}
-                className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-900/50 focus:border-orange-300"
+                className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-sky-200 dark:focus:ring-sky-900/50 focus:border-sky-300"
                 placeholder="Card Holder Name"
               />
               <select
                 value={methodForm.cardBrand}
                 onChange={(e) => setMethodForm((prev) => ({ ...prev, cardBrand: e.target.value as FormState['cardBrand'] }))}
-                className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-900/50 focus:border-orange-300"
+                className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-sky-200 dark:focus:ring-sky-900/50 focus:border-sky-300"
               >
                 <option value="">Card Brand</option>
                 <option value="visa">VISA</option>
@@ -1051,14 +1051,14 @@ const EncashmentTab = () => {
                 maxLength={4}
                 value={methodForm.cardLast4}
                 onChange={(e) => setMethodForm((prev) => ({ ...prev, cardLast4: e.target.value.replace(/\D/g, '').slice(0, 4) }))}
-                className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-900/50 focus:border-orange-300"
+                className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-sky-200 dark:focus:ring-sky-900/50 focus:border-sky-300"
                 placeholder="Last 4 Digits"
               />
               <input
                 type="text"
                 value={methodForm.accountNumber}
                 onChange={(e) => setMethodForm((prev) => ({ ...prev, accountNumber: e.target.value }))}
-                className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-900/50 focus:border-orange-300"
+                className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-sky-200 dark:focus:ring-sky-900/50 focus:border-sky-300"
                 placeholder="Reference Token (optional)"
               />
             </div>
@@ -1069,7 +1069,7 @@ const EncashmentTab = () => {
               type="button"
               onClick={() => void addMethod()}
               disabled={isSavingPayoutMethod}
-              className="rounded-xl border border-orange-200 dark:border-orange-800 dark:text-orange-400 dark:hover:bg-orange-900/30 px-3 py-2.5 text-xs font-semibold text-orange-700 hover:bg-orange-50 disabled:opacity-60"
+              className="rounded-xl border border-sky-200 dark:border-sky-800 dark:text-sky-400 dark:hover:bg-sky-900/30 px-3 py-2.5 text-xs font-semibold text-sky-700 hover:bg-sky-50 disabled:opacity-60"
             >
               {isSavingPayoutMethod ? 'Saving...' : 'Add Method'}
             </button>
@@ -1118,12 +1118,12 @@ const EncashmentTab = () => {
               : '0 0 0 rgba(245,158,11,0)',
           }}
           transition={{ duration: 0.45, ease: 'easeOut' }}
-          className={`scroll-mt-28 rounded-2xl border bg-amber-50 dark:bg-amber-900/20 p-5 md:p-6 transition-all duration-500 ${
-            isVerificationSpotlightActive ? 'border-amber-400 dark:border-amber-700 ring-4 ring-amber-200/70 dark:ring-amber-900/50' : 'border-amber-200 dark:border-amber-800'
+          className={`scroll-mt-28 rounded-2xl border bg-sky-50 dark:bg-sky-900/20 p-5 md:p-6 transition-all duration-500 ${
+            isVerificationSpotlightActive ? 'border-sky-400 dark:border-sky-700 ring-4 ring-sky-200/70 dark:ring-sky-900/50' : 'border-sky-200 dark:border-sky-800'
           }`}
         >
-          <h3 className="text-base font-bold text-amber-900 dark:text-amber-300">Verification Required</h3>
-          <p className="mt-1 text-sm text-amber-800 dark:text-amber-200">
+          <h3 className="text-base font-bold text-sky-900 dark:text-sky-300">Verification Required</h3>
+          <p className="mt-1 text-sm text-sky-800 dark:text-sky-200">
             To submit an encashment request, your account must be verified and active first. Complete the form and required documents for Admin/KYC review.
           </p>
           {message && showMessageInVerificationCard && (
@@ -1330,7 +1330,7 @@ const EncashmentTab = () => {
           </div>
           <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3">
             <VerificationField label="ID Front" required error={verificationErrors.idFrontUrl}>
-              <span data-verification-field="idFrontUrl" className={`block rounded-xl bg-white/90 dark:bg-gray-900/90 px-3.5 py-2.5 text-xs ${verificationErrors.idFrontUrl ? 'border border-red-300 dark:border-red-800 text-red-900 dark:text-red-300' : 'border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-100'}`}>
+              <span data-verification-field="idFrontUrl" className={`block rounded-xl bg-white/90 dark:bg-gray-900/90 px-3.5 py-2.5 text-xs ${verificationErrors.idFrontUrl ? 'border border-red-300 dark:border-red-800 text-red-900 dark:text-red-300' : 'border border-sky-200 dark:border-sky-800 text-sky-900 dark:text-sky-100'}`}>
               <input
                 type="file"
                 accept="image/png,image/jpeg,image/webp,image/gif"
@@ -1341,11 +1341,11 @@ const EncashmentTab = () => {
                   void handleVerificationImageUpload('idFrontUrl', file);
                 }}
               />
-              <span className="mt-1 block text-[11px] text-amber-700 dark:text-amber-400">{verificationUploadState.idFront ? 'Uploading...' : verificationForm.idFrontUrl ? 'Uploaded' : 'Not uploaded'}</span>
+              <span className="mt-1 block text-[11px] text-sky-700 dark:text-sky-400">{verificationUploadState.idFront ? 'Uploading...' : verificationForm.idFrontUrl ? 'Uploaded' : 'Not uploaded'}</span>
               </span>
             </VerificationField>
             <VerificationField label="ID Back" required error={verificationErrors.idBackUrl}>
-              <span data-verification-field="idBackUrl" className={`block rounded-xl bg-white/90 px-3.5 py-2.5 text-xs ${verificationErrors.idBackUrl ? 'border border-red-300 text-red-900' : 'border border-amber-200 text-amber-900'}`}>
+              <span data-verification-field="idBackUrl" className={`block rounded-xl bg-white/90 px-3.5 py-2.5 text-xs ${verificationErrors.idBackUrl ? 'border border-red-300 text-red-900' : 'border border-sky-200 text-sky-900'}`}>
               <input
                 type="file"
                 accept="image/png,image/jpeg,image/webp,image/gif"
@@ -1356,11 +1356,11 @@ const EncashmentTab = () => {
                   void handleVerificationImageUpload('idBackUrl', file);
                 }}
               />
-              <span className="mt-1 block text-[11px] text-amber-700">{verificationUploadState.idBack ? 'Uploading...' : verificationForm.idBackUrl ? 'Uploaded' : 'Not uploaded'}</span>
+              <span className="mt-1 block text-[11px] text-sky-700">{verificationUploadState.idBack ? 'Uploading...' : verificationForm.idBackUrl ? 'Uploaded' : 'Not uploaded'}</span>
               </span>
             </VerificationField>
             <VerificationField label="Selfie with ID" required error={verificationErrors.selfieUrl}>
-              <span data-verification-field="selfieUrl" className={`block rounded-xl bg-white/90 px-3.5 py-2.5 text-xs ${verificationErrors.selfieUrl ? 'border border-red-300 text-red-900' : 'border border-amber-200 text-amber-900'}`}>
+              <span data-verification-field="selfieUrl" className={`block rounded-xl bg-white/90 px-3.5 py-2.5 text-xs ${verificationErrors.selfieUrl ? 'border border-red-300 text-red-900' : 'border border-sky-200 text-sky-900'}`}>
               <input
                 type="file"
                 accept="image/png,image/jpeg,image/webp,image/gif"
@@ -1371,7 +1371,7 @@ const EncashmentTab = () => {
                   void handleVerificationImageUpload('selfieUrl', file);
                 }}
               />
-              <span className="mt-1 block text-[11px] text-amber-700">{verificationUploadState.selfie ? 'Uploading...' : verificationForm.selfieUrl ? 'Uploaded' : 'Not uploaded'}</span>
+              <span className="mt-1 block text-[11px] text-sky-700">{verificationUploadState.selfie ? 'Uploading...' : verificationForm.selfieUrl ? 'Uploaded' : 'Not uploaded'}</span>
               </span>
             </VerificationField>
           </div>
@@ -1382,12 +1382,12 @@ const EncashmentTab = () => {
               disabled={isSubmittingVerification || verificationUploadState.idFront || verificationUploadState.idBack || verificationUploadState.selfie}
               whileHover={{ scale: 1.01 }}
               whileTap={{ scale: 0.98 }}
-              className="inline-flex items-center gap-2 rounded-xl bg-amber-600 dark:bg-amber-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-amber-700 dark:hover:bg-amber-800 disabled:opacity-60"
+              className="inline-flex items-center gap-2 rounded-xl bg-sky-600 dark:bg-sky-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-sky-700 dark:hover:bg-sky-800 disabled:opacity-60"
             >
               {isSubmittingVerification ? 'Submitting...' : 'Submit for Verification Approval'}
             </motion.button>
           </div>
-          <p className="mt-2 text-xs text-amber-800/80 dark:text-amber-300/60">
+          <p className="mt-2 text-xs text-sky-800/80 dark:text-sky-300/60">
             Verification requests are reviewed by the Admin/KYC team.
           </p>
         </motion.div>
@@ -1431,7 +1431,7 @@ const EncashmentTab = () => {
               required
               value={form.amount}
               onChange={(e) => setForm((prev) => ({ ...prev, amount: e.target.value }))}
-              className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-900/50 focus:border-orange-300"
+              className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-sky-200 dark:focus:ring-sky-900/50 focus:border-sky-300"
               placeholder="e.g. 1500"
             />
           </div>
@@ -1449,7 +1449,7 @@ const EncashmentTab = () => {
                   channel: mapMethodTypeToChannel(methodType),
                 }));
               }}
-              className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-900/50 focus:border-orange-300"
+              className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-sky-200 dark:focus:ring-sky-900/50 focus:border-sky-300"
             >
               <option value="gcash">GCash</option>
               <option value="maya">Maya</option>
@@ -1467,7 +1467,7 @@ const EncashmentTab = () => {
                 type="text"
                 value={form.accountName}
                 onChange={(e) => setForm((prev) => ({ ...prev, accountName: e.target.value }))}
-                className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-900/50 focus:border-orange-300"
+                className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-sky-200 dark:focus:ring-sky-900/50 focus:border-sky-300"
                 placeholder="E-wallet owner name"
               />
             </div>
@@ -1477,7 +1477,7 @@ const EncashmentTab = () => {
                 type="text"
                 value={form.mobileNumber}
                 onChange={(e) => setForm((prev) => ({ ...prev, mobileNumber: e.target.value }))}
-                className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-900/50 focus:border-orange-300"
+                className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-sky-200 dark:focus:ring-sky-900/50 focus:border-sky-300"
                 placeholder="09xxxxxxxxx"
               />
             </div>
@@ -1487,7 +1487,7 @@ const EncashmentTab = () => {
                 type="email"
                 value={form.emailAddress}
                 onChange={(e) => setForm((prev) => ({ ...prev, emailAddress: e.target.value }))}
-                className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-900/50 focus:border-orange-300"
+                className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-sky-200 dark:focus:ring-sky-900/50 focus:border-sky-300"
                 placeholder="you@email.com"
               />
             </div>
@@ -1502,7 +1502,7 @@ const EncashmentTab = () => {
                 type="text"
                 value={form.bankName}
                 onChange={(e) => setForm((prev) => ({ ...prev, bankName: e.target.value }))}
-                className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-900/50 focus:border-orange-300"
+                className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-sky-200 dark:focus:ring-sky-900/50 focus:border-sky-300"
                 placeholder="Bank of example"
               />
             </div>
@@ -1512,7 +1512,7 @@ const EncashmentTab = () => {
                 type="text"
                 value={form.bankCode}
                 onChange={(e) => setForm((prev) => ({ ...prev, bankCode: e.target.value }))}
-                className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-900/50 focus:border-orange-300"
+                className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-sky-200 dark:focus:ring-sky-900/50 focus:border-sky-300"
                 placeholder="BPI / BDO / PNB"
               />
             </div>
@@ -1522,7 +1522,7 @@ const EncashmentTab = () => {
                 type="text"
                 value={form.accountName}
                 onChange={(e) => setForm((prev) => ({ ...prev, accountName: e.target.value }))}
-                className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-900/50 focus:border-orange-300"
+                className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-sky-200 dark:focus:ring-sky-900/50 focus:border-sky-300"
                 placeholder="Account holder name"
               />
             </div>
@@ -1532,7 +1532,7 @@ const EncashmentTab = () => {
                 type="text"
                 value={form.accountNumber}
                 onChange={(e) => setForm((prev) => ({ ...prev, accountNumber: e.target.value }))}
-                className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-900/50 focus:border-orange-300"
+                className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-sky-200 dark:focus:ring-sky-900/50 focus:border-sky-300"
                 placeholder="Bank account number"
               />
             </div>
@@ -1541,7 +1541,7 @@ const EncashmentTab = () => {
               <select
                 value={form.accountType}
                 onChange={(e) => setForm((prev) => ({ ...prev, accountType: e.target.value as '' | 'savings' | 'checking' }))}
-                className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-900/50 focus:border-orange-300"
+                className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-sky-200 dark:focus:ring-sky-900/50 focus:border-sky-300"
               >
                 <option value="">Select type</option>
                 <option value="savings">Savings</option>
@@ -1559,7 +1559,7 @@ const EncashmentTab = () => {
                 type="text"
                 value={form.cardHolderName}
                 onChange={(e) => setForm((prev) => ({ ...prev, cardHolderName: e.target.value }))}
-                className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-900/50 focus:border-orange-300"
+                className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-sky-200 dark:focus:ring-sky-900/50 focus:border-sky-300"
                 placeholder="Name on card"
               />
             </div>
@@ -1568,7 +1568,7 @@ const EncashmentTab = () => {
               <select
                 value={form.cardBrand}
                 onChange={(e) => setForm((prev) => ({ ...prev, cardBrand: e.target.value as FormState['cardBrand'] }))}
-                className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-900/50 focus:border-orange-300"
+                className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-sky-200 dark:focus:ring-sky-900/50 focus:border-sky-300"
               >
                 <option value="">Select brand</option>
                 <option value="visa">VISA</option>
@@ -1586,7 +1586,7 @@ const EncashmentTab = () => {
                 maxLength={4}
                 value={form.cardLast4}
                 onChange={(e) => setForm((prev) => ({ ...prev, cardLast4: e.target.value.replace(/\D/g, '').slice(0, 4) }))}
-                className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-900/50 focus:border-orange-300"
+                className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-sky-200 dark:focus:ring-sky-900/50 focus:border-sky-300"
                 placeholder="1234"
               />
             </div>
@@ -1596,7 +1596,7 @@ const EncashmentTab = () => {
                 type="text"
                 value={form.accountNumber}
                 onChange={(e) => setForm((prev) => ({ ...prev, accountNumber: e.target.value }))}
-                className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-900/50 focus:border-orange-300"
+                className="w-full rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-gray-900 dark:text-white px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-sky-200 dark:focus:ring-sky-900/50 focus:border-sky-300"
                 placeholder="Processor token/ref"
               />
             </div>
@@ -1609,7 +1609,7 @@ const EncashmentTab = () => {
             rows={3}
             value={form.notes}
             onChange={(e) => setForm((prev) => ({ ...prev, notes: e.target.value }))}
-            className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300"
+            className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-sky-200 focus:border-sky-300"
             placeholder="Optional notes for finance team"
           />
         </div>
@@ -1618,7 +1618,7 @@ const EncashmentTab = () => {
           <button
             type="submit"
             disabled={isSubmitting || !isCustomerSession}
-            className="inline-flex items-center gap-2 rounded-xl bg-orange-500 dark:bg-orange-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-orange-600 dark:hover:bg-orange-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+            className="inline-flex items-center gap-2 rounded-xl bg-sky-500 dark:bg-sky-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-sky-600 dark:hover:bg-sky-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
           >
             {isSubmitting ? 'Submitting...' : 'Submit Request'}
           </button>
@@ -1636,14 +1636,14 @@ const EncashmentTab = () => {
             type="button"
             onClick={() => refetch()}
             disabled={isFetching}
-            className="inline-flex items-center rounded-lg border border-gray-200 dark:border-slate-700 dark:text-gray-300 dark:hover:bg-gray-700 px-3 py-1.5 text-xs font-semibold text-gray-600 hover:border-orange-200 hover:text-orange-600 disabled:opacity-60"
+            className="inline-flex items-center rounded-lg border border-gray-200 dark:border-slate-700 dark:text-gray-300 dark:hover:bg-gray-700 px-3 py-1.5 text-xs font-semibold text-gray-600 hover:border-sky-200 hover:text-sky-600 disabled:opacity-60"
           >
             {isFetching ? 'Refreshing...' : 'Refresh'}
           </button>
         </div>
 
         {!isCustomerSession && (
-          <div className="rounded-xl border border-amber-100 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/30 px-4 py-3 text-sm text-amber-700 dark:text-amber-400">
+          <div className="rounded-xl border border-sky-100 dark:border-sky-800 bg-sky-50 dark:bg-sky-900/30 px-4 py-3 text-sm text-sky-700 dark:text-sky-400">
             You are currently signed in with an admin account. Please sign in as customer/affiliate to view encashment history.
           </div>
         )}

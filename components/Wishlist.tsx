@@ -93,7 +93,7 @@ export default function Wishlist({ initialCategories }: WishlistProps) {
     <>
       <TopBar />
       <Navbar initialCategories={initialCategories} />
-      <main className="min-h-screen bg-gradient-to-br from-slate-50 dark:from-gray-900 via-white dark:via-gray-900 to-orange-50/20 dark:to-gray-800">
+      <main className="min-h-screen bg-gradient-to-br from-slate-50 dark:from-gray-900 via-white dark:via-gray-900 to-sky-50/20 dark:to-gray-800">
       <div className="container mx-auto px-4 py-10">
 
         {/* Header */}
@@ -108,7 +108,7 @@ export default function Wishlist({ initialCategories }: WishlistProps) {
             <button
               type="button"
               onClick={() => window.history.length > 1 ? router.back() : router.push('/shop')}
-              className="hover:text-orange-500 dark:hover:text-orange-400 transition-colors"
+              className="hover:text-sky-500 dark:hover:text-sky-400 transition-colors"
             >
               Shop
             </button>
@@ -119,7 +119,7 @@ export default function Wishlist({ initialCategories }: WishlistProps) {
           <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
             {/* Title */}
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-orange-500 dark:bg-orange-600 text-white">
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-sky-500 dark:bg-sky-600 text-white">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="white" stroke="white" strokeWidth="1.5">
                   <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
                 </svg>
@@ -153,7 +153,7 @@ export default function Wishlist({ initialCategories }: WishlistProps) {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search saved items..."
-                className="w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-gray-800 pl-10 pr-10 py-2.5 text-sm text-slate-800 dark:text-gray-100 outline-none transition-all focus:border-orange-300 dark:focus:border-orange-700 focus:ring-2 focus:ring-orange-100 dark:focus:ring-orange-900/50 placeholder:text-slate-400 dark:placeholder:text-gray-500"
+                className="w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-gray-800 pl-10 pr-10 py-2.5 text-sm text-slate-800 dark:text-gray-100 outline-none transition-all focus:border-sky-300 dark:focus:border-sky-700 focus:ring-2 focus:ring-sky-100 dark:focus:ring-sky-900/50 placeholder:text-slate-400 dark:placeholder:text-gray-500"
               />
               {search && (
                 <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-gray-500 hover:text-slate-600 dark:hover:text-gray-400">
@@ -187,14 +187,14 @@ export default function Wishlist({ initialCategories }: WishlistProps) {
             animate={{ opacity: 1, y: 0 }}
             className="flex flex-col items-center justify-center rounded-3xl border border-slate-100 dark:border-slate-700 bg-white dark:bg-gray-800 py-24 text-center"
           >
-            <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-orange-50 dark:bg-orange-900/30 text-orange-400 dark:text-orange-500">
+            <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-sky-50 dark:bg-sky-900/30 text-sky-400 dark:text-sky-500">
               <HeartIcon />
             </div>
             <h2 className="text-lg font-bold text-slate-900 dark:text-white">Sign in to view your wishlist</h2>
             <p className="mt-1.5 text-sm text-slate-500 dark:text-gray-400 max-w-xs">Save products you love and access them anytime from any device.</p>
             <Link
               href={`/login?callback=${encodeURIComponent(pathname)}`}
-              className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-orange-500 dark:bg-orange-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-orange-600 dark:hover:bg-orange-700 transition-colors"
+              className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-sky-500 dark:bg-sky-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-sky-600 dark:hover:bg-sky-700 transition-colors"
             >
               Sign In
             </Link>
@@ -228,7 +228,7 @@ export default function Wishlist({ initialCategories }: WishlistProps) {
             animate={{ opacity: 1, y: 0 }}
             className="flex flex-col items-center justify-center rounded-3xl border border-slate-100 dark:border-slate-700 bg-white dark:bg-gray-800 py-24 text-center"
           >
-            <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-orange-50 dark:bg-orange-900/30 text-orange-400 dark:text-orange-500">
+            <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-sky-50 dark:bg-sky-900/30 text-sky-400 dark:text-sky-500">
               <HeartIcon />
             </div>
             <h2 className="text-lg font-bold text-slate-900 dark:text-white">
@@ -246,7 +246,7 @@ export default function Wishlist({ initialCategories }: WishlistProps) {
                   Clear Search
                 </button>
               )}
-              <Link href="/shop" className="rounded-2xl bg-orange-500 dark:bg-orange-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-orange-600 dark:hover:bg-orange-700 transition-colors">
+              <Link href="/shop" className="rounded-2xl bg-sky-500 dark:bg-sky-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-sky-600 dark:hover:bg-sky-700 transition-colors">
                 Browse Shop
               </Link>
             </div>
@@ -302,17 +302,17 @@ export default function Wishlist({ initialCategories }: WishlistProps) {
                     {/* Product Info */}
                     <div className="min-w-0 flex-1">
                       <Link href={productPath} className="block">
-                        <h2 className="line-clamp-2 text-sm font-semibold text-slate-800 dark:text-gray-200 hover:text-orange-500 dark:hover:text-orange-400 transition-colors">
+                        <h2 className="line-clamp-2 text-sm font-semibold text-slate-800 dark:text-gray-200 hover:text-sky-500 dark:hover:text-sky-400 transition-colors">
                           {item.name}
                         </h2>
                       </Link>
                       <div className="mt-1.5 flex flex-wrap items-center gap-2">
-                        <p className="text-sm font-bold text-orange-500 dark:text-orange-400">
-                          ₱{displayPrice.toLocaleString()}
+                        <p className="text-sm font-bold text-sky-500 dark:text-sky-400">
+                          ?{displayPrice.toLocaleString()}
                         </p>
                         {strikePrice > displayPrice && (
                           <p className="text-xs font-semibold text-slate-400 dark:text-gray-500 line-through">
-                            ₱{strikePrice.toLocaleString()}
+                            ?{strikePrice.toLocaleString()}
                           </p>
                         )}
                         {displayPv > 0 && (
@@ -324,7 +324,7 @@ export default function Wishlist({ initialCategories }: WishlistProps) {
                       <div className="mt-2 flex items-center gap-2">
                         <Link
                           href={productPath}
-                          className="flex items-center gap-1.5 rounded-xl bg-orange-500 hover:bg-orange-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors"
+                          className="flex items-center gap-1.5 rounded-xl bg-sky-500 hover:bg-sky-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors"
                         >
                           <CartIcon /> Add to Cart
                         </Link>

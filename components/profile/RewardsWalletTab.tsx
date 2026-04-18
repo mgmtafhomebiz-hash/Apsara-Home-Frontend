@@ -62,8 +62,8 @@ const STATUS_CONFIG: Record<string, { label: string; cls: string; dot: string }>
   },
   expired: {
     label: 'Expired',
-    cls: 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 ring-1 ring-amber-200 dark:ring-amber-800',
-    dot: 'bg-amber-500',
+    cls: 'bg-sky-50 dark:bg-sky-900/30 text-sky-700 dark:text-sky-400 ring-1 ring-sky-200 dark:ring-sky-800',
+    dot: 'bg-sky-500',
   },
 };
 
@@ -198,7 +198,7 @@ export default function RewardsWalletTab({
         <PvStatCard
           label="Available AF Voucher"
           value={peso(afVoucherBalance)}
-          accent="amber"
+          accent="sky"
           helper="Reward vouchers currently available in your account"
         />
         <PvStatCard
@@ -236,12 +236,12 @@ export default function RewardsWalletTab({
           </div>
 
           <div className="mb-5 grid gap-2.5 sm:grid-cols-3">
-            <div className="rounded-2xl border border-orange-200 dark:border-orange-800 dark:bg-orange-900/30 px-4 py-3.5">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-orange-600 dark:text-orange-400">Cashback Source</p>
+            <div className="rounded-2xl border border-sky-200 dark:border-sky-800 dark:bg-sky-900/30 px-4 py-3.5">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-sky-600 dark:text-sky-400">Cashback Source</p>
               <p className="mt-1.5 text-lg font-bold text-slate-900 dark:text-white">{peso(cashbackSourceBalance)}</p>
             </div>
-            <div className="rounded-2xl border border-amber-200 dark:border-amber-800 dark:bg-amber-900/30 px-4 py-3.5">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-amber-600 dark:text-amber-400">Cashback Reserved</p>
+            <div className="rounded-2xl border border-sky-200 dark:border-sky-800 dark:bg-sky-900/30 px-4 py-3.5">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-sky-600 dark:text-sky-400">Cashback Reserved</p>
               <p className="mt-1.5 text-lg font-bold text-slate-900 dark:text-white">{peso(cashbackReservedBalance)}</p>
             </div>
             <div className="rounded-2xl border border-emerald-200 dark:border-emerald-800 dark:bg-emerald-900/30 px-4 py-3.5">
@@ -264,7 +264,7 @@ export default function RewardsWalletTab({
                     step="0.01"
                     value={voucherAmount}
                     onChange={(e) => setVoucherAmount(e.target.value)}
-                    className="w-full rounded-2xl border border-slate-200 dark:border-slate-700 dark:bg-gray-900 py-2.5 pl-8 pr-4 text-sm text-slate-900 dark:text-white outline-none transition focus:border-orange-400 dark:focus:border-orange-600 focus:dark:bg-gray-800 focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-800/50"
+                    className="w-full rounded-2xl border border-slate-200 dark:border-slate-700 dark:bg-gray-900 py-2.5 pl-8 pr-4 text-sm text-slate-900 dark:text-white outline-none transition focus:border-sky-400 dark:focus:border-sky-600 focus:dark:bg-gray-800 focus:ring-2 focus:ring-sky-200 dark:focus:ring-sky-800/50"
                     placeholder="0.00"
                     required
                   />
@@ -282,7 +282,7 @@ export default function RewardsWalletTab({
                     min={todayStr}
                     value={expiresAt}
                     onChange={(e) => setExpiresAt(e.target.value)}
-                    className="w-full rounded-2xl border border-slate-200 dark:border-slate-700 dark:bg-gray-900 px-3.5 py-2.5 text-sm text-slate-900 dark:text-white outline-none transition focus:border-orange-400 dark:focus:border-orange-600 focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-800/50"
+                    className="w-full rounded-2xl border border-slate-200 dark:border-slate-700 dark:bg-gray-900 px-3.5 py-2.5 text-sm text-slate-900 dark:text-white outline-none transition focus:border-sky-400 dark:focus:border-sky-600 focus:ring-2 focus:ring-sky-200 dark:focus:ring-sky-800/50"
                   />
                   <p className="mt-1 text-[11px] text-slate-400 dark:text-gray-500">Leave blank for no expiry.</p>
                 </div>
@@ -297,7 +297,7 @@ export default function RewardsWalletTab({
                     step="1"
                     value={maxUses}
                     onChange={(e) => setMaxUses(e.target.value)}
-                    className="w-full rounded-2xl border border-slate-200 dark:border-slate-700 dark:bg-gray-900 px-3.5 py-2.5 text-sm text-slate-900 dark:text-white outline-none transition focus:border-orange-400 dark:focus:border-orange-600 focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-800/50"
+                    className="w-full rounded-2xl border border-slate-200 dark:border-slate-700 dark:bg-gray-900 px-3.5 py-2.5 text-sm text-slate-900 dark:text-white outline-none transition focus:border-sky-400 dark:focus:border-sky-600 focus:ring-2 focus:ring-sky-200 dark:focus:ring-sky-800/50"
                     placeholder="e.g. 1"
                   />
                   <p className="mt-1 text-[11px] text-slate-400 dark:text-gray-500">Leave blank for unlimited uses.</p>
@@ -319,7 +319,7 @@ export default function RewardsWalletTab({
               <button
                 type="submit"
                 disabled={isCreatingVoucher}
-                className="w-full rounded-2xl bg-orange-500 py-3 text-sm font-bold text-white transition hover:bg-orange-600 dark:hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-60"
+                className="w-full rounded-2xl bg-sky-500 py-3 text-sm font-bold text-white transition hover:bg-sky-600 dark:hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {isCreatingVoucher ? 'Creating...' : 'Create Voucher'}
               </button>
@@ -329,9 +329,9 @@ export default function RewardsWalletTab({
               </p>
             </form>
           ) : (
-            <div className="rounded-2xl border border-dashed border-amber-200 dark:border-amber-800 dark:bg-amber-900/20 px-5 py-5">
+            <div className="rounded-2xl border border-dashed border-sky-200 dark:border-sky-800 dark:bg-sky-900/20 px-5 py-5">
               <div className="mb-2 flex items-center gap-3">
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sky-100 dark:bg-sky-900/30 text-sky-600 dark:text-sky-400">
                   <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path
                       strokeLinecap="round"
@@ -401,7 +401,7 @@ export default function RewardsWalletTab({
             <h3 className="mt-1 text-lg font-bold text-slate-900 dark:text-white">Your shareable codes</h3>
           </div>
           <span className="rounded-full border border-slate-200 dark:border-slate-700 dark:bg-gray-900 px-3 py-1 text-xs font-semibold text-slate-600 dark:text-gray-400">
-            {vouchers.length} total · {activeVoucherCount} active
+            {vouchers.length} total - {activeVoucherCount} active
           </span>
         </div>
 

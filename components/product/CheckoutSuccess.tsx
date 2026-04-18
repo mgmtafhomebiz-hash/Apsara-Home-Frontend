@@ -96,10 +96,10 @@ function CheckoutSuccessPage() {
   const isPaid = normalizedStatus === 'paid' || normalizedStatus === 'succeeded' || normalizedStatus === 'success';
   const isPending = !isPaid && (normalizedStatus === 'unpaid' || normalizedStatus === 'active' || normalizedStatus === 'pending');
 
-  // ── LOADING ──────────────────────────────────────────────────
+  // -- LOADING --------------------------------------------------
   if (loading) {
     return (
-      <main className="min-h-screen bg-gradient-to-br from-slate-50 to-orange-50/40 flex items-center justify-center p-4">
+      <main className="min-h-screen bg-gradient-to-br from-slate-50 to-sky-50/40 flex items-center justify-center p-4">
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -107,10 +107,10 @@ function CheckoutSuccessPage() {
         >
           {/* Spinner with logo */}
           <div className="relative h-24 w-24 mx-auto">
-            <div className="absolute inset-0 rounded-full border-4 border-orange-100" />
-            <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-orange-500 animate-spin" />
+            <div className="absolute inset-0 rounded-full border-4 border-sky-100" />
+            <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-sky-500 animate-spin" />
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center shadow-lg shadow-orange-200">
+              <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-sky-400 to-sky-600 flex items-center justify-center shadow-lg shadow-sky-200">
                 <span className="text-white font-black text-sm">AF</span>
               </div>
             </div>
@@ -126,7 +126,7 @@ function CheckoutSuccessPage() {
             {[0, 1, 2].map(i => (
               <div
                 key={i}
-                className="h-2 w-2 rounded-full bg-orange-400 animate-bounce"
+                className="h-2 w-2 rounded-full bg-sky-400 animate-bounce"
                 style={{ animationDelay: `${i * 0.15}s` }}
               />
             ))}
@@ -136,7 +136,7 @@ function CheckoutSuccessPage() {
     );
   }
 
-  // ── ERROR ─────────────────────────────────────────────────────
+  // -- ERROR -----------------------------------------------------
   if (error) {
     return (
       <main className="min-h-screen bg-gradient-to-br from-slate-50 to-red-50/30 flex items-center justify-center p-4">
@@ -162,7 +162,7 @@ function CheckoutSuccessPage() {
 
             <div className="mt-7 flex flex-col gap-2.5">
               <Link href="/"
-                className="w-full py-3 rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold text-sm text-center transition-all shadow-md shadow-orange-100 flex items-center justify-center gap-2"
+                className="w-full py-3 rounded-xl bg-gradient-to-r from-sky-500 to-sky-600 hover:from-sky-600 hover:to-sky-700 text-white font-semibold text-sm text-center transition-all shadow-md shadow-sky-100 flex items-center justify-center gap-2"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
@@ -176,17 +176,17 @@ function CheckoutSuccessPage() {
     );
   }
 
-  // ── RESULT ────────────────────────────────────────────────────
+  // -- RESULT ----------------------------------------------------
   const bgClass = isPaid
     ? 'from-green-50/60 to-teal-50/30'
     : isPending
-    ? 'from-amber-50/60 to-orange-50/30'
+    ? 'from-sky-50/60 to-sky-50/30'
     : 'from-red-50/50 to-slate-50';
 
-  const iconBg = isPaid ? 'bg-green-500' : isPending ? 'bg-amber-500' : 'bg-red-500';
-  const headerBg = isPaid ? 'from-green-50 to-white' : isPending ? 'from-amber-50 to-white' : 'from-red-50 to-white';
-  const titleColor = isPaid ? 'text-green-700' : isPending ? 'text-amber-700' : 'text-red-700';
-  const badgeClass = isPaid ? 'bg-green-100 text-green-700' : isPending ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700';
+  const iconBg = isPaid ? 'bg-green-500' : isPending ? 'bg-sky-500' : 'bg-red-500';
+  const headerBg = isPaid ? 'from-green-50 to-white' : isPending ? 'from-sky-50 to-white' : 'from-red-50 to-white';
+  const titleColor = isPaid ? 'text-green-700' : isPending ? 'text-sky-700' : 'text-red-700';
+  const badgeClass = isPaid ? 'bg-green-100 text-green-700' : isPending ? 'bg-sky-100 text-sky-700' : 'bg-red-100 text-red-700';
 
   const title = isPaid ? 'Payment Successful!' : isPending ? 'Payment Pending' : 'Payment Failed';
   const subtitle = isPaid
@@ -262,7 +262,7 @@ function CheckoutSuccessPage() {
               </div>
             </div>
 
-            {/* What's next — success only */}
+            {/* What's next - success only */}
             {isPaid && (
               <motion.div
                 initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
@@ -292,7 +292,7 @@ function CheckoutSuccessPage() {
             {/* Buttons */}
             <div className="flex flex-col gap-2.5 pt-1">
               <Link href={`/track-order?order=${encodeURIComponent(result?.checkout_id ?? '')}`}
-                className="w-full py-3 rounded-xl bg-amber-50 border border-amber-200 hover:bg-amber-100 text-amber-800 font-semibold text-sm text-center transition-all flex items-center justify-center gap-2"
+                className="w-full py-3 rounded-xl bg-sky-50 border border-sky-200 hover:bg-sky-100 text-sky-800 font-semibold text-sm text-center transition-all flex items-center justify-center gap-2"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 17h4V5H2v12h3m9 0h4m0 0a2 2 0 100 4 2 2 0 000-4zm-10 0a2 2 0 100 4 2 2 0 000-4m10 0V12l-4-4h-4" />
@@ -300,7 +300,7 @@ function CheckoutSuccessPage() {
                 Track This Order
               </Link>
               <Link href="/"
-                className="w-full py-3 rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold text-sm text-center transition-all shadow-md shadow-orange-100 flex items-center justify-center gap-2"
+                className="w-full py-3 rounded-xl bg-gradient-to-r from-sky-500 to-sky-600 hover:from-sky-600 hover:to-sky-700 text-white font-semibold text-sm text-center transition-all shadow-md shadow-sky-100 flex items-center justify-center gap-2"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
@@ -322,7 +322,7 @@ function CheckoutSuccessPage() {
               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
               </svg>
-              Secured by <span className="font-semibold text-slate-400 ml-0.5">PayMongo</span> · AF Home
+              Secured by <span className="font-semibold text-slate-400 ml-0.5">PayMongo</span>  ??  AF Home
             </p>
           </motion.div>
         </div>

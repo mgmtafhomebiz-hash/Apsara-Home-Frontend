@@ -862,7 +862,7 @@ export default function AdminUsersPageMain() {
   const [deleteTarget, setDeleteTarget] = useState<AdminUserItem | null>(null)
   const [banTarget, setBanTarget] = useState<AdminUserItem | null>(null)
   const latestInviteRoleLabel = latestInvite?.invite.role_label
-    ?? latestInvite?.invite.role.replace(/_/g, ' ')
+    ?? latestInvite?.invite.role?.replace(/_/g, ' ')
     ?? 'Admin'
   const latestInviteExpiresAt = formatDateTime(latestInvite?.invite.expires_at)
 

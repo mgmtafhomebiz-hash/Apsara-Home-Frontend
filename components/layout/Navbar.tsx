@@ -60,7 +60,7 @@ const navLinks: NavLink[] = [
 const toSlug = (value: string) => value.toLowerCase().trim().replace(/\s+/g, '-');
 
 const normalizeCategorySlug = (rawUrl: string | null | undefined, fallbackName: string) => {
-  const source = (rawUrl ?? '').trim();
+  const source = String(rawUrl ?? '').trim();
   if (!source || source === '0') return toSlug(fallbackName);
 
   const withoutDomain = source.replace(/^https?:\/\/[^/]+/i, '');
@@ -138,7 +138,7 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
   const [logoutApi] = useLogoutMutation();
   const isLoggedIn = isCustomerSession
   const avatarUrl = isCustomerSession ? (meData?.avatar_url || user?.image || null) : null
-  const customerNotificationCacheKey = meData?.id ?? user?.id ?? 'guest'
+  const customerNotificationCacheKey = String(meData?.id ?? user?.id ?? 'guest')
   const {
     data: notificationsData,
     isLoading: isNotificationsLoading,
@@ -623,7 +623,7 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                       <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
                     </svg>
                     {wishlist.length > 0 && (
-                      <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-[10px] rounded-full min-w-[16px] h-4 px-1 flex items-center justify-center">
+                      <span className="absolute -top-1 -right-1 bg-sky-500 text-white text-[10px] rounded-full min-w-[16px] h-4 px-1 flex items-center justify-center">
                         {wishlist.length > 99 ? '99+' : wishlist.length}
                       </span>
                     )}
@@ -645,7 +645,7 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                       <path d="M9 17a3 3 0 0 0 6 0" />
                     </svg>
                     {unreadNotificationCount > 0 && (
-                      <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-[10px] rounded-full min-w-[16px] h-4 px-1 flex items-center justify-center">
+                      <span className="absolute -top-1 -right-1 bg-sky-500 text-white text-[10px] rounded-full min-w-[16px] h-4 px-1 flex items-center justify-center">
                         {unreadNotificationCount > 99 ? '99+' : unreadNotificationCount}
                       </span>
                     )}
@@ -661,18 +661,18 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                         className="fixed left-2 right-2 top-16 mt-0 w-auto rounded-2xl border border-gray-100 dark:border-gray-800 !bg-white dark:!bg-gray-900 shadow-xl shadow-black/10 overflow-hidden z-50 sm:absolute sm:right-0 sm:left-auto sm:top-auto sm:mt-2 sm:w-[360px] sm:max-w-[calc(100vw-1rem)]"
                       >
                         {/* Header */}
-                        <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-orange-50 to-white dark:from-orange-950/20 dark:to-gray-900 border-b border-orange-100/80 dark:border-orange-800/50">
+                        <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-sky-50 to-white dark:from-sky-950/20 dark:to-gray-900 border-b border-sky-100/80 dark:border-sky-800/50">
                           <div className="flex items-center gap-2">
                             <p className="text-sm font-bold text-gray-900 dark:text-gray-100">Notifications</p>
                             {unreadNotificationCount > 0 && (
-                              <span className="bg-orange-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] px-1 flex items-center justify-center leading-none">
+                              <span className="bg-sky-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] px-1 flex items-center justify-center leading-none">
                                 {unreadNotificationCount > 99 ? '99+' : unreadNotificationCount}
                               </span>
                             )}
                           </div>
                           <button
                             onClick={markAllCustomerNotificationsAsRead}
-                            className="shrink-0 text-xs font-semibold text-orange-600 hover:text-orange-700 transition-colors"
+                            className="shrink-0 text-xs font-semibold text-sky-600 hover:text-sky-700 transition-colors"
                           >
                             Mark all read
                           </button>
@@ -682,7 +682,7 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                         <div className="max-h-[60vh] overflow-y-auto sm:max-h-[52vh] divide-y divide-gray-50 dark:divide-gray-800">
                           {isNotificationsLoading ? (
                             <div className="flex flex-col items-center justify-center py-10 gap-3">
-                              <div className="h-7 w-7 rounded-full border-2 border-orange-200 border-t-orange-500 animate-spin" />
+                              <div className="h-7 w-7 rounded-full border-2 border-sky-200 border-t-sky-500 animate-spin" />
                               <p className="text-xs text-gray-400 dark:text-gray-500">Loading...</p>
                             </div>
                           ) : isNotificationsError ? (
@@ -701,17 +701,17 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                                     markCustomerNotificationAsRead(item)
                                     setNotifMenuOpen(false)
                                   }}
-                                  className={`flex items-start gap-3 px-4 py-3.5 transition-colors hover:bg-orange-50/60 ${!isRead ? 'bg-orange-50/30' : ''}`}
+                                  className={`flex items-start gap-3 px-4 py-3.5 transition-colors hover:bg-sky-50/60 ${!isRead ? 'bg-sky-50/30' : ''}`}
                                 >
                                   <div className={`shrink-0 h-9 w-9 rounded-full flex items-center justify-center text-sm font-bold ${
-                                    !isRead ? 'bg-orange-100 text-orange-600' : 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500'
+                                    !isRead ? 'bg-sky-100 text-sky-600' : 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500'
                                   }`}>
                                     {item.title.charAt(0).toUpperCase()}
                                   </div>
                                   <div className="flex-1 min-w-0">
                                     <div className="flex items-start justify-between gap-1.5">
                                       <p className={`text-sm leading-snug ${!isRead ? 'font-semibold text-gray-900 dark:text-gray-100' : 'font-medium text-gray-600 dark:text-gray-300'}`}>{item.title}</p>
-                                      {!isRead && <span className="shrink-0 mt-1 h-2 w-2 bg-orange-500 rounded-full" />}
+                                      {!isRead && <span className="shrink-0 mt-1 h-2 w-2 bg-sky-500 rounded-full" />}
                                     </div>
                                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-relaxed line-clamp-2">{item.description}</p>
                                     <div className="flex items-center gap-2 mt-1.5">
@@ -719,7 +719,7 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                                         <span className="text-[11px] text-gray-400 dark:text-gray-500">{formatCustomerNotificationTime(item.latest_at)} PHT</span>
                                       )}
                                       {item.count > 1 && (
-                                        <span className="text-[11px] bg-orange-100 text-orange-600 font-semibold rounded-full px-1.5 py-0.5 leading-none">×{item.count}</span>
+                                        <span className="text-[11px] bg-sky-100 text-sky-600 font-semibold rounded-full px-1.5 py-0.5 leading-none">?{item.count}</span>
                                       )}
                                     </div>
                                   </div>
@@ -763,7 +763,7 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                   </svg>
 
                   {cartCount > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-[10px] rounded-full min-w-[16px] h-4 px-1 flex items-center justify-center">
+                    <span className="absolute -top-1 -right-1 bg-sky-500 text-white text-[10px] rounded-full min-w-[16px] h-4 px-1 flex items-center justify-center">
                       {cartCount}
                     </span>
                   )}
@@ -797,8 +797,8 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                         className="h-8 w-8 rounded-full object-cover"
                       />
                     ) : (
-                      <span className="flex items-center justify-center h-8 w-8 rounded-full bg-orange-100 text-orange-600 text-xs font-semibold uppercase">
-                        {user?.name?.charAt(0) ?? 'U'}
+                      <span className="flex items-center justify-center h-8 w-8 rounded-full bg-sky-100 text-sky-600 text-xs font-semibold uppercase">
+                        {user?.name?.charAt(0)?.toUpperCase() ?? 'U'}
                       </span>
                     )}
                   </button>
@@ -813,7 +813,7 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                         className="absolute right-0 mt-2 w-64 rounded-2xl border border-gray-200 dark:border-gray-800 !bg-white dark:!bg-gray-900 shadow-xl shadow-black/10 overflow-hidden z-50"
                       >
                         {/* User info header */}
-                        <div className="px-4 py-4 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-gray-900 border-b border-orange-100 dark:border-orange-800/50">
+                        <div className="px-4 py-4 bg-gradient-to-br from-sky-50 to-sky-50 dark:from-sky-950/20 dark:to-gray-900 border-b border-sky-100 dark:border-sky-800/50">
                           <div className="flex items-center gap-3">
                             {avatarUrl ? (
                               <img
@@ -822,8 +822,8 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                                 className="h-11 w-11 rounded-full object-cover ring-2 ring-white dark:ring-gray-700 shadow"
                               />
                             ) : (
-                              <span className="flex items-center justify-center h-11 w-11 rounded-full bg-orange-500 text-white text-sm font-bold uppercase ring-2 ring-white dark:ring-gray-700 shadow">
-                                {user?.name?.charAt(0) ?? 'U'}
+                              <span className="flex items-center justify-center h-11 w-11 rounded-full bg-sky-500 text-white text-sm font-bold uppercase ring-2 ring-white dark:ring-gray-700 shadow">
+                                {user?.name?.charAt(0)?.toUpperCase() ?? 'U'}
                               </span>
                             )}
                             <div className="min-w-0 flex-1">
@@ -835,8 +835,8 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                                   {user.email}
                                 </p>
                               )}
-                              <span className="inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400 text-[10px] font-semibold">
-                                <span className="h-1.5 w-1.5 rounded-full bg-orange-500" />
+                              <span className="inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 rounded-full bg-sky-100 text-sky-600 dark:bg-sky-900/30 dark:text-sky-400 text-[10px] font-semibold">
+                                <span className="h-1.5 w-1.5 rounded-full bg-sky-500" />
                                 Active
                               </span>
                             </div>
@@ -850,19 +850,19 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                             onClick={() => setProfileMenuOpen(false)}
                             className={`flex items-center gap-3 px-4 py-2.5 text-sm transition-colors group ${
                               pathname === '/profile'
-                                ? 'bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400'
+                                ? 'bg-sky-50 dark:bg-sky-900/20 text-sky-700 dark:text-sky-400'
                                 : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
                             }`}
                           >
                             <span className={`flex items-center justify-center h-7 w-7 rounded-lg transition-colors shrink-0 ${
                               pathname === '/profile'
-                                ? 'bg-orange-100 dark:bg-orange-900/40'
-                                : 'bg-gray-100 dark:bg-gray-700 group-hover:bg-orange-100 dark:group-hover:bg-orange-900/30'
+                                ? 'bg-sky-100 dark:bg-sky-900/40'
+                                : 'bg-gray-100 dark:bg-gray-700 group-hover:bg-sky-100 dark:group-hover:bg-sky-900/30'
                             }`}>
                               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={`transition-colors ${
                                 pathname === '/profile'
-                                  ? 'text-orange-600 dark:text-orange-400'
-                                  : 'text-gray-500 dark:text-gray-400 group-hover:text-orange-600'
+                                  ? 'text-sky-600 dark:text-sky-400'
+                                  : 'text-gray-500 dark:text-gray-400 group-hover:text-sky-600'
                               }`}>
                                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                                 <circle cx="12" cy="7" r="4" />
@@ -872,7 +872,7 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                               <p className="font-medium">My Profile</p>
                               <p className={`text-xs ${
                                 pathname === '/profile'
-                                  ? 'text-orange-600 dark:text-orange-500'
+                                  ? 'text-sky-600 dark:text-sky-500'
                                   : 'text-gray-400 dark:text-gray-500'
                               }`}>View & edit your info</p>
                             </div>
@@ -883,19 +883,19 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                             onClick={() => setProfileMenuOpen(false)}
                             className={`flex items-center gap-3 px-4 py-2.5 text-sm transition-colors group ${
                               pathname === '/orders'
-                                ? 'bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400'
+                                ? 'bg-sky-50 dark:bg-sky-900/20 text-sky-700 dark:text-sky-400'
                                 : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
                             }`}
                           >
                             <span className={`flex items-center justify-center h-7 w-7 rounded-lg transition-colors shrink-0 ${
                               pathname === '/orders'
-                                ? 'bg-orange-100 dark:bg-orange-900/40'
-                                : 'bg-gray-100 dark:bg-gray-700 group-hover:bg-orange-100 dark:group-hover:bg-orange-900/30'
+                                ? 'bg-sky-100 dark:bg-sky-900/40'
+                                : 'bg-gray-100 dark:bg-gray-700 group-hover:bg-sky-100 dark:group-hover:bg-sky-900/30'
                             }`}>
                               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={`transition-colors ${
                                 pathname === '/orders'
-                                  ? 'text-orange-600 dark:text-orange-400'
-                                  : 'text-gray-500 dark:text-gray-400 group-hover:text-orange-600'
+                                  ? 'text-sky-600 dark:text-sky-400'
+                                  : 'text-gray-500 dark:text-gray-400 group-hover:text-sky-600'
                               }`}>
                                 <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
                                 <line x1="3" y1="6" x2="21" y2="6" />
@@ -906,7 +906,7 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                               <p className="font-medium">My Orders</p>
                               <p className={`text-xs ${
                                 pathname === '/orders'
-                                  ? 'text-orange-600 dark:text-orange-500'
+                                  ? 'text-sky-600 dark:text-sky-500'
                                   : 'text-gray-400 dark:text-gray-500'
                               }`}>Track your purchases</p>
                             </div>
@@ -917,19 +917,19 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                             onClick={() => setProfileMenuOpen(false)}
                             className={`flex items-center gap-3 px-4 py-2.5 text-sm transition-colors group ${
                               pathname === '/wishlist'
-                                ? 'bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400'
+                                ? 'bg-sky-50 dark:bg-sky-900/20 text-sky-700 dark:text-sky-400'
                                 : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
                             }`}
                           >
                             <span className={`flex items-center justify-center h-7 w-7 rounded-lg transition-colors shrink-0 ${
                               pathname === '/wishlist'
-                                ? 'bg-orange-100 dark:bg-orange-900/40'
-                                : 'bg-gray-100 dark:bg-gray-700 group-hover:bg-orange-100 dark:group-hover:bg-orange-900/30'
+                                ? 'bg-sky-100 dark:bg-sky-900/40'
+                                : 'bg-gray-100 dark:bg-gray-700 group-hover:bg-sky-100 dark:group-hover:bg-sky-900/30'
                             }`}>
                               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={`transition-colors ${
                                 pathname === '/wishlist'
-                                  ? 'text-orange-600 dark:text-orange-400'
-                                  : 'text-gray-500 dark:text-gray-400 group-hover:text-orange-600'
+                                  ? 'text-sky-600 dark:text-sky-400'
+                                  : 'text-gray-500 dark:text-gray-400 group-hover:text-sky-600'
                               }`}>
                                 <path d="m12 21-1.45-1.32C5.4 15.36 2 12.28 2 8.5A4.5 4.5 0 0 1 6.5 4 5 5 0 0 1 12 6.09 5 5 0 0 1 17.5 4 4.5 4.5 0 0 1 22 8.5c0 3.78-3.4 6.86-8.55 11.18z" />
                               </svg>
@@ -938,7 +938,7 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                               <p className="font-medium">Wishlist</p>
                               <p className={`text-xs ${
                                 pathname === '/wishlist'
-                                  ? 'text-orange-600 dark:text-orange-500'
+                                  ? 'text-sky-600 dark:text-sky-500'
                                   : 'text-gray-400 dark:text-gray-500'
                               }`}>Your saved items</p>
                             </div>
@@ -989,7 +989,7 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                 </div>
 
                 <motion.div whileTap={{ scale: 0.96 }} transition={{ duration: 0.12 }}>
-                  <PrimaryButton href={`/login?callback=${encodeURIComponent(pathname)}`} className="!px-5 !py-2 !text-sm !rounded-full h-10">
+                  <PrimaryButton href="/login" className="!px-5 !py-2 !text-sm !rounded-full h-10">
                     <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0">
                       <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                       <circle cx="12" cy="7" r="4" />
@@ -1055,8 +1055,8 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                       onClick={() => open(link.label)}
                       className={`relative px-4 h-full flex items-center text-sm font-medium transition-colors duration-200 group ${
                         pathname.startsWith(link.href) || activeDropdown === link.label
-                          ? 'text-orange-500'
-                          : 'text-gray-600 dark:text-gray-300 hover:text-orange-500'
+                          ? 'text-sky-500'
+                          : 'text-gray-600 dark:text-gray-300 hover:text-sky-500'
                       }`}
                     >
                       {link.label}
@@ -1074,7 +1074,7 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                       >
                         <polyline points="6 9 12 15 18 9" />
                       </motion.svg>
-                      <span className={`absolute bottom-0 left-4 right-4 h-0.5 bg-orange-500 transition-transform duration-300 origin-left ${
+                      <span className={`absolute bottom-0 left-4 right-4 h-0.5 bg-sky-500 transition-transform duration-300 origin-left ${
                         pathname.startsWith(link.href) ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'
                       }`} />
                     </button>
@@ -1083,12 +1083,12 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                       href={link.href}
                       className={`relative px-4 h-full flex items-center text-sm font-medium transition-colors duration-200 group ${
                         pathname === link.href
-                          ? 'text-orange-500'
-                          : 'text-gray-600 dark:text-gray-300 hover:text-orange-500'
+                          ? 'text-sky-500'
+                          : 'text-gray-600 dark:text-gray-300 hover:text-sky-500'
                       }`}
                     >
                       {link.label}
-                      <span className={`absolute bottom-0 left-4 right-4 h-0.5 bg-orange-500 transition-transform duration-300 origin-left ${
+                      <span className={`absolute bottom-0 left-4 right-4 h-0.5 bg-sky-500 transition-transform duration-300 origin-left ${
                         pathname === link.href ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'
                       }`} />
                     </Link>
@@ -1120,13 +1120,13 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                       <Link
                         key={item.id}
                         href={item.href}
-                        className="group flex flex-col items-center gap-2 rounded-2xl px-2 py-3 text-center text-gray-600 dark:text-gray-400 transition-all duration-200 hover:bg-orange-50 dark:hover:bg-orange-950/20 hover:text-orange-500"
+                        className="group flex flex-col items-center gap-2 rounded-2xl px-2 py-3 text-center text-gray-600 dark:text-gray-400 transition-all duration-200 hover:bg-sky-50 dark:hover:bg-sky-950/20 hover:text-sky-500"
                       >
-                        <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gray-100 dark:bg-gray-800 transition-colors group-hover:bg-orange-100 dark:group-hover:bg-orange-950/30">
+                        <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gray-100 dark:bg-gray-800 transition-colors group-hover:bg-sky-100 dark:group-hover:bg-sky-950/30">
                           {item.image ? (
                             <Image src={item.image} alt={item.label} width={44} height={44} className="h-full w-full object-contain p-1" unoptimized />
                           ) : (
-                            <span className="text-sm font-bold text-gray-500 dark:text-gray-400 group-hover:text-orange-500 transition-colors">
+                            <span className="text-sm font-bold text-gray-500 dark:text-gray-400 group-hover:text-sky-500 transition-colors">
                               {item.label.split(/\s+/).slice(0, 2).map((p) => p[0]?.toUpperCase()).join('')}
                             </span>
                           )}
@@ -1139,7 +1139,7 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                   </div>
                   <Link
                     href="/by-brand"
-                    className="self-start inline-flex items-center gap-1.5 rounded-xl border border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-950/20 px-4 py-2 text-sm font-semibold text-orange-600 dark:text-orange-400 transition-colors hover:bg-orange-100 dark:hover:bg-orange-950/30"
+                    className="self-start inline-flex items-center gap-1.5 rounded-xl border border-sky-200 dark:border-sky-800 bg-sky-50 dark:bg-sky-950/20 px-4 py-2 text-sm font-semibold text-sky-600 dark:text-sky-400 transition-colors hover:bg-sky-100 dark:hover:bg-sky-950/30"
                   >
                     View All Brands
                     <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
@@ -1162,12 +1162,12 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                           href={item.href}
                           className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-all duration-200 group ${
                             isActive
-                              ? 'bg-orange-50 dark:bg-orange-950/30 text-orange-600 font-medium'
-                              : 'text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-orange-950/20 hover:text-orange-600'
+                              ? 'bg-sky-50 dark:bg-sky-950/30 text-sky-600 font-medium'
+                              : 'text-gray-700 dark:text-gray-300 hover:bg-sky-50 dark:hover:bg-sky-950/20 hover:text-sky-600'
                           }`}
                         >
                           <span className={`w-1.5 h-1.5 rounded-full transition-colors ${
-                            isActive ? 'bg-orange-400' : 'bg-gray-300 dark:bg-gray-600 group-hover:bg-orange-400'
+                            isActive ? 'bg-sky-400' : 'bg-gray-300 dark:bg-gray-600 group-hover:bg-sky-400'
                           }`} />
                           {item.label}
                         </Link>
@@ -1203,14 +1203,14 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                       href={`/by-room/${roomSlug}`}
                       className={`group flex flex-col items-center gap-2 rounded-2xl px-2 py-3 text-center transition-all duration-200 ${
                         isActive
-                          ? 'bg-orange-50 dark:bg-orange-950/30 text-orange-600'
-                          : 'text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-orange-950/20 hover:text-orange-500'
+                          ? 'bg-sky-50 dark:bg-sky-950/30 text-sky-600'
+                          : 'text-gray-700 dark:text-gray-300 hover:bg-sky-50 dark:hover:bg-sky-950/20 hover:text-sky-500'
                       }`}
                     >
                       <div className={`flex h-11 w-11 items-center justify-center rounded-xl transition-colors duration-200 ${
                         isActive
-                          ? 'bg-orange-100 dark:bg-orange-950/40 text-orange-500'
-                          : 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 group-hover:bg-orange-100 dark:group-hover:bg-orange-950/30 group-hover:text-orange-500'
+                          ? 'bg-sky-100 dark:bg-sky-950/40 text-sky-500'
+                          : 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 group-hover:bg-sky-100 dark:group-hover:bg-sky-950/30 group-hover:text-sky-500'
                       }`}>
                         {roomIcons[room] ?? roomIcons.BEDROOM}
                       </div>
@@ -1236,13 +1236,13 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
           >
             <nav className="container mx-auto px-4 py-3 flex flex-col gap-0.5">
               {isLoggedIn ? (
-                <div className="mb-3 rounded-2xl border border-orange-100 dark:border-orange-900/50 overflow-hidden shadow-sm dark:shadow-none">
+                <div className="mb-3 rounded-2xl border border-sky-100 dark:border-sky-900/50 overflow-hidden shadow-sm dark:shadow-none">
                   {/* Profile header */}
                   {(() => {
                     const rank = meData?.rank ?? 0;
                     const tier = rank >= 5 ? 'Lifestyle Elite' : rank === 4 ? 'Lifestyle Consultant' : rank === 3 ? 'Home Stylist' : rank === 2 ? 'Home Builder' : 'Home Starter';
                     const badgeImg = tier === 'Lifestyle Elite' ? '/Badge/lifestyleElite.png' : tier === 'Lifestyle Consultant' ? '/Badge/lifestyleConsultant.png' : tier === 'Home Stylist' ? '/Badge/homeStylist.png' : tier === 'Home Builder' ? '/Badge/homeBuilder.png' : '/Badge/homeStarter.png';
-                    const gradient = tier === 'Lifestyle Elite' ? 'from-amber-400 via-orange-400 to-rose-400' : tier === 'Lifestyle Consultant' ? 'from-violet-500 to-purple-600' : tier === 'Home Stylist' ? 'from-sky-400 to-blue-500' : tier === 'Home Builder' ? 'from-emerald-400 to-teal-500' : 'from-orange-400 to-amber-500';
+                    const gradient = tier === 'Lifestyle Elite' ? 'from-sky-400 via-sky-400 to-rose-400' : tier === 'Lifestyle Consultant' ? 'from-violet-500 to-purple-600' : tier === 'Home Stylist' ? 'from-sky-400 to-blue-500' : tier === 'Home Builder' ? 'from-emerald-400 to-teal-500' : 'from-sky-400 to-sky-500';
                     return (
                       <div className={`bg-gradient-to-br ${gradient} px-4 pt-4 pb-10 relative overflow-hidden`}>
                         <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(circle at 15% 60%, rgba(255,255,255,0.2) 0%, transparent 50%), radial-gradient(circle at 85% 15%, rgba(255,255,255,0.12) 0%, transparent 45%)' }} />
@@ -1262,7 +1262,7 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
 
                   {/* Avatar + info */}
                   <div className="px-4 -mt-8 pb-4 bg-white dark:bg-gray-800">
-                    {/* Avatar row — overlapping the banner */}
+                    {/* Avatar row - overlapping the banner */}
                     <div className="flex items-end justify-between mb-2">
                       <div className="relative shrink-0">
                         {avatarUrl ? (
@@ -1272,21 +1272,21 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                             className="h-16 w-16 rounded-2xl object-cover ring-4 ring-white dark:ring-gray-700 shadow-lg"
                           />
                         ) : (
-                          <span className="flex items-center justify-center h-16 w-16 rounded-2xl bg-gradient-to-br from-orange-400 to-amber-500 text-white text-xl font-bold ring-4 ring-white dark:ring-gray-700 shadow-lg">
+                          <span className="flex items-center justify-center h-16 w-16 rounded-2xl bg-gradient-to-br from-sky-400 to-sky-500 text-white text-xl font-bold ring-4 ring-white dark:ring-gray-700 shadow-lg">
                             {user?.name?.charAt(0)?.toUpperCase() ?? 'U'}
                           </span>
                         )}
                         <span className="absolute -bottom-1 -right-1 h-4 w-4 rounded-full bg-emerald-400 border-2 border-white dark:border-gray-700" />
                       </div>
                     </div>
-                    {/* Name / email / username — clearly in white area */}
+                    {/* Name / email / username - clearly in white area */}
                     <div className="mb-3">
                       <p className="text-base font-bold text-gray-900 dark:text-white leading-tight">{user?.name ?? 'User'}</p>
                       {user?.email && (
                         <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{user.email}</p>
                       )}
                       {meData?.username && (
-                        <p className="text-xs text-orange-500 dark:text-orange-400 font-medium mt-0.5">@{meData.username}</p>
+                        <p className="text-xs text-sky-500 dark:text-sky-400 font-medium mt-0.5">@{meData.username}</p>
                       )}
                     </div>
 
@@ -1302,10 +1302,10 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                           key={item.href}
                           href={item.href}
                           onClick={() => setMobileOpen(false)}
-                          className="group flex items-center gap-2.5 rounded-xl border border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 hover:border-orange-200 dark:hover:border-orange-800 hover:bg-orange-50 dark:hover:bg-orange-900/20 px-3 py-2.5 transition-colors"
+                          className="group flex items-center gap-2.5 rounded-xl border border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 hover:border-sky-200 dark:hover:border-sky-800 hover:bg-sky-50 dark:hover:bg-sky-900/20 px-3 py-2.5 transition-colors"
                         >
-                          <span className="flex items-center justify-center h-8 w-8 rounded-lg bg-white dark:bg-gray-600 shadow-sm group-hover:bg-orange-100 dark:group-hover:bg-orange-900/30 transition-colors shrink-0">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-500 dark:text-gray-300 group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors">
+                          <span className="flex items-center justify-center h-8 w-8 rounded-lg bg-white dark:bg-gray-600 shadow-sm group-hover:bg-sky-100 dark:group-hover:bg-sky-900/30 transition-colors shrink-0">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-500 dark:text-gray-300 group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors">
                               {item.icon}
                             </svg>
                           </span>
@@ -1356,7 +1356,7 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                   <div className="bg-white dark:bg-gray-800 px-4 py-3 flex gap-2">
                     <motion.div whileTap={{ scale: 0.97 }} transition={{ duration: 0.12 }} className="flex-1">
                       <PrimaryButton
-                        href={`/login?callback=${encodeURIComponent(pathname)}`}
+                        href="/login"
                         onClick={() => setMobileOpen(false)}
                         className="!w-full !px-4 !py-2.5 !text-sm !rounded-[18px]"
                       >
@@ -1411,7 +1411,7 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                           setMobileSearch('')
                           setMobileBrandSearch('')
                         }}
-                        className="w-full flex items-center justify-between px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-orange-500 dark:hover:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-xl transition-colors"
+                        className="w-full flex items-center justify-between px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-sky-500 dark:hover:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-900/20 rounded-xl transition-colors"
                       >
                         {link.label}
                         <svg
@@ -1430,7 +1430,7 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                     ) : (
                       <Link
                         href={link.href}
-                        className="block px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-orange-500 dark:hover:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-xl transition-colors"
+                        className="block px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-sky-500 dark:hover:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-900/20 rounded-xl transition-colors"
                         onClick={() => setMobileOpen(false)}
                       >
                         {link.label}
@@ -1444,8 +1444,8 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                     >
                       <div className="overflow-hidden">
                         {link.mega ? (
-                          /* Mega menu — search + grouped rooms */
-                          <div className="ml-4 pl-4 border-l-2 border-orange-200 dark:border-orange-800 py-2 space-y-1">
+                          /* Mega menu - search + grouped rooms */
+                          <div className="ml-4 pl-4 border-l-2 border-sky-200 dark:border-sky-800 py-2 space-y-1">
                             {/* Search */}
                             <div className="relative mb-3">
                               <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 pointer-events-none">
@@ -1456,7 +1456,7 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                                 value={mobileSearch}
                                 onChange={(e) => setMobileSearch(e.target.value)}
                                 placeholder="Search items..."
-                                className="w-full pl-8 pr-8 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-xs text-gray-700 dark:text-gray-300 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-400/50 dark:focus:ring-orange-500/30 focus:bg-white dark:focus:bg-gray-600 transition-all"
+                                className="w-full pl-8 pr-8 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-xs text-gray-700 dark:text-gray-300 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-sky-400/50 dark:focus:ring-sky-500/30 focus:bg-white dark:focus:bg-gray-600 transition-all"
                               />
                               {mobileSearch && (
                                 <button onClick={() => setMobileSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400">
@@ -1472,7 +1472,7 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
 
                               if (rooms.length === 0) return (
                                 <p className="px-3 py-3 text-xs text-gray-400 dark:text-gray-500 text-center">
-                                  No rooms found for &quot;<span className="text-orange-500 dark:text-orange-400">{mobileSearch}</span>&quot;
+                                  No rooms found for &quot;<span className="text-sky-500 dark:text-sky-400">{mobileSearch}</span>&quot;
                                 </p>
                               );
 
@@ -1482,11 +1482,11 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                                   <div key={room} className="mb-2">
                                     <Link
                                       href={`/by-room/${roomSlug}`}
-                                      className="flex items-center gap-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-3 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:border-orange-300 dark:hover:border-orange-800 hover:bg-orange-50 dark:hover:bg-orange-900/20 hover:text-orange-500 dark:hover:text-orange-400 transition-colors"
+                                      className="flex items-center gap-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-3 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:border-sky-300 dark:hover:border-sky-800 hover:bg-sky-50 dark:hover:bg-sky-900/20 hover:text-sky-500 dark:hover:text-sky-400 transition-colors"
                                       onClick={() => setMobileOpen(false)}
                                     >
-                                      <span className="text-orange-500">{roomIcons[room] ?? roomIcons.BEDROOM}</span>
-                                      <span className="text-xs font-bold tracking-wider text-orange-600">{room}</span>
+                                      <span className="text-sky-500">{roomIcons[room] ?? roomIcons.BEDROOM}</span>
+                                      <span className="text-xs font-bold tracking-wider text-sky-600">{room}</span>
                                     </Link>
                                   </div>
                                 );
@@ -1494,8 +1494,8 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                             })()}
                           </div>
                         ) : link.label === 'Shop By Brand' ? (
-                          /* Brand dropdown — search + logos */
-                          <div className="ml-4 pl-4 border-l-2 border-orange-200 dark:border-orange-800 py-2 space-y-2">
+                          /* Brand dropdown - search + logos */
+                          <div className="ml-4 pl-4 border-l-2 border-sky-200 dark:border-sky-800 py-2 space-y-2">
                             {/* Search */}
                             <div className="relative">
                               <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 pointer-events-none">
@@ -1506,7 +1506,7 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                                 value={mobileBrandSearch}
                                 onChange={(e) => setMobileBrandSearch(e.target.value)}
                                 placeholder="Search brands..."
-                                className="w-full pl-8 pr-3 py-1.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-xs text-gray-700 dark:text-gray-300 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-400/40 dark:focus:ring-orange-500/30"
+                                className="w-full pl-8 pr-3 py-1.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-xs text-gray-700 dark:text-gray-300 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-sky-400/40 dark:focus:ring-sky-500/30"
                               />
                             </div>
                             {/* Brand list with logos */}
@@ -1517,7 +1517,7 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                               <Link
                                 key={item.id}
                                 href={item.href}
-                                className="flex items-center gap-2.5 rounded-xl border border-gray-100 dark:border-gray-700 px-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:border-orange-200 dark:hover:border-orange-800 hover:bg-orange-50 dark:hover:bg-orange-900/20 hover:text-orange-500 dark:hover:text-orange-400 transition-colors"
+                                className="flex items-center gap-2.5 rounded-xl border border-gray-100 dark:border-gray-700 px-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:border-sky-200 dark:hover:border-sky-800 hover:bg-sky-50 dark:hover:bg-sky-900/20 hover:text-sky-500 dark:hover:text-sky-400 transition-colors"
                                 onClick={() => setMobileOpen(false)}
                               >
                                 <div className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-700">
@@ -1534,7 +1534,7 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                             ))}
                             <Link
                               href="/by-brand"
-                              className="mt-1 inline-flex items-center rounded-lg bg-orange-50 px-3 py-2 text-sm font-semibold text-orange-600 transition-colors hover:bg-orange-100"
+                              className="mt-1 inline-flex items-center rounded-lg bg-sky-50 px-3 py-2 text-sm font-semibold text-sky-600 transition-colors hover:bg-sky-100"
                               onClick={() => setMobileOpen(false)}
                             >
                               View All Brands
@@ -1542,12 +1542,12 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                           </div>
                         ) : (
                           /* Regular dropdown */
-                          <div className="ml-4 pl-4 border-l-2 border-orange-200 py-1">
+                          <div className="ml-4 pl-4 border-l-2 border-sky-200 py-1">
                             {subItems.map((item) => (
                               <Link
                                 key={item.label}
                                 href={item.href}
-                                className="block px-3 py-1.5 text-sm text-gray-600 hover:text-orange-500 rounded-lg transition-colors"
+                                className="block px-3 py-1.5 text-sm text-gray-600 hover:text-sky-500 rounded-lg transition-colors"
                                 onClick={() => setMobileOpen(false)}
                               >
                                 {item.label}
@@ -1606,7 +1606,7 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                           className="flex-1 min-w-0"
                         >
                           <Label className="sr-only">Search products</Label>
-                          <SearchField.Group className="flex items-center gap-2 sm:gap-3 rounded-xl border border-slate-200 bg-white px-3 sm:px-5 py-2.5 sm:py-3.5 transition-all duration-200 focus-within:border-orange-400 focus-within:ring-2 focus-within:ring-orange-100 dark:border-gray-700 dark:bg-gray-800 dark:focus-within:border-orange-500 dark:focus-within:ring-orange-900/50">
+                          <SearchField.Group className="flex items-center gap-2 sm:gap-3 rounded-xl border border-slate-200 bg-white px-3 sm:px-5 py-2.5 sm:py-3.5 transition-all duration-200 focus-within:border-sky-400 focus-within:ring-2 focus-within:ring-sky-100 dark:border-gray-700 dark:bg-gray-800 dark:focus-within:border-sky-500 dark:focus-within:ring-sky-900/50">
                             <SearchField.SearchIcon className="h-4 sm:h-5 w-4 sm:w-5 shrink-0 text-slate-400 dark:text-gray-400" />
                             <SearchField.Input
                               ref={searchInputRef}
@@ -1643,7 +1643,7 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                                 transition={{ duration: 0.1 }}
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
-                                className="shrink-0 inline-flex cursor-pointer items-center gap-1 sm:gap-1.5 rounded-lg border border-orange-200 bg-orange-50 px-2 sm:px-3 py-1.5 sm:py-2 text-[10px] sm:text-xs font-semibold text-orange-600 transition hover:bg-orange-100 dark:border-orange-800 dark:bg-orange-900/30 dark:text-orange-400 dark:hover:bg-orange-900/50"
+                                className="shrink-0 inline-flex cursor-pointer items-center gap-1 sm:gap-1.5 rounded-lg border border-sky-200 bg-sky-50 px-2 sm:px-3 py-1.5 sm:py-2 text-[10px] sm:text-xs font-semibold text-sky-600 transition hover:bg-sky-100 dark:border-sky-800 dark:bg-sky-900/30 dark:text-sky-400 dark:hover:bg-sky-900/50"
                                 title="Press Enter to search"
                               >
                                 <span>ENTER</span>
@@ -1751,7 +1751,7 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                                     initial={{ opacity: 0, scale: 0.9 }}
                                     animate={{ opacity: 1, scale: 1 }}
                                     transition={{ delay: index * 0.03 }}
-                                    className="group relative inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 transition-all hover:border-orange-400 hover:bg-orange-50 dark:border-gray-700 dark:bg-gray-700/50 dark:text-gray-200 dark:hover:border-orange-500/50 dark:hover:bg-gray-700"
+                                    className="group relative inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 transition-all hover:border-sky-400 hover:bg-sky-50 dark:border-gray-700 dark:bg-gray-700/50 dark:text-gray-200 dark:hover:border-sky-500/50 dark:hover:bg-gray-700"
                                   >
                                     <svg className="h-3.5 w-3.5 shrink-0 text-slate-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -1789,8 +1789,8 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                           className="flex flex-col items-center gap-3 py-8"
                         >
                           <div className="relative h-8 w-8">
-                            <div className="absolute inset-0 rounded-full border-2 border-orange-200 dark:border-orange-900" />
-                            <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-orange-500 dark:border-t-orange-400 animate-spin" />
+                            <div className="absolute inset-0 rounded-full border-2 border-sky-200 dark:border-sky-900" />
+                            <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-sky-500 dark:border-t-sky-400 animate-spin" />
                           </div>
                           <p className="text-sm text-slate-600 dark:text-gray-400">Searching products...</p>
                         </motion.div>
@@ -1830,7 +1830,7 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                                   setSearchModalOpen(false)
                                   setMobileOpen(false)
                                 }}
-                                className="group relative flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 rounded-xl border border-slate-200 bg-white p-2 sm:p-3 transition-all hover:border-orange-300 hover:bg-orange-50 dark:border-gray-700 dark:bg-gray-700/50 dark:hover:border-orange-500/50 dark:hover:bg-gray-700"
+                                className="group relative flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 rounded-xl border border-slate-200 bg-white p-2 sm:p-3 transition-all hover:border-sky-300 hover:bg-sky-50 dark:border-gray-700 dark:bg-gray-700/50 dark:hover:border-sky-500/50 dark:hover:bg-gray-700"
                               >
                                 <div className="relative h-16 w-16 sm:h-20 sm:w-20 shrink-0 overflow-hidden rounded-lg bg-slate-100 dark:bg-gray-700">
                                   {product.image ? (
@@ -1852,12 +1852,12 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                                     )}
                                   </p>
                                   <p className="mt-0.5 text-[10px] sm:text-xs text-slate-500 dark:text-gray-400">Match for &quot;{searchModalQuery.trim()}&quot;</p>
-                                  {(product.priceMember ?? product.priceSrp ?? product.prodpv) && (
+                                  {(product.priceMember !== null || product.priceSrp !== null || product.prodpv !== null) && (
                                     <div className="mt-1 sm:mt-2 space-y-1 sm:space-y-1.5">
-                                      {product.priceMember !== null && product.priceMember > 0 && product.priceMember < (product.priceSrp ?? product.priceDp ?? 0) ? (
+                                      {product.priceMember !== null && product.priceMember > 0 && product.priceSrp !== null && product.priceMember < product.priceSrp ? (
                                         <>
                                           <div className="flex flex-wrap items-center gap-1 sm:gap-2">
-                                            <span className="text-xs sm:text-sm font-bold text-orange-600 dark:text-orange-400">
+                                            <span className="text-xs sm:text-sm font-bold text-sky-600 dark:text-sky-400">
                                               {formatPrice(product.priceMember)}
                                             </span>
                                             {product.priceSrp && product.priceSrp > product.priceMember && (
@@ -1872,15 +1872,15 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                                             )}
                                           </div>
                                           {!isLoggedIn && (
-                                            <span className="inline-flex items-center rounded-full border border-orange-200 bg-orange-50 px-2.5 py-1 text-[11px] font-semibold text-orange-700 dark:border-orange-900/50 dark:bg-orange-900/30 dark:text-orange-300">
-                                              ✨ Sign in or Register to claim {Math.round(((((product.priceSrp ?? product.priceDp ?? 0) - (product.priceMember ?? 0)) / (product.priceSrp ?? product.priceDp ?? 1)) * 100))}% savings!
+                                            <span className="inline-flex items-center rounded-full border border-sky-200 bg-sky-50 px-2.5 py-1 text-[11px] font-semibold text-sky-700 dark:border-sky-900/50 dark:bg-sky-900/30 dark:text-sky-300">
+                                              Sign in or Register to claim {Math.round(((product.priceSrp - product.priceMember) / product.priceSrp) * 100)}% savings!
                                             </span>
                                           )}
                                         </>
                                       ) : (
                                         <div className="flex flex-wrap items-center gap-2">
-                                          <span className="text-sm font-bold text-orange-600 dark:text-orange-400">
-                                            {formatPrice(product.priceSrp ?? product.priceDp ?? 0)}
+                                          <span className="text-sm font-bold text-sky-600 dark:text-sky-400">
+                                            {formatPrice(product.priceMember ?? product.priceSrp ?? 0)}
                                           </span>
                                         </div>
                                       )}

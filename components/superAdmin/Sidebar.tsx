@@ -292,7 +292,7 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
     }
     const latestPermissions = normalizeAdminPermissions(adminMe.admin_permissions ?? [])
     const latestStorefrontIds = Array.isArray((adminMe as { storefront_ids?: number[] }).storefront_ids)
-      ? (adminMe as { storefront_ids?: number[] }).storefront_ids ?? []
+      ? ((adminMe as { storefront_ids?: number[] }).storefront_ids ?? [])
       : []
 
     const roleChanged = sessionRole !== String(adminMe.role ?? '').toLowerCase()
@@ -328,7 +328,7 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
   }
 
   const isActive = (path: string) => pathname === path || pathname.startsWith(`${path}/`)
-  const isChildActive = (children?: SubItem[]) => children?.some(c => pathname === c.path) ?? false
+  const isChildActive = (children?: SubItem[]) => Boolean(children?.some((c) => pathname === c.path))
 
   const visibleNavItems = navItems
     .map((item) => {

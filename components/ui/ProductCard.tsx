@@ -208,7 +208,7 @@ export default function ProductCard({
             meta: [
               variant.name?.trim() || '',
               dimensions.length > 0 ? `${dimensions.join(' x ')} cm` : '',
-            ].filter((part) => part && part !== label).join(' • '),
+            ].filter((part) => part && part !== label).join(' ? '),
             variants: [variant],
           });
 
@@ -234,7 +234,7 @@ export default function ProductCard({
     activeVariant?.name?.trim(),
     activeVariant?.size?.trim(),
     activeVariant?.color ? displayColorName(activeVariant.color) : '',
-  ].filter(Boolean).join(' • ');
+  ].filter(Boolean).join(' ? ');
 
   const isWishlisted = typeof id === 'number' && wishlistItems.some((item) => item.productId === id);
   const isWishlistPending = isAdding || isRemoving;
@@ -252,7 +252,7 @@ export default function ProductCard({
       variant?.style?.trim(),
       variant?.size?.trim(),
       variant?.color ? displayColorName(variant.color) : '',
-    ].filter(Boolean).join(' • ');
+    ].filter(Boolean).join(' ? ');
     const itemIdBase = typeof id === 'number' ? String(id) : slug;
     const itemId = variant?.sku ? `${itemIdBase}::${variant.sku}` : itemIdBase;
 
@@ -354,7 +354,7 @@ export default function ProductCard({
                   </span>
                 ) : null}
                 {badge ? (
-                  <span className="rounded-full bg-orange-500 px-2 py-1 text-[10px] font-bold tracking-wide text-white">
+                  <span className="rounded-full bg-sky-500 px-2 py-1 text-[10px] font-bold tracking-wide text-white">
                     {badge}
                   </span>
                 ) : null}
@@ -363,7 +363,7 @@ export default function ProductCard({
 
             <div className="flex flex-1 flex-col gap-3 p-4 sm:flex-row sm:items-stretch sm:justify-between">
               <div className="min-w-0 flex-1">
-                <h3 className="line-clamp-2 text-sm font-semibold text-slate-900 transition-colors group-hover:text-orange-600 sm:text-[15px]">
+                <h3 className="line-clamp-2 text-sm font-semibold text-slate-900 transition-colors group-hover:text-sky-600 sm:text-[15px]">
                   {safeName}
                 </h3>
 
@@ -396,7 +396,7 @@ export default function ProductCard({
                 )}
 
                 <div className="mt-2 flex flex-wrap items-center gap-2">
-                  <span className="text-base font-extrabold text-orange-600">{formatMoney(displayPrice)}</span>
+                  <span className="text-base font-extrabold text-sky-600">{formatMoney(displayPrice)}</span>
                   {strikePrice > displayPrice ? (
                     <span className="text-sm text-slate-400 line-through">{formatMoney(strikePrice)}</span>
                   ) : null}
@@ -419,10 +419,10 @@ export default function ProductCard({
                   type="button"
                   onClick={handleWishlist}
                   disabled={isWishlistPending}
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-slate-600 dark:text-gray-300 shadow-sm transition hover:border-orange-200 dark:hover:border-orange-800 hover:bg-orange-50 dark:hover:bg-orange-900/30 disabled:opacity-60"
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-slate-600 dark:text-gray-300 shadow-sm transition hover:border-sky-200 dark:hover:border-sky-800 hover:bg-sky-50 dark:hover:bg-sky-900/30 disabled:opacity-60"
                   aria-label={isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill={isWishlisted ? '#f97316' : 'none'} stroke={isWishlisted ? '#f97316' : 'currentColor'} strokeWidth="2">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill={isWishlisted ? '#38bdf8' : 'none'} stroke={isWishlisted ? '#38bdf8' : 'currentColor'} strokeWidth="2">
                     <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
                   </svg>
                 </button>
@@ -433,7 +433,7 @@ export default function ProductCard({
                   disabled={!isInStock || isFetchingProductDetails}
                   className={`inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-xs font-semibold transition ${
                     isInStock
-                      ? 'bg-orange-500 text-white shadow-sm hover:bg-orange-600'
+                      ? 'bg-sky-500 text-white shadow-sm hover:bg-sky-600'
                       : 'cursor-not-allowed bg-slate-200 dark:bg-gray-700 text-slate-500 dark:text-gray-400'
                   } ${isFetchingProductDetails ? 'opacity-80' : ''}`}
                 >
@@ -474,7 +474,7 @@ export default function ProductCard({
                 </span>
               ) : null}
               {badge ? (
-                <span className="rounded-full bg-orange-500 px-2 py-1 text-[10px] font-bold tracking-wide text-white">
+                <span className="rounded-full bg-sky-500 px-2 py-1 text-[10px] font-bold tracking-wide text-white">
                   {badge}
                 </span>
               ) : null}
@@ -486,9 +486,9 @@ export default function ProductCard({
               type="button"
               onClick={handleWishlist}
               disabled={isWishlistPending}
-              className="absolute right-3 top-3 rounded-full bg-white/90 dark:bg-gray-800/90 p-2 shadow-md backdrop-blur-sm transition-all duration-300 hover:bg-orange-50 dark:hover:bg-orange-900/30 group-hover:translate-x-0 group-hover:opacity-100 disabled:opacity-60 opacity-0 translate-x-2"
+              className="absolute right-3 top-3 rounded-full bg-white/90 dark:bg-gray-800/90 p-2 shadow-md backdrop-blur-sm transition-all duration-300 hover:bg-sky-50 dark:hover:bg-sky-900/30 group-hover:translate-x-0 group-hover:opacity-100 disabled:opacity-60 opacity-0 translate-x-2"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill={isWishlisted ? '#f97316' : 'none'} stroke={isWishlisted ? '#f97316' : 'currentColor'} strokeWidth="2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill={isWishlisted ? '#38bdf8' : 'none'} stroke={isWishlisted ? '#38bdf8' : 'currentColor'} strokeWidth="2">
                 <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
               </svg>
             </button>
@@ -500,7 +500,7 @@ export default function ProductCard({
                 disabled={!isInStock || isFetchingProductDetails}
                 className={`flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold transition-all duration-200 ${
                   isInStock
-                    ? 'bg-orange-500 text-white shadow-lg hover:bg-orange-600 active:scale-95'
+                    ? 'bg-sky-500 text-white shadow-lg hover:bg-sky-600 active:scale-95'
                     : 'cursor-not-allowed bg-slate-200 dark:bg-gray-700 text-slate-500 dark:text-gray-400'
                 }`}
               >
@@ -514,7 +514,7 @@ export default function ProductCard({
           </div>
 
           <div className={`p-4 ${isList ? 'sm:flex-1' : ''}`}>
-            <h3 className="truncate text-sm font-medium text-gray-800 transition-colors duration-200 group-hover:text-orange-500">{safeName}</h3>
+            <h3 className="truncate text-sm font-medium text-gray-800 transition-colors duration-200 group-hover:text-sky-500">{safeName}</h3>
             {(ratingValue !== null || normalizedReviewCount !== null) && (
               <div className="mt-1 flex items-center gap-1.5 text-xs text-slate-500">
                 <div className="flex items-center gap-0.5">
@@ -544,9 +544,9 @@ export default function ProductCard({
               <div className="mt-1 text-xs text-slate-400">No reviews yet</div>
             )}
             <div className="mt-1 flex items-center gap-2">
-              <span className="text-base font-bold text-orange-500">{`₱${displayPrice.toLocaleString()}`}</span>
+              <span className="text-base font-bold text-sky-500">{`\u20b1${displayPrice.toLocaleString()}`}</span>
               {strikePrice > displayPrice ? (
-                <span className="text-sm text-gray-400 line-through">{`₱${strikePrice.toLocaleString()}`}</span>
+                <span className="text-sm text-gray-400 line-through">{`\u20b1${strikePrice.toLocaleString()}`}</span>
               ) : null}
             </div>
             {displayPv > 0 ? (
@@ -582,7 +582,7 @@ export default function ProductCard({
               <div className="border-b border-slate-100 px-5 py-4">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-orange-500">Select Variant</p>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-sky-500">Select Variant</p>
                     <h3 className="mt-1 text-lg font-bold text-slate-900">{safeName}</h3>
                     <p className="mt-1 text-xs text-slate-500">Choose a variant before adding this product to cart.</p>
                   </div>
@@ -591,7 +591,7 @@ export default function ProductCard({
                     onClick={() => setVariantModalOpen(false)}
                     className="h-9 w-9 rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50"
                   >
-                    ×
+                    ??
                   </button>
                 </div>
               </div>
@@ -617,7 +617,7 @@ export default function ProductCard({
                             }
                           }}
                           className={`h-9 w-9 rounded-full border-2 border-white shadow-[0_0_0_1px_rgba(15,23,42,0.14)] transition-all ${
-                            effectiveSelectedColor === color.name ? 'ring-2 ring-orange-400 ring-offset-2' : 'hover:scale-105'
+                            effectiveSelectedColor === color.name ? 'ring-2 ring-sky-400 ring-offset-2' : 'hover:scale-105'
                           }`}
                           style={{ backgroundColor: color.hex || '#E5E7EB' }}
                         />
@@ -646,15 +646,15 @@ export default function ProductCard({
                           }}
                           className={`rounded-2xl border-2 px-4 py-3 text-left transition-all ${
                             isActive
-                              ? 'border-orange-400 bg-orange-50 text-orange-600'
-                              : 'border-gray-200 text-slate-600 hover:border-orange-200'
+                              ? 'border-sky-400 bg-sky-50 text-sky-600'
+                              : 'border-gray-200 text-slate-600 hover:border-sky-200'
                           }`}
                         >
                           <span className="block text-sm font-semibold">{choice.label}</span>
                           {choice.meta ? (
                             <span className="mt-1 block text-[11px] font-medium text-slate-400">{choice.meta}</span>
                           ) : null}
-                          <span className="mt-2 block text-sm font-extrabold text-orange-500">{`₱${choicePrice.toLocaleString()}`}</span>
+                          <span className="mt-2 block text-sm font-extrabold text-sky-500">{`\u20b1${choicePrice.toLocaleString()}`}</span>
                         </button>
                       );
                     })}
@@ -675,7 +675,7 @@ export default function ProductCard({
                     addResolvedVariantToCart(activeVariant);
                     setVariantModalOpen(false);
                   }}
-                  className="w-full rounded-2xl bg-orange-500 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-orange-200 transition-colors hover:bg-orange-600"
+                  className="w-full rounded-2xl bg-sky-500 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-sky-200 transition-colors hover:bg-sky-600"
                 >
                   Add Selected Variant to Cart
                 </button>

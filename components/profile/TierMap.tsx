@@ -24,8 +24,8 @@ const TIER_MAP: Record<string, { ring: string; badge: string; label: string; emo
     emoji: 'Consultant',
   },
   'Lifestyle Elite': {
-    ring: 'ring-amber-400',
-    badge: 'bg-amber-50 text-amber-700 border-amber-200',
+    ring: 'ring-sky-400',
+    badge: 'bg-sky-50 text-sky-700 border-sky-200',
     label: 'Lifestyle Elite',
     emoji: 'Elite',
   },

@@ -50,8 +50,8 @@ const STATS = [
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
       </svg>
     ),
-    bg: 'bg-amber-50',
-    text: 'text-amber-600',
+    bg: 'bg-sky-50',
+    text: 'text-sky-600',
   },
 ]
 

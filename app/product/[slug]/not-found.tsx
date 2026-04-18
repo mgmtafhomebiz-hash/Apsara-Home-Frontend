@@ -13,7 +13,7 @@ export default async function ProductNotFound() {
       <main className="flex-1">
         <section className="container mx-auto px-4 py-20">
           <div className="max-w-2xl mx-auto text-center rounded-2xl border border-slate-200 bg-slate-50 px-6 py-12">
-            <p className="text-sm font-semibold tracking-wide text-orange-600">PRODUCT NOT FOUND</p>
+            <p className="text-sm font-semibold tracking-wide text-sky-600">PRODUCT NOT FOUND</p>
             <h1 className="mt-2 text-3xl font-bold text-slate-900">This product is unavailable</h1>
             <p className="mt-3 text-slate-600">
               The item may be inactive, removed, or the link is incorrect.
@@ -21,7 +21,7 @@ export default async function ProductNotFound() {
             <div className="mt-8 flex items-center justify-center gap-3">
               <Link
                 href="/category"
-                className="inline-flex items-center rounded-xl bg-orange-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-orange-600 transition-colors"
+                className="inline-flex items-center rounded-xl bg-sky-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-sky-600 transition-colors"
               >
                 Browse Products
               </Link>
