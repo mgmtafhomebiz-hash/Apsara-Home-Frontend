@@ -4,28 +4,11 @@ interface RegisterPayload {
   name: string
   first_name: string
   last_name: string
-  middle_name?: string
   email: string
   password: string
   password_confirmation: string
-  phone?: string
   username: string
-  referred_by?: string
-  birth_date?: string
-  address?: string
-  barangay?: string
-  barangay_code?: string
-  city?: string
-  city_code?: string
-  province?: string
-  province_code?: string
-  region?: string
-  region_code?: string
-  zip_code?: string
-  gender?: 'male' | 'female' | 'other'
-  occupation?: string
-  work_location?: 'local' | 'overseas'
-  country?: string
+  referred_by: string
 }
 
 interface RegisterResponse {
@@ -53,6 +36,11 @@ interface ResendRegisterOtpResponse {
 }
 
 interface UsernameAvailabilityResponse {
+  available: boolean
+  message: string
+}
+
+interface EmailAvailabilityResponse {
   available: boolean
   message: string
 }
@@ -139,6 +127,14 @@ export const authApi = baseApi.injectEndpoints({
       }),
     }),
 
+    checkEmailAvailability: builder.query<EmailAvailabilityResponse, string>({
+      query: (email) => ({
+        url: '/api/auth/register/check-email',
+        method: 'GET',
+        params: { email },
+      }),
+    }),
+
     logout: builder.mutation<LogoutResponse, void>({
       query: () => ({
         url: '/api/auth/logout',
@@ -177,6 +173,7 @@ export const {
   useRegisterMutation,
   useVerifyRegisterOtpMutation,
   useResendRegisterOtpMutation,
+  useLazyCheckEmailAvailabilityQuery,
   useLazyCheckUsernameAvailabilityQuery,
   useLogoutMutation,
   useAdminLoginMutation,

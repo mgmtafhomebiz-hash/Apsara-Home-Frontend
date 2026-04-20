@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import OtpInput from "./OtpInput";
 import Loading from "../Loading";
+import PrimaryButton from "@/components/ui/buttons/PrimaryButton";
 
 interface OtpVerificationProps {
     email: string;
@@ -20,11 +21,11 @@ const OtpVerification = ({ email, verificationToken, onSuccess, onBack }: OtpVer
     const [otp, setOtp] = useState('');
     const [error, setError] = useState('');
     const [countdown, setCountdown] = useState(60);
-    const errorRef = useRef<HTMLInputElement | null>(null);
+    const errorRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
         if (countdown <= 0) return;
-        const timer = window.setTimeout(() => setCountdown(c => Math.max(0, c - 1)), 1000);
+        const timer = window.setTimeout(() => setCountdown((c) => Math.max(0, c - 1)), 1000);
         return () => window.clearTimeout(timer);
     }, [countdown]);
 
@@ -70,7 +71,7 @@ const OtpVerification = ({ email, verificationToken, onSuccess, onBack }: OtpVer
 
         setCountdown(60);
         setOtp('');
-        showSuccessToast('A new Verification code has been sent.');
+        showSuccessToast('A new verification code has been sent.');
     };
 
     const maskedEmail = (() => {
@@ -85,10 +86,10 @@ const OtpVerification = ({ email, verificationToken, onSuccess, onBack }: OtpVer
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -16 }}
             transition={{ duration: 0.25 }}
-            className="flex flex-col items-center text-center"
+            className="flex flex-col text-center"
         >
-            <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-full border border-orange-300/70 bg-orange-100 dark:border-orange-400/30 dark:bg-orange-500/20">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#f97316" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full border border-sky-300/70 bg-sky-100 dark:border-sky-400/30 dark:bg-sky-500/20">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                     <rect x="2" y="4" width="20" height="16" rx="3" />
                     <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
                 </svg>
@@ -96,7 +97,7 @@ const OtpVerification = ({ email, verificationToken, onSuccess, onBack }: OtpVer
 
             <h2 className="mb-1 text-2xl font-bold text-gray-900 dark:text-white">Check your Email</h2>
             <p className="mb-1 text-sm text-gray-500 dark:text-white/60">We sent a 4-digit verification code to</p>
-            <p className="mb-8 text-sm font-semibold text-orange-500 dark:text-orange-400">{maskedEmail}</p>
+            <p className="mb-8 text-sm font-semibold text-sky-600 dark:text-sky-400">{maskedEmail}</p>
 
             {error && (
                 <div ref={errorRef} className="mb-4 w-full rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-left text-sm text-red-600 dark:border-red-400/20 dark:bg-red-500/20 dark:text-red-300">
@@ -104,13 +105,13 @@ const OtpVerification = ({ email, verificationToken, onSuccess, onBack }: OtpVer
                 </div>
             )}
 
-            <form onSubmit={handleVerify} className="w-full space-y-8">
+            <form onSubmit={handleVerify} className="w-full space-y-6">
                 <OtpInput value={otp} onChange={setOtp} disabled={isVerifying} autoFocus />
 
-                <button
+                <PrimaryButton
                     type="submit"
                     disabled={isVerifying || otp.length < 4}
-                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-orange-500 py-3 text-sm font-bold tracking-widest text-white shadow-lg shadow-orange-500/30 transition-all duration-200 hover:bg-orange-600 active:scale-[0.99] disabled:cursor-not-allowed"
+                    className="w-full py-3 px-5 text-sm"
                 >
                     {isVerifying ? (
                         <>
@@ -120,7 +121,7 @@ const OtpVerification = ({ email, verificationToken, onSuccess, onBack }: OtpVer
                     ) : (
                         <span>VERIFY CODE</span>
                     )}
-                </button>
+                </PrimaryButton>
             </form>
 
             <div className="mt-5 flex w-full items-center justify-between text-xs text-gray-500 dark:text-white/55">
@@ -129,14 +130,14 @@ const OtpVerification = ({ email, verificationToken, onSuccess, onBack }: OtpVer
                     onClick={onBack}
                     className="transition-colors hover:text-gray-900 dark:hover:text-white"
                 >
-                    ← Back to sign up
+                    Back to sign up
                 </button>
 
                 <button
                     type="button"
                     onClick={handleResend}
                     disabled={countdown > 0 || isResending}
-                    className="text-orange-500 transition-colors hover:text-orange-600 disabled:cursor-not-allowed disabled:opacity-50 dark:text-orange-400 dark:hover:text-orange-300"
+                    className="text-sky-500 transition-colors hover:text-sky-600 disabled:cursor-not-allowed disabled:opacity-50 dark:text-sky-400 dark:hover:text-sky-300"
                 >
                     {isResending ? 'Sending...' : countdown > 0 ? `Resend in ${countdown}s` : 'Resend code'}
                 </button>

@@ -6,10 +6,10 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { useSession } from 'next-auth/react'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { useGetAdminMeQuery } from '@/store/api/authApi'
-import { Product, useGetProductsQuery, useGetPublicProductsQuery, useDeleteProductMutation, useManualCheckoutApplyMutation, ProductsResponse } from '@/store/api/productsApi'
-import { useGetAdminGeneralSettingsQuery, useUpdateAdminGeneralSettingsMutation } from '@/store/api/adminSettingsApi'
-import { useGetPublicProductBrandsQuery } from '@/store/api/productBrandsApi'
-import { useGetSuppliersQuery } from '@/store/api/suppliersApi'
+import { Product, useGetProductsQuery, useGetPublicProductsQuery, useDeleteProductMutation, useManualCheckoutApplyMutation, ProductsResponse } from "@/store/api/productsApi";
+import { useGetAdminGeneralSettingsQuery, useUpdateAdminGeneralSettingsMutation } from "@/store/api/adminSettingsApi";
+import { useGetPublicProductBrandsQuery } from "@/store/api/productBrandsApi";
+import { useGetSuppliersQuery } from "@/store/api/suppliersApi";
 import ProductsToolbar from './ProductsToolbar'
 import ProductsTable from './ProductsTable'
 import AddProductModal from './AddProductModal'
@@ -87,7 +87,6 @@ function ManualCheckoutSelectionModal({
   removingIds?: number[]
   mode?: 'review' | 'view'
 }) {
-  const nonAffordahomeProducts = products.filter((product) => String(product.brand ?? '').trim().toLowerCase() !== 'affordahome')
   const isViewMode = mode === 'view'
   const eyebrow = isViewMode ? 'Manual Checkout Products' : 'Manual Checkout Review'
   const title = isViewMode ? 'Added Products' : 'Selected Products'
@@ -137,16 +136,6 @@ function ManualCheckoutSelectionModal({
             transition={{ delay: 0.05, duration: 0.2, ease: 'easeOut' }}
             className="space-y-4 p-6"
           >
-            {nonAffordahomeProducts.length > 0 ? (
-              <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-                Only <span className="font-semibold">Affordahome</span> products should be allowed for manual checkout. Review the highlighted non-Affordahome items before proceeding.
-              </div>
-            ) : (
-              <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-                All selected products are under the <span className="font-semibold">Affordahome</span> brand and can be reviewed for manual checkout.
-              </div>
-            )}
-
           <div className="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800">
             <div className="max-h-[55vh] overflow-auto">
               <table className="min-w-full text-sm">
@@ -164,16 +153,12 @@ function ManualCheckoutSelectionModal({
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800/70">
                   {products.map((product) => {
-                    const isAffordahome = String(product.brand ?? '').trim().toLowerCase() === 'affordahome'
                     const isRemoving = removingIds.includes(product.id)
 
                     return (
                       <tr
                         key={product.id}
-                        className={isAffordahome
-                          ? 'bg-white dark:bg-slate-900'
-                          : 'bg-amber-50/80 dark:bg-amber-500/10'
-                        }
+                        className="bg-white dark:bg-slate-900"
                       >
                         <td className="px-5 py-3.5">
                           <div className="relative h-14 w-14 overflow-hidden rounded-xl border border-slate-200 bg-slate-100">
@@ -195,11 +180,7 @@ function ManualCheckoutSelectionModal({
                           </div>
                         </td>
                         <td className="px-5 py-3.5">
-                          <span className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] font-semibold ${
-                            isAffordahome
-                              ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300'
-                              : 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300'
-                          }`}>
+                          <span className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
                             {product.brand || 'Unbranded'}
                           </span>
                         </td>

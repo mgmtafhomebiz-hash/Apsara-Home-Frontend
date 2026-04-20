@@ -64,13 +64,13 @@ export default function TopEarnersStats() {
       className="grid grid-cols-2 lg:grid-cols-4 gap-4"
     >
       {STATS.map((s, i) => (
-        <div key={i} className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-4 shadow-sm flex items-center gap-3">
-          <div className={`h-10 w-10 rounded-xl ${s.bg} ${s.text} flex items-center justify-center shrink-0`}>
+        <div key={i} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 flex items-center gap-3">
+          <div className={`h-10 w-10 rounded-lg ${s.bg} ${s.text} flex items-center justify-center shrink-0`}>
             {s.icon}
           </div>
           <div className="min-w-0">
-            <p className="text-[11px] text-slate-400 font-medium">{s.label}</p>
-            <p className="text-base font-bold text-slate-800 truncate">{s.value}</p>
+            <p className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">{s.label}</p>
+            <p className="text-base font-bold text-gray-800 dark:text-white truncate">{s.value}</p>
           </div>
         </div>
       ))}

@@ -18,6 +18,7 @@ import { useAppDispatch } from "@/store/hooks";
 import { clearAdminSession } from "@/libs/adminSession";
 import { normalizeAdminPermissions } from "@/libs/adminPermissions";
 import ThemeToggle from "@/components/ui/buttons/ThemeToggle";
+import SearchCommandPalette from "./SearchCommandPalette";
 import Pusher from "pusher-js";
 
 interface HeaderProps {
@@ -138,7 +139,6 @@ const Header = ({ onMenuClick }: HeaderProps) => {
     const router = useRouter();
     const pathname = usePathname();
     const searchParams = useSearchParams();
-    const [headerSearch, setHeaderSearch] = useState(searchParams.get('q') ?? '');
     const [selectedRange, setSelectedRange] = useState<DateRangePreset>('this_month');
     const [customStart, setCustomStart] = useState(searchParams.get('from') ?? '');
     const [customEnd, setCustomEnd] = useState(searchParams.get('to') ?? '');
@@ -172,7 +172,6 @@ const Header = ({ onMenuClick }: HeaderProps) => {
     ] as const;
 
     useEffect(() => {
-        setHeaderSearch(searchParams.get('q') ?? '');
         const queryRange = searchParams.get('range') as DateRangePreset | null;
         setSelectedRange(queryRange && DATE_RANGE_OPTIONS.some((opt) => opt.value === queryRange) ? queryRange : 'this_month');
         setCustomStart(searchParams.get('from') ?? '');
@@ -299,20 +298,6 @@ const Header = ({ onMenuClick }: HeaderProps) => {
         }
     };
 
-    const handleHeaderSearchChange = (value: string) => {
-        setHeaderSearch(value);
-        const params = new URLSearchParams(searchParams.toString());
-
-        if (value.trim() === '') {
-            params.delete('q');
-        } else {
-            params.set('q', value);
-        }
-
-        const query = params.toString();
-        router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
-    };
-
     const updateDateRangeParams = (range: DateRangePreset, from?: string, to?: string) => {
         const params = new URLSearchParams(searchParams.toString());
         params.set('range', range);
@@ -347,20 +332,7 @@ const Header = ({ onMenuClick }: HeaderProps) => {
                 <p className="text-slate-400 dark:text-slate-500">Welcome back, {displayName}</p>
             </div>
 
-            <div className="flex-1 max-w-md mx-auto">
-                <div className="relative">
-                    <svg className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                    <input
-                        type="text"
-                        placeholder="Search orders, members, products..."
-                        value={headerSearch}
-                        onChange={(e) => handleHeaderSearchChange(e.target.value)}
-                        className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 pl-10 pr-4 text-sm text-slate-700 transition-all placeholder:text-slate-400 focus:border-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-500/50 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-100 dark:placeholder:text-slate-500"
-                    />
-                </div>
-            </div>
+            <SearchCommandPalette />
 
             <div className="flex items-center gap-2 ml-auto">
                 {isDashboardPage && (

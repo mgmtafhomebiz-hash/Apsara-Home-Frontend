@@ -10,6 +10,7 @@ import Loading from '@/components/Loading'
 import { showErrorToast, showInfoToast, showSuccessToast } from '@/libs/toast'
 import { clearAccessTokenCache } from "@/store/api/baseApi";
 import PrimaryButton from '@/components/ui/buttons/PrimaryButton';
+import SecondaryButton from '@/components/ui/buttons/SecondaryButton';
 
 const REMEMBER_USER_EMAIL_KEY = 'afhome_user_login'
 const BLOCKED_KEYWORDS = ['banned', 'blocked', 'contact support']
@@ -63,34 +64,27 @@ type FloatingInputProps = {
 }
 
 function FloatingInput({ id, type = 'text', label, value, onChange, autoComplete, endContent }: FloatingInputProps) {
-    const hasValue = value.trim().length > 0
-
     return (
-        <div className="relative w-full">
-            <input
-                id={id}
-                type={type}
-                value={value}
-                onChange={onChange}
-                placeholder=" "
-                autoComplete={autoComplete}
-                className="peer h-14 w-full rounded-[22px] border border-gray-300 dark:border-white/18 bg-white dark:bg-white/12 px-4 pb-3 pt-6 text-sm text-gray-900 dark:text-white outline-none transition-all duration-200 placeholder:text-transparent focus:border-orange-400 dark:focus:border-orange-400/60 focus:bg-white dark:focus:bg-white/18"
-            />
-            <label
-                htmlFor={id}
-                className={`pointer-events-none absolute left-4 origin-left bg-transparent px-1 text-gray-500 dark:text-white/55 transition-all duration-200 ${
-                    hasValue
-                        ? 'top-2 text-[11px] text-orange-500 dark:text-orange-300'
-                        : 'top-1/2 -translate-y-1/2 text-sm'
-                } peer-focus:top-2 peer-focus:translate-y-0 peer-focus:text-[11px] peer-focus:text-orange-500 dark:peer-focus:text-orange-300 peer-[:not(:placeholder-shown)]:top-2 peer-[:not(:placeholder-shown)]:translate-y-0 peer-[:not(:placeholder-shown)]:text-[11px] peer-[:not(:placeholder-shown)]:text-orange-500 dark:peer-[:not(:placeholder-shown)]:text-orange-300 peer-autofill:top-2 peer-autofill:translate-y-0 peer-autofill:text-[11px] peer-autofill:text-orange-500 dark:peer-autofill:text-orange-300`}
-            >
+        <div className="w-full">
+            <label htmlFor={id} className="block text-xs font-semibold text-gray-600 dark:text-white/80 mb-1.5">
                 {label}
             </label>
-            {endContent ? (
-                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-white/60">
-                    {endContent}
-                </div>
-            ) : null}
+            <div className="relative w-full">
+                <input
+                    id={id}
+                    type={type}
+                    value={value}
+                    onChange={onChange}
+                    placeholder=""
+                    autoComplete={autoComplete}
+                    className="h-11 w-full rounded-[18px] border border-gray-300 dark:border-white/18 bg-white dark:bg-white/12 px-4 text-sm text-gray-900 dark:text-white outline-none transition-all duration-200 focus:border-sky-400 dark:focus:border-sky-400/60 focus:bg-white dark:focus:bg-white/18"
+                />
+                {endContent ? (
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-white/60">
+                        {endContent}
+                    </div>
+                ) : null}
+            </div>
         </div>
     )
 }
@@ -134,8 +128,6 @@ const LoginForm = ({ onSwitchToSignUp, onRequirePasswordChange }: LoginFormProps
         })
     }, [])
 
-
-
     const handleSignIn = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
@@ -168,7 +160,6 @@ const LoginForm = ({ onSwitchToSignUp, onRequirePasswordChange }: LoginFormProps
             const session = await getSession()
             const passwordChangeRequired = Boolean(session?.user?.passwordChangeRequired)
 
-            // Refresh session in all client components
             if (updateSession) {
                 await updateSession()
             }
@@ -227,18 +218,16 @@ const LoginForm = ({ onSwitchToSignUp, onRequirePasswordChange }: LoginFormProps
                         Your account has been banned. Please contact support for assistance.
                     </div>
                 )}
-                <div>
-                    <FloatingInput
-                        id="login-email"
-                        type="text"
-                        label="Username or Email"
-                        value={form.email}
-                        onChange={set('email')}
-                        autoComplete="username email"
-                    />
-                </div>
+                <FloatingInput
+                    id="login-email"
+                    type="text"
+                    label="Username or Email"
+                    value={form.email}
+                    onChange={set('email')}
+                    autoComplete="username email"
+                />
 
-                <div className="">
+                <div>
                     <FloatingInput
                         id="login-password"
                         type={showPass ? 'text' : 'password'}
@@ -321,13 +310,13 @@ const LoginForm = ({ onSwitchToSignUp, onRequirePasswordChange }: LoginFormProps
                             type="checkbox"
                             checked={form.rememberMe}
                             onChange={(e) => setForm((prev) => ({ ...prev, rememberMe: e.target.checked }))}
-                            className="h-4 w-4 rounded border-white/30 bg-white/10 accent-orange-500"
+                            className="h-4 w-4 rounded border-white/30 bg-white/10 accent-sky-500"
                         />
                         <span className="text-xs">Remember me</span>
                     </label>
                     <Link
                         href="/forgot-password"
-                        className="text-orange-400 hover:text-orange-300 font-semibold transition-colors"
+                        className="text-sky-500 hover:text-sky-400 font-semibold transition-colors"
                     >
                         Forgot Password
                     </Link>
@@ -336,7 +325,7 @@ const LoginForm = ({ onSwitchToSignUp, onRequirePasswordChange }: LoginFormProps
                 <PrimaryButton
                     type="submit"
                     disabled={isLoading}
-                    className="w-full"
+                    className="w-full py-3 px-5 text-sm"
                 >
                     {isLoading ? (
                         <>
