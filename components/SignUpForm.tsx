@@ -1,8 +1,8 @@
 'use client'
 
-import { Fragment, useEffect, useLayoutEffect, useRef, useState, type Key } from 'react'
+import { Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useLazyCheckUsernameAvailabilityQuery, useRegisterMutation } from '@/store/api/authApi'
+import { useLazyCheckEmailAvailabilityQuery, useLazyCheckUsernameAvailabilityQuery, useRegisterMutation } from '@/store/api/authApi'
 import Loading from './Loading'
 import { usePhAddress } from '@/hooks/usePhAddress'
 import { useSearchParams } from 'next/navigation'
@@ -21,7 +21,7 @@ const EyeIcon = ({ open }: { open: boolean }) => open
 
 const labelClass = "block text-xs font-semibold text-gray-600 dark:text-white/80 mb-1.5"
 const inputClass = "h-14 w-full rounded-[22px] border border-gray-300 dark:border-white/18 bg-white dark:bg-white/12 px-4 text-sm text-gray-900 dark:text-white outline-none transition-all duration-200 focus:border-orange-400 dark:focus:border-orange-400/60 focus:bg-white dark:focus:bg-white/18 disabled:cursor-not-allowed disabled:opacity-60"
-const selectTriggerClass = "flex h-14 w-full items-center justify-between rounded-[22px] border border-gray-300 dark:border-white/18 bg-white dark:bg-white/12 px-4 text-left text-sm text-gray-900 dark:text-white transition-all duration-200 hover:bg-gray-50 dark:hover:bg-white/16 focus:border-orange-400 dark:focus:border-orange-400/60 focus:bg-white dark:focus:bg-white/18 disabled:cursor-not-allowed disabled:opacity-60"
+const nativeSelectClass = "h-14 w-full appearance-none rounded-[22px] border border-gray-300 dark:border-white/18 bg-white dark:bg-white/12 px-4 pr-11 text-sm text-gray-900 dark:text-white outline-none transition-all duration-200 focus:border-orange-400 dark:focus:border-orange-400/60 focus:bg-white dark:focus:bg-white/18 disabled:cursor-not-allowed disabled:opacity-60"
 
 type FloatingInputProps = {
     id: string;
@@ -62,12 +62,27 @@ function FloatingInput({ id, type = 'text', label, value, onChange, required, di
     )
 }
 
+type NativeSelectOption = {
+    value: string;
+    label: string;
+}
+
+type NativeSelectFieldProps = {
+    label: React.ReactNode;
+    placeholder: string;
+    value: string;
+    onChange: (value: string) => void;
+    options: NativeSelectOption[];
+    isDisabled?: boolean;
+    isLoading?: boolean;
+}
+
 type HeroSelectFieldProps = {
     label: React.ReactNode;
     placeholder: string;
     selectedKey: string;
     selectedLabel?: string;
-    onSelectionChange: (key: Key | null) => void;
+    onSelectionChange: (key: string | null) => void;
     isDisabled?: boolean;
     isLoading?: boolean;
     children: React.ReactNode;
@@ -80,11 +95,11 @@ function HeroSelectField({ label, placeholder, selectedKey, selectedLabel, onSel
             <Select
                 aria-label={typeof label === 'string' ? label : 'Select field'}
                 selectedKey={selectedKey || null}
-                onSelectionChange={onSelectionChange}
+                onSelectionChange={(key) => onSelectionChange(key ? String(key) : null)}
                 isDisabled={isDisabled || isLoading}
                 className="w-full"
             >
-                <Select.Trigger className={selectTriggerClass}>
+                <Select.Trigger className="flex h-14 w-full items-center justify-between rounded-[22px] border border-gray-300 dark:border-white/18 bg-white dark:bg-white/12 px-4 text-left text-sm text-gray-900 dark:text-white transition-all duration-200 hover:bg-gray-50 dark:hover:bg-white/16 focus:border-orange-400 dark:focus:border-orange-400/60 focus:bg-white dark:focus:bg-white/18 disabled:cursor-not-allowed disabled:opacity-60">
                     <span className={selectedKey ? 'text-gray-900 dark:text-white' : 'text-gray-400 dark:text-white/45'}>
                         {isLoading ? 'Loading...' : (selectedLabel || placeholder)}
                     </span>
@@ -97,6 +112,39 @@ function HeroSelectField({ label, placeholder, selectedKey, selectedLabel, onSel
                     <ListBox className="p-1">{children}</ListBox>
                 </Select.Popover>
             </Select>
+        </div>
+    )
+}
+
+function NativeSelectField({ label, placeholder, value, onChange, options, isDisabled, isLoading }: NativeSelectFieldProps) {
+    return (
+        <div>
+            <label className={labelClass}>{label}</label>
+            <div className="relative">
+                <select
+                    aria-label={typeof label === 'string' ? label : 'Select field'}
+                    value={value}
+                    onChange={(event) => onChange(event.target.value)}
+                    disabled={isDisabled || isLoading}
+                    className={nativeSelectClass}
+                >
+                    <option value="">{isLoading ? 'Loading...' : placeholder}</option>
+                    {options.map((option) => (
+                        <option key={option.value} value={option.value}>
+                            {option.label}
+                        </option>
+                    ))}
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-gray-400 dark:text-white/55">
+                    {isLoading ? (
+                        <Loading size={16} />
+                    ) : (
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="m6 9 6 6 6-6" />
+                        </svg>
+                    )}
+                </div>
+            </div>
         </div>
     )
 }
@@ -155,11 +203,21 @@ interface SignUpFormProps {
 export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
     const searchParams = useSearchParams()
     const [register, { isLoading }] = useRegisterMutation()
+    const [checkEmailAvailability, { isFetching: isCheckingEmail }] = useLazyCheckEmailAvailabilityQuery()
     const [checkUsernameAvailability, { isFetching: isCheckingUsername }] = useLazyCheckUsernameAvailabilityQuery()
     const initialReferral = normalizeReferralCode(searchParams.get('ref') ?? searchParams.get('referred_by') ?? '') || getStoredReferralCode()
 
     const [showPass, setShowPass] = useState(false)
     const [showConfirm, setShowConfirm] = useState(false)
+    const [preferNativeDateInput, setPreferNativeDateInput] = useState(() => {
+        if (typeof window === 'undefined') return false
+
+        const hasCoarsePointer = window.matchMedia?.('(pointer: coarse)').matches ?? false
+        const hasTouchSupport = navigator.maxTouchPoints > 0
+        const isAppleTouchDevice = /iPhone|iPad|iPod/i.test(navigator.userAgent)
+
+        return hasCoarsePointer || hasTouchSupport || isAppleTouchDevice
+    })
     const [error, setError] = useState('')
     const [showStep3Error, setShowStep3Error] = useState(false)
     const [step, setStep] = useState<'form' | 'otp'>('form')
@@ -168,12 +226,10 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
     const [pendingEmail, setPendingEmail] = useState('')
     const errorRef = useRef<HTMLDivElement | null>(null)
     const stepTopRef = useRef<HTMLDivElement | null>(null)
+    const nativeBirthDateInputRef = useRef<HTMLInputElement | null>(null)
+    const heroDateFallbackTimerRef = useRef<number | null>(null)
 
-    const ph = usePhAddress({ legacyNoProvinceRegions: true, source: 'psgc' })
-    const selectedRegionLabel = ph.regions.find((region) => region.code === ph.regionCode)?.name ?? ph.address.region
-    const selectedProvinceLabel = ph.provinces.find((province) => province.code === ph.provinceCode)?.name ?? ph.address.province
-    const selectedCityLabel = ph.cities.find((city) => city.code === ph.cityCode)?.name ?? ph.address.city
-    const selectedBarangayLabel = ph.barangays.find((barangay) => barangay.name === ph.address.barangay)?.name ?? ph.address.barangay
+    const ph = usePhAddress({ legacyNoProvinceRegions: true, source: 'auto' })
 
     const [form, setForm] = useState({
         firstName: '',
@@ -199,43 +255,132 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
     const passwordRequirements = passwordChecks(form.password)
     const [usernameAvailabilityMessage, setUsernameAvailabilityMessage] = useState('')
     const [isUsernameAvailable, setIsUsernameAvailable] = useState<boolean | null>(null)
+    const [emailAvailabilityMessage, setEmailAvailabilityMessage] = useState('')
+    const [isEmailAvailable, setIsEmailAvailable] = useState<boolean | null>(null)
     const isUsernameEmailLike = isEmailLikeUsername(form.username)
+    const normalizedEmail = form.email.trim().toLowerCase()
+    const isEmailFormatValid = normalizedEmail.length > 0 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)
     const usernameFieldError = isUsernameEmailLike
         ? 'Username must not be an email address. Remove @gmail.com, @yahoo.com, or any email format.'
         : isUsernameAvailable === false
             ? (usernameAvailabilityMessage || 'This username is already taken.')
+            : ''
+    const emailFieldError = normalizedEmail && !isEmailFormatValid
+        ? 'Enter a valid email address.'
+        : isEmailAvailable === false
+            ? (emailAvailabilityMessage || 'This email is already registered.')
             : ''
     const birthDateValue = (() => {
         if (!form.birthDate) return null
         try { return parseDate(form.birthDate) } catch { return null }
     })()
 
+    const clearHeroDateFallbackTimer = () => {
+        if (heroDateFallbackTimerRef.current !== null) {
+            window.clearTimeout(heroDateFallbackTimerRef.current)
+            heroDateFallbackTimerRef.current = null
+        }
+    }
+
+    const activateNativeDateFallback = () => {
+        clearHeroDateFallbackTimer()
+        setPreferNativeDateInput(true)
+
+        window.requestAnimationFrame(() => {
+            nativeBirthDateInputRef.current?.focus()
+            nativeBirthDateInputRef.current?.showPicker?.()
+        })
+    }
+
+    const queueHeroDateFallback = () => {
+        if (preferNativeDateInput) return
+
+        clearHeroDateFallbackTimer()
+        heroDateFallbackTimerRef.current = window.setTimeout(() => {
+            activateNativeDateFallback()
+        }, 325)
+    }
+
+    useEffect(() => {
+        return () => {
+            clearHeroDateFallbackTimer()
+        }
+    }, [])
+
     useLayoutEffect(() => {
         if (step !== 'form' || formPage !== 3) return
 
-        setShowStep3Error(false)
-        setError('')
+        const frame = window.requestAnimationFrame(() => {
+            setShowStep3Error(false)
+            setError('')
+        })
+
+        return () => window.cancelAnimationFrame(frame)
     }, [step, formPage])
+
+    useEffect(() => {
+        const email = normalizedEmail
+
+        if (!email) {
+            const frame = window.requestAnimationFrame(() => {
+                setEmailAvailabilityMessage('')
+                setIsEmailAvailable(null)
+            })
+
+            return () => window.cancelAnimationFrame(frame)
+        }
+
+        if (!isEmailFormatValid) {
+            const frame = window.requestAnimationFrame(() => {
+                setEmailAvailabilityMessage('Enter a valid email address.')
+                setIsEmailAvailable(null)
+            })
+
+            return () => window.cancelAnimationFrame(frame)
+        }
+
+        const timer = window.setTimeout(async () => {
+            try {
+                const response = await checkEmailAvailability(email).unwrap()
+                setIsEmailAvailable(response.available)
+                setEmailAvailabilityMessage(response.message)
+            } catch {
+                setIsEmailAvailable(null)
+                setEmailAvailabilityMessage('Unable to check email right now.')
+            }
+        }, 450)
+
+        return () => window.clearTimeout(timer)
+    }, [checkEmailAvailability, isEmailFormatValid, normalizedEmail])
 
     useEffect(() => {
         const username = form.username.trim()
 
         if (!username) {
-            setUsernameAvailabilityMessage('')
-            setIsUsernameAvailable(null)
-            return
+            const frame = window.requestAnimationFrame(() => {
+                setUsernameAvailabilityMessage('')
+                setIsUsernameAvailable(null)
+            })
+
+            return () => window.cancelAnimationFrame(frame)
         }
 
         if (isEmailLikeUsername(username)) {
-            setUsernameAvailabilityMessage('Username must not be an email address.')
-            setIsUsernameAvailable(false)
-            return
+            const frame = window.requestAnimationFrame(() => {
+                setUsernameAvailabilityMessage('Username must not be an email address.')
+                setIsUsernameAvailable(false)
+            })
+
+            return () => window.cancelAnimationFrame(frame)
         }
 
         if (username.length < 3) {
-            setUsernameAvailabilityMessage('Username must be at least 3 characters.')
-            setIsUsernameAvailable(null)
-            return
+            const frame = window.requestAnimationFrame(() => {
+                setUsernameAvailabilityMessage('Username must be at least 3 characters.')
+                setIsUsernameAvailable(null)
+            })
+
+            return () => window.cancelAnimationFrame(frame)
         }
 
         const timer = window.setTimeout(async () => {
@@ -291,6 +436,8 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
         if (!form.lastName.trim()) return showError('Last name is required.')
         if (!form.birthDate) return showError('Birth date is required.')
         if (!form.email.trim()) return showError('Email address is required.')
+        if (!isEmailFormatValid) return showError('Enter a valid email address.')
+        if (isEmailAvailable === false) return showError(emailAvailabilityMessage || 'This email is already registered.')
         if (!form.gender) return showError('Gender is required.')
         if (!form.occupation.trim()) return showError('Occupation is required.')
         if (!form.phone.trim()) return showError('Phone number is required.')
@@ -509,106 +656,179 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                         <div>
                                             <label className={labelClass}>Birth Date <span className="text-red-500">*</span></label>
-                                            <DatePicker
-                                                className="w-full"
-                                                aria-label="Birth Date"
-                                                name="birthDate"
-                                                value={birthDateValue ?? undefined}
-                                                onChange={(value) => setForm((prev) => ({ ...prev, birthDate: value ? value.toString() : '' }))}
-                                            >
-                                                <Label className="sr-only">Birth Date</Label>
-                                                <DateField.Group
-                                                    fullWidth
-                                                    className="flex h-14 w-full items-center rounded-[22px] border border-gray-300 dark:border-white/18 bg-white dark:bg-white/12 px-4 text-sm text-gray-900 dark:text-white transition-all duration-200 hover:bg-gray-50 dark:hover:bg-white/16 focus-within:border-orange-400 dark:focus-within:border-orange-400/60"
-                                                >
-                                                    <DateField.Input className="flex-1 text-sm text-gray-900 dark:text-white data-[placeholder=true]:text-gray-400 dark:data-[placeholder=true]:text-white/45">
-                                                        {(segment) => (
-                                                            <DateField.Segment
-                                                                segment={segment}
-                                                                className="rounded-md px-0.5 outline-none transition data-[placeholder=true]:text-gray-400 dark:data-[placeholder=true]:text-white/45 data-[focused=true]:bg-orange-500/15 data-[focused=true]:text-orange-600 dark:data-[focused=true]:text-orange-200"
-                                                            />
-                                                        )}
-                                                    </DateField.Input>
-                                                    <DateField.Suffix className="ml-3 flex items-center">
-                                                        <DatePicker.Trigger className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 dark:bg-white/10 text-gray-500 dark:text-white/60 transition hover:bg-gray-200 dark:hover:bg-white/16 hover:text-gray-800 dark:hover:text-white focus:outline-none cursor-pointer">
-                                                            <DatePicker.TriggerIndicator />
-                                                        </DatePicker.Trigger>
-                                                    </DateField.Suffix>
-                                                </DateField.Group>
-                                                <DatePicker.Popover className="border-0 bg-transparent p-0 shadow-none">
-                                                    <Calendar className="min-w-[340px] rounded-[24px] border border-slate-200 bg-white p-4 text-slate-800 shadow-[0_24px_80px_rgba(15,23,42,0.16)] dark:border-white/10 dark:bg-slate-900 dark:text-slate-100">
-                                                        <Calendar.Header className="mb-3 flex items-center justify-between gap-3">
-                                                            <Calendar.YearPickerTrigger className="inline-flex min-w-0 items-center gap-1 rounded-full px-3 py-1.5 text-sm font-semibold text-slate-800 transition hover:bg-slate-100 dark:text-slate-100 dark:hover:bg-white/10">
-                                                                <Calendar.YearPickerTriggerHeading />
-                                                                <Calendar.YearPickerTriggerIndicator className="text-slate-500 dark:text-slate-400" />
-                                                            </Calendar.YearPickerTrigger>
-                                                            <div className="ml-auto flex items-center gap-2 pl-2">
-                                                                <Calendar.NavButton slot="previous" className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 transition hover:border-orange-200 hover:bg-orange-50 hover:text-orange-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:border-orange-400/30 dark:hover:bg-orange-500/10 dark:hover:text-orange-300" />
-                                                                <Calendar.NavButton slot="next" className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 transition hover:border-orange-200 hover:bg-orange-50 hover:text-orange-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:border-orange-400/30 dark:hover:bg-orange-500/10 dark:hover:text-orange-300" />
-                                                            </div>
-                                                        </Calendar.Header>
-                                                        <Calendar.Grid className="w-full">
-                                                            <Calendar.GridHeader>
-                                                                {(day) => (
-                                                                    <Calendar.HeaderCell className="pb-2 text-center text-xs font-semibold text-slate-400 dark:text-slate-500">
-                                                                        {day}
-                                                                    </Calendar.HeaderCell>
-                                                                )}
-                                                            </Calendar.GridHeader>
-                                                            <Calendar.GridBody>
-                                                                {(date) => (
-                                                                    <Calendar.Cell
-                                                                        date={date}
-                                                                        className="flex h-10 w-10 items-center justify-center rounded-full text-sm font-medium text-slate-700 transition hover:bg-orange-100 hover:text-orange-600 data-[focused=true]:bg-orange-100 data-[focused=true]:text-orange-600 data-[selected=true]:bg-orange-500 data-[selected=true]:text-white data-[outside-month=true]:text-slate-300 dark:text-slate-200 dark:hover:bg-orange-500/15 dark:hover:text-orange-300 dark:data-[focused=true]:bg-orange-500/15 dark:data-[focused=true]:text-orange-300 dark:data-[outside-month=true]:text-slate-600"
+                                            {preferNativeDateInput ? (
+                                                <input
+                                                    id="signup-birth-date"
+                                                    ref={nativeBirthDateInputRef}
+                                                    type="date"
+                                                    name="birthDate"
+                                                    value={form.birthDate}
+                                                    onChange={(e) => setForm((prev) => ({ ...prev, birthDate: e.target.value }))}
+                                                    max={new Date().toISOString().split('T')[0]}
+                                                    required
+                                                    className={inputClass}
+                                                />
+                                            ) : (
+                                                <div onPointerDownCapture={queueHeroDateFallback}>
+                                                    <DatePicker
+                                                        className="w-full"
+                                                        aria-label="Birth Date"
+                                                        name="birthDate"
+                                                        value={birthDateValue ?? undefined}
+                                                        onChange={(value) => setForm((prev) => ({ ...prev, birthDate: value ? value.toString() : '' }))}
+                                                        onOpenChange={(isOpen) => {
+                                                            if (isOpen) {
+                                                                clearHeroDateFallbackTimer()
+                                                            }
+                                                        }}
+                                                    >
+                                                        <Label className="sr-only">Birth Date</Label>
+                                                        <DateField.Group
+                                                            fullWidth
+                                                            className="flex h-14 w-full items-center rounded-[22px] border border-gray-300 dark:border-white/18 bg-white dark:bg-white/12 px-4 text-sm text-gray-900 dark:text-white transition-all duration-200 hover:bg-gray-50 dark:hover:bg-white/16 focus-within:border-orange-400 dark:focus-within:border-orange-400/60"
+                                                        >
+                                                            <DateField.Input className="flex-1 text-sm text-gray-900 dark:text-white data-[placeholder=true]:text-gray-400 dark:data-[placeholder=true]:text-white/45">
+                                                                {(segment) => (
+                                                                    <DateField.Segment
+                                                                        segment={segment}
+                                                                        className="rounded-md px-0.5 outline-none transition data-[placeholder=true]:text-gray-400 dark:data-[placeholder=true]:text-white/45 data-[focused=true]:bg-orange-500/15 data-[focused=true]:text-orange-600 dark:data-[focused=true]:text-orange-200"
                                                                     />
                                                                 )}
-                                                            </Calendar.GridBody>
-                                                        </Calendar.Grid>
-                                                        <Calendar.YearPickerGrid className="mt-2">
-                                                            <Calendar.YearPickerGridBody>
-                                                                {({ year }) => (
-                                                                    <Calendar.YearPickerCell
-                                                                        year={year}
-                                                                        className="flex h-10 items-center justify-center rounded-xl text-sm font-medium text-slate-700 transition hover:bg-orange-100 hover:text-orange-600 data-[selected=true]:bg-orange-500 data-[selected=true]:text-white dark:text-slate-200 dark:hover:bg-orange-500/15 dark:hover:text-orange-300"
-                                                                    />
-                                                                )}
-                                                            </Calendar.YearPickerGridBody>
-                                                        </Calendar.YearPickerGrid>
-                                                    </Calendar>
-                                                </DatePicker.Popover>
-                                            </DatePicker>
+                                                            </DateField.Input>
+                                                            <DateField.Suffix className="ml-3 flex items-center">
+                                                                <DatePicker.Trigger className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 dark:bg-white/10 text-gray-500 dark:text-white/60 transition hover:bg-gray-200 dark:hover:bg-white/16 hover:text-gray-800 dark:hover:text-white focus:outline-none cursor-pointer">
+                                                                    <DatePicker.TriggerIndicator />
+                                                                </DatePicker.Trigger>
+                                                            </DateField.Suffix>
+                                                        </DateField.Group>
+                                                        <DatePicker.Popover className="border-0 bg-transparent p-0 shadow-none">
+                                                            <Calendar className="min-w-[340px] rounded-[24px] border border-slate-200 bg-white p-4 text-slate-800 shadow-[0_24px_80px_rgba(15,23,42,0.16)] dark:border-white/10 dark:bg-slate-900 dark:text-slate-100">
+                                                                <Calendar.Header className="mb-3 flex items-center justify-between gap-3">
+                                                                    <Calendar.YearPickerTrigger className="inline-flex min-w-0 items-center gap-1 rounded-full px-3 py-1.5 text-sm font-semibold text-slate-800 transition hover:bg-slate-100 dark:text-slate-100 dark:hover:bg-white/10">
+                                                                        <Calendar.YearPickerTriggerHeading />
+                                                                        <Calendar.YearPickerTriggerIndicator className="text-slate-500 dark:text-slate-400" />
+                                                                    </Calendar.YearPickerTrigger>
+                                                                    <div className="ml-auto flex items-center gap-2 pl-2">
+                                                                        <Calendar.NavButton slot="previous" className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 transition hover:border-orange-200 hover:bg-orange-50 hover:text-orange-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:border-orange-400/30 dark:hover:bg-orange-500/10 dark:hover:text-orange-300" />
+                                                                        <Calendar.NavButton slot="next" className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 transition hover:border-orange-200 hover:bg-orange-50 hover:text-orange-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:border-orange-400/30 dark:hover:bg-orange-500/10 dark:hover:text-orange-300" />
+                                                                    </div>
+                                                                </Calendar.Header>
+                                                                <Calendar.Grid className="w-full">
+                                                                    <Calendar.GridHeader>
+                                                                        {(day) => (
+                                                                            <Calendar.HeaderCell className="pb-2 text-center text-xs font-semibold text-slate-400 dark:text-slate-500">
+                                                                                {day}
+                                                                            </Calendar.HeaderCell>
+                                                                        )}
+                                                                    </Calendar.GridHeader>
+                                                                    <Calendar.GridBody>
+                                                                        {(date) => (
+                                                                            <Calendar.Cell
+                                                                                date={date}
+                                                                                className="flex h-10 w-10 items-center justify-center rounded-full text-sm font-medium text-slate-700 transition hover:bg-orange-100 hover:text-orange-600 data-[focused=true]:bg-orange-100 data-[focused=true]:text-orange-600 data-[selected=true]:bg-orange-500 data-[selected=true]:text-white data-[outside-month=true]:text-slate-300 dark:text-slate-200 dark:hover:bg-orange-500/15 dark:hover:text-orange-300 dark:data-[focused=true]:bg-orange-500/15 dark:data-[focused=true]:text-orange-300 dark:data-[outside-month=true]:text-slate-600"
+                                                                            />
+                                                                        )}
+                                                                    </Calendar.GridBody>
+                                                                </Calendar.Grid>
+                                                                <Calendar.YearPickerGrid className="mt-2">
+                                                                    <Calendar.YearPickerGridBody>
+                                                                        {({ year }) => (
+                                                                            <Calendar.YearPickerCell
+                                                                                year={year}
+                                                                                className="flex h-10 items-center justify-center rounded-xl text-sm font-medium text-slate-700 transition hover:bg-orange-100 hover:text-orange-600 data-[selected=true]:bg-orange-500 data-[selected=true]:text-white dark:text-slate-200 dark:hover:bg-orange-500/15 dark:hover:text-orange-300"
+                                                                            />
+                                                                        )}
+                                                                    </Calendar.YearPickerGridBody>
+                                                                </Calendar.YearPickerGrid>
+                                                            </Calendar>
+                                                        </DatePicker.Popover>
+                                                    </DatePicker>
+                                                </div>
+                                            )}
                                         </div>
-                                        <FloatingInput id="signup-email" type="email" label="Email Address" required
-                                            value={form.email} onChange={set('email')} />
+                                        <div>
+                                            <FloatingInput id="signup-email" type="email" label="Email Address" required
+                                                value={form.email} onChange={set('email')} />
+                                            {emailFieldError ? (
+                                                <p className="mt-1.5 text-xs font-medium text-red-500 dark:text-red-300">
+                                                    {emailFieldError}
+                                                </p>
+                                            ) : isCheckingEmail && isEmailFormatValid ? (
+                                                <p className="mt-1.5 text-xs font-medium text-amber-500 dark:text-amber-300">
+                                                    Checking email availability...
+                                                </p>
+                                            ) : isEmailAvailable === true ? (
+                                                <p className="mt-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-300">
+                                                    {emailAvailabilityMessage || 'Email address is available.'}
+                                                </p>
+                                            ) : normalizedEmail ? (
+                                                <p className="mt-1.5 text-xs text-gray-500 dark:text-white/55">
+                                                    This email will be used for OTP verification and sign in.
+                                                </p>
+                                            ) : null}
+                                        </div>
                                     </div>
 
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                        <HeroSelectField
-                                            label={<>Gender <span className="text-red-500">*</span></>}
-                                            placeholder="Select Gender"
-                                            selectedKey={form.gender}
-                                            selectedLabel={form.gender ? form.gender.charAt(0).toUpperCase() + form.gender.slice(1) : ''}
-                                            onSelectionChange={(key) => setForm((prev) => ({ ...prev, gender: key ? String(key) : '' }))}
-                                        >
-                                            <ListBoxItem id="male">Male</ListBoxItem>
-                                            <ListBoxItem id="female">Female</ListBoxItem>
-                                            <ListBoxItem id="other">Other</ListBoxItem>
-                                        </HeroSelectField>
+                                        <div>
+                                            <div className="sm:hidden">
+                                                <NativeSelectField
+                                                    label={<>Gender <span className="text-red-500">*</span></>}
+                                                    placeholder="Select Gender"
+                                                    value={form.gender}
+                                                    onChange={(value) => setForm((prev) => ({ ...prev, gender: value }))}
+                                                    options={[
+                                                        { value: 'male', label: 'Male' },
+                                                        { value: 'female', label: 'Female' },
+                                                        { value: 'other', label: 'Other' },
+                                                    ]}
+                                                />
+                                            </div>
+                                            <div className="hidden sm:block">
+                                                <HeroSelectField
+                                                    label={<>Gender <span className="text-red-500">*</span></>}
+                                                    placeholder="Select Gender"
+                                                    selectedKey={form.gender}
+                                                    selectedLabel={form.gender ? form.gender.charAt(0).toUpperCase() + form.gender.slice(1) : ''}
+                                                    onSelectionChange={(key) => setForm((prev) => ({ ...prev, gender: key ? String(key) : '' }))}
+                                                >
+                                                    <ListBoxItem id="male">Male</ListBoxItem>
+                                                    <ListBoxItem id="female">Female</ListBoxItem>
+                                                    <ListBoxItem id="other">Other</ListBoxItem>
+                                                </HeroSelectField>
+                                            </div>
+                                        </div>
                                         <FloatingInput id="signup-occupation" label="Occupation" required
                                             value={form.occupation} onChange={set('occupation')} />
                                     </div>
 
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                        <HeroSelectField
-                                            label="Work Location"
-                                            placeholder="Select work location"
-                                            selectedKey={form.workLocation}
-                                            selectedLabel={form.workLocation === 'overseas' ? 'Overseas' : 'Local (Philippines)'}
-                                            onSelectionChange={(key) => setForm((prev) => ({ ...prev, workLocation: key ? String(key) : 'local' }))}
-                                        >
-                                            <ListBoxItem id="local">Local (Philippines)</ListBoxItem>
-                                            <ListBoxItem id="overseas">Overseas</ListBoxItem>
-                                        </HeroSelectField>
+                                        <div>
+                                            <div className="sm:hidden">
+                                                <NativeSelectField
+                                                    label="Work Location"
+                                                    placeholder="Select work location"
+                                                    value={form.workLocation}
+                                                    onChange={(value) => setForm((prev) => ({ ...prev, workLocation: value || 'local' }))}
+                                                    options={[
+                                                        { value: 'local', label: 'Local (Philippines)' },
+                                                        { value: 'overseas', label: 'Overseas' },
+                                                    ]}
+                                                />
+                                            </div>
+                                            <div className="hidden sm:block">
+                                                <HeroSelectField
+                                                    label="Work Location"
+                                                    placeholder="Select work location"
+                                                    selectedKey={form.workLocation}
+                                                    selectedLabel={form.workLocation === 'overseas' ? 'Overseas' : 'Local (Philippines)'}
+                                                    onSelectionChange={(key) => setForm((prev) => ({ ...prev, workLocation: key ? String(key) : 'local' }))}
+                                                >
+                                                    <ListBoxItem id="local">Local (Philippines)</ListBoxItem>
+                                                    <ListBoxItem id="overseas">Overseas</ListBoxItem>
+                                                </HeroSelectField>
+                                            </div>
+                                        </div>
                                         <FloatingInput
                                             id="signup-country"
                                             label="Country"
@@ -693,74 +913,136 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
                                     <FloatingInput id="signup-address" label="Street / House No." required
                                         value={form.address} onChange={set('address')} />
 
-                                    <HeroSelectField
-                                        label={<>Region <span className="text-red-500">*</span></>}
-                                        placeholder="Select Region"
-                                        selectedKey={ph.regionCode}
-                                        selectedLabel={selectedRegionLabel}
-                                        isLoading={ph.loadingRegions}
-                                        onSelectionChange={(key) => {
-                                            const value = key ? String(key) : ''
-                                            const option = ph.regions.find((r) => r.code === value)
-                                            ph.setRegion(value, option?.name ?? value)
-                                        }}
-                                    >
-                                        {ph.regions.map((region) => (
-                                            <ListBoxItem id={region.code} key={region.code}>{region.name}</ListBoxItem>
-                                        ))}
-                                    </HeroSelectField>
-
-                                    {!ph.noProvince && (
+                                    <div className="sm:hidden">
+                                        <NativeSelectField
+                                            label={<>Region <span className="text-red-500">*</span></>}
+                                            placeholder="Select Region"
+                                            value={ph.regionCode}
+                                            isLoading={ph.loadingRegions}
+                                            onChange={(value) => {
+                                                const option = ph.regions.find((r) => r.code === value)
+                                                ph.setRegion(value, option?.name ?? value)
+                                            }}
+                                            options={ph.regions.map((region) => ({ value: region.code, label: region.name }))}
+                                        />
+                                    </div>
+                                    <div className="hidden sm:block">
                                         <HeroSelectField
-                                            label={<>Province <span className="text-red-500">*</span></>}
-                                            placeholder="Select Province"
-                                            selectedKey={ph.provinceCode}
-                                            selectedLabel={selectedProvinceLabel}
-                                            isDisabled={!ph.regionCode || ph.loadingProvinces}
-                                            isLoading={ph.loadingProvinces}
+                                            label={<>Region <span className="text-red-500">*</span></>}
+                                            placeholder="Select Region"
+                                            selectedKey={ph.regionCode}
+                                            selectedLabel={ph.regions.find((region) => region.code === ph.regionCode)?.name ?? ph.address.region}
+                                            isLoading={ph.loadingRegions}
                                             onSelectionChange={(key) => {
                                                 const value = key ? String(key) : ''
-                                                const option = ph.provinces.find((p) => p.code === value)
-                                                ph.setProvince(value, option?.name ?? value)
+                                                const option = ph.regions.find((r) => r.code === value)
+                                                ph.setRegion(value, option?.name ?? value)
                                             }}
                                         >
-                                            {ph.provinces.map((province) => (
-                                                <ListBoxItem id={province.code} key={province.code}>{province.name}</ListBoxItem>
+                                            {ph.regions.map((region) => (
+                                                <ListBoxItem id={region.code} key={region.code}>{region.name}</ListBoxItem>
                                             ))}
                                         </HeroSelectField>
+                                    </div>
+
+                                    {!ph.noProvince && (
+                                        <>
+                                            <div className="sm:hidden">
+                                                <NativeSelectField
+                                                    label={<>Province <span className="text-red-500">*</span></>}
+                                                    placeholder="Select Province"
+                                                    value={ph.provinceCode}
+                                                    isDisabled={!ph.regionCode || ph.loadingProvinces}
+                                                    isLoading={ph.loadingProvinces}
+                                                    onChange={(value) => {
+                                                        const option = ph.provinces.find((p) => p.code === value)
+                                                        ph.setProvince(value, option?.name ?? value)
+                                                    }}
+                                                    options={ph.provinces.map((province) => ({ value: province.code, label: province.name }))}
+                                                />
+                                            </div>
+                                            <div className="hidden sm:block">
+                                                <HeroSelectField
+                                                    label={<>Province <span className="text-red-500">*</span></>}
+                                                    placeholder="Select Province"
+                                                    selectedKey={ph.provinceCode}
+                                                    selectedLabel={ph.provinces.find((province) => province.code === ph.provinceCode)?.name ?? ph.address.province}
+                                                    isDisabled={!ph.regionCode || ph.loadingProvinces}
+                                                    isLoading={ph.loadingProvinces}
+                                                    onSelectionChange={(key) => {
+                                                        const value = key ? String(key) : ''
+                                                        const option = ph.provinces.find((p) => p.code === value)
+                                                        ph.setProvince(value, option?.name ?? value)
+                                                    }}
+                                                >
+                                                    {ph.provinces.map((province) => (
+                                                        <ListBoxItem id={province.code} key={province.code}>{province.name}</ListBoxItem>
+                                                    ))}
+                                                </HeroSelectField>
+                                            </div>
+                                        </>
                                     )}
 
-                                    <HeroSelectField
-                                        label={<>City / Municipality <span className="text-red-500">*</span></>}
-                                        placeholder="Select City / Municipality"
-                                        selectedKey={ph.cityCode}
-                                        selectedLabel={selectedCityLabel}
-                                        isDisabled={ph.noProvince ? !ph.regionCode : (!ph.provinceCode || ph.loadingCities)}
-                                        isLoading={ph.loadingCities || ph.loadingProvinces}
-                                        onSelectionChange={(key) => {
-                                            const value = key ? String(key) : ''
-                                            const option = ph.cities.find((c) => c.code === value)
-                                            ph.setCity(value, option?.name ?? value)
-                                        }}
-                                    >
-                                        {ph.cities.map((city) => (
-                                            <ListBoxItem id={city.code} key={city.code}>{city.name}</ListBoxItem>
-                                        ))}
-                                    </HeroSelectField>
+                                    <div className="sm:hidden">
+                                        <NativeSelectField
+                                            label={<>City / Municipality <span className="text-red-500">*</span></>}
+                                            placeholder="Select City / Municipality"
+                                            value={ph.cityCode}
+                                            isDisabled={ph.noProvince ? !ph.regionCode : (!ph.provinceCode || ph.loadingCities)}
+                                            isLoading={ph.loadingCities || ph.loadingProvinces}
+                                            onChange={(value) => {
+                                                const option = ph.cities.find((c) => c.code === value)
+                                                ph.setCity(value, option?.name ?? value)
+                                            }}
+                                            options={ph.cities.map((city) => ({ value: city.code, label: city.name }))}
+                                        />
+                                    </div>
+                                    <div className="hidden sm:block">
+                                        <HeroSelectField
+                                            label={<>City / Municipality <span className="text-red-500">*</span></>}
+                                            placeholder="Select City / Municipality"
+                                            selectedKey={ph.cityCode}
+                                            selectedLabel={ph.cities.find((city) => city.code === ph.cityCode)?.name ?? ph.address.city}
+                                            isDisabled={ph.noProvince ? !ph.regionCode : (!ph.provinceCode || ph.loadingCities)}
+                                            isLoading={ph.loadingCities || ph.loadingProvinces}
+                                            onSelectionChange={(key) => {
+                                                const value = key ? String(key) : ''
+                                                const option = ph.cities.find((c) => c.code === value)
+                                                ph.setCity(value, option?.name ?? value)
+                                            }}
+                                        >
+                                            {ph.cities.map((city) => (
+                                                <ListBoxItem id={city.code} key={city.code}>{city.name}</ListBoxItem>
+                                            ))}
+                                        </HeroSelectField>
+                                    </div>
 
-                                    <HeroSelectField
-                                        label={<>Barangay <span className="text-red-500">*</span></>}
-                                        placeholder="Select Barangay"
-                                        selectedKey={ph.address.barangay}
-                                        selectedLabel={selectedBarangayLabel}
-                                        isDisabled={!ph.cityCode || ph.loadingBarangays}
-                                        isLoading={ph.loadingBarangays}
-                                        onSelectionChange={(key) => ph.setBarangay(key ? String(key) : '')}
-                                    >
-                                        {ph.barangays.map((barangay) => (
-                                            <ListBoxItem id={barangay.name} key={barangay.code}>{barangay.name}</ListBoxItem>
-                                        ))}
-                                    </HeroSelectField>
+                                    <div className="sm:hidden">
+                                        <NativeSelectField
+                                            label={<>Barangay <span className="text-red-500">*</span></>}
+                                            placeholder="Select Barangay"
+                                            value={ph.address.barangay}
+                                            isDisabled={!ph.cityCode || ph.loadingBarangays}
+                                            isLoading={ph.loadingBarangays}
+                                            onChange={(value) => ph.setBarangay(value)}
+                                            options={ph.barangays.map((barangay) => ({ value: barangay.name, label: barangay.name }))}
+                                        />
+                                    </div>
+                                    <div className="hidden sm:block">
+                                        <HeroSelectField
+                                            label={<>Barangay <span className="text-red-500">*</span></>}
+                                            placeholder="Select Barangay"
+                                            selectedKey={ph.address.barangay}
+                                            selectedLabel={ph.barangays.find((barangay) => barangay.name === ph.address.barangay)?.name ?? ph.address.barangay}
+                                            isDisabled={!ph.cityCode || ph.loadingBarangays}
+                                            isLoading={ph.loadingBarangays}
+                                            onSelectionChange={(key) => ph.setBarangay(key ? String(key) : '')}
+                                        >
+                                            {ph.barangays.map((barangay) => (
+                                                <ListBoxItem id={barangay.name} key={barangay.code}>{barangay.name}</ListBoxItem>
+                                            ))}
+                                        </HeroSelectField>
+                                    </div>
 
                                     <FloatingInput id="signup-zip" label="ZIP Code" maxLength={10} required
                                         value={form.zipCode} onChange={set('zipCode')} />

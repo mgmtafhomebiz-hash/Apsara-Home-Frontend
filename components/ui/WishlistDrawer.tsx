@@ -1,7 +1,7 @@
 'use client'
 
 import { motion, AnimatePresence } from 'framer-motion'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { useGetWishlistQuery } from '@/store/api/wishlistApi'
 import { useSession } from 'next-auth/react'
 import PrimaryButton from '@/components/ui/buttons/PrimaryButton'
@@ -10,9 +10,11 @@ import ItemCard from '@/components/item/ItemCard'
 
 export default function WishlistDrawer() {
   const router = useRouter()
+  const pathname = usePathname()
   const { isOpen, setIsOpen } = useWishlist()
   const { data: session } = useSession()
   const isLoggedIn = Boolean(session?.user)
+  const loginHref = `/login?callback=${encodeURIComponent(pathname || '/wishlist')}`
   
   const { data: wishlist = [], isLoading, error } = useGetWishlistQuery(undefined, {
     skip: !isLoggedIn,
@@ -69,7 +71,7 @@ export default function WishlistDrawer() {
                     <p className="font-semibold text-gray-800 dark:text-gray-200">Sign in to view wishlist</p>
                     <p className="mt-1 text-sm text-gray-400 dark:text-gray-500">Please sign in to see your saved items</p>
                   </div>
-                  <PrimaryButton onClick={() => router.push('/login')} className="!px-6 !py-2.5 !text-sm">
+                  <PrimaryButton onClick={() => router.push(loginHref)} className="!px-6 !py-2.5 !text-sm">
                     Sign In
                   </PrimaryButton>
                 </div>
