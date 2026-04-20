@@ -2,7 +2,7 @@
 
 import { MeResponse, ReferralTreeNode, useChangePasswordMutation, useMeQuery, useReferralTreeQuery, useUpdateProfileMutation, useSendUsernameChangeOtpMutation, useSubmitUsernameChangeRequestMutation, useUsernameChangeLatestQuery } from '@/store/api/userApi';
 import { signOut, useSession } from 'next-auth/react';
-import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { ChangeEvent, FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Loading from '../Loading';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -46,12 +46,23 @@ import InteriorRequestsTab from './InteriorRequestsTab';
 import { usePhAddress } from '@/hooks/usePhAddress';
 import { containsBlockedWord } from '@/libs/badWords';
 
+const hasRealPhoneNumber = (value?: string | null) => {
+  const digits = String(value ?? '').replace(/\D/g, '');
+  return digits.length >= 10;
+};
+
 
 type ProfileFormState = {
   name: string;
   email: string;
   phone: string;
   username: string;
+  middle_name: string;
+  birth_date: string;
+  gender: 'male' | 'female' | 'other' | '';
+  occupation: string;
+  work_location: 'local' | 'overseas';
+  country: string;
 };
 
 type AddressFormState = {
@@ -266,8 +277,20 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
   const [submitUsernameChangeRequest, { isLoading: isSubmittingUsernameChange }] = useSubmitUsernameChangeRequestMutation();
 
   const [activeTab, setActiveTab] = useState<Tab>('profile');
+  const profileDraftDirtyRef = useRef(false);
 
-  const [form, setForm] = useState<ProfileFormState>({ name: '', email: '', phone: '', username: '' });
+  const [form, setForm] = useState<ProfileFormState>({
+    name: '',
+    email: '',
+    phone: '',
+    username: '',
+    middle_name: '',
+    birth_date: '',
+    gender: '',
+    occupation: '',
+    work_location: 'local',
+    country: 'Philippines',
+  });
   const [usernameRequest, setUsernameRequest] = useState('');
   const [usernameOtp, setUsernameOtp] = useState('');
   const [usernameOtpToken, setUsernameOtpToken] = useState<string | null>(null);
@@ -310,17 +333,26 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
   const phAddress = usePhAddress();
   const profileData = data ?? initialProfile;
 
+  const buildProfileFormState = useCallback((): ProfileFormState => ({
+    name: profileData?.name ?? session?.user?.name ?? '',
+    email: profileData?.email ?? session?.user?.email ?? '',
+    phone: profileData?.phone ?? '',
+    username: profileData?.username ?? '',
+    middle_name: profileData?.middle_name ?? '',
+    birth_date: profileData?.birth_date ?? '',
+    gender: (profileData?.gender as ProfileFormState['gender']) ?? '',
+    occupation: profileData?.occupation ?? '',
+    work_location: (profileData?.work_location as ProfileFormState['work_location']) ?? 'local',
+    country: profileData?.country ?? 'Philippines',
+  }), [profileData, session]);
+
   useEffect(() => {
-    if (profileData || session) {
-      setForm({
-        name: profileData?.name ?? session?.user?.name ?? '',
-        email: profileData?.email ?? session?.user?.email ?? '',
-        phone: profileData?.phone ?? '',
-        username: profileData?.username ?? '',
-      });
-      setUsernameRequest(profileData?.username ?? '');
+    if (!profileData && !session) return;
+    if (!profileDraftDirtyRef.current) {
+      setForm(buildProfileFormState());
     }
-  }, [profileData, session]);
+    setUsernameRequest(profileData?.username ?? '');
+  }, [buildProfileFormState, profileData, session]);
 
   useEffect(() => {
     if (!isAddressModalOpen) return;
@@ -424,8 +456,32 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
   const hasChanges = useMemo(
     () =>
       form.name !== (profileData?.name ?? session?.user?.name ?? '') ||
-      form.phone !== (profileData?.phone ?? ''),
-    [profileData?.name, profileData?.phone, form.name, form.phone, session?.user?.name],
+      form.phone !== (profileData?.phone ?? '') ||
+      form.middle_name !== (profileData?.middle_name ?? '') ||
+      form.birth_date !== (profileData?.birth_date ?? '') ||
+      form.gender !== ((profileData?.gender as ProfileFormState['gender']) ?? '') ||
+      form.occupation !== (profileData?.occupation ?? '') ||
+      form.work_location !== ((profileData?.work_location as ProfileFormState['work_location']) ?? 'local') ||
+      form.country !== (profileData?.country ?? 'Philippines'),
+    [
+      profileData?.birth_date,
+      profileData?.country,
+      profileData?.gender,
+      profileData?.middle_name,
+      profileData?.name,
+      profileData?.occupation,
+      profileData?.phone,
+      profileData?.work_location,
+      form.birth_date,
+      form.country,
+      form.gender,
+      form.middle_name,
+      form.name,
+      form.occupation,
+      form.phone,
+      form.work_location,
+      session?.user?.name,
+    ],
   );
 
   const verificationStatus = profileData?.verification_status ?? 'not_verified';
@@ -465,15 +521,81 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
     const checks = [
       Boolean(form.name.trim()),
       Boolean(form.email.trim()),
-      Boolean(form.phone.trim()),
+      hasRealPhoneNumber(form.phone),
       Boolean(form.username.trim()),
-      Boolean(bio.trim()),
+      Boolean(form.middle_name.trim()),
+      Boolean(form.birth_date.trim()),
+      Boolean(form.gender),
+      Boolean(form.occupation.trim()),
+      Boolean(form.work_location.trim()),
+      Boolean(form.country.trim()),
     ];
     return Math.round((checks.filter(Boolean).length / checks.length) * 100);
-  }, [bio, form, isVerified]);
+  }, [form, isVerified]);
+
+  const completionItems = useMemo(() => ([
+    {
+      label: 'Full Name',
+      done: Boolean(form.name.trim()),
+      hint: 'Shown on your account and address records.',
+    },
+    {
+      label: 'Username',
+      done: Boolean((profileData?.username ?? form.username).trim()),
+      hint: 'Used for your referral links and account identity.',
+    },
+    {
+      label: 'Email Address',
+      done: Boolean(form.email.trim()),
+      hint: 'This comes from your account registration.',
+    },
+    {
+      label: 'Phone Number',
+      done: hasRealPhoneNumber(form.phone),
+      hint: 'Used for shipping and contact updates.',
+    },
+    {
+      label: 'Address',
+      done: Boolean(
+        profileData?.address?.trim()
+        && profileData?.city?.trim()
+        && profileData?.province?.trim()
+        && profileData?.region?.trim()
+        && profileData?.zip_code?.trim(),
+      ),
+      hint: 'Street, region, city, barangay, and ZIP code.',
+    },
+  ]), [
+    form.birth_date,
+    form.country,
+    form.email,
+    form.gender,
+    form.middle_name,
+    form.name,
+    form.occupation,
+    form.phone,
+    form.username,
+    form.work_location,
+    profileData?.address,
+    profileData?.city,
+    profileData?.province,
+    profileData?.region,
+    profileData?.zip_code,
+    profileData?.username,
+  ]);
 
   const onChange = (field: keyof ProfileFormState) => (e: ChangeEvent<HTMLInputElement>) =>
-    setForm((prev) => ({ ...prev, [field]: e.target.value }));
+    setForm((prev) => {
+      profileDraftDirtyRef.current = true;
+      return { ...prev, [field]: e.target.value };
+    });
+
+  const onOptionalChange = (field: keyof ProfileFormState) => (
+    e: ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  ) => setForm((prev) => {
+    profileDraftDirtyRef.current = true;
+    return { ...prev, [field]: e.target.value as ProfileFormState[typeof field] };
+  });
 
   const togglePref = (field: keyof PreferencesState) =>
     setPrefs((prev) => (typeof prev[field] === 'boolean' ? { ...prev, [field]: !prev[field] } : prev));
@@ -757,8 +879,15 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
       await updateProfile({
         name: form.name.trim(),
         phone: form.phone.trim() || undefined,
+        middle_name: form.middle_name.trim() || undefined,
+        birth_date: form.birth_date.trim() || undefined,
+        gender: form.gender || undefined,
+        occupation: form.occupation.trim() || undefined,
+        work_location: form.work_location || undefined,
+        country: form.country.trim() || undefined,
       }).unwrap();
-      setProfileMsg({ type: 'success', text: 'Profile updated successfully.' });
+      profileDraftDirtyRef.current = false;
+      setProfileMsg({ type: 'success', text: 'Profile updated successfully. Your complete information was saved.' });
     } catch (err: unknown) {
       const apiError = err as { data?: { message?: string } };
       setProfileMsg({ type: 'error', text: apiError?.data?.message || 'Failed to update profile.' });
@@ -784,6 +913,12 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
       await updateProfile({
         name: form.name.trim(),
         phone: form.phone.trim() || undefined,
+        middle_name: form.middle_name.trim() || undefined,
+        birth_date: form.birth_date.trim() || undefined,
+        gender: form.gender || undefined,
+        occupation: form.occupation.trim() || undefined,
+        work_location: form.work_location || undefined,
+        country: form.country.trim() || undefined,
         address: addressForm.address.trim() || undefined,
         barangay: phAddress.address.barangay || undefined,
         city: phAddress.address.city || undefined,
@@ -792,7 +927,8 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
         zip_code: addressForm.zipCode.trim() || undefined,
       }).unwrap();
 
-      setProfileMsg({ type: 'success', text: 'Address updated successfully.' });
+      profileDraftDirtyRef.current = false;
+      setProfileMsg({ type: 'success', text: 'Address updated successfully. Your profile information was saved too.' });
       phAddress.reset();
       setIsAddressModalOpen(false);
     } catch (err: unknown) {
@@ -824,10 +960,17 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
       await updateProfile({
         name: form.name.trim() || profileData?.name || session?.user?.name || 'AF Home User',
         phone: form.phone.trim() || undefined,
+        middle_name: form.middle_name.trim() || undefined,
+        birth_date: form.birth_date.trim() || undefined,
+        gender: form.gender || undefined,
+        occupation: form.occupation.trim() || undefined,
+        work_location: form.work_location || undefined,
+        country: form.country.trim() || undefined,
         avatar_url: uploadResult.url,
       }).unwrap();
 
-      setProfileMsg({ type: 'success', text: 'Profile photo updated successfully.' });
+      profileDraftDirtyRef.current = false;
+      setProfileMsg({ type: 'success', text: 'Profile photo updated successfully. Your profile information was saved too.' });
     } catch (err: unknown) {
       const error = err as { message?: string; data?: { message?: string } };
       setProfileMsg({
@@ -1427,6 +1570,54 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
               {activeTab === 'profile' && (
                 <motion.div key="profile" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.25 }} className="space-y-5">
 
+                  <div className="rounded-2xl border border-sky-100 bg-sky-50/70 dark:border-sky-900/50 dark:bg-sky-950/20 p-5 md:p-6">
+                    <div className="flex flex-wrap items-start justify-between gap-4">
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-sky-600 dark:text-sky-400">Profile completion</p>
+                        <h3 className="mt-1 text-base font-bold text-slate-900 dark:text-white">Complete the details below</h3>
+                        <p className="mt-1 text-sm text-slate-600 dark:text-gray-400">
+                          Fill in the information your account uses for login, contact, and delivery.
+                        </p>
+                      </div>
+                      <div className="rounded-2xl border border-sky-200 bg-white px-4 py-3 text-center dark:border-sky-800 dark:bg-slate-900/60">
+                        <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-gray-500">Completion</p>
+                        <p className="mt-1 text-2xl font-bold text-slate-900 dark:text-white">{completion}%</p>
+                      </div>
+                    </div>
+
+                    <div className="mt-5 grid gap-3 md:grid-cols-2">
+                      {completionItems.map((item) => (
+                        <button
+                          key={item.label}
+                          type="button"
+                          onClick={() => {
+                            if (item.label === 'Address') setIsAddressModalOpen(true);
+                            if (item.label === 'Username') setActiveTab('change-username');
+                          }}
+                          className={`text-left rounded-xl border px-4 py-3 transition-colors ${
+                            item.done
+                              ? 'border-emerald-200 bg-white text-slate-700 dark:border-emerald-900/40 dark:bg-slate-900/60 dark:text-gray-200'
+                              : 'border-sky-200 bg-white text-slate-800 hover:border-sky-300 dark:border-sky-900/40 dark:bg-slate-900/60 dark:text-white dark:hover:border-sky-700'
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <p className="text-sm font-semibold">{item.label}</p>
+                              <p className="mt-1 text-xs text-slate-500 dark:text-gray-400">{item.hint}</p>
+                            </div>
+                            <span className={`mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-bold ${
+                              item.done
+                                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
+                                : 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300'
+                            }`}>
+                              {item.done ? '✓' : '•'}
+                            </span>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
                   {/* Personal info form */}
                   <form onSubmit={handleSaveProfile} className="rounded-2xl border border-slate-200 dark:border-slate-700 dark:bg-gray-800 p-5 md:p-6">
                     <div className="flex items-center justify-between gap-3 mb-5">
@@ -1448,8 +1639,8 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
                           transition={{ duration: 0.2 }}
                           className={`mb-4 flex items-start gap-2.5 rounded-xl px-4 py-3 text-sm ${
                             profileMsg.type === 'success'
-                              ? 'dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800'
-                              : 'dark:bg-red-900/30 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800'
+                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800'
+                              : 'bg-red-50 text-red-700 border border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800'
                           }`}
                         >
                           {profileMsg.type === 'success' ? (
@@ -1464,14 +1655,15 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {[
-                        { field: 'name' as const, label: 'Full Name', type: 'text', placeholder: 'Enter your full name', disabled: false },
+                        { field: 'name' as const, label: 'Full Name', required: true, type: 'text', placeholder: 'Enter your full name', disabled: false },
                         { field: 'username' as const, label: 'Username', type: 'text', placeholder: 'Change in the Username tab', disabled: true },
-                        { field: 'email' as const, label: 'Email Address', type: 'email', placeholder: 'Email', disabled: true, isEmail: true },
-                        { field: 'phone' as const, label: 'Phone Number', type: 'tel', placeholder: '09XXXXXXXXX', disabled: false },
-                      ].map(({ field, label, type, placeholder, disabled, isEmail }) => (
+                        { field: 'email' as const, label: 'Email Address', required: true, type: 'email', placeholder: 'Email', disabled: true, isEmail: true },
+                        { field: 'phone' as const, label: 'Phone Number', required: true, type: 'tel', placeholder: '09XXXXXXXXX', disabled: false },
+                      ].map(({ field, label, type, placeholder, disabled, isEmail, required }) => (
                         <div key={field} className="space-y-1.5">
-                          <label className="text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide flex items-center gap-1.5">
+                        <label className="text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide flex items-center gap-1.5">
                             {label}
+                            {required && <span className="text-red-500">*</span>}
                             {isEmail && (
                               profileData?.email_verified
                                 ? <span className="normal-case tracking-normal font-semibold text-[10px] text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 rounded-full px-1.5 py-0.5 leading-none">&#10003; Verified</span>
@@ -1513,18 +1705,101 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
                       </div>
                     </div>
 
+                    <div className="mt-6 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50/70 dark:bg-gray-700/20 p-4 md:p-5">
+                      <div className="flex items-center justify-between gap-3 mb-4">
+                        <div>
+                          <h4 className="text-sm font-bold text-slate-900 dark:text-white">Complete Information</h4>
+                          <p className="text-[11px] text-slate-500 dark:text-gray-400 mt-0.5">
+                            These fields match the older profile layout and help complete your account details.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Middle Name</label>
+                          <input
+                            type="text"
+                            value={form.middle_name}
+                            onChange={onOptionalChange('middle_name')}
+                            placeholder="Middle name"
+                            className="w-full rounded-xl border border-slate-200 dark:border-slate-700 px-3.5 py-2.5 text-sm text-slate-800 dark:text-gray-200 dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-sky-200 dark:focus:ring-sky-800/50 focus:border-sky-300 dark:focus:border-sky-600 hover:border-slate-300 dark:hover:border-slate-600"
+                          />
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Birth Date <span className="text-red-500">*</span></label>
+                          <input
+                            type="date"
+                            value={form.birth_date}
+                            onChange={onOptionalChange('birth_date')}
+                            className="w-full rounded-xl border border-slate-200 dark:border-slate-700 px-3.5 py-2.5 text-sm text-slate-800 dark:text-gray-200 dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-sky-200 dark:focus:ring-sky-800/50 focus:border-sky-300 dark:focus:border-sky-600 hover:border-slate-300 dark:hover:border-slate-600"
+                          />
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Gender <span className="text-red-500">*</span></label>
+                          <select
+                            value={form.gender}
+                            onChange={onOptionalChange('gender')}
+                            className="w-full rounded-xl border border-slate-200 dark:border-slate-700 px-3.5 py-2.5 text-sm text-slate-800 dark:text-gray-200 dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-sky-200 dark:focus:ring-sky-800/50 focus:border-sky-300 dark:focus:border-sky-600 hover:border-slate-300 dark:hover:border-slate-600"
+                          >
+                            <option value="">Select Gender</option>
+                            <option value="male">Male</option>
+                            <option value="female">Female</option>
+                            <option value="other">Other</option>
+                          </select>
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Occupation <span className="text-red-500">*</span></label>
+                          <input
+                            type="text"
+                            value={form.occupation}
+                            onChange={onOptionalChange('occupation')}
+                            placeholder="Occupation"
+                            className="w-full rounded-xl border border-slate-200 dark:border-slate-700 px-3.5 py-2.5 text-sm text-slate-800 dark:text-gray-200 dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-sky-200 dark:focus:ring-sky-800/50 focus:border-sky-300 dark:focus:border-sky-600 hover:border-slate-300 dark:hover:border-slate-600"
+                          />
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Work Location <span className="text-red-500">*</span></label>
+                          <select
+                            value={form.work_location}
+                            onChange={onOptionalChange('work_location')}
+                            className="w-full rounded-xl border border-slate-200 dark:border-slate-700 px-3.5 py-2.5 text-sm text-slate-800 dark:text-gray-200 dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-sky-200 dark:focus:ring-sky-800/50 focus:border-sky-300 dark:focus:border-sky-600 hover:border-slate-300 dark:hover:border-slate-600"
+                          >
+                            <option value="local">Local</option>
+                            <option value="overseas">Overseas</option>
+                          </select>
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Country <span className="text-red-500">*</span></label>
+                          <input
+                            type="text"
+                            value={form.country}
+                            onChange={onOptionalChange('country')}
+                            disabled={form.work_location === 'local'}
+                            placeholder="Country"
+                            className={`w-full rounded-xl border px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-200 dark:focus:ring-sky-800/50 focus:border-sky-300 dark:focus:border-sky-600 ${
+                              form.work_location === 'local'
+                                ? 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-gray-800 text-slate-400 dark:text-gray-500 cursor-not-allowed'
+                                : 'border-slate-200 dark:border-slate-700 text-slate-800 dark:text-gray-200 dark:bg-gray-900 hover:border-slate-300 dark:hover:border-slate-600'
+                            }`}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
                     <div className="mt-5 flex items-center justify-end gap-3">
                       {hasChanges && (
                         <button
                           type="button"
-                          onClick={() =>
-                            setForm({
-                              name: profileData?.name ?? session?.user?.name ?? '',
-                              email: profileData?.email ?? session?.user?.email ?? '',
-                              phone: profileData?.phone ?? '',
-                              username: profileData?.username ?? '',
-                            })
-                          }
+                          onClick={() => {
+                            setForm(buildProfileFormState());
+                            profileDraftDirtyRef.current = false;
+                          }}
                           className="rounded-xl border border-slate-200 dark:border-slate-700 px-4 py-2.5 text-sm font-medium text-slate-600 dark:text-gray-300 hover:bg-slate-50 dark:hover:bg-gray-700 transition-colors"
                         >
                           Discard
@@ -2263,7 +2538,7 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm p-4"
+            className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-md p-4"
             onClick={handleCloseAddressModal}
           >
             <motion.div
@@ -2271,7 +2546,7 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.96, y: 8 }}
               transition={{ duration: 0.18 }}
-              className="mx-auto mt-8 max-w-3xl rounded-2xl border border-slate-200 dark:border-slate-700 dark:bg-gray-800 p-5"
+              className="mx-auto mt-8 max-w-3xl rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-gray-800 p-5 shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="mb-5 flex items-center justify-between gap-3">
@@ -2290,7 +2565,7 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
 
               <form onSubmit={handleSaveAddress} className="space-y-4">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">Street / House No.</label>
+                  <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">Street / House No. <span className="text-red-500">*</span></label>
                   <input
                     type="text"
                     value={addressForm.address}
@@ -2302,7 +2577,7 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">Region</label>
+                    <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">Region <span className="text-red-500">*</span></label>
                     <select
                       value={phAddress.regionCode}
                       onChange={(e) => {
@@ -2320,7 +2595,7 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
 
                   {!phAddress.noProvince ? (
                     <div className="space-y-1.5">
-                      <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">Province</label>
+                      <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">Province <span className="text-red-500">*</span></label>
                       <select
                         value={phAddress.provinceCode}
                         disabled={!phAddress.regionCode || phAddress.loadingProvinces}
@@ -2338,7 +2613,7 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
                     </div>
                   ) : (
                     <div className="space-y-1.5">
-                      <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">Province</label>
+                      <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">Province <span className="text-red-500">*</span></label>
                       <input
                         value={phAddress.address.region}
                         disabled
@@ -2348,7 +2623,7 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
                   )}
 
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">City / Municipality</label>
+                    <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">City / Municipality <span className="text-red-500">*</span></label>
                     <select
                       value={phAddress.cityCode}
                       disabled={phAddress.noProvince ? !phAddress.regionCode : (!phAddress.provinceCode || phAddress.loadingCities)}
@@ -2366,7 +2641,7 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">Barangay</label>
+                    <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">Barangay <span className="text-red-500">*</span></label>
                     <select
                       value={phAddress.address.barangay}
                       disabled={!phAddress.cityCode || phAddress.loadingBarangays}
@@ -2381,7 +2656,7 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
                   </div>
 
                   <div className="space-y-1.5 md:col-span-2">
-                    <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">ZIP Code</label>
+                    <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">ZIP Code <span className="text-red-500">*</span></label>
                     <input
                       type="text"
                       value={addressForm.zipCode}
