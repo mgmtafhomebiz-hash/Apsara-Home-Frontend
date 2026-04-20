@@ -286,6 +286,10 @@ const CustomerCheckoutMain = ({ initialCategories = [] }: { initialCategories?: 
                     ? selectedOnlineBankingProvider
                     : undefined,
                 voucher_code: voucherInfo?.code,
+                source_label: checkoutData.sourceLabel ?? null,
+                source_slug: checkoutData.sourceSlug ?? null,
+                source_host: checkoutData.sourceHost ?? null,
+                source_url: checkoutData.sourceUrl ?? null,
                 customer: {
                     name: form.name,
                     email: form.email,
