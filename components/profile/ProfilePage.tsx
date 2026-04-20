@@ -1,8 +1,8 @@
 ﻿'use client';
 
-import { MeResponse, ReferralTreeNode, useChangePasswordMutation, useMeQuery, useReferralTreeQuery, useUpdateProfileMutation, useSendUsernameChangeOtpMutation, useSubmitUsernameChangeRequestMutation, useUsernameChangeLatestQuery } from '@/store/api/userApi';
+import { MeResponse, ReferralTreeNode, useChangePasswordMutation, useMeQuery, useReferralTreeQuery, useUpdateProfileMutation, useSendUsernameChangeOtpMutation, useSubmitUsernameChangeRequestMutation, useUsernameChangeLatestQuery, useMemberActivityQuery, useMemberSessionsQuery, useRevokeMemberSessionMutation } from '@/store/api/userApi';
 import { signOut, useSession } from 'next-auth/react';
-import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { ChangeEvent, FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Loading from '../Loading';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -47,12 +47,23 @@ import { usePhAddress } from '@/hooks/usePhAddress';
 import { containsBlockedWord } from '@/libs/badWords';
 import { getProfileCompletion } from '@/libs/profileCompletion';
 
+const hasRealPhoneNumber = (value?: string | null) => {
+  const digits = String(value ?? '').replace(/\D/g, '');
+  return digits.length >= 10;
+};
+
 
 type ProfileFormState = {
   name: string;
   email: string;
   phone: string;
   username: string;
+  middle_name: string;
+  birth_date: string;
+  gender: 'male' | 'female' | 'other' | '';
+  occupation: string;
+  work_location: 'local' | 'overseas';
+  country: string;
 };
 
 type AddressFormState = {
@@ -261,14 +272,29 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
     pollingInterval: 15000,
   });
   const { data: usernameChangeLatest, refetch: refetchUsernameChangeLatest } = useUsernameChangeLatestQuery();
+  const { data: activityData, isLoading: isActivityLoading } = useMemberActivityQuery();
+  const { data: sessionsData, isLoading: isSessionsLoading } = useMemberSessionsQuery();
   const [updateProfile, { isLoading: isSaving }] = useUpdateProfileMutation();
   const [changePassword, { isLoading: isChangingPassword }] = useChangePasswordMutation();
   const [sendUsernameChangeOtp, { isLoading: isSendingUsernameOtp }] = useSendUsernameChangeOtpMutation();
   const [submitUsernameChangeRequest, { isLoading: isSubmittingUsernameChange }] = useSubmitUsernameChangeRequestMutation();
+  const [revokeMemberSession, { isLoading: isRevokingSession }] = useRevokeMemberSessionMutation();
 
   const [activeTab, setActiveTab] = useState<Tab>('profile');
+  const profileDraftDirtyRef = useRef(false);
 
-  const [form, setForm] = useState<ProfileFormState>({ name: '', email: '', phone: '', username: '' });
+  const [form, setForm] = useState<ProfileFormState>({
+    name: '',
+    email: '',
+    phone: '',
+    username: '',
+    middle_name: '',
+    birth_date: '',
+    gender: '',
+    occupation: '',
+    work_location: 'local',
+    country: 'Philippines',
+  });
   const [usernameRequest, setUsernameRequest] = useState('');
   const [usernameOtp, setUsernameOtp] = useState('');
   const [usernameOtpToken, setUsernameOtpToken] = useState<string | null>(null);
@@ -289,6 +315,7 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
     language: 'en',
     currency: 'PHP',
   });
+  const [isUpdatingTwoFactor, setIsUpdatingTwoFactor] = useState(false);
 
   const [profileMsg, setProfileMsg] = useState<AlertMsg | null>(null);
   const [usernameMsg, setUsernameMsg] = useState<AlertMsg | null>(null);
@@ -298,11 +325,13 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
   const [treeStatusFilter, setTreeStatusFilter] = useState<TreeStatusFilter>('all');
   const [referralPage, setReferralPage] = useState(1);
   const REFERRAL_PAGE_SIZE = 10;
+  const ACTIVITY_PAGE_SIZE = 6;
+  const [activityPage, setActivityPage] = useState(1);
+  const [sessionPage, setSessionPage] = useState(1);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [isAvatarPreviewOpen, setIsAvatarPreviewOpen] = useState(false);
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
-  const [isMobileReferralTreeOpen, setIsMobileReferralTreeOpen] = useState(false);
-  const [isMobileViewOpen, setIsMobileViewOpen] = useState(false);
+  const [revokingTokenId, setRevokingTokenId] = useState<number | null>(null);
   const [addressForm, setAddressForm] = useState<AddressFormState>({ address: '', zipCode: '' });
   const msgTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const usernameMsgTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -311,17 +340,31 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
   const phAddress = usePhAddress();
   const profileData = data ?? initialProfile;
 
+  const buildProfileFormState = useCallback((): ProfileFormState => ({
+    name: profileData?.name ?? session?.user?.name ?? '',
+    email: profileData?.email ?? session?.user?.email ?? '',
+    phone: profileData?.phone ?? '',
+    username: profileData?.username ?? '',
+    middle_name: profileData?.middle_name ?? '',
+    birth_date: profileData?.birth_date ?? '',
+    gender: (profileData?.gender as ProfileFormState['gender']) ?? '',
+    occupation: profileData?.occupation ?? '',
+    work_location: (profileData?.work_location as ProfileFormState['work_location']) ?? 'local',
+    country: profileData?.country ?? 'Philippines',
+  }), [profileData, session]);
+
   useEffect(() => {
-    if (profileData || session) {
-      setForm({
-        name: profileData?.name ?? session?.user?.name ?? '',
-        email: profileData?.email ?? session?.user?.email ?? '',
-        phone: profileData?.phone ?? '',
-        username: profileData?.username ?? '',
-      });
-      setUsernameRequest(profileData?.username ?? '');
+    if (!profileData && !session) return;
+    if (!profileDraftDirtyRef.current) {
+      setForm(buildProfileFormState());
     }
-  }, [profileData, session]);
+    setUsernameRequest(profileData?.username ?? '');
+  }, [buildProfileFormState, profileData, session]);
+
+  useEffect(() => {
+    if (!profileData) return;
+    setPrefs((prev) => ({ ...prev, twoFactorEnabled: Boolean(profileData.two_factor_enabled) }));
+  }, [profileData?.two_factor_enabled, profileData]);
 
   useEffect(() => {
     if (!isAddressModalOpen) return;
@@ -425,8 +468,32 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
   const hasChanges = useMemo(
     () =>
       form.name !== (profileData?.name ?? session?.user?.name ?? '') ||
-      form.phone !== (profileData?.phone ?? ''),
-    [profileData?.name, profileData?.phone, form.name, form.phone, session?.user?.name],
+      form.phone !== (profileData?.phone ?? '') ||
+      form.middle_name !== (profileData?.middle_name ?? '') ||
+      form.birth_date !== (profileData?.birth_date ?? '') ||
+      form.gender !== ((profileData?.gender as ProfileFormState['gender']) ?? '') ||
+      form.occupation !== (profileData?.occupation ?? '') ||
+      form.work_location !== ((profileData?.work_location as ProfileFormState['work_location']) ?? 'local') ||
+      form.country !== (profileData?.country ?? 'Philippines'),
+    [
+      profileData?.birth_date,
+      profileData?.country,
+      profileData?.gender,
+      profileData?.middle_name,
+      profileData?.name,
+      profileData?.occupation,
+      profileData?.phone,
+      profileData?.work_location,
+      form.birth_date,
+      form.country,
+      form.gender,
+      form.middle_name,
+      form.name,
+      form.occupation,
+      form.phone,
+      form.work_location,
+      session?.user?.name,
+    ],
   );
 
   const verificationStatus = profileData?.verification_status ?? 'not_verified';
@@ -468,14 +535,106 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
       email: form.email,
       username: form.username,
       phone: form.phone,
+      gender: form.gender || null,
     }).percentage;
   }, [form, isVerified, profileData]);
 
+  const completionItems = useMemo(() => ([
+    {
+      label: 'Full Name',
+      done: Boolean(form.name.trim()),
+      hint: 'Shown on your account and address records.',
+    },
+    {
+      label: 'Username',
+      done: Boolean((profileData?.username ?? form.username).trim()),
+      hint: 'Used for your referral links and account identity.',
+    },
+    {
+      label: 'Email Address',
+      done: Boolean(form.email.trim()),
+      hint: 'This comes from your account registration.',
+    },
+    {
+      label: 'Phone Number',
+      done: hasRealPhoneNumber(form.phone),
+      hint: 'Used for shipping and contact updates.',
+    },
+    {
+      label: 'Address',
+      done: Boolean(
+        profileData?.address?.trim()
+        && profileData?.city?.trim()
+        && profileData?.province?.trim()
+        && profileData?.region?.trim()
+        && profileData?.zip_code?.trim(),
+      ),
+      hint: 'Street, region, city, barangay, and ZIP code.',
+    },
+  ]), [
+    form.birth_date,
+    form.country,
+    form.email,
+    form.gender,
+    form.middle_name,
+    form.name,
+    form.occupation,
+    form.phone,
+    form.username,
+    form.work_location,
+    profileData?.address,
+    profileData?.city,
+    profileData?.province,
+    profileData?.region,
+    profileData?.zip_code,
+    profileData?.username,
+  ]);
+
   const onChange = (field: keyof ProfileFormState) => (e: ChangeEvent<HTMLInputElement>) =>
-    setForm((prev) => ({ ...prev, [field]: e.target.value }));
+    setForm((prev) => {
+      profileDraftDirtyRef.current = true;
+      return { ...prev, [field]: e.target.value };
+    });
+
+  const onOptionalChange = (field: keyof ProfileFormState) => (
+    e: ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  ) => setForm((prev) => {
+    profileDraftDirtyRef.current = true;
+    return { ...prev, [field]: e.target.value as ProfileFormState[typeof field] };
+  });
 
   const togglePref = (field: keyof PreferencesState) =>
     setPrefs((prev) => (typeof prev[field] === 'boolean' ? { ...prev, [field]: !prev[field] } : prev));
+
+  const handleToggleTwoFactor = async () => {
+    const nextEnabled = !prefs.twoFactorEnabled;
+    const previousEnabled = prefs.twoFactorEnabled;
+    setPrefs((prev) => ({ ...prev, twoFactorEnabled: nextEnabled }));
+    setIsUpdatingTwoFactor(true);
+    setProfileMsg(null);
+
+    try {
+      await updateProfile({
+        name: form.name.trim() || profileData?.name || session?.user?.name || 'AF Home User',
+        phone: form.phone.trim() || undefined,
+        two_factor_enabled: nextEnabled,
+      }).unwrap();
+
+      setProfileMsg({
+        type: 'success',
+        text: `Two-factor authentication ${nextEnabled ? 'enabled' : 'disabled'} successfully.`,
+      });
+    } catch (err: unknown) {
+      const apiError = err as { data?: { message?: string } };
+      setPrefs((prev) => ({ ...prev, twoFactorEnabled: previousEnabled }));
+      setProfileMsg({
+        type: 'error',
+        text: apiError?.data?.message || 'Failed to update two-factor authentication.',
+      });
+    } finally {
+      setIsUpdatingTwoFactor(false);
+    }
+  };
 
   const handleCopyReferralLink = async (type: 'member' | 'shopping') => {
     const link = type === 'member' ? memberReferralLink : shoppingReferralLink;
@@ -756,8 +915,15 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
       await updateProfile({
         name: form.name.trim(),
         phone: form.phone.trim() || undefined,
+        middle_name: form.middle_name.trim() || undefined,
+        birth_date: form.birth_date.trim() || undefined,
+        gender: form.gender || undefined,
+        occupation: form.occupation.trim() || undefined,
+        work_location: form.work_location || undefined,
+        country: form.country.trim() || undefined,
       }).unwrap();
-      setProfileMsg({ type: 'success', text: 'Profile updated successfully.' });
+      profileDraftDirtyRef.current = false;
+      setProfileMsg({ type: 'success', text: 'Profile updated successfully. Your complete information was saved.' });
     } catch (err: unknown) {
       const apiError = err as { data?: { message?: string } };
       setProfileMsg({ type: 'error', text: apiError?.data?.message || 'Failed to update profile.' });
@@ -783,6 +949,12 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
       await updateProfile({
         name: form.name.trim(),
         phone: form.phone.trim() || undefined,
+        middle_name: form.middle_name.trim() || undefined,
+        birth_date: form.birth_date.trim() || undefined,
+        gender: form.gender || undefined,
+        occupation: form.occupation.trim() || undefined,
+        work_location: form.work_location || undefined,
+        country: form.country.trim() || undefined,
         address: addressForm.address.trim() || undefined,
         barangay: phAddress.address.barangay || undefined,
         city: phAddress.address.city || undefined,
@@ -791,7 +963,8 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
         zip_code: addressForm.zipCode.trim() || undefined,
       }).unwrap();
 
-      setProfileMsg({ type: 'success', text: 'Address updated successfully.' });
+      profileDraftDirtyRef.current = false;
+      setProfileMsg({ type: 'success', text: 'Address updated successfully. Your profile information was saved too.' });
       phAddress.reset();
       setIsAddressModalOpen(false);
     } catch (err: unknown) {
@@ -823,10 +996,17 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
       await updateProfile({
         name: form.name.trim() || profileData?.name || session?.user?.name || 'AF Home User',
         phone: form.phone.trim() || undefined,
+        middle_name: form.middle_name.trim() || undefined,
+        birth_date: form.birth_date.trim() || undefined,
+        gender: form.gender || undefined,
+        occupation: form.occupation.trim() || undefined,
+        work_location: form.work_location || undefined,
+        country: form.country.trim() || undefined,
         avatar_url: uploadResult.url,
       }).unwrap();
 
-      setProfileMsg({ type: 'success', text: 'Profile photo updated successfully.' });
+      profileDraftDirtyRef.current = false;
+      setProfileMsg({ type: 'success', text: 'Profile photo updated successfully. Your profile information was saved too.' });
     } catch (err: unknown) {
       const error = err as { message?: string; data?: { message?: string } };
       setProfileMsg({
@@ -982,13 +1162,45 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
     ];
   }, [profileData?.address, profileData?.barangay, profileData?.city, profileData?.province, profileData?.region, profileData?.zip_code, form.name, form.phone]);
 
-  const recentActivity = [
-    { title: 'Updated profile details', time: '2 hours ago' },
-    { title: 'Placed order #AF-19341', time: 'Yesterday' },
-    { title: 'Added 3 items to wishlist', time: '2 days ago' },
-    { title: 'Changed account password', time: '1 week ago' },
-    { title: 'Added billing address', time: '2 weeks ago' },
-  ];
+  const formatRelativeTime = (value?: string | null) => {
+    if (!value) return 'Unknown time';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return 'Unknown time';
+    const diffMs = Date.now() - date.getTime();
+    const diffMinutes = Math.max(1, Math.floor(diffMs / (1000 * 60)));
+    if (diffMinutes < 60) return `${diffMinutes} min ago`;
+    const diffHours = Math.floor(diffMinutes / 60);
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    const diffDays = Math.floor(diffHours / 24);
+    if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+    return date.toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
+  const recentActivity = (activityData?.items ?? []).map((item) => ({
+    title: item.title || 'Account activity',
+    time: formatRelativeTime(item.created_at ?? null),
+    rawTime: item.created_at ?? null,
+  }));
+
+  const sessionItems = sessionsData?.items ?? [];
+  const activityTotalPages = Math.max(1, Math.ceil(recentActivity.length / ACTIVITY_PAGE_SIZE));
+  const sessionTotalPages = Math.max(1, Math.ceil(sessionItems.length / ACTIVITY_PAGE_SIZE));
+  const paginatedRecentActivity = recentActivity.slice(
+    (activityPage - 1) * ACTIVITY_PAGE_SIZE,
+    activityPage * ACTIVITY_PAGE_SIZE
+  );
+  const paginatedSessionItems = sessionItems.slice(
+    (sessionPage - 1) * ACTIVITY_PAGE_SIZE,
+    sessionPage * ACTIVITY_PAGE_SIZE
+  );
+
+  useEffect(() => {
+    setActivityPage((prev) => Math.min(prev, activityTotalPages));
+  }, [activityTotalPages]);
+
+  useEffect(() => {
+    setSessionPage((prev) => Math.min(prev, sessionTotalPages));
+  }, [sessionTotalPages]);
 
   const TABS: { key: Tab; label: string; Icon: (p: React.SVGProps<SVGSVGElement>) => React.ReactElement }[] = [
     { key: 'profile', label: 'Profile', Icon: Icon.User },
@@ -1021,9 +1233,6 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
       nextParams.delete('focus');
     }
     router.replace(`/profile?${nextParams.toString()}${options?.focus ? '#verification-form' : ''}`, { scroll: false });
-    if (typeof window !== 'undefined' && window.innerWidth < 1280) {
-      setIsMobileViewOpen(true);
-    }
   };
 
   const handleBack = () => {
@@ -1032,6 +1241,24 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
       return;
     }
     router.push('/');
+  };
+
+  const handleRevokeSession = async (tokenId: number, isCurrent: boolean) => {
+    if (!tokenId) return;
+    setRevokingTokenId(tokenId);
+    try {
+      const result = await revokeMemberSession(tokenId).unwrap();
+      if (isCurrent || result.is_current) {
+        await signOut({ callbackUrl: '/login' });
+        return;
+      }
+      setProfileMsg({ type: 'success', text: 'Device signed out successfully.' });
+    } catch (err: unknown) {
+      const apiError = err as { data?: { message?: string } };
+      setProfileMsg({ type: 'error', text: apiError?.data?.message || 'Failed to sign out this device.' });
+    } finally {
+      setRevokingTokenId(null);
+    }
   };
 
 
@@ -1073,27 +1300,21 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
                 'change-username': 'Username',
                 referrals: 'Referrals',
               };
-              return TABS.map(({ key, Icon: TabIcon }) => {
-                const isProfileHome = key === 'profile';
-                return (
-                  <button
-                    key={key}
-                    type="button"
-                    onClick={() => { if (!isProfileHome) handleTabChange(key); }}
-                    disabled={isProfileHome}
-                    className={`shrink-0 flex flex-col items-center gap-1 rounded-xl border px-3 py-2.5 md:px-6 md:py-3 text-[10px] md:text-xs font-medium transition-colors min-w-[60px] md:min-w-[80px] ${
-                      isProfileHome
-                        ? 'border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-500 cursor-default opacity-50'
-                        : activeTab === key
-                          ? 'border-sky-500 dark:border-sky-600 bg-sky-50 dark:bg-sky-900/20 text-sky-600 dark:text-sky-400'
-                          : 'border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700/50 hover:text-gray-700 dark:hover:text-gray-200'
-                    }`}
-                  >
-                    <TabIcon className={`h-5 w-5 md:h-6 md:w-6 ${activeTab === key && !isProfileHome ? 'text-sky-500 dark:text-sky-400' : 'text-gray-400 dark:text-gray-500'}`} />
-                    {shortLabel[key]}
-                  </button>
-                );
-              });
+              return TABS.map(({ key, Icon: TabIcon }) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => handleTabChange(key)}
+                  className={`shrink-0 flex flex-col items-center gap-1 rounded-xl border px-3 py-2.5 md:px-6 md:py-3 text-[10px] md:text-xs font-medium transition-colors min-w-[60px] md:min-w-[80px] ${
+                    activeTab === key
+                      ? 'border-sky-500 dark:border-sky-600 bg-sky-50 dark:bg-sky-900/20 text-sky-600 dark:text-sky-400'
+                      : 'border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700/50 hover:text-gray-700 dark:hover:text-gray-200'
+                  }`}
+                >
+                  <TabIcon className={`h-5 w-5 md:h-6 md:w-6 ${activeTab === key ? 'text-sky-500 dark:text-sky-400' : 'text-gray-400 dark:text-gray-500'}`} />
+                  {shortLabel[key]}
+                </button>
+              ));
             })()}
           </nav>
 
@@ -1152,24 +1373,30 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
 
               {/* Avatar - centered, floating over banner */}
               <div className="flex flex-col items-center -mt-12 pb-5 px-5">
-                <div className="relative group mb-3">
+                <div className="relative mb-3">
+                  {/* Spin ring while uploading */}
                   {isUploadingAvatar && (
                     <span className="pointer-events-none absolute -inset-1.5 rounded-full border-[3px] border-transparent border-t-sky-400 border-r-sky-300 animate-spin z-10" />
                   )}
+
+                  {/* Avatar image or initials */}
                   {profileData?.avatar_url ? (
                     <img
                       src={profileData.avatar_url}
                       alt={form.name || 'Profile photo'}
-                      className="h-24 w-24 rounded-full object-cover ring-4 ring-white shadow-xl"
+                      className="h-24 w-24 rounded-full object-cover ring-4 ring-white dark:ring-gray-800 shadow-xl"
                     />
                   ) : (
-                    <div className="h-24 w-24 rounded-full bg-gradient-to-br from-sky-400 to-sky-400 text-white text-2xl font-bold flex items-center justify-center ring-4 ring-white shadow-xl">
+                    <div className="h-24 w-24 rounded-full bg-gradient-to-br from-sky-400 to-sky-500 text-white text-2xl font-bold flex items-center justify-center ring-4 ring-white dark:ring-gray-800 shadow-xl">
                       {initials}
                     </div>
                   )}
+
+                  {/* Edit badge — always visible, bottom-right */}
                   <label
-                    className="absolute inset-0 flex cursor-pointer items-center justify-center rounded-full bg-black/45 opacity-0 group-hover:opacity-100 transition-opacity"
-                    title="Change photo"
+                    className="absolute -bottom-1 -right-1 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-sky-500 hover:bg-sky-600 active:bg-sky-700 border-2 border-white dark:border-gray-800 shadow-md transition-colors z-10"
+                    title="Change profile photo"
+                    aria-label="Change profile photo"
                   >
                     <input
                       type="file"
@@ -1177,10 +1404,8 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
                       className="hidden"
                       onChange={handleAvatarUpload}
                     />
-                    <Icon.Camera className="h-5 w-5 text-white" />
+                    <Icon.Camera className="h-4 w-4 text-white" />
                   </label>
-                  {/* Online dot */}
-                  <span className="absolute bottom-1 right-1 h-4 w-4 rounded-full bg-emerald-400 border-2 border-white shadow-sm" />
                 </div>
 
                 {/* Tier pill */}
@@ -1201,13 +1426,13 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
                 )}
 
                 {isUploadingAvatar && (
-                  <p className="mt-2 text-xs text-sky-500 font-medium">Uploading photo...</p>
+                  <p className="mt-2 text-xs text-sky-500 font-medium animate-pulse">Uploading photo...</p>
                 )}
-                {profileData?.avatar_url && (
+                {profileData?.avatar_url && !isUploadingAvatar && (
                   <button
                     type="button"
                     onClick={() => setIsAvatarPreviewOpen(true)}
-                    className="mt-1.5 text-xs font-semibold text-sky-500 hover:text-sky-600 hover:underline"
+                    className="mt-1.5 text-xs font-semibold text-sky-500 hover:text-sky-600 dark:hover:text-sky-400 hover:underline"
                   >
                     View Photo
                   </button>
@@ -1316,13 +1541,7 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
                       </div>
                       <button
                         type="button"
-                        onClick={() => {
-                          if (typeof window !== 'undefined' && window.innerWidth < 1280) {
-                            setIsMobileReferralTreeOpen(true);
-                          } else {
-                            handleTabChange('referrals');
-                          }
-                        }}
+                        onClick={() => handleTabChange('referrals')}
                         className="w-full flex items-center justify-center gap-2 rounded-xl bg-sky-500 px-3 py-2.5 text-xs font-semibold text-white hover:bg-sky-600 transition-colors shadow-sm"
                       >
                         <svg className="h-3.5 w-3.5 shrink-0" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
@@ -1394,37 +1613,61 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
           {/* --- Main content --- */}
           <div
             ref={mainContentRef}
-            className={`
-              xl:col-span-8 space-y-5
-              fixed inset-0 z-50 bg-slate-50 overflow-y-auto
-              transition-transform duration-300 ease-in-out
-              ${isMobileViewOpen ? 'translate-x-0' : 'translate-x-full pointer-events-none'}
-              xl:relative xl:inset-auto xl:z-auto xl:bg-transparent xl:overflow-visible
-              xl:translate-x-0 xl:pointer-events-auto xl:transition-none xl:block
-            `}
+            className="xl:col-span-8 space-y-5"
           >
-            {/* Mobile back header - only shown in mobile full-screen view */}
-            {isMobileViewOpen && (
-              <div className="sticky top-0 z-10 bg-white border-b border-slate-100 px-4 py-3 flex items-center gap-3 xl:hidden">
-                <button
-                  type="button"
-                  onClick={() => { setIsMobileViewOpen(false); setActiveTab('profile'); }}
-                  className="flex items-center gap-1.5 text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors"
-                  aria-label="Close"
-                >
-                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
-                  </svg>
-                  Back
-                </button>
-                <h2 className="text-base font-bold text-slate-900">{activeTabLabel}</h2>
-              </div>
-            )}
-            <div className={isMobileViewOpen ? 'px-4 py-4 pb-8 space-y-5 xl:px-0 xl:py-0 xl:space-y-0' : ''}>
+            <div className="space-y-5">
             <AnimatePresence mode="wait">
               {/* --- Profile tab --- */}
               {activeTab === 'profile' && (
                 <motion.div key="profile" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.25 }} className="space-y-5">
+
+                  <div className="rounded-2xl border border-sky-100 bg-sky-50/70 dark:border-sky-900/50 dark:bg-sky-950/20 p-5 md:p-6">
+                    <div className="flex flex-wrap items-start justify-between gap-4">
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-sky-600 dark:text-sky-400">Profile completion</p>
+                        <h3 className="mt-1 text-base font-bold text-slate-900 dark:text-white">Complete the details below</h3>
+                        <p className="mt-1 text-sm text-slate-600 dark:text-gray-400">
+                          Fill in the information your account uses for login, contact, and delivery.
+                        </p>
+                      </div>
+                      <div className="rounded-2xl border border-sky-200 bg-white px-4 py-3 text-center dark:border-sky-800 dark:bg-slate-900/60">
+                        <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-gray-500">Completion</p>
+                        <p className="mt-1 text-2xl font-bold text-slate-900 dark:text-white">{completion}%</p>
+                      </div>
+                    </div>
+
+                    <div className="mt-5 grid gap-3 md:grid-cols-2">
+                      {completionItems.map((item) => (
+                        <button
+                          key={item.label}
+                          type="button"
+                          onClick={() => {
+                            if (item.label === 'Address') setIsAddressModalOpen(true);
+                            if (item.label === 'Username') setActiveTab('change-username');
+                          }}
+                          className={`text-left rounded-xl border px-4 py-3 transition-colors ${
+                            item.done
+                              ? 'border-emerald-200 bg-white text-slate-700 dark:border-emerald-900/40 dark:bg-slate-900/60 dark:text-gray-200'
+                              : 'border-sky-200 bg-white text-slate-800 hover:border-sky-300 dark:border-sky-900/40 dark:bg-slate-900/60 dark:text-white dark:hover:border-sky-700'
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <p className="text-sm font-semibold">{item.label}</p>
+                              <p className="mt-1 text-xs text-slate-500 dark:text-gray-400">{item.hint}</p>
+                            </div>
+                            <span className={`mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-bold ${
+                              item.done
+                                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
+                                : 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300'
+                            }`}>
+                              {item.done ? '✓' : '•'}
+                            </span>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
 
                   {/* Personal info form */}
                   <form onSubmit={handleSaveProfile} className="rounded-2xl border border-slate-200 dark:border-slate-700 dark:bg-gray-800 p-5 md:p-6">
@@ -1447,8 +1690,8 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
                           transition={{ duration: 0.2 }}
                           className={`mb-4 flex items-start gap-2.5 rounded-xl px-4 py-3 text-sm ${
                             profileMsg.type === 'success'
-                              ? 'dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800'
-                              : 'dark:bg-red-900/30 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800'
+                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800'
+                              : 'bg-red-50 text-red-700 border border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800'
                           }`}
                         >
                           {profileMsg.type === 'success' ? (
@@ -1463,14 +1706,15 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {[
-                        { field: 'name' as const, label: 'Full Name', type: 'text', placeholder: 'Enter your full name', disabled: false },
+                        { field: 'name' as const, label: 'Full Name', required: true, type: 'text', placeholder: 'Enter your full name', disabled: false },
                         { field: 'username' as const, label: 'Username', type: 'text', placeholder: 'Change in the Username tab', disabled: true },
-                        { field: 'email' as const, label: 'Email Address', type: 'email', placeholder: 'Email', disabled: true, isEmail: true },
-                        { field: 'phone' as const, label: 'Phone Number', type: 'tel', placeholder: '09XXXXXXXXX', disabled: false },
-                      ].map(({ field, label, type, placeholder, disabled, isEmail }) => (
+                        { field: 'email' as const, label: 'Email Address', required: true, type: 'email', placeholder: 'Email', disabled: true, isEmail: true },
+                        { field: 'phone' as const, label: 'Phone Number', required: true, type: 'tel', placeholder: '09XXXXXXXXX', disabled: false },
+                      ].map(({ field, label, type, placeholder, disabled, isEmail, required }) => (
                         <div key={field} className="space-y-1.5">
-                          <label className="text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide flex items-center gap-1.5">
+                        <label className="text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide flex items-center gap-1.5">
                             {label}
+                            {required && <span className="text-red-500">*</span>}
                             {isEmail && (
                               profileData?.email_verified
                                 ? <span className="normal-case tracking-normal font-semibold text-[10px] text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 rounded-full px-1.5 py-0.5 leading-none">&#10003; Verified</span>
@@ -1512,18 +1756,101 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
                       </div>
                     </div>
 
+                    <div className="mt-6 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50/70 dark:bg-gray-700/20 p-4 md:p-5">
+                      <div className="flex items-center justify-between gap-3 mb-4">
+                        <div>
+                          <h4 className="text-sm font-bold text-slate-900 dark:text-white">Complete Information</h4>
+                          <p className="text-[11px] text-slate-500 dark:text-gray-400 mt-0.5">
+                            These fields match the older profile layout and help complete your account details.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Middle Name</label>
+                          <input
+                            type="text"
+                            value={form.middle_name}
+                            onChange={onOptionalChange('middle_name')}
+                            placeholder="Middle name"
+                            className="w-full rounded-xl border border-slate-200 dark:border-slate-700 px-3.5 py-2.5 text-sm text-slate-800 dark:text-gray-200 dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-sky-200 dark:focus:ring-sky-800/50 focus:border-sky-300 dark:focus:border-sky-600 hover:border-slate-300 dark:hover:border-slate-600"
+                          />
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Birth Date <span className="text-red-500">*</span></label>
+                          <input
+                            type="date"
+                            value={form.birth_date}
+                            onChange={onOptionalChange('birth_date')}
+                            className="w-full rounded-xl border border-slate-200 dark:border-slate-700 px-3.5 py-2.5 text-sm text-slate-800 dark:text-gray-200 dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-sky-200 dark:focus:ring-sky-800/50 focus:border-sky-300 dark:focus:border-sky-600 hover:border-slate-300 dark:hover:border-slate-600"
+                          />
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Gender <span className="text-red-500">*</span></label>
+                          <select
+                            value={form.gender}
+                            onChange={onOptionalChange('gender')}
+                            className="w-full rounded-xl border border-slate-200 dark:border-slate-700 px-3.5 py-2.5 text-sm text-slate-800 dark:text-gray-200 dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-sky-200 dark:focus:ring-sky-800/50 focus:border-sky-300 dark:focus:border-sky-600 hover:border-slate-300 dark:hover:border-slate-600"
+                          >
+                            <option value="">Select Gender</option>
+                            <option value="male">Male</option>
+                            <option value="female">Female</option>
+                            <option value="other">Other</option>
+                          </select>
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Occupation <span className="text-red-500">*</span></label>
+                          <input
+                            type="text"
+                            value={form.occupation}
+                            onChange={onOptionalChange('occupation')}
+                            placeholder="Occupation"
+                            className="w-full rounded-xl border border-slate-200 dark:border-slate-700 px-3.5 py-2.5 text-sm text-slate-800 dark:text-gray-200 dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-sky-200 dark:focus:ring-sky-800/50 focus:border-sky-300 dark:focus:border-sky-600 hover:border-slate-300 dark:hover:border-slate-600"
+                          />
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Work Location <span className="text-red-500">*</span></label>
+                          <select
+                            value={form.work_location}
+                            onChange={onOptionalChange('work_location')}
+                            className="w-full rounded-xl border border-slate-200 dark:border-slate-700 px-3.5 py-2.5 text-sm text-slate-800 dark:text-gray-200 dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-sky-200 dark:focus:ring-sky-800/50 focus:border-sky-300 dark:focus:border-sky-600 hover:border-slate-300 dark:hover:border-slate-600"
+                          >
+                            <option value="local">Local</option>
+                            <option value="overseas">Overseas</option>
+                          </select>
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Country <span className="text-red-500">*</span></label>
+                          <input
+                            type="text"
+                            value={form.country}
+                            onChange={onOptionalChange('country')}
+                            disabled={form.work_location === 'local'}
+                            placeholder="Country"
+                            className={`w-full rounded-xl border px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-200 dark:focus:ring-sky-800/50 focus:border-sky-300 dark:focus:border-sky-600 ${
+                              form.work_location === 'local'
+                                ? 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-gray-800 text-slate-400 dark:text-gray-500 cursor-not-allowed'
+                                : 'border-slate-200 dark:border-slate-700 text-slate-800 dark:text-gray-200 dark:bg-gray-900 hover:border-slate-300 dark:hover:border-slate-600'
+                            }`}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
                     <div className="mt-5 flex items-center justify-end gap-3">
                       {hasChanges && (
                         <button
                           type="button"
-                          onClick={() =>
-                            setForm({
-                              name: profileData?.name ?? session?.user?.name ?? '',
-                              email: profileData?.email ?? session?.user?.email ?? '',
-                              phone: profileData?.phone ?? '',
-                              username: profileData?.username ?? '',
-                            })
-                          }
+                          onClick={() => {
+                            setForm(buildProfileFormState());
+                            profileDraftDirtyRef.current = false;
+                          }}
                           className="rounded-xl border border-slate-200 dark:border-slate-700 px-4 py-2.5 text-sm font-medium text-slate-600 dark:text-gray-300 hover:bg-slate-50 dark:hover:bg-gray-700 transition-colors"
                         >
                           Discard
@@ -1700,15 +2027,18 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
                           <Icon.Shield className="h-4 w-4" />
                         </div>
                         <div>
-                          <p className="text-sm font-semibold text-slate-800 dark:text-gray-200">Authenticator App</p>
+                          <p className="text-sm font-semibold text-slate-800 dark:text-gray-200">New Device Approval (MFA)</p>
                           <p className="text-xs text-slate-500 dark:text-gray-400 mt-0.5">
                             {prefs.twoFactorEnabled
-                              ? 'Your account is protected with 2FA.'
-                              : 'Add an extra layer of security by enabling 2FA.'}
+                              ? 'New device logins need email approval: Yes, it is me / No, it is not me.'
+                              : 'Require email approval whenever your account signs in from a new device.'}
                           </p>
+                          {isUpdatingTwoFactor ? (
+                            <p className="text-[11px] text-sky-600 dark:text-sky-400 mt-1">Updating 2FA setting...</p>
+                          ) : null}
                         </div>
                       </div>
-                      <Toggle checked={prefs.twoFactorEnabled} onChange={() => togglePref('twoFactorEnabled')} />
+                      <Toggle checked={prefs.twoFactorEnabled} onChange={handleToggleTwoFactor} disabled={isUpdatingTwoFactor} />
                     </div>
                   </div>
 
@@ -2064,48 +2394,142 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
                       <p className="text-xs text-slate-500 dark:text-gray-400 mt-0.5">A log of your recent account actions.</p>
                     </div>
                     <div className="space-y-2">
-                      {recentActivity.map((item, i) => (
-                        <motion.div
-                          key={item.title}
-                          variants={fadeUp}
-                          initial="hidden"
-                          animate="visible"
-                          custom={i}
-                          className="flex items-start gap-3.5 rounded-xl border border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-gray-800/50 px-4 py-3.5 hover:border-slate-200 dark:hover:border-slate-600 transition-colors"
-                        >
-                          <div className="mt-0.5 h-7 w-7 rounded-full bg-sky-100 dark:bg-sky-900/30 text-sky-500 dark:text-sky-400 flex items-center justify-center shrink-0">
-                            {getActivityIcon(item.title)}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-slate-800 dark:text-gray-200 truncate">{item.title}</p>
-                            <p className="text-xs text-slate-400 dark:text-gray-500 mt-0.5">{item.time}</p>
-                          </div>
-                        </motion.div>
-                      ))}
+                      {isActivityLoading ? (
+                        <div className="space-y-2 animate-pulse">
+                          {[1, 2, 3].map((i) => (
+                            <div key={i} className="h-14 rounded-xl bg-slate-100 dark:bg-gray-700" />
+                          ))}
+                        </div>
+                      ) : recentActivity.length > 0 ? (
+                        paginatedRecentActivity.map((item, i) => (
+                          <motion.div
+                            key={`${item.title}-${(activityPage - 1) * ACTIVITY_PAGE_SIZE + i}`}
+                            variants={fadeUp}
+                            initial="hidden"
+                            animate="visible"
+                            custom={i}
+                            className="flex items-start gap-3.5 rounded-xl border border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-gray-800/50 px-4 py-3.5 hover:border-slate-200 dark:hover:border-slate-600 transition-colors"
+                          >
+                            <div className="mt-0.5 h-7 w-7 rounded-full bg-sky-100 dark:bg-sky-900/30 text-sky-500 dark:text-sky-400 flex items-center justify-center shrink-0">
+                              {getActivityIcon(item.title)}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-slate-800 dark:text-gray-200 truncate">{item.title}</p>
+                              <p className="text-xs text-slate-400 dark:text-gray-500 mt-0.5">{item.time}</p>
+                            </div>
+                          </motion.div>
+                        ))
+                      ) : (
+                        <p className="text-sm text-slate-500 dark:text-gray-400">No recent activity yet.</p>
+                      )}
                     </div>
+                    {recentActivity.length > ACTIVITY_PAGE_SIZE && (
+                      <div className="mt-4 flex items-center justify-center gap-3">
+                        <button
+                          type="button"
+                          disabled={activityPage <= 1}
+                          onClick={() => setActivityPage((p) => Math.max(1, p - 1))}
+                          className="flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 px-3.5 py-2 text-xs font-semibold text-slate-600 dark:text-gray-300 hover:border-[#2c5f4f]/40 hover:text-[#2c5f4f] dark:hover:bg-gray-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                          <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6" /></svg>
+                          Prev
+                        </button>
+                        <p className="text-xs text-slate-500 dark:text-gray-400 font-medium">
+                          Page <span className="text-slate-800 dark:text-gray-300 font-bold">{activityPage}</span> / {activityTotalPages}
+                        </p>
+                        <button
+                          type="button"
+                          disabled={activityPage >= activityTotalPages}
+                          onClick={() => setActivityPage((p) => Math.min(activityTotalPages, p + 1))}
+                          className="flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 px-3.5 py-2 text-xs font-semibold text-slate-600 dark:text-gray-300 hover:border-[#2c5f4f]/40 hover:text-[#2c5f4f] dark:hover:bg-gray-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                          Next
+                          <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6" /></svg>
+                        </button>
+                      </div>
+                    )}
                   </div>
 
-                  {/* Login sessions (placeholder) */}
+                  {/* Login sessions */}
                   <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-gray-800 p-5 md:p-6">
                     <div className="mb-4">
                       <h3 className="text-base font-bold text-slate-900 dark:text-white">Active Sessions</h3>
                       <p className="text-xs text-slate-500 dark:text-gray-400 mt-0.5">Devices currently logged into your account.</p>
                     </div>
-                    <div className="rounded-xl border border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-gray-800 px-4 py-3.5 flex items-center justify-between gap-4">
-                      <div className="flex items-center gap-3">
-                        <div className="h-8 w-8 rounded-lg bg-sky-100 dark:bg-sky-900/30 text-sky-500 dark:text-sky-400 flex items-center justify-center">
-                          <Icon.Shield className="h-4 w-4" />
+                    <div className="space-y-2">
+                      {isSessionsLoading ? (
+                        <div className="space-y-2 animate-pulse">
+                          {[1, 2].map((i) => (
+                            <div key={i} className="h-16 rounded-xl bg-slate-100 dark:bg-gray-700" />
+                          ))}
                         </div>
-                        <div>
-                          <p className="text-sm font-semibold text-slate-800 dark:text-gray-200">Current Device</p>
-                          <p className="text-xs text-slate-500 dark:text-gray-400">Windows - Chrome - Manila, PH</p>
-                        </div>
-                      </div>
-                      <span className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-100 dark:border-emerald-700 px-2 py-1 rounded-full">
-                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 inline-block" />
-                        Active now
-                      </span>
+                      ) : sessionItems.length > 0 ? (
+                        paginatedSessionItems.map((session) => (
+                          <div key={session.id} className="rounded-xl border border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-gray-800 px-4 py-3.5 flex items-center justify-between gap-4">
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className={`h-8 w-8 rounded-lg flex items-center justify-center ${session.is_current ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400' : 'bg-sky-100 dark:bg-sky-900/30 text-sky-500 dark:text-sky-400'}`}>
+                                <Icon.Shield className="h-4 w-4" />
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-sm font-semibold text-slate-800 dark:text-gray-200 truncate">
+                                  {session.is_current ? 'Current Device' : session.device}
+                                </p>
+                                <p className="text-xs text-slate-500 dark:text-gray-400 truncate">
+                                  {session.platform} - {session.browser} - {session.location}
+                                </p>
+                                <p className="text-[11px] text-slate-400 dark:text-gray-500 mt-0.5">
+                                  Last active: {formatRelativeTime(session.last_active_at ?? session.created_at ?? null)}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {session.is_current ? (
+                                <span className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-100 dark:border-emerald-700 px-2 py-1 rounded-full whitespace-nowrap">
+                                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 inline-block" />
+                                  Active now
+                                </span>
+                              ) : null}
+                              <button
+                                type="button"
+                                onClick={() => handleRevokeSession(session.token_id, session.is_current)}
+                                disabled={isRevokingSession && revokingTokenId === session.token_id}
+                                className="inline-flex items-center gap-1.5 rounded-xl border border-red-200 dark:border-red-800 bg-white dark:bg-gray-800 px-3 py-1.5 text-xs font-semibold text-red-600 dark:text-red-400 hover:bg-red-600 dark:hover:bg-red-700 hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                <Icon.LogOut className="h-3.5 w-3.5" />
+                                {isRevokingSession && revokingTokenId === session.token_id ? 'Signing out...' : 'Sign out'}
+                              </button>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-sm text-slate-500 dark:text-gray-400">No active sessions found.</p>
+                      )}
                     </div>
+                    {sessionItems.length > ACTIVITY_PAGE_SIZE && (
+                      <div className="mt-4 flex items-center justify-center gap-3">
+                        <button
+                          type="button"
+                          disabled={sessionPage <= 1}
+                          onClick={() => setSessionPage((p) => Math.max(1, p - 1))}
+                          className="flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 px-3.5 py-2 text-xs font-semibold text-slate-600 dark:text-gray-300 hover:border-[#2c5f4f]/40 hover:text-[#2c5f4f] dark:hover:bg-gray-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                          <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6" /></svg>
+                          Prev
+                        </button>
+                        <p className="text-xs text-slate-500 dark:text-gray-400 font-medium">
+                          Page <span className="text-slate-800 dark:text-gray-300 font-bold">{sessionPage}</span> / {sessionTotalPages}
+                        </p>
+                        <button
+                          type="button"
+                          disabled={sessionPage >= sessionTotalPages}
+                          onClick={() => setSessionPage((p) => Math.min(sessionTotalPages, p + 1))}
+                          className="flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 px-3.5 py-2 text-xs font-semibold text-slate-600 dark:text-gray-300 hover:border-[#2c5f4f]/40 hover:text-[#2c5f4f] dark:hover:bg-gray-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                          Next
+                          <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6" /></svg>
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </motion.div>
               )}
@@ -2267,7 +2691,7 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm p-4"
+            className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-md p-4"
             onClick={handleCloseAddressModal}
           >
             <motion.div
@@ -2275,7 +2699,7 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.96, y: 8 }}
               transition={{ duration: 0.18 }}
-              className="mx-auto mt-8 max-w-3xl rounded-2xl border border-slate-200 dark:border-slate-700 dark:bg-gray-800 p-5"
+              className="mx-auto mt-8 max-w-3xl rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-gray-800 p-5 shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="mb-5 flex items-center justify-between gap-3">
@@ -2294,7 +2718,7 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
 
               <form onSubmit={handleSaveAddress} className="space-y-4">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">Street / House No.</label>
+                  <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">Street / House No. <span className="text-red-500">*</span></label>
                   <input
                     type="text"
                     value={addressForm.address}
@@ -2306,7 +2730,7 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">Region</label>
+                    <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">Region <span className="text-red-500">*</span></label>
                     <select
                       value={phAddress.regionCode}
                       onChange={(e) => {
@@ -2324,7 +2748,7 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
 
                   {!phAddress.noProvince ? (
                     <div className="space-y-1.5">
-                      <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">Province</label>
+                      <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">Province <span className="text-red-500">*</span></label>
                       <select
                         value={phAddress.provinceCode}
                         disabled={!phAddress.regionCode || phAddress.loadingProvinces}
@@ -2342,7 +2766,7 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
                     </div>
                   ) : (
                     <div className="space-y-1.5">
-                      <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">Province</label>
+                      <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">Province <span className="text-red-500">*</span></label>
                       <input
                         value={phAddress.address.region}
                         disabled
@@ -2352,7 +2776,7 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
                   )}
 
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">City / Municipality</label>
+                    <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">City / Municipality <span className="text-red-500">*</span></label>
                     <select
                       value={phAddress.cityCode}
                       disabled={phAddress.noProvince ? !phAddress.regionCode : (!phAddress.provinceCode || phAddress.loadingCities)}
@@ -2370,7 +2794,7 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">Barangay</label>
+                    <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">Barangay <span className="text-red-500">*</span></label>
                     <select
                       value={phAddress.address.barangay}
                       disabled={!phAddress.cityCode || phAddress.loadingBarangays}
@@ -2385,7 +2809,7 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
                   </div>
 
                   <div className="space-y-1.5 md:col-span-2">
-                    <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">ZIP Code</label>
+                    <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">ZIP Code <span className="text-red-500">*</span></label>
                     <input
                       type="text"
                       value={addressForm.zipCode}
@@ -2417,209 +2841,6 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
           </motion.div>
         )}
 
-        {isMobileReferralTreeOpen && (
-          <motion.div
-            key="mobile-referral-tree"
-            initial={{ x: '100%' }}
-            animate={{ x: 0 }}
-            exit={{ x: '100%' }}
-            transition={{ type: 'tween', duration: 0.3, ease: 'easeInOut' }}
-            className="fixed inset-0 z-[70] bg-slate-50 flex flex-col xl:hidden"
-          >
-            {/* Sticky header */}
-            <div className="sticky top-0 z-10 bg-white border-b border-slate-100 px-4 py-3 flex items-center gap-3 shrink-0">
-              <button
-                type="button"
-                onClick={() => setIsMobileReferralTreeOpen(false)}
-                className="flex items-center gap-1.5 text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors"
-                aria-label="Close referral tree"
-              >
-                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
-                </svg>
-                Back
-              </button>
-              <div className="flex-1">
-                <h2 className="text-base font-bold text-slate-900">Referral Tree</h2>
-              </div>
-              {isVerified && (
-                <span className="text-[10px] px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 font-semibold">
-                  Verified
-                </span>
-              )}
-            </div>
-
-            {/* Scrollable content */}
-            <div className="flex-1 overflow-y-auto px-4 py-5 space-y-5">
-              {/* Stats row */}
-              <div className="grid grid-cols-2 gap-3">
-                {[
-                  { label: 'Direct Referrals', value: referralTree?.summary?.direct_count ?? 0, bg: 'bg-sky-50', text: 'text-sky-600', border: 'border-sky-100', val: 'text-sky-800' },
-                  { label: 'Level 2', value: referralTree?.summary?.second_level_count ?? 0, bg: 'bg-sky-50', text: 'text-sky-600', border: 'border-sky-100', val: 'text-sky-800' },
-                  { label: 'Total Network', value: referralTree?.summary?.total_network ?? 0, bg: 'bg-emerald-50', text: 'text-emerald-600', border: 'border-emerald-100', val: 'text-emerald-800' },
-                  { label: 'Total PV Earned', value: (referralTree?.summary as { total_pv?: number } | undefined)?.total_pv ?? 0, bg: 'bg-sky-50', text: 'text-sky-600', border: 'border-sky-100', val: 'text-sky-800' },
-                ].map((stat) => (
-                  <div key={stat.label} className={`rounded-xl border ${stat.border} ${stat.bg} px-4 py-3`}>
-                    <p className={`text-[11px] font-medium ${stat.text} mb-1`}>{stat.label}</p>
-                    <p className={`text-xl font-bold ${stat.val}`}>{stat.value.toLocaleString()}</p>
-                  </div>
-                ))}
-              </div>
-
-              <div className="space-y-3">
-                <ReferralShareCard
-                  title="Invite Members"
-                  description="For people who want to register as your referral."
-                  badge="Signup"
-                  link={memberReferralLink}
-                  qrUrl={memberReferralQrUrl}
-                  onCopy={() => handleCopyReferralLink('member')}
-                  onShare={() => handleShareReferralLink('member')}
-                  message={referralMsg}
-                  emptyText="Set your username first to generate your signup referral link."
-                  linkLabel="Member signup link"
-                  qrAlt="Signup referral QR code"
-                />
-                <ReferralShareCard
-                  title="Share Shopping Link"
-                  description="For non-members who only want to buy. Checkout will carry your referral automatically."
-                  badge="Shopping"
-                  link={shoppingReferralLink}
-                  qrUrl={shoppingReferralQrUrl}
-                  onCopy={() => handleCopyReferralLink('shopping')}
-                  onShare={() => handleShareReferralLink('shopping')}
-                  message={referralMsg}
-                  emptyText="Set your username first to generate your shopping referral link."
-                  linkLabel="Shopping referral link"
-                  qrAlt="Shopping referral QR code"
-                />
-              </div>
-
-              {/* Tree search + filter + list */}
-              <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                {isReferralTreeLoading ? (
-                  <div className="space-y-3 animate-pulse">
-                    {[1, 2, 3].map((i) => (
-                      <div key={i} className="h-20 rounded-2xl bg-slate-100" />
-                    ))}
-                  </div>
-                ) : (
-                  <>
-                    <div className="flex flex-col gap-2 mb-3">
-                      <div className="relative flex-1">
-                        <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
-                        <input
-                          type="text"
-                          value={treeSearchQuery}
-                          onChange={(e) => { setTreeSearchQuery(e.target.value); setReferralPage(1); }}
-                          placeholder="Search name, username, email..."
-                          className="w-full pl-9 pr-3 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2c5f4f]/20 focus:border-[#2c5f4f]/40 bg-slate-50 text-slate-700 placeholder-slate-400"
-                        />
-                      </div>
-                      <div className="flex gap-2">
-                        <select
-                          value={treeStatusFilter}
-                          onChange={(e) => { setTreeStatusFilter(e.target.value as TreeStatusFilter); setReferralPage(1); }}
-                          className="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#2c5f4f]/20 focus:border-[#2c5f4f]/40"
-                        >
-                          <option value="all">All Status</option>
-                          <option value="verified">Verified</option>
-                          <option value="pending_review">Pending Review</option>
-                          <option value="not_verified">Not Verified</option>
-                          <option value="blocked">Blocked</option>
-                        </select>
-                        <button
-                          type="button"
-                          onClick={handleExpandAllTreeNodes}
-                          className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-600 hover:border-sky-300 hover:text-sky-600 transition-colors"
-                        >
-                          Expand
-                        </button>
-                        <button
-                          type="button"
-                          onClick={handleCollapseAllTreeNodes}
-                          className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-600 hover:border-sky-300 hover:text-sky-600 transition-colors"
-                        >
-                          Collapse
-                        </button>
-                      </div>
-                    </div>
-
-                    {(() => {
-                      const totalPages = Math.ceil(filteredReferralChildren.length / REFERRAL_PAGE_SIZE);
-                      const pageStart = (referralPage - 1) * REFERRAL_PAGE_SIZE;
-                      const pageEnd = pageStart + REFERRAL_PAGE_SIZE;
-                      const pageItems = filteredReferralChildren.slice(pageStart, pageEnd);
-                      return (
-                        <>
-                          <div className="flex items-center justify-between mb-4">
-                            <p className="text-xs text-slate-500">
-                              {filteredReferralChildren.length > 0
-                                ? <>Showing <span className="font-semibold text-slate-700">{pageStart + 1}-{Math.min(pageEnd, filteredReferralChildren.length)}</span> of <span className="font-semibold text-slate-700">{filteredReferralChildren.length}</span> referral{filteredReferralChildren.length !== 1 ? 's' : ''}</>
-                                : 'No referrals found'
-                              }
-                            </p>
-                            {(treeSearchQuery || treeStatusFilter !== 'all') && (
-                              <button type="button" onClick={() => { setTreeSearchQuery(''); setTreeStatusFilter('all'); setReferralPage(1); }} className="text-xs text-[#2c5f4f] hover:text-[#234d40] font-medium">
-                                Clear filters
-                              </button>
-                            )}
-                          </div>
-
-                          {pageItems.length > 0 ? (
-                            <>
-                              <div className="space-y-2">
-                                {pageItems.map((node) => renderReferralNodeFull(node))}
-                              </div>
-
-                              {totalPages > 1 && (
-                                <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-100">
-                                  <button
-                                    type="button"
-                                    disabled={referralPage <= 1}
-                                    onClick={() => setReferralPage((p) => Math.max(1, p - 1))}
-                                    className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-600 hover:border-[#2c5f4f]/40 hover:text-[#2c5f4f] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                                  >
-                                    <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6" /></svg>
-                                    Prev
-                                  </button>
-                                  <p className="text-xs text-slate-500 font-medium">
-                                    Page <span className="text-slate-800 font-bold">{referralPage}</span> / {totalPages}
-                                  </p>
-                                  <button
-                                    type="button"
-                                    disabled={referralPage >= totalPages}
-                                    onClick={() => setReferralPage((p) => Math.min(totalPages, p + 1))}
-                                    className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-600 hover:border-[#2c5f4f]/40 hover:text-[#2c5f4f] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                                  >
-                                    Next
-                                    <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6" /></svg>
-                                  </button>
-                                </div>
-                              )}
-                            </>
-                          ) : (
-                            <div className="py-12 text-center">
-                              <div className="h-12 w-12 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-3">
-                                <Icon.Network className="h-6 w-6 text-slate-400" />
-                              </div>
-                              <p className="text-sm font-semibold text-slate-700">
-                                {(referralTree?.children?.length ?? 0) > 0 ? 'No matches found' : 'No referrals yet'}
-                              </p>
-                              <p className="text-xs text-slate-400 mt-1">
-                                {(referralTree?.children?.length ?? 0) > 0 ? 'Try a different search or filter' : 'Share your referral link to start building your network'}
-                              </p>
-                            </div>
-                          )}
-                        </>
-                      );
-                    })()}
-                  </>
-                )}
-              </div>
-            </div>
-          </motion.div>
-        )}
 
         {isAvatarPreviewOpen && profileData?.avatar_url && (
           <motion.div

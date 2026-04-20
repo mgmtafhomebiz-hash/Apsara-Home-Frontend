@@ -35,9 +35,9 @@ export default function TrustBar({ items = [] }: TrustBarConfig = {}) {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.1, duration: 0.4 }}
-              className="flex items-center gap-3 p-3 rounded-xl hover:bg-orange-50 dark:hover:bg-orange-950/20 transition-colors duration-300 group cursor-default"
+              className="flex items-center gap-3 p-3 rounded-xl hover:bg-sky-50 dark:hover:bg-sky-950/20 transition-colors duration-300 group cursor-default"
             >
-              <div className="shrink-0 text-orange-500 transition-transform duration-300 group-hover:scale-110">
+              <div className="shrink-0 text-sky-500 transition-transform duration-300 group-hover:scale-110">
                 {icons[i] ?? icons[icons.length - 1]}
               </div>
               <div>

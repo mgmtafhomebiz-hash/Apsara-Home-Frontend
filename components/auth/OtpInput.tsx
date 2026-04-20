@@ -111,31 +111,32 @@ const OtpInput = ({ value, onChange, length = 4, disabled, autoFocus }:OtpInputP
   }
   return (
     <div
-      className="flex items-end justify-center gap-4"
+      className="flex items-center justify-center gap-3 sm:gap-4"
       onClick={() => focusInput()}
       role="group"
       aria-label={`${length}-digit verification code input`}
     >
       {digits.map((digit, index) => (
         <div key={index} className="flex flex-col items-center gap-2">
-            <input 
-                ref={el => { inputRef.current[index] = el}}
-                type="tel"
-                inputMode="numeric"
-                autoComplete={index === 0 ? 'one-time-code' : 'off'}
-                enterKeyHint={index === length - 1 ? 'done' : 'next'}
-                pattern="[0-9]*"
-                maxLength={1}
-                value={digit}
-                disabled={disabled}
-                onChange={e => handleChange(index, e)}
-                onKeyDown={e => handleKeyDown(index, e)}
-                onPaste={handlePaste}
-                onFocus={e => e.target.select()}
-                aria-label={`Digit ${index + 1} of ${length}`}
-                className="w-14 h-14 text-center text-2xl font-bold text-gray-900 dark:text-white bg-transparent outline-none caret-transparent disabled:opacity-50 disabled:cursor-not-allowed"
-            />
-            <div className={`h-0.5 w-14 rounded-full transition-all duration-200 ${digit ? 'bg-orange-400' : 'bg-gray-300 dark:bg-white/30'}`}/>
+            <div className="flex h-12 w-12 items-center justify-center rounded-[18px] border border-gray-300 bg-white transition-all duration-200 focus-within:border-sky-400 focus-within:ring-2 focus-within:ring-sky-100 dark:border-white/18 dark:bg-white/12 dark:focus-within:border-sky-400/60 dark:focus-within:ring-sky-500/15 sm:h-14 sm:w-14">
+                <input 
+                    ref={el => { inputRef.current[index] = el}}
+                    type="tel"
+                    inputMode="numeric"
+                    autoComplete={index === 0 ? 'one-time-code' : 'off'}
+                    enterKeyHint={index === length - 1 ? 'done' : 'next'}
+                    pattern="[0-9]*"
+                    maxLength={1}
+                    value={digit}
+                    disabled={disabled}
+                    onChange={e => handleChange(index, e)}
+                    onKeyDown={e => handleKeyDown(index, e)}
+                    onPaste={handlePaste}
+                    onFocus={e => e.target.select()}
+                    aria-label={`Digit ${index + 1} of ${length}`}
+                    className="h-full w-full rounded-[18px] bg-transparent text-center text-2xl font-bold text-gray-900 outline-none caret-transparent disabled:opacity-50 disabled:cursor-not-allowed dark:text-white"
+                />
+            </div>
         </div>
       ))}
     </div>

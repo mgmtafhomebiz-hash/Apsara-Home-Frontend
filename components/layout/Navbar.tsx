@@ -127,6 +127,8 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
   const [mobileSearch, setMobileSearch] = useState('')
   const [brandSearch, setBrandSearch] = useState('')
   const [mobileBrandSearch, setMobileBrandSearch] = useState('')
+  const [showRegistrationPrompt, setShowRegistrationPrompt] = useState(false)
+  const [registrationEmail, setRegistrationEmail] = useState('')
   const { cartCount, setIsOpen } = useCart()
   const { isOpen: isWishlistOpen, setIsOpen: setWishlistOpen } = useWishlist()
   const dispatch = useAppDispatch()
@@ -162,6 +164,39 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
   const notifMenuRef = useRef<HTMLDivElement | null>(null)
   const searchInputRef = useRef<HTMLInputElement | null>(null)
   const [searchModalOpen, setSearchModalOpen] = useState(false)
+  const hasRealPhoneNumber = (value?: string | null) => String(value ?? '').replace(/\D/g, '').length >= 10
+  const isProfileComplete = useMemo(() => {
+    if (!meData) return false
+
+    const checks = [
+      Boolean(meData.name?.trim()),
+      Boolean(meData.email?.trim()),
+      hasRealPhoneNumber(meData.phone),
+      Boolean(meData.username?.trim()),
+      Boolean(meData.middle_name?.trim()),
+      Boolean(meData.birth_date?.trim()),
+      Boolean(meData.gender?.trim()),
+      Boolean(meData.occupation?.trim()),
+      Boolean(meData.work_location?.trim()),
+      Boolean(meData.country?.trim()),
+    ]
+
+    return checks.every(Boolean)
+  }, [meData])
+
+  useEffect(() => {
+    if (!isLoggedIn || pathname !== '/shop' || isProfileComplete) {
+      setShowRegistrationPrompt(false)
+      setRegistrationEmail('')
+      return
+    }
+
+    if (typeof window === 'undefined') return
+
+    const storedEmail = window.localStorage.getItem('afhome_new_registration_email')?.trim() ?? ''
+    setRegistrationEmail(storedEmail)
+    setShowRegistrationPrompt(true)
+  }, [isLoggedIn, pathname, isProfileComplete])
 
   const activeSearchQuery = searchModalQuery.trim()
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(activeSearchQuery)
@@ -490,11 +525,6 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
 
   const [isLoggingOut, setIsLoggingOut] = useState(false)
 
-  const markLoginRedirectGuard = () => {
-    if (typeof window === 'undefined') return
-    window.sessionStorage.setItem('afhome-skip-login-redirect', '1')
-  }
-
   // const handleLogout = async () => {
   //   setIsLoggingOut(true)
   //   try {
@@ -541,7 +571,7 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
     }
   }
 
-  const handleCustomerLogout = async (callbackUrl: string) => {
+  const handleCustomerLogout = async () => {
     if (isLoggingOut) return
 
     setIsLoggingOut(true)
@@ -557,14 +587,13 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
 
       clearAccessTokenCache()
       dispatch(baseApi.util.resetApiState())
-      markLoginRedirectGuard()
 
       const result = await signOut({
         redirect: false,
-        callbackUrl,
+        callbackUrl: '/login?logged_out=1',
       })
 
-      router.replace(result?.url || callbackUrl)
+      router.replace(result?.url || '/login?logged_out=1')
       router.refresh()
     } finally {
       setIsLoggingOut(false)
@@ -579,6 +608,34 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
       transition={{ duration: 0.5, ease: 'easeOut' }}
       className={`sticky top-8 z-50 !bg-white dark:!bg-gray-900 dark:border-b dark:border-gray-800 transition-all duration-300 ${scrolled ? 'shadow-lg shadow-black/5 dark:shadow-black/20' : 'shadow-sm'}`}
     >
+      <AnimatePresence>
+        {isLoggedIn && !isProfileComplete && meData && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.2 }}
+            className="border-b border-sky-100 bg-sky-50/95 text-sm text-sky-700 dark:border-sky-900/50 dark:bg-sky-950/40 dark:text-sky-200"
+          >
+            <div className="container mx-auto flex min-h-11 items-center justify-between gap-4 px-4 py-2">
+              <p className="flex-1 font-medium leading-snug">
+                Your profile is incomplete.{' '}
+                <Link href="/profile" className="font-semibold text-sky-600 underline underline-offset-4 transition hover:text-sky-700 dark:text-sky-300 dark:hover:text-sky-200">
+                  Complete your profile
+                </Link>
+                {' '}to unlock all features and get the best shopping experience.
+              </p>
+              <Link
+                href="/profile"
+                className="shrink-0 rounded-full bg-sky-500 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-sky-600 dark:hover:bg-sky-700"
+              >
+                Update Now
+              </Link>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16 gap-4">
           {/* Left Section - Logo */}
@@ -953,8 +1010,8 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
 
                         {/* Logout */}
                         <div className="border-t border-gray-100 dark:border-gray-800 py-1.5">
-                          <button
-                            onClick={() => handleCustomerLogout('/login')}
+                        <button
+                            onClick={() => handleCustomerLogout()}
                             disabled={isLoggingOut}
                             className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-60 group"
                           >
@@ -1325,7 +1382,7 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
 
                     {/* Logout */}
                     <button
-                      onClick={() => { handleCustomerLogout('/login'); setMobileOpen(false); }}
+                      onClick={() => { handleCustomerLogout(); setMobileOpen(false); }}
                       disabled={isLoggingOut}
                       className="w-full flex items-center justify-center gap-2 rounded-xl border border-red-100 dark:border-red-900/30 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 px-4 py-2.5 text-sm font-semibold text-red-600 dark:text-red-400 transition-colors disabled:opacity-60"
                     >
@@ -1362,7 +1419,7 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                   <div className="bg-white dark:bg-gray-800 px-4 py-3 flex gap-2">
                     <motion.div whileTap={{ scale: 0.97 }} transition={{ duration: 0.12 }} className="flex-1">
                       <PrimaryButton
-                        href="/login"
+                      href="/login"
                         onClick={() => setMobileOpen(false)}
                         className="!w-full !px-4 !py-2.5 !text-sm !rounded-[18px]"
                       >

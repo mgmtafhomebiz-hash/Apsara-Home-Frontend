@@ -686,8 +686,7 @@ function ListViewProduct({ product, onShareClick }: ListViewProductProps) {
                         ))}
                     </div>
                     <span className="text-xs text-gray-400 dark:text-gray-500">
-                        {hasRating ? `${averageRating.toFixed(1)} ?? ` : 'No rating yet ?? '}
-                        {soldCount} sold
+                        {hasRating ? `${averageRating.toFixed(1)} · ` : ''}{soldCount} sold
                     </span>
                 </div>
 

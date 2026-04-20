@@ -252,6 +252,44 @@ export interface CreateAffiliateVoucherResponse {
   voucher: AffiliateVoucherItem;
 }
 
+export interface AdminVoucherItem {
+  id: number;
+  code: string;
+  amount: number;
+  status: 'active' | 'redeemed' | 'expired';
+  customer: {
+    id: number;
+    username: string;
+    email: string;
+    name: string;
+  };
+  redeemed_by_customer_id?: number | null;
+  redeemed_at?: string | null;
+  expires_at?: string | null;
+  max_uses?: number | null;
+  used_count?: number | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+}
+
+export interface AdminVouchersResponse {
+  data: AdminVoucherItem[];
+  meta: {
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+  };
+}
+
+interface AdminVouchersQuery {
+  per_page?: number;
+  page?: number;
+  status?: 'active' | 'redeemed' | 'expired';
+  customer_id?: number;
+  search?: string;
+}
+
 export interface WalletOverviewResponse {
   summary: {
     cash_balance: number;
@@ -410,6 +448,20 @@ export const encashmentApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['Encashment'],
     }),
+    getAdminAffiliateVouchers: builder.query<AdminVouchersResponse, AdminVouchersQuery | void>({
+      query: (params) => ({
+        url: '/api/admin/encashment/vouchers/all',
+        method: 'GET',
+        params: {
+          per_page: params?.per_page ?? 50,
+          page: params?.page ?? 1,
+          status: params?.status,
+          customer_id: params?.customer_id,
+          search: params?.search,
+        },
+      }),
+      providesTags: ['Encashment'],
+    }),
   }),
 });
 
@@ -425,4 +477,5 @@ export const {
   useApproveAdminEncashmentMutation,
   useRejectAdminEncashmentMutation,
   useReleaseAdminEncashmentMutation,
+  useGetAdminAffiliateVouchersQuery,
 } = encashmentApi;

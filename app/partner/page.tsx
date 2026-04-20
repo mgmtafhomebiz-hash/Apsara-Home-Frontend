@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import { getServerSession } from 'next-auth'
 import { buildPageMetadata } from '@/app/seo'
-import { adminAuthOptions } from '@/libs/adminAuth'
+import { partnerAuthOptions } from '@/libs/partnerAuth'
 
 export const metadata = buildPageMetadata({
   title: 'Partner Portal',
@@ -11,7 +11,7 @@ export const metadata = buildPageMetadata({
 })
 
 export default async function PartnerIndexPage() {
-  const session = await getServerSession(adminAuthOptions)
+  const session = await getServerSession(partnerAuthOptions)
 
   if (!session?.user) {
     redirect('/partner/login')

@@ -4,28 +4,12 @@ interface RegisterPayload {
   name: string
   first_name: string
   last_name: string
-  middle_name?: string
+  phone: string
   email: string
   password: string
   password_confirmation: string
-  phone?: string
   username: string
-  referred_by?: string
-  birth_date?: string
-  address?: string
-  barangay?: string
-  barangay_code?: string
-  city?: string
-  city_code?: string
-  province?: string
-  province_code?: string
-  region?: string
-  region_code?: string
-  zip_code?: string
-  gender?: 'male' | 'female' | 'other'
-  occupation?: string
-  work_location?: 'local' | 'overseas'
-  country?: string
+  referred_by: string
 }
 
 interface RegisterResponse {
@@ -111,6 +95,7 @@ interface UpdateAdminMeResponse {
 }
 
 export const authApi = baseApi.injectEndpoints({
+  overrideExisting: true,
   endpoints: (builder) => ({
     register: builder.mutation<RegisterResponse, RegisterPayload>({
       query: (body) => ({
