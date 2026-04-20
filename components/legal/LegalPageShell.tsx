@@ -24,7 +24,7 @@ export default function LegalPageShell({ title, subtitle, children }: LegalPageS
                 INFORMATIONS
               </div>
               <div className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                <Link href="/" className="hover:text-orange-500 transition-colors">
+                <Link href="/shop" className="hover:text-orange-500 transition-colors">
                   Home
                 </Link>
                 <span className="mx-2">/</span>

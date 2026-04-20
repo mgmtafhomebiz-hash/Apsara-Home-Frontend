@@ -1,7 +1,7 @@
 'use client';
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useSearchParams } from "next/navigation";
@@ -110,6 +110,8 @@ const LoginForm = ({ onSwitchToSignUp, onRequirePasswordChange }: LoginFormProps
 
     const blockedFromRedirect = searchParams.get('blocked') === '1'
     const callbackPath = resolveCallbackPath(searchParams.get('callback') || searchParams.get('callbackUrl'))
+    const apiBaseUrl = (process.env.NEXT_PUBLIC_LARAVEL_API_URL || '').trim()
+    const autoLoginInFlightRef = useRef(false)
 
     const set = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) =>
         setForm(f => ({ ...f, [field]: e.target.value }))
@@ -128,8 +130,7 @@ const LoginForm = ({ onSwitchToSignUp, onRequirePasswordChange }: LoginFormProps
         })
     }, [])
 
-    const handleSignIn = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const attemptSignIn = useCallback(async (source: 'manual' | 'auto' = 'manual') => {
         setError('');
         setIsLoading(true);
 
@@ -170,7 +171,7 @@ const LoginForm = ({ onSwitchToSignUp, onRequirePasswordChange }: LoginFormProps
                 return
             }
 
-            showSuccessToast('Login successful. Welcome back!')
+            showSuccessToast(source === 'auto' ? 'Login approved. Welcome back!' : 'Login successful. Welcome back!')
             router.replace(callbackPath);
         } else {
             const rawError = String(result?.error ?? '').trim()
@@ -195,7 +196,65 @@ const LoginForm = ({ onSwitchToSignUp, onRequirePasswordChange }: LoginFormProps
             setError(message)
             showErrorToast(message)
         }
+    }, [callbackPath, form.email, form.password, form.rememberMe, mfaChallengeToken, onRequirePasswordChange, router, updateSession])
+
+    const handleSignIn = async (e: React.FormEvent) => {
+        e.preventDefault();
+        await attemptSignIn('manual')
     };
+
+    useEffect(() => {
+        if (!mfaChallengeToken || !apiBaseUrl) return
+
+        let isCancelled = false
+        const pollStatus = async () => {
+            if (isCancelled || autoLoginInFlightRef.current) return
+            try {
+                const response = await fetch(`${apiBaseUrl}/api/auth/login/mfa/status`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Accept: 'application/json',
+                    },
+                    body: JSON.stringify({
+                        mfa_challenge_token: mfaChallengeToken,
+                    }),
+                })
+                const data = await response.json().catch(() => null)
+                const status = String(data?.status || '')
+                const message = String(data?.message || '')
+
+                if (status === 'approved') {
+                    autoLoginInFlightRef.current = true
+                    setError('Approval confirmed. Signing you in automatically...')
+                    await attemptSignIn('auto')
+                    autoLoginInFlightRef.current = false
+                    return
+                }
+
+                if (status === 'denied') {
+                    setError(message || 'This sign-in request was denied.')
+                    setMfaChallengeToken('')
+                    return
+                }
+
+                if (status === 'expired' || response.status === 410) {
+                    setError(message || 'Sign-in approval expired. Please sign in again.')
+                    setMfaChallengeToken('')
+                }
+            } catch {
+                // no-op: keep waiting and polling
+            }
+        }
+
+        const intervalId = window.setInterval(pollStatus, 2500)
+        void pollStatus()
+
+        return () => {
+            isCancelled = true
+            window.clearInterval(intervalId)
+        }
+    }, [apiBaseUrl, attemptSignIn, mfaChallengeToken])
 
     return (
         <motion.div
@@ -253,7 +312,7 @@ const LoginForm = ({ onSwitchToSignUp, onRequirePasswordChange }: LoginFormProps
                         <div className="rounded-xl border border-orange-200 bg-orange-50 px-4 py-3 text-sm text-orange-900 dark:border-orange-300/30 dark:bg-orange-500/15 dark:text-orange-200">
                             <p className="font-semibold">New device sign-in check</p>
                             <p className="mt-1 text-xs text-orange-800/90 dark:text-orange-200/90">
-                                We sent an approval link to your email. Tap <strong>Yes, it is me</strong>, then click continue.
+                                We sent an approval link to your email. Tap <strong>Yes, it is me</strong> and we will sign you in automatically.
                             </p>
                         </div>
                         <div className="mt-2 flex items-center justify-between gap-2">
