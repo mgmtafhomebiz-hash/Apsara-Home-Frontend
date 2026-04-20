@@ -331,8 +331,6 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
   const [isAvatarPreviewOpen, setIsAvatarPreviewOpen] = useState(false);
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
   const [revokingTokenId, setRevokingTokenId] = useState<number | null>(null);
-  const [isMobileReferralTreeOpen, setIsMobileReferralTreeOpen] = useState(false);
-  const [isMobileViewOpen, setIsMobileViewOpen] = useState(false);
   const [addressForm, setAddressForm] = useState<AddressFormState>({ address: '', zipCode: '' });
   const msgTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const usernameMsgTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -1310,27 +1308,21 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
                 'change-username': 'Username',
                 referrals: 'Referrals',
               };
-              return TABS.map(({ key, Icon: TabIcon }) => {
-                const isProfileHome = key === 'profile';
-                return (
-                  <button
-                    key={key}
-                    type="button"
-                    onClick={() => { if (!isProfileHome) handleTabChange(key); }}
-                    disabled={isProfileHome}
-                    className={`shrink-0 flex flex-col items-center gap-1 rounded-xl border px-3 py-2.5 md:px-6 md:py-3 text-[10px] md:text-xs font-medium transition-colors min-w-[60px] md:min-w-[80px] ${
-                      isProfileHome
-                        ? 'border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-500 cursor-default opacity-50'
-                        : activeTab === key
-                          ? 'border-sky-500 dark:border-sky-600 bg-sky-50 dark:bg-sky-900/20 text-sky-600 dark:text-sky-400'
-                          : 'border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700/50 hover:text-gray-700 dark:hover:text-gray-200'
-                    }`}
-                  >
-                    <TabIcon className={`h-5 w-5 md:h-6 md:w-6 ${activeTab === key && !isProfileHome ? 'text-sky-500 dark:text-sky-400' : 'text-gray-400 dark:text-gray-500'}`} />
-                    {shortLabel[key]}
-                  </button>
-                );
-              });
+              return TABS.map(({ key, Icon: TabIcon }) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => handleTabChange(key)}
+                  className={`shrink-0 flex flex-col items-center gap-1 rounded-xl border px-3 py-2.5 md:px-6 md:py-3 text-[10px] md:text-xs font-medium transition-colors min-w-[60px] md:min-w-[80px] ${
+                    activeTab === key
+                      ? 'border-sky-500 dark:border-sky-600 bg-sky-50 dark:bg-sky-900/20 text-sky-600 dark:text-sky-400'
+                      : 'border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700/50 hover:text-gray-700 dark:hover:text-gray-200'
+                  }`}
+                >
+                  <TabIcon className={`h-5 w-5 md:h-6 md:w-6 ${activeTab === key ? 'text-sky-500 dark:text-sky-400' : 'text-gray-400 dark:text-gray-500'}`} />
+                  {shortLabel[key]}
+                </button>
+              ));
             })()}
           </nav>
 
@@ -1389,24 +1381,30 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
 
               {/* Avatar - centered, floating over banner */}
               <div className="flex flex-col items-center -mt-12 pb-5 px-5">
-                <div className="relative group mb-3">
+                <div className="relative mb-3">
+                  {/* Spin ring while uploading */}
                   {isUploadingAvatar && (
                     <span className="pointer-events-none absolute -inset-1.5 rounded-full border-[3px] border-transparent border-t-sky-400 border-r-sky-300 animate-spin z-10" />
                   )}
+
+                  {/* Avatar image or initials */}
                   {profileData?.avatar_url ? (
                     <img
                       src={profileData.avatar_url}
                       alt={form.name || 'Profile photo'}
-                      className="h-24 w-24 rounded-full object-cover ring-4 ring-white shadow-xl"
+                      className="h-24 w-24 rounded-full object-cover ring-4 ring-white dark:ring-gray-800 shadow-xl"
                     />
                   ) : (
-                    <div className="h-24 w-24 rounded-full bg-gradient-to-br from-sky-400 to-sky-400 text-white text-2xl font-bold flex items-center justify-center ring-4 ring-white shadow-xl">
+                    <div className="h-24 w-24 rounded-full bg-gradient-to-br from-sky-400 to-sky-500 text-white text-2xl font-bold flex items-center justify-center ring-4 ring-white dark:ring-gray-800 shadow-xl">
                       {initials}
                     </div>
                   )}
+
+                  {/* Edit badge — always visible, bottom-right */}
                   <label
-                    className="absolute inset-0 flex cursor-pointer items-center justify-center rounded-full bg-black/45 opacity-0 group-hover:opacity-100 transition-opacity"
-                    title="Change photo"
+                    className="absolute -bottom-1 -right-1 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-sky-500 hover:bg-sky-600 active:bg-sky-700 border-2 border-white dark:border-gray-800 shadow-md transition-colors z-10"
+                    title="Change profile photo"
+                    aria-label="Change profile photo"
                   >
                     <input
                       type="file"
@@ -1414,10 +1412,8 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
                       className="hidden"
                       onChange={handleAvatarUpload}
                     />
-                    <Icon.Camera className="h-5 w-5 text-white" />
+                    <Icon.Camera className="h-4 w-4 text-white" />
                   </label>
-                  {/* Online dot */}
-                  <span className="absolute bottom-1 right-1 h-4 w-4 rounded-full bg-emerald-400 border-2 border-white shadow-sm" />
                 </div>
 
                 {/* Tier pill */}
@@ -1438,13 +1434,13 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
                 )}
 
                 {isUploadingAvatar && (
-                  <p className="mt-2 text-xs text-sky-500 font-medium">Uploading photo...</p>
+                  <p className="mt-2 text-xs text-sky-500 font-medium animate-pulse">Uploading photo...</p>
                 )}
-                {profileData?.avatar_url && (
+                {profileData?.avatar_url && !isUploadingAvatar && (
                   <button
                     type="button"
                     onClick={() => setIsAvatarPreviewOpen(true)}
-                    className="mt-1.5 text-xs font-semibold text-sky-500 hover:text-sky-600 hover:underline"
+                    className="mt-1.5 text-xs font-semibold text-sky-500 hover:text-sky-600 dark:hover:text-sky-400 hover:underline"
                   >
                     View Photo
                   </button>
@@ -1553,13 +1549,7 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
                       </div>
                       <button
                         type="button"
-                        onClick={() => {
-                          if (typeof window !== 'undefined' && window.innerWidth < 1280) {
-                            setIsMobileReferralTreeOpen(true);
-                          } else {
-                            handleTabChange('referrals');
-                          }
-                        }}
+                        onClick={() => handleTabChange('referrals')}
                         className="w-full flex items-center justify-center gap-2 rounded-xl bg-sky-500 px-3 py-2.5 text-xs font-semibold text-white hover:bg-sky-600 transition-colors shadow-sm"
                       >
                         <svg className="h-3.5 w-3.5 shrink-0" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
@@ -1631,33 +1621,9 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
           {/* --- Main content --- */}
           <div
             ref={mainContentRef}
-            className={`
-              xl:col-span-8 space-y-5
-              fixed inset-0 z-50 bg-slate-50 overflow-y-auto
-              transition-transform duration-300 ease-in-out
-              ${isMobileViewOpen ? 'translate-x-0' : 'translate-x-full pointer-events-none'}
-              xl:relative xl:inset-auto xl:z-auto xl:bg-transparent xl:overflow-visible
-              xl:translate-x-0 xl:pointer-events-auto xl:transition-none xl:block
-            `}
+            className="xl:col-span-8 space-y-5"
           >
-            {/* Mobile back header - only shown in mobile full-screen view */}
-            {isMobileViewOpen && (
-              <div className="sticky top-0 z-10 bg-white border-b border-slate-100 px-4 py-3 flex items-center gap-3 xl:hidden">
-                <button
-                  type="button"
-                  onClick={() => { setIsMobileViewOpen(false); setActiveTab('profile'); }}
-                  className="flex items-center gap-1.5 text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors"
-                  aria-label="Close"
-                >
-                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
-                  </svg>
-                  Back
-                </button>
-                <h2 className="text-base font-bold text-slate-900">{activeTabLabel}</h2>
-              </div>
-            )}
-            <div className={isMobileViewOpen ? 'px-4 py-4 pb-8 space-y-5 xl:px-0 xl:py-0 xl:space-y-0' : ''}>
+            <div className="space-y-5">
             <AnimatePresence mode="wait">
               {/* --- Profile tab --- */}
               {activeTab === 'profile' && (
@@ -2883,7 +2849,7 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
           </motion.div>
         )}
 
-        {isMobileReferralTreeOpen && (
+        {false && (
           <motion.div
             key="mobile-referral-tree"
             initial={{ x: '100%' }}
