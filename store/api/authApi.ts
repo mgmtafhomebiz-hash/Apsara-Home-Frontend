@@ -4,6 +4,7 @@ interface RegisterPayload {
   name: string
   first_name: string
   last_name: string
+  phone: string
   email: string
   password: string
   password_confirmation: string
@@ -94,6 +95,7 @@ interface UpdateAdminMeResponse {
 }
 
 export const authApi = baseApi.injectEndpoints({
+  overrideExisting: true,
   endpoints: (builder) => ({
     register: builder.mutation<RegisterResponse, RegisterPayload>({
       query: (body) => ({

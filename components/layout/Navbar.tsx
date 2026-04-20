@@ -615,7 +615,7 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
       className={`sticky top-8 z-50 !bg-white dark:!bg-gray-900 dark:border-b dark:border-gray-800 transition-all duration-300 ${scrolled ? 'shadow-lg shadow-black/5 dark:shadow-black/20' : 'shadow-sm'}`}
     >
       <AnimatePresence>
-        {showRegistrationPrompt && pathname === '/shop' && isLoggedIn && !isProfileComplete && (
+        {isLoggedIn && !isProfileComplete && meData && (
           <motion.div
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
@@ -625,25 +625,18 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
           >
             <div className="container mx-auto flex min-h-11 items-center justify-between gap-4 px-4 py-2">
               <p className="flex-1 font-medium leading-snug">
-                Complete your profile information{' '}
+                Your profile is incomplete.{' '}
                 <Link href="/profile" className="font-semibold text-sky-600 underline underline-offset-4 transition hover:text-sky-700 dark:text-sky-300 dark:hover:text-sky-200">
-                  here
+                  Complete your profile
                 </Link>
-                {' '}to get the best shopping experience.
-                {registrationEmail ? (
-                  <span className="ml-1 text-sky-600 dark:text-sky-300">Registered with {registrationEmail}.</span>
-                ) : null}
+                {' '}to unlock all features and get the best shopping experience.
               </p>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowRegistrationPrompt(false)
-                }}
-                className="shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold text-sky-700 transition hover:bg-sky-100 dark:text-sky-200 dark:hover:bg-sky-900/40"
-                aria-label="Dismiss registration prompt"
+              <Link
+                href="/profile"
+                className="shrink-0 rounded-full bg-sky-500 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-sky-600 dark:hover:bg-sky-700"
               >
-                Dismiss
-              </button>
+                Update Now
+              </Link>
             </div>
           </motion.div>
         )}
