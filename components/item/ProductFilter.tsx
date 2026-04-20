@@ -311,11 +311,11 @@ export default function ProductFilter({ onFilterChange, className = '', pvRange:
             onClick={() => {
               window.location.href = '/by-room'
             }}
-            className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium transition-colors cursor-pointer ${
-              !currentRoom
-                ? 'bg-sky-100 text-sky-600 dark:bg-sky-900/30 dark:text-sky-400'
-                : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 hover:bg-sky-100 hover:text-sky-600 dark:hover:bg-sky-900/30 dark:hover:text-sky-400'
-            }`}
+              className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium transition-colors cursor-pointer ${
+                !currentRoom
+                  ? 'bg-sky-100 text-sky-600 dark:bg-sky-900/30 dark:text-sky-400'
+                  : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 hover:bg-sky-100 hover:text-sky-600 dark:hover:bg-sky-900/30 dark:hover:text-sky-400'
+              }`}
           >
             All Room
           </button>
@@ -393,7 +393,7 @@ export default function ProductFilter({ onFilterChange, className = '', pvRange:
               {filteredBrands.length > 8 && (
                 <button
                   onClick={() => setShowAllBrands(!showAllBrands)}
-                  className="px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium transition-colors cursor-pointer bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 hover:bg-sky-100 hover:text-sky-600 dark:hover:bg-sky-900/30 dark:hover:text-sky-400"
+                className="px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium transition-colors cursor-pointer bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 hover:bg-sky-100 hover:text-sky-600 dark:hover:bg-sky-900/30 dark:hover:text-sky-400"
                 >
                   {showAllBrands ? 'See Less' : `See More (+${filteredBrands.length - 8})`}
                 </button>
@@ -464,7 +464,7 @@ export default function ProductFilter({ onFilterChange, className = '', pvRange:
               sortBy === 'default'
                 ? 'bg-sky-500 text-white'
                 : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-sky-100 dark:hover:bg-sky-500/20 hover:text-sky-600 dark:hover:text-sky-400'
-            }`}
+              }`}
           >
             Default
           </button>
@@ -474,7 +474,7 @@ export default function ProductFilter({ onFilterChange, className = '', pvRange:
               sortBy === 'asc'
                 ? 'bg-sky-500 text-white'
                 : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-sky-100 dark:hover:bg-sky-500/20 hover:text-sky-600 dark:hover:text-sky-400'
-            }`}
+              }`}
           >
             A to Z
           </button>
@@ -515,9 +515,9 @@ export default function ProductFilter({ onFilterChange, className = '', pvRange:
                 onClick={() => handleDiscountPercentageChange(preset.value)}
                 className={`w-full text-left px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors cursor-pointer ${
                   minDiscount === preset.value
-                    ? 'bg-sky-500 text-white'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-sky-100 dark:hover:bg-sky-500/20 hover:text-sky-600 dark:hover:text-sky-400'
-                }`}
+                ? 'bg-sky-500 text-white'
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-sky-100 dark:hover:bg-sky-500/20 hover:text-sky-600 dark:hover:text-sky-400'
+              }`}
               >
                 {preset.label}
               </button>
