@@ -424,6 +424,9 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
                     email={pendingEmail}
                     verificationToken={verificationToken}
                     onSuccess={() => {
+                        if (typeof window !== 'undefined') {
+                            window.localStorage.setItem('afhome_new_registration_email', pendingEmail)
+                        }
                         clearStoredReferralCode()
                         resetOtpStep()
                         onSwitchToLogin()
