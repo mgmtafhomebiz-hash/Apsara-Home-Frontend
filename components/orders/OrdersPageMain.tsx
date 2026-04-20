@@ -1,7 +1,7 @@
 'use client';
 
 import { TABS } from "@/types/Data";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import Icon from "./Icons";
@@ -39,6 +39,7 @@ type OrdersPageMainProps = {
 
 const OrdersPageMain = ({ initialCategories }: OrdersPageMainProps) => {
   const router = useRouter();
+  const pathname = usePathname();
   const { status: authStatus } = useSession();
   const [activeTab, setActiveTab] = useState<TabKey>('all');
   const [search, setSearch] = useState('');
@@ -212,7 +213,7 @@ const OrdersPageMain = ({ initialCategories }: OrdersPageMainProps) => {
                   onClick={() => {
                     setSearch('');
                     setActiveTab('all');
-                    router.push(authStatus === 'authenticated' ? '/' : '/login');
+                    router.push(authStatus === 'authenticated' ? '/shop' : `/login?callback=${encodeURIComponent(pathname || '/orders')}`);
                   }}
                   className="mt-5 inline-flex items-center gap-2 rounded-xl bg-sky-500 dark:bg-sky-600 hover:bg-sky-600 dark:hover:bg-sky-700 px-4 py-2.5 text-sm font-semibold text-white transition-colors"
                 >

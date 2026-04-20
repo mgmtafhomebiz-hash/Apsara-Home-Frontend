@@ -2,7 +2,13 @@
 
 import Image from 'next/image';
 import { CustomerCheckoutData } from '@/types/CustomerCheckout/types';
+import { CategoryProduct } from '@/libs/CategoryData';
 import Loading from '@/components/Loading';
+import Link from 'next/link';
+import { useState, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
+import { AnimatePresence, motion } from 'framer-motion';
+import OutlineButton from '@/components/ui/buttons/OutlineButton';
 
 interface Props {
   checkoutData: CustomerCheckoutData | null;
@@ -11,9 +17,14 @@ interface Props {
   isLoggedIn?: boolean;
   voucher?: { code: string; discount: number } | null;
   computedTotal?: number;
+  fullProduct?: CategoryProduct | null;
 }
 
-export default function CustomerCheckoutOrderSummary({ checkoutData, loading, onSubmit, isLoggedIn = false, voucher, computedTotal }: Props) {
+export default function CustomerCheckoutOrderSummary({ checkoutData, loading, onSubmit, isLoggedIn = false, voucher, computedTotal, fullProduct }: Props) {
+  const router = useRouter();
+  const [variantPickerOpen, setVariantPickerOpen] = useState(false);
+  const [selectedVariantSku, setSelectedVariantSku] = useState(checkoutData?.selectedSku || '');
+
   if (!checkoutData) {
     return (
       <div className="space-y-4">
@@ -40,6 +51,42 @@ export default function CustomerCheckoutOrderSummary({ checkoutData, loading, on
     selectedSku ? { label: 'SKU', value: selectedSku } : null,
   ].filter((item): item is { label: string; value: string } => Boolean(item));
 
+  const handleChangeVariant = () => {
+    setVariantPickerOpen(true);
+  };
+
+  const handleVariantSelect = (variant: NonNullable<CategoryProduct['variants']>[number]) => {
+    if (!checkoutData) return;
+
+    const updatedCheckoutData = {
+      ...checkoutData,
+      selectedColor: variant.color || null,
+      selectedStyle: variant.style || null,
+      selectedSize: variant.size || null,
+      selectedType: variant.name || null,
+      selectedSku: variant.sku || null,
+      product: {
+        ...checkoutData.product,
+        price: variant.priceSrp || checkoutData.product.price,
+        image: variant.images?.[0] || checkoutData.product.image,
+        sku: variant.sku || checkoutData.product.sku,
+      },
+      subtotal: (variant.priceSrp || checkoutData.product.price) * checkoutData.quantity,
+    };
+
+    localStorage.setItem('guest_checkout', JSON.stringify(updatedCheckoutData));
+    setVariantPickerOpen(false);
+    // Trigger a custom event to notify parent component
+    window.dispatchEvent(new CustomEvent('checkout-variant-changed'));
+  };
+
+  const variantOptions = useMemo(() => {
+    if (!fullProduct?.variants) return [];
+    return fullProduct.variants.filter(v =>
+      Boolean(v.color || v.style || v.size || v.name || v.sku)
+    );
+  }, [fullProduct?.variants]);
+
   return (
     <div className="space-y-4">
       {!isLoggedIn ? (
@@ -52,10 +99,10 @@ export default function CustomerCheckoutOrderSummary({ checkoutData, loading, on
           <div className="flex-1">
             <p className="text-xs font-bold text-orange-700">Sign in to your account</p>
             <p className="text-[10px] text-orange-500 mt-0.5">Track your order and earn PV points on every purchase.</p>
-            <a href="/login" className="mt-2 inline-flex items-center gap-1 text-[11px] text-orange-600 font-bold hover:underline">
+            <Link href="/login?callback=%2Fcheckout%2Fcustomer" className="mt-2 inline-flex items-center gap-1 text-[11px] text-orange-600 font-bold hover:underline">
               Sign in to your account
               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" /></svg>
-            </a>
+            </Link>
           </div>
         </div>
       ) : null}
@@ -81,7 +128,16 @@ export default function CustomerCheckoutOrderSummary({ checkoutData, loading, on
             </div>
             {selectedOptions.length > 0 ? (
               <div className="mt-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2">
-                <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">Selected Options</p>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">Selected Options</p>
+                  <OutlineButton
+                    type="button"
+                    onClick={handleChangeVariant}
+                    className="!px-2 !py-1 !text-[10px] !rounded-lg"
+                  >
+                    {variantPickerOpen ? 'Hide Options' : 'Change Variant'}
+                  </OutlineButton>
+                </div>
                 <div className="mt-2 space-y-1.5">
                   {selectedOptions.map((option) => (
                     <div key={option.label} className="flex items-center justify-between gap-3 text-xs">
@@ -92,6 +148,58 @@ export default function CustomerCheckoutOrderSummary({ checkoutData, loading, on
                 </div>
               </div>
             ) : null}
+
+          {/* Variant Picker */}
+          <AnimatePresence>
+            {variantPickerOpen && fullProduct && variantOptions.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.2 }}
+                className="mt-3 overflow-hidden"
+              >
+                <div className="max-h-64 space-y-2 overflow-y-auto pr-1">
+                  {variantOptions.map((variant, index) => {
+                    const isSelected = (checkoutData?.selectedSku ?? '') === (variant.sku ?? '');
+                    const variantLabel = variant.name?.trim() || variant.size?.trim() || `Variant ${index + 1}`;
+                    const variantMeta = [
+                      variant.size?.trim() || '',
+                      variant.color?.trim() || '',
+                      variant.sku?.trim() || '',
+                    ].filter(Boolean).join(' · ');
+
+                    return (
+                      <button
+                        key={`${variant.sku ?? variant.id ?? index}-${index}`}
+                        type="button"
+                        onClick={() => handleVariantSelect(variant)}
+                        className={`w-full text-left rounded-xl border-2 p-3 transition-all ${
+                          isSelected
+                            ? 'border-orange-500 bg-orange-50'
+                            : 'border-slate-200 bg-white hover:border-slate-400'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-xs font-bold text-slate-800">{variantLabel}</p>
+                            {variantMeta && (
+                              <p className="mt-1 text-[10px] text-slate-500">{variantMeta}</p>
+                            )}
+                          </div>
+                          {isSelected && (
+                            <svg className="w-4 h-4 text-orange-500" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
           </div>
         </div>
 
