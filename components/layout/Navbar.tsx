@@ -164,9 +164,28 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
   const notifMenuRef = useRef<HTMLDivElement | null>(null)
   const searchInputRef = useRef<HTMLInputElement | null>(null)
   const [searchModalOpen, setSearchModalOpen] = useState(false)
+  const hasRealPhoneNumber = (value?: string | null) => String(value ?? '').replace(/\D/g, '').length >= 10
+  const isProfileComplete = useMemo(() => {
+    if (!meData) return false
+
+    const checks = [
+      Boolean(meData.name?.trim()),
+      Boolean(meData.email?.trim()),
+      hasRealPhoneNumber(meData.phone),
+      Boolean(meData.username?.trim()),
+      Boolean(meData.middle_name?.trim()),
+      Boolean(meData.birth_date?.trim()),
+      Boolean(meData.gender?.trim()),
+      Boolean(meData.occupation?.trim()),
+      Boolean(meData.work_location?.trim()),
+      Boolean(meData.country?.trim()),
+    ]
+
+    return checks.every(Boolean)
+  }, [meData])
 
   useEffect(() => {
-    if (!isLoggedIn || pathname !== '/shop') {
+    if (!isLoggedIn || pathname !== '/shop' || isProfileComplete) {
       setShowRegistrationPrompt(false)
       setRegistrationEmail('')
       return
@@ -177,7 +196,7 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
     const storedEmail = window.localStorage.getItem('afhome_new_registration_email')?.trim() ?? ''
     setRegistrationEmail(storedEmail)
     setShowRegistrationPrompt(true)
-  }, [isLoggedIn, pathname])
+  }, [isLoggedIn, pathname, isProfileComplete])
 
   const activeSearchQuery = searchModalQuery.trim()
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(activeSearchQuery)
@@ -590,7 +609,7 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
       className={`sticky top-8 z-50 !bg-white dark:!bg-gray-900 dark:border-b dark:border-gray-800 transition-all duration-300 ${scrolled ? 'shadow-lg shadow-black/5 dark:shadow-black/20' : 'shadow-sm'}`}
     >
       <AnimatePresence>
-        {showRegistrationPrompt && pathname === '/shop' && isLoggedIn && (
+        {showRegistrationPrompt && pathname === '/shop' && isLoggedIn && !isProfileComplete && (
           <motion.div
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}

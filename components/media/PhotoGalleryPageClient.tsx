@@ -13,6 +13,15 @@ type PhotoGalleryPageClientProps = {
   initialCategories?: any[]
 }
 
+type GalleryItem = {
+  id: number | string
+  title: string
+  subtitle: string
+  image_url: string
+  category?: string
+  is_active?: boolean
+}
+
 const SAMPLE_GALLERY_ITEMS = [
   {
     id: 1,
@@ -122,14 +131,14 @@ export default function PhotoGalleryPageClient({ initialCategories }: PhotoGalle
 
   // Extract unique categories
   const categories = useMemo(() => {
-    const cats = new Set(galleryItems.map(item => item.category || 'Other'))
+    const cats = new Set(galleryItems.map((item) => ('category' in item && item.category ? item.category : 'Other')))
     return ['All', ...Array.from(cats)].sort()
   }, [galleryItems])
 
   // Filter items by category
   const filteredItems = useMemo(() => {
     if (selectedCategory === 'All') return galleryItems
-    return galleryItems.filter(item => item.category === selectedCategory)
+    return galleryItems.filter((item) => ('category' in item ? item.category === selectedCategory : false))
   }, [galleryItems, selectedCategory])
 
   const selectedImage = galleryItems.find(item => item.id === selectedImageId)
@@ -267,7 +276,7 @@ export default function PhotoGalleryPageClient({ initialCategories }: PhotoGalle
                       <div className="p-4">
                         <div className="mb-2">
                           <span className="text-xs font-semibold text-sky-600 dark:text-sky-400 uppercase tracking-wide">
-                            {item.category || 'Gallery'}
+                            {'category' in item && item.category ? item.category : 'Gallery'}
                           </span>
                         </div>
                         <h3 className="font-semibold text-gray-900 dark:text-white line-clamp-1 group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors">
@@ -308,7 +317,7 @@ export default function PhotoGalleryPageClient({ initialCategories }: PhotoGalle
               {/* Image Container */}
               <div className="relative rounded-xl overflow-hidden bg-black">
                 <Image
-                  src={selectedImage.image_url}
+                  src={selectedImage.image_url || '/placeholder-image.jpg'}
                   alt={selectedImage.title || 'Gallery image'}
                   width={1200}
                   height={800}
@@ -330,10 +339,10 @@ export default function PhotoGalleryPageClient({ initialCategories }: PhotoGalle
                 {selectedImage.subtitle && (
                   <p className="mt-2 text-gray-300 text-lg">{selectedImage.subtitle}</p>
                 )}
-                {selectedImage.category && (
+                {'category' in selectedImage && selectedImage.category && (
                   <div className="mt-3">
                     <span className="inline-block px-3 py-1 rounded-lg bg-sky-600 text-sm font-medium">
-                      {selectedImage.category}
+                      {selectedImage.category as string}
                     </span>
                   </div>
                 )}
