@@ -3,6 +3,7 @@
 import { useMemo, useRef, useState } from 'react'
 import { BulkImportProductsRow, useBulkImportProductsMutation } from '@/store/api/productsApi'
 import { showErrorToast, showSuccessToast } from '@/libs/toast'
+import { buildTemplateWithInstructions, buildSimpleTemplate, buildAllFieldsTemplate, PRODUCT_CSV_FIELDS } from '@/libs/productCsvTemplate'
 
 interface BulkProductImportPanelProps {
   onClose: () => void
@@ -43,10 +44,6 @@ const OPTIONAL_COLUMNS = [
   'pd_assembly_required',
 ]
 
-const SAMPLE_ROWS = [
-  ['Sample Chair', 'CHAIR-001', '12', '2499', '1999', '1799', '10', 'https://example.com/chair.jpg'],
-  ['Sample Table', 'TABLE-001', '15', '5999', '4999', '4599', '4', 'https://example.com/table.jpg'],
-]
 
 const parseCsvLine = (line: string) => {
   const values: string[] = []
@@ -110,10 +107,14 @@ const parseCsvText = (text: string): ParsedCsv => {
   return { headers, rows }
 }
 
-const buildTemplateCsv = () => {
-  const headers = ['pd_name', 'pd_parent_sku', 'pd_catid', 'pd_price_srp', 'pd_price_dp', 'pd_price_member', 'pd_qty', 'pd_image']
-  const rows = [headers, ...SAMPLE_ROWS]
-  return rows.map((row) => row.join(',')).join('\n')
+const buildTemplateCsv = (templateType: 'full' | 'simple' | 'all-fields' = 'full') => {
+  if (templateType === 'full') {
+    return buildTemplateWithInstructions()
+  } else if (templateType === 'simple') {
+    return buildSimpleTemplate()
+  } else {
+    return buildAllFieldsTemplate()
+  }
 }
 
 export default function BulkProductImportPanel({ onClose, onImported }: BulkProductImportPanelProps) {
@@ -122,6 +123,7 @@ export default function BulkProductImportPanel({ onClose, onImported }: BulkProd
   const [csvText, setCsvText] = useState('')
   const [parseError, setParseError] = useState('')
   const [importMode, setImportMode] = useState<'create_only' | 'create_or_update'>('create_or_update')
+  const [templateType, setTemplateType] = useState<'full' | 'simple' | 'all-fields'>('full')
   const [importProducts, { isLoading }] = useBulkImportProductsMutation()
 
   const parsed = useMemo(() => {
@@ -162,11 +164,13 @@ export default function BulkProductImportPanel({ onClose, onImported }: BulkProd
   }
 
   const downloadTemplate = () => {
-    const blob = new Blob([buildTemplateCsv()], { type: 'text/csv;charset=utf-8;' })
+    const csv = buildTemplateCsv(templateType)
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
-    link.download = 'afhome-product-import-template.csv'
+    const suffix = templateType === 'full' ? 'with-guide' : templateType === 'simple' ? 'simple' : 'all-fields'
+    link.download = `afhome-product-import-template-${suffix}.csv`
     link.click()
     URL.revokeObjectURL(url)
   }
@@ -224,7 +228,7 @@ export default function BulkProductImportPanel({ onClose, onImported }: BulkProd
           />
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3">
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-4">
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-sm font-semibold text-slate-800">Import Mode</p>
@@ -249,14 +253,55 @@ export default function BulkProductImportPanel({ onClose, onImported }: BulkProd
             </div>
           </div>
 
-          <div className="grid gap-3 text-xs text-slate-500 sm:grid-cols-2">
+          <div className="border-t border-slate-100 pt-4">
             <div>
-              <p className="font-semibold text-slate-700">Supported optional columns</p>
-              <p className="mt-1">{OPTIONAL_COLUMNS.join(', ')}</p>
+              <p className="text-sm font-semibold text-slate-800 mb-3">Template Type</p>
+              <p className="text-xs text-slate-500 mb-3">Choose the template format that works best for you:</p>
+              <div className="grid gap-2 sm:grid-cols-3">
+                {[
+                  { value: 'full', label: 'Full Guide', description: 'With instructions & field definitions' },
+                  { value: 'simple', label: 'Simple', description: 'Essential fields only' },
+                  { value: 'all-fields', label: 'All Fields', description: 'All supported columns' },
+                ].map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => setTemplateType(option.value as 'full' | 'simple' | 'all-fields')}
+                    className={`rounded-lg border-2 p-3 text-left transition ${
+                      templateType === option.value
+                        ? 'border-teal-500 bg-teal-50'
+                        : 'border-slate-200 bg-slate-50 hover:border-slate-300'
+                    }`}
+                  >
+                    <p className={`text-xs font-semibold ${templateType === option.value ? 'text-teal-700' : 'text-slate-700'}`}>
+                      {option.label}
+                    </p>
+                    <p className="text-[11px] text-slate-500 mt-1">{option.description}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="grid gap-3 text-xs text-slate-500 sm:grid-cols-2 border-t border-slate-100 pt-4">
+            <div>
+              <p className="font-semibold text-slate-700">Important Notes</p>
+              <ul className="mt-2 space-y-1 text-slate-600 list-disc list-inside">
+                <li>pd_catid requires numeric category ID (see template for examples)</li>
+                <li>SKU is important for "Create or Update" mode</li>
+                <li>Prices with decimals: 4999.00 (no commas)</li>
+                <li>Multiple images use pipe: url1|url2|url3</li>
+              </ul>
             </div>
             <div>
-              <p className="font-semibold text-slate-700">Tip</p>
-              <p className="mt-1">Use `pd_images` if you want multiple image URLs. Separate them using `|` inside one cell.</p>
+              <p className="font-semibold text-slate-700">Category Reference</p>
+              <p className="mt-2 text-slate-600">Download the "Full Guide" template which includes:</p>
+              <ul className="mt-1 space-y-0.5 text-slate-600 list-disc list-inside text-[11px]">
+                <li>All field descriptions</li>
+                <li>Category ID examples</li>
+                <li>Sample product data</li>
+                <li>Valid value options</li>
+              </ul>
             </div>
           </div>
         </div>
