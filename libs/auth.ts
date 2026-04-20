@@ -22,32 +22,68 @@ export const authOptions: NextAuthOptions = {
             credentials: {
                 email: { label: 'Email', type: 'email' },
                 password: { label: 'Password', type: 'password' },
+                otp: { label: 'OTP', type: 'text' },
+                otp_challenge_token: { label: 'OTP Challenge Token', type: 'text' },
+                resend_otp: { label: 'Resend OTP', type: 'text' },
             },
-            async authorize(credentials) {
+            async authorize(credentials, req) {
                 if (!credentials?.email || !credentials?.password) {
                     console.log('[Auth] Missing credentials')
                     return null
                 }
 
                 try {
-                    const url = `${process.env.LARAVEL_API_URL}/api/auth/login`
+                    const isResendOtp = credentials.resend_otp === '1'
+                    const url = isResendOtp
+                        ? `${process.env.LARAVEL_API_URL}/api/auth/login/2fa/resend`
+                        : `${process.env.LARAVEL_API_URL}/api/auth/login`
                     console.log('[Auth] Calling:', url, 'email:', credentials.email)
+
+                    const incomingHeaders = req?.headers ?? {}
+                    const forwardedFor = String(
+                        incomingHeaders['x-forwarded-for']
+                        ?? incomingHeaders['x-real-ip']
+                        ?? ''
+                    ).trim()
+                    const userAgent = String(incomingHeaders['user-agent'] ?? '').trim()
+                    const cfIpCountry = String(incomingHeaders['cf-ipcountry'] ?? '').trim()
+                    const secChUaPlatform = String(incomingHeaders['sec-ch-ua-platform'] ?? '').trim().replace(/^"|"$/g, '')
+                    const secChUa = String(incomingHeaders['sec-ch-ua'] ?? '').trim()
 
                     const res = await fetch(url, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
                             'Accept': 'application/json',
+                            ...(forwardedFor ? { 'X-Forwarded-For': forwardedFor } : {}),
+                            ...(userAgent ? { 'User-Agent': userAgent } : {}),
+                            ...(cfIpCountry ? { 'CF-IPCountry': cfIpCountry } : {}),
+                            ...(secChUaPlatform ? { 'X-App-Platform': secChUaPlatform } : {}),
+                            ...(secChUa ? { 'X-App-Sec-Ch-Ua': secChUa } : {}),
                         },
-                        body: JSON.stringify({
-                            email: credentials.email,
-                            password: credentials.password,
-                        }),
+                        body: JSON.stringify(
+                            isResendOtp
+                                ? {
+                                    otp_challenge_token: credentials.otp_challenge_token,
+                                }
+                                : {
+                                    email: credentials.email,
+                                    password: credentials.password,
+                                    otp: credentials.otp?.trim() || undefined,
+                                    otp_challenge_token: credentials.otp_challenge_token || undefined,
+                                }
+                        ),
                     })
 
                     console.log('[Auth] Laravel response status:', res.status)
 
                     const data = await res.json().catch(() => null)
+
+                    if (data?.requires_otp) {
+                        const token = String(data.otp_challenge_token ?? '')
+                        const message = String(data.message ?? 'OTP required')
+                        throw new Error(`2FA_REQUIRED|${token}|${message}`)
+                    }
 
                     if (!res.ok) {
                         const message =
@@ -60,6 +96,10 @@ export const authOptions: NextAuthOptions = {
                     }
 
                     console.log('[Auth] Laravel data keys:', Object.keys(data))
+
+                    if (isResendOtp) {
+                        return null
+                    }
 
                     if (!data.user || !data.token) return null
 

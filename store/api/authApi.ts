@@ -40,6 +40,11 @@ interface UsernameAvailabilityResponse {
   message: string
 }
 
+interface EmailAvailabilityResponse {
+  available: boolean
+  message: string
+}
+
 interface LogoutResponse {
   message: string
 }
@@ -122,6 +127,14 @@ export const authApi = baseApi.injectEndpoints({
       }),
     }),
 
+    checkEmailAvailability: builder.query<EmailAvailabilityResponse, string>({
+      query: (email) => ({
+        url: '/api/auth/register/check-email',
+        method: 'GET',
+        params: { email },
+      }),
+    }),
+
     logout: builder.mutation<LogoutResponse, void>({
       query: () => ({
         url: '/api/auth/logout',
@@ -160,6 +173,7 @@ export const {
   useRegisterMutation,
   useVerifyRegisterOtpMutation,
   useResendRegisterOtpMutation,
+  useLazyCheckEmailAvailabilityQuery,
   useLazyCheckUsernameAvailabilityQuery,
   useLogoutMutation,
   useAdminLoginMutation,

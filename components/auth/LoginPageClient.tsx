@@ -12,6 +12,7 @@ import { useSession } from "next-auth/react";
 import Header from "@/components/landing-page/Header";
 
 type Mode = 'login' | 'signup' | 'force-password-change'
+const LOGIN_REDIRECT_GUARD_KEY = 'afhome-skip-login-redirect'
 
 function resolveCallbackPath(value: string | null | undefined): string {
   const normalized = String(value ?? '').trim();
@@ -32,6 +33,17 @@ export default function LoginPageClient() {
   const hasReferral = Boolean(searchParams.get('ref') || searchParams.get('referred_by'));
   const callbackPath = resolveCallbackPath(searchParams.get('callback') || searchParams.get('callbackUrl'));
   const [manualMode, setManualMode] = useState<'login' | 'signup' | null>(null);
+  const [skipCustomerRedirect, setSkipCustomerRedirect] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const shouldSkipRedirect = window.sessionStorage.getItem(LOGIN_REDIRECT_GUARD_KEY) === '1';
+    if (!shouldSkipRedirect) return;
+
+    window.sessionStorage.removeItem(LOGIN_REDIRECT_GUARD_KEY);
+    setSkipCustomerRedirect(true);
+  }, []);
 
   const mode: Mode = passwordChangeRequired || forcePasswordChange
     ? 'force-password-change'
