@@ -25,6 +25,8 @@ export const authOptions: NextAuthOptions = {
                 otp: { label: 'OTP', type: 'text' },
                 otp_challenge_token: { label: 'OTP Challenge Token', type: 'text' },
                 resend_otp: { label: 'Resend OTP', type: 'text' },
+                mfa_challenge_token: { label: 'MFA Challenge Token', type: 'text' },
+                resend_mfa_approval: { label: 'Resend MFA Approval', type: 'text' },
             },
             async authorize(credentials, req) {
                 if (!credentials?.email || !credentials?.password) {
@@ -34,8 +36,11 @@ export const authOptions: NextAuthOptions = {
 
                 try {
                     const isResendOtp = credentials.resend_otp === '1'
+                    const isResendMfaApproval = credentials.resend_mfa_approval === '1'
                     const url = isResendOtp
                         ? `${process.env.LARAVEL_API_URL}/api/auth/login/2fa/resend`
+                        : isResendMfaApproval
+                          ? `${process.env.LARAVEL_API_URL}/api/auth/login/mfa/resend`
                         : `${process.env.LARAVEL_API_URL}/api/auth/login`
                     console.log('[Auth] Calling:', url, 'email:', credentials.email)
 
@@ -66,11 +71,16 @@ export const authOptions: NextAuthOptions = {
                                 ? {
                                     otp_challenge_token: credentials.otp_challenge_token,
                                 }
+                                : isResendMfaApproval
+                                  ? {
+                                      mfa_challenge_token: credentials.mfa_challenge_token,
+                                  }
                                 : {
                                     email: credentials.email,
                                     password: credentials.password,
                                     otp: credentials.otp?.trim() || undefined,
                                     otp_challenge_token: credentials.otp_challenge_token || undefined,
+                                    mfa_challenge_token: credentials.mfa_challenge_token || undefined,
                                 }
                         ),
                     })
@@ -83,6 +93,11 @@ export const authOptions: NextAuthOptions = {
                         const token = String(data.otp_challenge_token ?? '')
                         const message = String(data.message ?? 'OTP required')
                         throw new Error(`2FA_REQUIRED|${token}|${message}`)
+                    }
+                    if (data?.requires_mfa_approval) {
+                        const token = String(data.mfa_challenge_token ?? '')
+                        const message = String(data.message ?? 'Login approval required')
+                        throw new Error(`MFA_APPROVAL_REQUIRED|${token}|${message}`)
                     }
 
                     if (!res.ok) {
@@ -97,7 +112,7 @@ export const authOptions: NextAuthOptions = {
 
                     console.log('[Auth] Laravel data keys:', Object.keys(data))
 
-                    if (isResendOtp) {
+                    if (isResendOtp || isResendMfaApproval) {
                         return null
                     }
 

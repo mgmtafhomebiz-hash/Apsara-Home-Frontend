@@ -2069,11 +2069,11 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
                           <Icon.Shield className="h-4 w-4" />
                         </div>
                         <div>
-                          <p className="text-sm font-semibold text-slate-800 dark:text-gray-200">Authenticator App</p>
+                          <p className="text-sm font-semibold text-slate-800 dark:text-gray-200">New Device Approval (MFA)</p>
                           <p className="text-xs text-slate-500 dark:text-gray-400 mt-0.5">
                             {prefs.twoFactorEnabled
-                              ? 'Your account is protected with 2FA.'
-                              : 'Add an extra layer of security by enabling 2FA.'}
+                              ? 'New device logins need email approval: Yes, it is me / No, it is not me.'
+                              : 'Require email approval whenever your account signs in from a new device.'}
                           </p>
                           {isUpdatingTwoFactor ? (
                             <p className="text-[11px] text-sky-600 dark:text-sky-400 mt-1">Updating 2FA setting...</p>

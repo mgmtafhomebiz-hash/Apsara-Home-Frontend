@@ -15,6 +15,7 @@ import SecondaryButton from '@/components/ui/buttons/SecondaryButton';
 const REMEMBER_USER_EMAIL_KEY = 'afhome_user_login'
 const BLOCKED_KEYWORDS = ['banned', 'blocked', 'contact support']
 const TWO_FACTOR_PREFIX = '2FA_REQUIRED|'
+const MFA_APPROVAL_PREFIX = 'MFA_APPROVAL_REQUIRED|'
 
 function parseTwoFactorError(rawMessage: string): { token: string; message: string } | null {
     if (!rawMessage.startsWith(TWO_FACTOR_PREFIX)) return null
@@ -23,6 +24,16 @@ function parseTwoFactorError(rawMessage: string): { token: string; message: stri
     return {
         token: token.trim(),
         message: (rest.join('|') || 'A verification code was sent to your email.').trim(),
+    }
+}
+
+function parseMfaApprovalError(rawMessage: string): { token: string; message: string } | null {
+    if (!rawMessage.startsWith(MFA_APPROVAL_PREFIX)) return null
+    const payload = rawMessage.slice(MFA_APPROVAL_PREFIX.length)
+    const [token = '', ...rest] = payload.split('|')
+    return {
+        token: token.trim(),
+        message: (rest.join('|') || 'Approve this login from your email first.').trim(),
     }
 }
 
@@ -90,8 +101,7 @@ const LoginForm = ({ onSwitchToSignUp, onRequirePasswordChange }: LoginFormProps
     const [showPass, setShowPass] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
-    const [otpCode, setOtpCode] = useState('');
-    const [otpChallengeToken, setOtpChallengeToken] = useState('');
+    const [mfaChallengeToken, setMfaChallengeToken] = useState('');
     const [form, setForm] = useState({
         email: '',
         password: '',
@@ -123,7 +133,7 @@ const LoginForm = ({ onSwitchToSignUp, onRequirePasswordChange }: LoginFormProps
         setError('');
         setIsLoading(true);
 
-        if (!otpChallengeToken) {
+        if (!mfaChallengeToken) {
             clearAccessTokenCache()
             await signOut({ redirect: false })
         }
@@ -131,8 +141,7 @@ const LoginForm = ({ onSwitchToSignUp, onRequirePasswordChange }: LoginFormProps
         const result = await signIn('credentials', {
             email: form.email,
             password: form.password,
-            otp: otpChallengeToken ? otpCode : undefined,
-            otp_challenge_token: otpChallengeToken || undefined,
+            mfa_challenge_token: mfaChallengeToken || undefined,
             redirect: false,
             callbackUrl: callbackPath,
         })
@@ -165,10 +174,16 @@ const LoginForm = ({ onSwitchToSignUp, onRequirePasswordChange }: LoginFormProps
             router.replace(callbackPath);
         } else {
             const rawError = String(result?.error ?? '').trim()
+            const mfaApproval = parseMfaApprovalError(rawError)
+            if (mfaApproval) {
+                setMfaChallengeToken(mfaApproval.token)
+                setError(mfaApproval.message)
+                setIsLoading(false)
+                return
+            }
             const twoFactor = parseTwoFactorError(rawError)
             if (twoFactor) {
-                setOtpChallengeToken(twoFactor.token)
-                setOtpCode('')
+                setMfaChallengeToken(twoFactor.token)
                 setError(twoFactor.message)
                 setIsLoading(false)
                 return
@@ -233,18 +248,15 @@ const LoginForm = ({ onSwitchToSignUp, onRequirePasswordChange }: LoginFormProps
                     <p className="mt-1.5 text-[11px] text-gray-400 dark:text-white/55">Passwords are case-sensitive.</p>
                 </div>
 
-                {otpChallengeToken ? (
+                {mfaChallengeToken ? (
                     <div className="">
-                        <FloatingInput
-                            id="login-otp"
-                            type="text"
-                            label="Email OTP Code"
-                            value={otpCode}
-                            onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                            autoComplete="one-time-code"
-                        />
+                        <div className="rounded-xl border border-orange-200 bg-orange-50 px-4 py-3 text-sm text-orange-900 dark:border-orange-300/30 dark:bg-orange-500/15 dark:text-orange-200">
+                            <p className="font-semibold">New device sign-in check</p>
+                            <p className="mt-1 text-xs text-orange-800/90 dark:text-orange-200/90">
+                                We sent an approval link to your email. Tap <strong>Yes, it is me</strong>, then click continue.
+                            </p>
+                        </div>
                         <div className="mt-2 flex items-center justify-between gap-2">
-                            <p className="text-[11px] text-gray-400 dark:text-white/55">OTP was sent to your account email.</p>
                             <button
                                 type="button"
                                 onClick={async () => {
@@ -254,29 +266,39 @@ const LoginForm = ({ onSwitchToSignUp, onRequirePasswordChange }: LoginFormProps
                                         const resend = await signIn('credentials', {
                                             email: form.email,
                                             password: form.password,
-                                            otp_challenge_token: otpChallengeToken,
-                                            resend_otp: '1',
+                                            mfa_challenge_token: mfaChallengeToken,
+                                            resend_mfa_approval: '1',
                                             redirect: false,
                                         })
                                         const msg = String(resend?.error ?? '').trim()
-                                        const twoFactor = parseTwoFactorError(msg)
-                                        if (twoFactor) {
-                                            setOtpChallengeToken(twoFactor.token)
-                                            setError(twoFactor.message)
+                                        const mfaApproval = parseMfaApprovalError(msg)
+                                        if (mfaApproval) {
+                                            setMfaChallengeToken(mfaApproval.token)
+                                            setError(mfaApproval.message)
                                         } else if (msg) {
                                             setError(msg)
                                         } else {
-                                            setError('OTP re-sent. Please check your email.')
+                                            setError('A new approval email was sent. Please check your inbox.')
                                         }
                                     } catch {
-                                        setError('Failed to resend OTP. Please try again.')
+                                        setError('Failed to resend approval email. Please try again.')
                                     } finally {
                                         setIsLoading(false)
                                     }
                                 }}
                                 className="text-xs font-semibold text-orange-500 hover:text-orange-400 transition-colors"
                             >
-                                Resend OTP
+                                Resend Email
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setMfaChallengeToken('')
+                                    setError('')
+                                }}
+                                className="text-xs font-semibold text-slate-500 hover:text-slate-700 dark:text-white/70 dark:hover:text-white transition-colors"
+                            >
+                                Start Over
                             </button>
                         </div>
                     </div>
@@ -311,7 +333,7 @@ const LoginForm = ({ onSwitchToSignUp, onRequirePasswordChange }: LoginFormProps
                             <span>Signing in...</span>
                         </>
                     ) : (
-                        <span>{otpChallengeToken ? 'Verify & Sign in' : 'Sign in'}</span>
+                        <span>{mfaChallengeToken ? 'Continue Sign in' : 'Sign in'}</span>
                     )}
                 </PrimaryButton>
             </form>
