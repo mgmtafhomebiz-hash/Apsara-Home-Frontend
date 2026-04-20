@@ -18,76 +18,72 @@ const PERIODS = [
 
 export default function RankingFilters({ period, onPeriod, search, onSearch }: RankingFiltersProps) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: -20 }}
+    <motion.section
+      initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="bg-gradient-to-r from-gray-800/80 to-gray-900/80 backdrop-blur-md border border-gray-700/50 rounded-xl p-4 sm:p-6 hover:border-gray-600/80 transition-all duration-300 shadow-xl"
+      className="rounded-[1.75rem] border border-white/10 bg-white/5 p-4 shadow-xl shadow-cyan-950/20 backdrop-blur-xl sm:p-5"
     >
-      <div className="flex flex-col gap-4">
-        {/* Search */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.1 }}
-          className="relative group"
-        >
-          <div className="absolute inset-0 bg-gradient-to-r from-teal-500/20 to-sky-500/20 rounded-lg blur opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-          <div className="relative flex items-center">
-            <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-teal-400 group-hover:text-teal-300 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-xs uppercase tracking-[0.28em] text-cyan-200">Battle Controls</p>
+          <h2 className="mt-1 text-lg font-bold text-white">Search the arena and switch the season bracket</h2>
+        </div>
+        <p className="text-sm text-slate-400">Use filters to spotlight the strongest contenders.</p>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
+        <div className="relative">
+          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-cyan-300">
+            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
-            <input
-              type="text"
-              placeholder="Search for top earners..."
-              value={search}
-              onChange={(e) => onSearch(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 text-sm bg-gray-700/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500 transition-all duration-200 backdrop-blur-sm"
-            />
-            {search && (
-              <motion.button
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => onSearch('')}
-                className="absolute right-4 text-gray-400 hover:text-white transition-colors"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </motion.button>
-            )}
-          </div>
-        </motion.div>
+          </span>
+          <input
+            type="text"
+            placeholder="Search by name, email, or tier..."
+            value={search}
+            onChange={(e) => onSearch(e.target.value)}
+            className="w-full rounded-2xl border border-white/10 bg-slate-950/60 py-3.5 pl-12 pr-12 text-sm text-white placeholder:text-slate-500 focus:border-cyan-300/50 focus:outline-none focus:ring-2 focus:ring-cyan-400/20"
+          />
+          {search && (
+            <button
+              type="button"
+              onClick={() => onSearch('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full border border-white/10 bg-white/5 p-2 text-slate-300 transition hover:bg-white/10 hover:text-white"
+            >
+              <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
+        </div>
 
-        {/* Period Filter */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.2 }}
-          className="flex flex-col sm:flex-row gap-3 sm:items-center"
-        >
-          <div className="flex flex-wrap gap-2">
-            {PERIODS.map((p, idx) => (
+        <div className="flex flex-wrap gap-2">
+          {PERIODS.map((item, index) => {
+            const active = period === item.value
+            return (
               <motion.button
-                key={p.value}
-                initial={{ opacity: 0, scale: 0.8 }}
+                key={item.value}
+                initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.3 + idx * 0.05 }}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => onPeriod(p.value)}
-                className={`px-4 py-2.5 text-xs font-bold rounded-lg uppercase tracking-wider transition-all duration-200 backdrop-blur-sm whitespace-nowrap ${
-                  period === p.value
-                    ? 'bg-gradient-to-r from-teal-500 to-sky-500 text-white shadow-lg shadow-teal-500/50 border border-teal-400/50'
-                    : 'bg-gray-700/40 text-gray-300 border border-gray-600/40 hover:bg-gray-600/60 hover:text-white hover:border-gray-500/60'
+                transition={{ delay: 0.02 + index * 0.03 }}
+                whileHover={{ y: -1 }}
+                whileTap={{ scale: 0.98 }}
+                type="button"
+                onClick={() => onPeriod(item.value)}
+                className={`rounded-full px-4 py-2 text-xs font-bold uppercase tracking-[0.22em] transition ${
+                  active
+                    ? 'border border-cyan-300/30 bg-cyan-400/20 text-cyan-100 shadow-lg shadow-cyan-500/10'
+                    : 'border border-white/10 bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white'
                 }`}
               >
-                {p.label}
+                {item.label}
               </motion.button>
-            ))}
-          </div>
-        </motion.div>
+            )
+          })}
+        </div>
       </div>
-    </motion.div>
+    </motion.section>
   )
 }

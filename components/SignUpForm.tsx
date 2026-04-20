@@ -9,7 +9,6 @@ import { showErrorToast, showSuccessToast } from '@/libs/toast'
 import OtpVerification from './auth/OtpVerification'
 import { clearStoredReferralCode, getStoredReferralCode, normalizeReferralCode } from '@/libs/referral'
 import PrimaryButton from '@/components/ui/buttons/PrimaryButton'
-import SecondaryButton from '@/components/ui/buttons/SecondaryButton'
 
 const EyeIcon = ({ open }: { open: boolean }) => open
   ? <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" /><line x1="1" y1="1" x2="23" y2="23" /></svg>
@@ -83,6 +82,7 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
   const [form, setForm] = useState({
     firstName: '',
     lastName: '',
+    mobileNumber: '',
     email: '',
     username: '',
     referredBy: initialReferral,
@@ -103,12 +103,15 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
 
     const firstName = form.firstName.trim()
     const lastName = form.lastName.trim()
+    const mobileNumber = form.mobileNumber.trim()
     const email = form.email.trim()
     const username = form.username.trim()
     const referral = normalizeReferralCode(form.referredBy)
 
     if (!firstName) return showError('First name is required.')
     if (!lastName) return showError('Last name is required.')
+    if (!mobileNumber) return showError('Mobile number is required.')
+    if (!/^(\+?63|0)?9\d{9}$/.test(mobileNumber.replace(/\s+/g, ''))) return showError('Enter a valid Philippine mobile number.')
     if (!email) return showError('Email address is required.')
     if (!username) return showError('Username is required.')
     if (!/^[A-Za-z]+$/.test(username)) return showError('Username must contain letters only.')
@@ -121,6 +124,7 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
       name: `${firstName} ${lastName}`.trim(),
       first_name: firstName,
       last_name: lastName,
+      phone: mobileNumber,
       email,
       username,
       referred_by: referral,
@@ -190,6 +194,16 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
             <FloatingInput id="signup-first-name" label="First Name" required value={form.firstName} onChange={(e) => setForm((prev) => ({ ...prev, firstName: e.target.value }))} />
             <FloatingInput id="signup-last-name" label="Last Name" required value={form.lastName} onChange={(e) => setForm((prev) => ({ ...prev, lastName: e.target.value }))} />
           </div>
+
+          <FloatingInput
+            id="signup-mobile-number"
+            type="tel"
+            label="Mobile Number"
+            required
+            value={form.mobileNumber}
+            onChange={(e) => setForm((prev) => ({ ...prev, mobileNumber: e.target.value.replace(/[^\d+\s()-]/g, '') }))}
+          />
+          <p className="text-[11px] text-gray-500 dark:text-white/55 -mt-2">Use your Philippine mobile number, for example +63 912 345 6789.</p>
 
           <FloatingInput id="signup-email" type="email" label="Email Address" required value={form.email} onChange={(e) => setForm((prev) => ({ ...prev, email: e.target.value }))} />
 
