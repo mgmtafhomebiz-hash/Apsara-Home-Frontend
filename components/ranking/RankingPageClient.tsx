@@ -1,11 +1,11 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
 import RankingPodium from './RankingPodium'
 import RankingLeaderboard from './RankingLeaderboard'
 import RankingFilters from './RankingFilters'
-import { MOCK_EARNERS } from '@/components/superAdmin/members/topEarners/types'
+import { MOCK_EARNERS, php } from '@/components/superAdmin/members/topEarners/types'
 
 const PREVIOUS_RANKS: Record<number, number> = {
   1: 2, 2: 1, 3: 4, 4: 3, 5: 7,
@@ -16,6 +16,15 @@ const PREVIOUS_RANKS: Record<number, number> = {
 export default function RankingPageClient() {
   const [period, setPeriod] = useState('all-time')
   const [search, setSearch] = useState('')
+  const [demoStep, setDemoStep] = useState(0)
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setDemoStep((step) => (step + 1) % 3)
+    }, 3500)
+
+    return () => window.clearInterval(timer)
+  }, [])
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
@@ -33,6 +42,31 @@ export default function RankingPageClient() {
 
   const top3 = filtered.slice(0, 3)
   const remaining = filtered.slice(3)
+
+  const animatedTop3 = useMemo(() => {
+    if (top3.length < 3) return top3
+
+    if (demoStep === 1) return [top3[1], top3[0], top3[2]]
+    if (demoStep === 2) return [top3[1], top3[2], top3[0]]
+    return top3
+  }, [demoStep, top3])
+
+  const animatedRemaining = useMemo(() => {
+    if (remaining.length < 2) return remaining
+
+    if (demoStep === 1) {
+      return [remaining[1], remaining[0], ...remaining.slice(2)]
+    }
+
+    if (demoStep === 2 && remaining.length >= 4) {
+      return [remaining[0], remaining[2], remaining[1], ...remaining.slice(3)]
+    }
+
+    return remaining
+  }, [demoStep, remaining])
+
+  const totalEarnings = filtered.reduce((sum, m) => sum + m.earnings, 0)
+  const totalReferrals = filtered.reduce((sum, m) => sum + m.referrals, 0)
 
   const getMovement = (currentRank: number, earnerId: number) => {
     const previousRank = PREVIOUS_RANKS[earnerId] ?? currentRank
@@ -156,6 +190,98 @@ export default function RankingPageClient() {
           </motion.div>
         </motion.div>
 
+        {/* Stats bar */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.08, type: 'spring', bounce: 0.35 }}
+          className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-4"
+        >
+          {/* Total Earnings */}
+          <div
+            className="col-span-2 flex items-center gap-4 rounded-2xl border-2 bg-white px-5 py-4 sm:col-span-1"
+            style={{ borderColor: '#1E293B', boxShadow: '5px 5px 0px #FBBF24' }}
+          >
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border-2" style={{ borderColor: '#1E293B', backgroundColor: '#FBBF2420' }}>
+              <svg className="h-6 w-6" fill="none" stroke="#F59E0B" strokeWidth={2.5} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div className="min-w-0">
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">Total Earnings</p>
+              <motion.p
+                key={totalEarnings}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-0.5 truncate text-lg font-black"
+                style={{ fontFamily: '"Outfit", system-ui, sans-serif', color: '#1E293B' }}
+              >
+                {php(totalEarnings)}
+              </motion.p>
+            </div>
+          </div>
+
+          {/* Total Referrals */}
+          <div
+            className="col-span-2 flex items-center gap-4 rounded-2xl border-2 bg-white px-5 py-4 sm:col-span-1"
+            style={{ borderColor: '#1E293B', boxShadow: '5px 5px 0px #8B5CF6' }}
+          >
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border-2" style={{ borderColor: '#1E293B', backgroundColor: '#8B5CF620' }}>
+              <svg className="h-6 w-6" fill="none" stroke="#8B5CF6" strokeWidth={2.5} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </div>
+            <div className="min-w-0">
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">Total Referrals</p>
+              <motion.p
+                key={totalReferrals}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-0.5 text-lg font-black"
+                style={{ fontFamily: '"Outfit", system-ui, sans-serif', color: '#1E293B' }}
+              >
+                {totalReferrals.toLocaleString()}
+              </motion.p>
+            </div>
+          </div>
+
+          {/* Active Members */}
+          <div
+            className="flex items-center gap-4 rounded-2xl border-2 bg-white px-5 py-4"
+            style={{ borderColor: '#1E293B', boxShadow: '5px 5px 0px #34D399' }}
+          >
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border-2" style={{ borderColor: '#1E293B', backgroundColor: '#34D39920' }}>
+              <svg className="h-6 w-6" fill="none" stroke="#10B981" strokeWidth={2.5} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div className="min-w-0">
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">Members</p>
+              <p className="mt-0.5 text-lg font-black" style={{ fontFamily: '"Outfit", system-ui, sans-serif', color: '#1E293B' }}>
+                {filtered.length.toLocaleString()}
+              </p>
+            </div>
+          </div>
+
+          {/* Top Earner */}
+          <div
+            className="flex items-center gap-4 rounded-2xl border-2 bg-white px-5 py-4"
+            style={{ borderColor: '#1E293B', boxShadow: '5px 5px 0px #F472B6' }}
+          >
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border-2" style={{ borderColor: '#1E293B', backgroundColor: '#F472B620' }}>
+              <svg className="h-6 w-6" fill="none" stroke="#EC4899" strokeWidth={2.5} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+              </svg>
+            </div>
+            <div className="min-w-0">
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">Top Earner</p>
+              <p className="mt-0.5 truncate text-sm font-black" style={{ fontFamily: '"Outfit", system-ui, sans-serif', color: '#1E293B' }}>
+                {filtered[0]?.name ?? '—'}
+              </p>
+            </div>
+          </div>
+        </motion.div>
+
         {/* Filters */}
         <div className="mb-6">
           <RankingFilters period={period} onPeriod={setPeriod} search={search} onSearch={setSearch} />
@@ -169,7 +295,7 @@ export default function RankingPageClient() {
           className="mb-6"
         >
           {filtered.length > 0 ? (
-            <RankingPodium top3={top3} />
+            <RankingPodium top3={animatedTop3} demoStep={demoStep} />
           ) : (
             <div
               className="rounded-2xl border-2 py-16 text-center"
@@ -189,7 +315,7 @@ export default function RankingPageClient() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.18, type: 'spring', bounce: 0.3 }}
           >
-            <RankingLeaderboard earners={remaining} startRank={4} getMovement={getMovement} />
+            <RankingLeaderboard earners={animatedRemaining} startRank={4} getMovement={getMovement} demoStep={demoStep} />
           </motion.div>
         )}
       </div>
