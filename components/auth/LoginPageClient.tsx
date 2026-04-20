@@ -25,15 +25,12 @@ export default function LoginPageClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { status, data: session } = useSession();
-  const role = String(session?.user?.role ?? '').toLowerCase();
-  const isCustomerSession = status === 'authenticated' && (role === 'customer' || role === '');
   const forcePasswordChange = searchParams.get('force-password-change') === '1';
   const switchAccount = searchParams.get('switch') === '1';
   const passwordChangeRequired = Boolean(session?.user?.passwordChangeRequired);
   const hasReferral = Boolean(searchParams.get('ref') || searchParams.get('referred_by'));
   const callbackPath = resolveCallbackPath(searchParams.get('callback') || searchParams.get('callbackUrl'));
   const [manualMode, setManualMode] = useState<'login' | 'signup' | null>(null);
-  const [skipCustomerRedirect, setSkipCustomerRedirect] = useState(false);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -42,8 +39,22 @@ export default function LoginPageClient() {
     if (!shouldSkipRedirect) return;
 
     window.sessionStorage.removeItem(LOGIN_REDIRECT_GUARD_KEY);
-    setSkipCustomerRedirect(true);
   }, []);
+
+  useEffect(() => {
+    if (status !== 'authenticated') return;
+    if (forcePasswordChange || passwordChangeRequired) return;
+    if (switchAccount) return;
+
+    router.replace(callbackPath);
+  }, [
+    status,
+    forcePasswordChange,
+    passwordChangeRequired,
+    switchAccount,
+    router,
+    callbackPath,
+  ]);
 
   const mode: Mode = passwordChangeRequired || forcePasswordChange
     ? 'force-password-change'
