@@ -45,6 +45,7 @@ import WalletTab from './WalletTab';
 import InteriorRequestsTab from './InteriorRequestsTab';
 import { usePhAddress } from '@/hooks/usePhAddress';
 import { containsBlockedWord } from '@/libs/badWords';
+import { getProfileCompletion } from '@/libs/profileCompletion';
 
 const hasRealPhoneNumber = (value?: string | null) => {
   const digits = String(value ?? '').replace(/\D/g, '');
@@ -529,20 +530,14 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
   const completion = useMemo(() => {
     if (isVerified) return 100;
 
-    const checks = [
-      Boolean(form.name.trim()),
-      Boolean(form.email.trim()),
-      hasRealPhoneNumber(form.phone),
-      Boolean(form.username.trim()),
-      Boolean(form.middle_name.trim()),
-      Boolean(form.birth_date.trim()),
-      Boolean(form.gender),
-      Boolean(form.occupation.trim()),
-      Boolean(form.work_location.trim()),
-      Boolean(form.country.trim()),
-    ];
-    return Math.round((checks.filter(Boolean).length / checks.length) * 100);
-  }, [form, isVerified]);
+    return getProfileCompletion(profileData ?? {
+      ...form,
+      email: form.email,
+      username: form.username,
+      phone: form.phone,
+      gender: form.gender || null,
+    }).percentage;
+  }, [form, isVerified, profileData]);
 
   const completionItems = useMemo(() => ([
     {

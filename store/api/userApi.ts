@@ -7,16 +7,16 @@ export interface MeResponse {
     first_name?: string;
     last_name?: string;
     username?: string;
+    middle_name?: string | null;
+    birth_date?: string | null;
+    gender?: 'male' | 'female' | 'other' | null;
+    occupation?: string | null;
+    work_location?: 'local' | 'overseas' | null;
+    country?: string | null;
     referrer_id?: number;
     referrer_username?: string | null;
     referrer_name?: string | null;
     phone?: string;
-    middle_name?: string;
-    birth_date?: string;
-    gender?: string;
-    occupation?: string;
-    work_location?: string;
-    country?: string;
     address?: string;
     barangay?: string;
     city?: string;
@@ -47,6 +47,8 @@ export interface MeResponse {
     };
     email_verified?: boolean;
     password_change_required?: boolean;
+    profile_complete?: boolean;
+    profile_completion_percentage?: number;
     two_factor_enabled?: boolean;
 }
 
@@ -92,9 +94,9 @@ export interface UpdateProfilePayload {
     phone?: string;
     middle_name?: string;
     birth_date?: string;
-    gender?: string;
+    gender?: 'male' | 'female' | 'other';
     occupation?: string;
-    work_location?: string;
+    work_location?: 'local' | 'overseas';
     country?: string;
     address?: string;
     barangay?: string;
