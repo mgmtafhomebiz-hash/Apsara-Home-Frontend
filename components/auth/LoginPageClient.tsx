@@ -33,14 +33,6 @@ export default function LoginPageClient() {
   const callbackPath = resolveCallbackPath(searchParams.get('callback') || searchParams.get('callbackUrl'));
   const [manualMode, setManualMode] = useState<'login' | 'signup' | null>(null);
 
-  useEffect(() => {
-    if (!isCustomerSession) return;
-
-    if (!passwordChangeRequired && !forcePasswordChange && !switchAccount) {
-      router.replace(callbackPath);
-    }
-  }, [callbackPath, forcePasswordChange, isCustomerSession, passwordChangeRequired, router, switchAccount]);
-
   const mode: Mode = passwordChangeRequired || forcePasswordChange
     ? 'force-password-change'
     : (manualMode ?? (hasReferral ? 'signup' : 'login'));
