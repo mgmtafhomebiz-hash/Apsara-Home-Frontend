@@ -45,14 +45,6 @@ export default function LoginPageClient() {
     setSkipCustomerRedirect(true);
   }, []);
 
-  useEffect(() => {
-    if (!isCustomerSession) return;
-
-    if (!passwordChangeRequired && !forcePasswordChange && !switchAccount && !skipCustomerRedirect) {
-      router.replace(callbackPath);
-    }
-  }, [callbackPath, forcePasswordChange, isCustomerSession, passwordChangeRequired, router, skipCustomerRedirect, switchAccount]);
-
   const mode: Mode = passwordChangeRequired || forcePasswordChange
     ? 'force-password-change'
     : (manualMode ?? (hasReferral ? 'signup' : 'login'));

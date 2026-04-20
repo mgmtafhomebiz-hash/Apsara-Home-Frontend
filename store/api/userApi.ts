@@ -4,16 +4,28 @@ export interface MeResponse {
     id: number;
     name: string;
     email: string;
+    first_name?: string;
+    last_name?: string;
     username?: string;
     referrer_id?: number;
     referrer_username?: string | null;
     referrer_name?: string | null;
     phone?: string;
+    middle_name?: string;
+    birth_date?: string;
+    gender?: string;
+    occupation?: string;
+    work_location?: string;
+    country?: string;
     address?: string;
     barangay?: string;
     city?: string;
     province?: string;
     region?: string;
+    barangay_code?: string;
+    city_code?: string;
+    province_code?: string;
+    region_code?: string;
     zip_code?: string;
     avatar_url?: string;
     rank?: number;
@@ -74,13 +86,25 @@ export interface CreateCustomerAddressPayload {
 
 export interface UpdateProfilePayload {
     name: string;
+    first_name?: string;
+    last_name?: string;
     username?: string;
     phone?: string;
+    middle_name?: string;
+    birth_date?: string;
+    gender?: string;
+    occupation?: string;
+    work_location?: string;
+    country?: string;
     address?: string;
     barangay?: string;
     city?: string;
     province?: string;
     region?: string;
+    barangay_code?: string;
+    city_code?: string;
+    province_code?: string;
+    region_code?: string;
     zip_code?: string;
     avatar_url?: string;
     two_factor_enabled?: boolean;
@@ -171,6 +195,7 @@ export interface SubmitUsernameChangeResponse {
 }
 
 export const userApi = baseApi.injectEndpoints({
+    overrideExisting: true,
     endpoints:  (builder) => ({
         me: builder.query<MeResponse, void>({
             query: () => ({
