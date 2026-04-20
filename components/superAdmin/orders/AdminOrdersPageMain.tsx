@@ -906,6 +906,7 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                   <tr className="border-b border-slate-100 bg-slate-50 dark:border-[#24324a] dark:bg-[#1d2840]">
                     <th className="min-w-[220px] px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-300">Product</th>
                     <th className="min-w-[150px] px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-300">Checkout</th>
+                    <th className="min-w-[150px] px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-300">Source</th>
                     <th className="min-w-[140px] px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-300">Date</th>
                     <th className="min-w-[200px] px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-300">Customer</th>
                     <th className="min-w-[120px] px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-300">Amount</th>
@@ -1007,11 +1008,24 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                             <p className="mt-0.5 text-[11px] uppercase tracking-wide text-slate-400 dark:text-slate-500">
                               {order.payment_status}
                             </p>
+                          </td>
+
+                          {/* Source */}
+                          <td className="px-5 py-3.5 align-middle">
                             {order.source_label ? (
-                              <p className="mt-1 text-[11px] text-sky-600 dark:text-sky-400">
-                                Source: {order.source_label}
-                              </p>
-                            ) : null}
+                              <div className="space-y-1">
+                                <p className="text-[12px] font-semibold text-sky-600 dark:text-sky-400">
+                                  {order.source_label}
+                                </p>
+                                {order.source_host ? (
+                                  <p className="text-[11px] text-slate-400 dark:text-slate-500">
+                                    {order.source_host}
+                                  </p>
+                                ) : null}
+                              </div>
+                            ) : (
+                              <span className="text-[11px] text-slate-300 dark:text-slate-600">-</span>
+                            )}
                           </td>
 
                           {/* Date */}
