@@ -1,8 +1,8 @@
 'use client'
 
-async function getAdminCsrfToken(): Promise<string | null> {
+async function getPortalCsrfToken(portal: 'admin' | 'partner'): Promise<string | null> {
   try {
-    const response = await fetch('/api/admin/auth/csrf', {
+    const response = await fetch(`/api/${portal}/auth/csrf`, {
       method: 'GET',
       credentials: 'same-origin',
       cache: 'no-store',
@@ -22,8 +22,8 @@ async function getAdminCsrfToken(): Promise<string | null> {
   }
 }
 
-export async function clearAdminSession(callbackUrl: string = '/admin/login'): Promise<void> {
-  const csrfToken = await getAdminCsrfToken()
+async function clearPortalSession(portal: 'admin' | 'partner', callbackUrl: string): Promise<void> {
+  const csrfToken = await getPortalCsrfToken(portal)
   if (!csrfToken) return
 
   const body = new URLSearchParams({
@@ -33,7 +33,7 @@ export async function clearAdminSession(callbackUrl: string = '/admin/login'): P
   })
 
   try {
-    await fetch('/api/admin/auth/signout', {
+    await fetch(`/api/${portal}/auth/signout`, {
       method: 'POST',
       credentials: 'same-origin',
       cache: 'no-store',
@@ -45,4 +45,12 @@ export async function clearAdminSession(callbackUrl: string = '/admin/login'): P
   } catch {
     // Best-effort cleanup only.
   }
+}
+
+export async function clearAdminSession(callbackUrl: string = '/admin/login'): Promise<void> {
+  await clearPortalSession('admin', callbackUrl)
+}
+
+export async function clearPartnerSession(callbackUrl: string = '/partner/login'): Promise<void> {
+  await clearPortalSession('partner', callbackUrl)
 }

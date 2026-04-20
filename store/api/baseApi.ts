@@ -23,8 +23,10 @@ const resolveAccessToken = async (): Promise<string | undefined> => {
 
     if (!tokenPromise) {
         const pathname = window.location.pathname || ''
-        const sessionPath = pathname.startsWith('/admin') || pathname.startsWith('/partner')
+        const sessionPath = pathname.startsWith('/admin')
             ? '/api/admin/auth/session'
+            : pathname.startsWith('/partner')
+              ? '/api/partner/auth/session'
             : pathname.startsWith('/supplier')
               ? '/api/supplier/auth/session'
               : '/api/auth/session'
