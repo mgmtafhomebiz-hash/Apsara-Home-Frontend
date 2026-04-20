@@ -6,97 +6,177 @@ import { TopEarner, php, getInitials } from '@/components/superAdmin/members/top
 interface RankingLeaderboardProps {
   earners: TopEarner[]
   startRank: number
+  getMovement: (currentRank: number, earnerId: number) => string
 }
 
-const rankTone = (rank: number) => {
-  if (rank <= 10) return 'border-amber-300/20 bg-amber-400/10 text-amber-100'
-  if (rank <= 25) return 'border-cyan-300/20 bg-cyan-400/10 text-cyan-100'
-  if (rank <= 50) return 'border-violet-300/20 bg-violet-400/10 text-violet-100'
-  return 'border-white/10 bg-white/5 text-slate-200'
+const AVATAR_COLORS = [
+  'linear-gradient(135deg, #8B5CF6, #7C3AED)',
+  'linear-gradient(135deg, #F472B6, #EC4899)',
+  'linear-gradient(135deg, #FBBF24, #F59E0B)',
+  'linear-gradient(135deg, #34D399, #10B981)',
+]
+
+const rankTone = (rank: number): { bg: string; text: string; border: string } => {
+  if (rank <= 10) return { bg: '#FBBF2420', text: '#92400E', border: '#FBBF24' }
+  if (rank <= 25) return { bg: '#8B5CF620', text: '#5B21B6', border: '#8B5CF6' }
+  if (rank <= 50) return { bg: '#F472B620', text: '#9D174D', border: '#F472B6' }
+  return { bg: '#F1F5F9', text: '#475569', border: '#CBD5E1' }
 }
 
-export default function RankingLeaderboard({ earners, startRank }: RankingLeaderboardProps) {
-  const maxEarnings = earners[0]?.earnings ?? 1
-  const totalEarnings = earners.reduce((sum, item) => sum + item.earnings, 0)
+function MovementIndicator({ movement }: { movement: string }) {
+  const isUp = movement.startsWith('UP')
+  const isDown = movement.startsWith('DOWN')
+  const delta = parseInt(movement.split(' ')[1] ?? '0', 10)
+
+  if (!isUp && !isDown) {
+    return (
+      <div className="flex flex-col items-center gap-1">
+        {[0, 1, 2].map((i) => (
+          <motion.div
+            key={i}
+            animate={{ opacity: [0.2, 1, 0.2] }}
+            transition={{ repeat: Infinity, duration: 1.8, delay: i * 0.25, ease: 'easeInOut' }}
+            className="h-1.5 w-1.5 rounded-full bg-slate-400"
+          />
+        ))}
+      </div>
+    )
+  }
 
   return (
-    <div className="rounded-[1.75rem] border border-white/10 bg-white/5 shadow-2xl shadow-cyan-950/20 backdrop-blur-xl">
-      <div className="border-b border-white/10 px-5 py-5 sm:px-6">
-        <p className="text-xs uppercase tracking-[0.3em] text-cyan-200">Leaderboard Raid</p>
-        <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h2 className="text-2xl font-black text-white">Champions beyond the podium</h2>
-            <p className="mt-1 text-sm text-slate-400">Ranks #{startRank} and beyond</p>
-          </div>
-          <div className="rounded-full border border-white/10 bg-slate-950/60 px-4 py-2 text-sm text-slate-200">
-            Total earnings: <span className="font-bold text-cyan-200">{php(totalEarnings)}</span>
-          </div>
-        </div>
+    <div className="flex flex-col items-center gap-0.5">
+      <motion.div
+        animate={isUp ? { y: [3, -5, 3] } : { y: [-3, 5, -3] }}
+        transition={{ repeat: Infinity, duration: 1.1, ease: 'easeInOut' }}
+      >
+        {isUp ? (
+          <svg className="h-5 w-5" fill="#34D399" viewBox="0 0 24 24">
+            <path d="M12 4l8 8H4z" />
+          </svg>
+        ) : (
+          <svg className="h-5 w-5" fill="#F472B6" viewBox="0 0 24 24">
+            <path d="M12 20l-8-8h16z" />
+          </svg>
+        )}
+      </motion.div>
+      <motion.span
+        initial={{ scale: 0 }}
+        animate={{ scale: 1 }}
+        transition={{ type: 'spring', bounce: 0.6, delay: 0.15 }}
+        className="text-[10px] font-black tabular-nums"
+        style={{ color: isUp ? '#059669' : '#DB2777' }}
+      >
+        {isUp ? `+${delta}` : `-${delta}`}
+      </motion.span>
+    </div>
+  )
+}
+
+export default function RankingLeaderboard({ earners, startRank, getMovement }: RankingLeaderboardProps) {
+  const maxEarnings = earners[0]?.earnings ?? 1
+
+  return (
+    <div
+      className="overflow-hidden rounded-2xl border-2 bg-white"
+      style={{ borderColor: '#1E293B', boxShadow: '8px 8px 0px #E2E8F0' }}
+    >
+      {/* Header */}
+      <div
+        className="border-b-2 px-5 py-4 sm:px-6"
+        style={{ borderColor: '#1E293B', backgroundColor: '#FFFDF5' }}
+      >
+        <h2
+          className="text-xl font-extrabold"
+          style={{ fontFamily: '"Outfit", system-ui, sans-serif', color: '#1E293B' }}
+        >
+          🎯 Rankings
+        </h2>
       </div>
 
-      <div className="divide-y divide-white/10">
+      <div className="divide-y-2" style={{ borderColor: '#E2E8F0' }}>
         {earners.map((earner, index) => {
           const rank = startRank + index
           const pct = (earner.earnings / maxEarnings) * 100
+          const movement = getMovement(rank, earner.id)
+          const tone = rankTone(rank)
+          const avatarGrad = AVATAR_COLORS[index % AVATAR_COLORS.length]
 
           return (
             <motion.div
               key={earner.id}
-              initial={{ opacity: 0, y: 14 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.03, duration: 0.35 }}
-              whileHover={{ x: 6 }}
-              className="group relative px-5 py-4 sm:px-6"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: index * 0.04, duration: 0.35, type: 'spring', bounce: 0.3 }}
+              whileHover={{
+                x: 6,
+                backgroundColor: '#FFFDF5',
+                transition: { type: 'spring', stiffness: 400, damping: 15 },
+              }}
+              className="relative px-5 py-4 sm:px-6"
+              style={{ backgroundColor: '#fff' }}
             >
-              <div className="absolute inset-0 bg-gradient-to-r from-cyan-400/0 via-white/0 to-violet-400/0 transition group-hover:from-cyan-400/10 group-hover:via-white/5 group-hover:to-violet-400/10" />
-              <div className="relative grid gap-4 lg:grid-cols-[auto_1fr_auto_auto] lg:items-center">
-                <div className={`flex h-14 w-14 items-center justify-center rounded-2xl border ${rankTone(rank)} text-center`}>
-                  <div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-80">Rank</p>
-                    <p className="text-lg font-black">#{rank}</p>
-                  </div>
+              <div className="flex items-center gap-3 sm:gap-4">
+                {/* Rank badge */}
+                <div
+                  className="flex h-12 w-12 shrink-0 flex-col items-center justify-center rounded-xl border-2 text-center"
+                  style={{ backgroundColor: tone.bg, borderColor: tone.border, color: tone.text }}
+                >
+                  <p className="text-[9px] font-black uppercase opacity-70">Rank</p>
+                  <p className="text-sm font-black">#{rank}</p>
                 </div>
 
-                <div className="flex items-center gap-3">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-cyan-400 to-violet-500 text-sm font-black text-white shadow-lg shadow-cyan-500/20">
+                {/* Movement */}
+                <div className="flex h-10 w-8 shrink-0 items-center justify-center">
+                  <MovementIndicator movement={movement} />
+                </div>
+
+                {/* Avatar + name */}
+                <div className="flex min-w-0 flex-1 items-center gap-3">
+                  <motion.div
+                    whileHover={{ rotate: [0, -8, 8, 0], transition: { duration: 0.4 } }}
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 text-sm font-black text-white"
+                    style={{ background: avatarGrad, borderColor: '#1E293B', boxShadow: '2px 2px 0px #1E293B' }}
+                  >
                     {getInitials(earner.name)}
-                  </div>
+                  </motion.div>
                   <div className="min-w-0">
-                    <p className="truncate text-base font-bold text-white">{earner.name}</p>
-                    <p className="truncate text-sm text-slate-400">{earner.email}</p>
+                    <p
+                      className="truncate text-sm font-bold"
+                      style={{ fontFamily: '"Outfit", system-ui, sans-serif', color: '#1E293B' }}
+                    >
+                      {earner.name}
+                    </p>
+                    <p className="truncate text-xs text-slate-500">{earner.email}</p>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                  <div className="rounded-2xl border border-white/10 bg-slate-950/50 px-3 py-2">
-                    <p className="text-[10px] uppercase tracking-[0.2em] text-slate-400">Earnings</p>
-                    <p className="mt-1 text-sm font-bold text-cyan-200">{php(earner.earnings)}</p>
-                    <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">
-                      <div className="h-full rounded-full bg-gradient-to-r from-cyan-400 to-violet-500" style={{ width: `${pct}%` }} />
-                    </div>
-                  </div>
-                  <div className="rounded-2xl border border-white/10 bg-slate-950/50 px-3 py-2">
-                    <p className="text-[10px] uppercase tracking-[0.2em] text-slate-400">Orders</p>
-                    <p className="mt-1 text-sm font-bold text-white">{earner.orders}</p>
-                  </div>
-                  <div className="rounded-2xl border border-white/10 bg-slate-950/50 px-3 py-2">
-                    <p className="text-[10px] uppercase tracking-[0.2em] text-slate-400">Referrals</p>
-                    <p className="mt-1 text-sm font-bold text-white">{earner.referrals}</p>
-                  </div>
-                  <div className="rounded-2xl border border-white/10 bg-slate-950/50 px-3 py-2">
-                    <p className="text-[10px] uppercase tracking-[0.2em] text-slate-400">Spent</p>
-                    <p className="mt-1 text-sm font-bold text-white">{php(earner.totalSpent)}</p>
+                {/* Earnings bar */}
+                <div className="hidden min-w-[100px] sm:block">
+                  <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Earnings</p>
+                  <p className="mt-0.5 text-sm font-black" style={{ color: '#8B5CF6' }}>{php(earner.earnings)}</p>
+                  <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-slate-100 border border-slate-200">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${pct}%` }}
+                      transition={{ duration: 0.9, delay: index * 0.05, ease: 'easeOut' }}
+                      className="h-full rounded-full"
+                      style={{ background: 'linear-gradient(90deg, #8B5CF6, #F472B6)' }}
+                    />
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between gap-3 lg:flex-col lg:items-end">
-                  <p className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold text-slate-200">
-                    {earner.tier}
-                  </p>
-                  <div className="text-right">
-                    <p className="text-[10px] uppercase tracking-[0.2em] text-slate-500">Status</p>
-                    <p className="text-sm font-semibold text-slate-300">{earner.status}</p>
-                  </div>
+                {/* Orders */}
+                <div className="hidden min-w-[60px] sm:block text-center">
+                  <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Orders</p>
+                  <p className="mt-0.5 text-sm font-black" style={{ color: '#1E293B' }}>{earner.orders}</p>
+                </div>
+
+                {/* Tier badge */}
+                <div
+                  className="hidden shrink-0 rounded-full border-2 px-3 py-1 text-xs font-bold lg:block"
+                  style={{ borderColor: '#1E293B', backgroundColor: '#FBBF2420', color: '#1E293B', boxShadow: '2px 2px 0px #1E293B' }}
+                >
+                  {earner.tier}
                 </div>
               </div>
             </motion.div>

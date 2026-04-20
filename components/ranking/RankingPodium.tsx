@@ -8,71 +8,113 @@ interface PodiumCardProps {
   rank: 1 | 2 | 3
 }
 
+const RANK_STYLES = {
+  1: {
+    shadowColor: '#FBBF24',
+    avatarBg: 'linear-gradient(135deg, #FBBF24, #F59E0B)',
+    accentBg: '#FBBF2415',
+    badge: '#FBBF24',
+    badgeText: '#1E293B',
+    label: '1st Place',
+    height: 'min-h-[22rem]',
+  },
+  2: {
+    shadowColor: '#8B5CF6',
+    avatarBg: 'linear-gradient(135deg, #8B5CF6, #7C3AED)',
+    accentBg: '#8B5CF615',
+    badge: '#8B5CF6',
+    badgeText: '#fff',
+    label: '2nd Place',
+    height: 'min-h-[19rem]',
+  },
+  3: {
+    shadowColor: '#F472B6',
+    avatarBg: 'linear-gradient(135deg, #F472B6, #EC4899)',
+    accentBg: '#F472B615',
+    badge: '#F472B6',
+    badgeText: '#fff',
+    label: '3rd Place',
+    height: 'min-h-[18rem]',
+  },
+}
+
 function PodiumCard({ earner, rank }: PodiumCardProps) {
   const medal = MEDALS[rank]
-  const heightClass = {
-    1: 'min-h-[23rem] sm:min-h-[26rem]',
-    2: 'min-h-[20rem] sm:min-h-[23rem]',
-    3: 'min-h-[18rem] sm:min-h-[21rem]',
-  }[rank]
-
-  const accent = {
-    1: 'from-amber-300 via-yellow-400 to-orange-400',
-    2: 'from-slate-300 via-slate-400 to-sky-400',
-    3: 'from-orange-300 via-amber-400 to-rose-400',
-  }[rank]
+  const style = RANK_STYLES[rank]
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 24, scale: 0.94 }}
+      initial={{ opacity: 0, y: 32, scale: 0.88 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ duration: 0.55, delay: rank * 0.08 }}
-      whileHover={{ y: -8 }}
-      className="group relative flex flex-col items-stretch"
+      transition={{ duration: 0.5, delay: rank * 0.1, type: 'spring', bounce: 0.45 }}
+      whileHover={{
+        y: -8,
+        rotate: rank === 2 ? -1.5 : rank === 3 ? 1.5 : 0,
+        transition: { type: 'spring', stiffness: 300, damping: 12 },
+      }}
+      className={`relative flex flex-col ${style.height}`}
     >
-      <div className={`relative overflow-hidden rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-5 shadow-2xl backdrop-blur-xl ${heightClass}`}>
-        <div className={`absolute inset-0 bg-gradient-to-br ${accent} opacity-10 transition-opacity duration-300 group-hover:opacity-20`} />
-        <div className="absolute right-4 top-4 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-black uppercase tracking-[0.22em] text-white/80">
-          Rank #{rank}
+      <div
+        className="relative flex h-full flex-col overflow-hidden rounded-2xl border-2 bg-white p-5"
+        style={{
+          borderColor: '#1E293B',
+          boxShadow: `6px 6px 0px ${style.shadowColor}`,
+          backgroundColor: style.accentBg,
+        }}
+      >
+        {/* Decorative dot pattern top-right */}
+        <div
+          className="pointer-events-none absolute right-0 top-0 h-24 w-24 opacity-20"
+          style={{
+            backgroundImage: 'radial-gradient(#1E293B 1.5px, transparent 1.5px)',
+            backgroundSize: '10px 10px',
+          }}
+        />
+
+        {/* Rank badge */}
+        <div
+          className="absolute left-4 top-4 rounded-full border-2 px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em]"
+          style={{ borderColor: '#1E293B', backgroundColor: style.badge, color: style.badgeText, boxShadow: '2px 2px 0px #1E293B' }}
+        >
+          {style.label}
         </div>
 
-        <div className="relative flex h-full flex-col justify-between gap-6">
-          <div className="pt-7 text-center">
+        {/* Content */}
+        <div className="relative flex h-full flex-col items-center justify-between pt-10 text-center">
+          <div className="flex flex-col items-center">
+            {/* Avatar */}
             <motion.div
-              animate={{ y: [0, -6, 0] }}
-              transition={{ repeat: Infinity, duration: 3.2, delay: rank * 0.2 }}
-              className="mx-auto mb-4 flex h-24 w-24 items-center justify-center rounded-full border border-white/10 bg-gradient-to-br from-cyan-400 via-sky-500 to-violet-500 text-2xl font-black text-white shadow-[0_0_40px_rgba(34,211,238,0.22)]"
+              animate={{ y: [0, -7, 0] }}
+              transition={{ repeat: Infinity, duration: 3.5, delay: rank * 0.3, ease: 'easeInOut' }}
+              className="mb-3 flex h-20 w-20 items-center justify-center rounded-full border-2 text-xl font-black text-white"
+              style={{ background: style.avatarBg, borderColor: '#1E293B', boxShadow: `3px 3px 0px ${style.shadowColor}` }}
             >
               {getInitials(earner.name)}
             </motion.div>
 
-            <div className="flex items-center justify-center gap-2">
-              <span className="text-3xl">{medal.emoji}</span>
-              <p className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-200">
-                Elite challenger
-              </p>
-            </div>
+            <span className="mb-2 text-3xl">{medal.emoji}</span>
 
-            <h3 className="mt-4 text-2xl font-black text-white">{earner.name}</h3>
-            <p className="mt-1 text-sm text-slate-400">{earner.email}</p>
-
-            <div className="mt-5 rounded-[1.25rem] border border-white/10 bg-white/5 p-4">
-              <p className="text-xs uppercase tracking-[0.24em] text-slate-400">Total Earnings</p>
-              <p className="mt-2 text-4xl font-black text-white">{php(earner.earnings)}</p>
-            </div>
+            <h3
+              className="text-xl font-extrabold leading-tight"
+              style={{ fontFamily: '"Outfit", system-ui, sans-serif', color: '#1E293B' }}
+            >
+              {earner.name}
+            </h3>
+            <p className="mt-0.5 text-xs font-medium text-slate-500">{earner.email}</p>
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
-            {[
-              { label: 'Orders', value: earner.orders, color: 'text-cyan-200' },
-              { label: 'Referrals', value: earner.referrals, color: 'text-violet-200' },
-              { label: 'Tier', value: `#${rank}`, color: 'text-amber-200' },
-            ].map((item) => (
-              <div key={item.label} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 text-center">
-                <p className="text-[10px] uppercase tracking-[0.22em] text-slate-400">{item.label}</p>
-                <p className={`mt-1 text-lg font-black ${item.color}`}>{item.value}</p>
-              </div>
-            ))}
+          {/* Earnings box */}
+          <div
+            className="mt-4 w-full rounded-xl border-2 bg-white p-3"
+            style={{ borderColor: '#1E293B', boxShadow: `3px 3px 0px ${style.shadowColor}` }}
+          >
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">Total Earnings</p>
+            <p
+              className="mt-1 text-2xl font-black"
+              style={{ fontFamily: '"Outfit", system-ui, sans-serif', color: '#1E293B' }}
+            >
+              {php(earner.earnings)}
+            </p>
           </div>
         </div>
       </div>
@@ -80,26 +122,37 @@ function PodiumCard({ earner, rank }: PodiumCardProps) {
   )
 }
 
-interface RankingPodiumProps {
-  top3: TopEarner[]
-}
-
-export default function RankingPodium({ top3 }: RankingPodiumProps) {
+export default function RankingPodium({ top3 }: { top3: TopEarner[] }) {
   if (top3.length === 0) return null
 
   const ordered: (TopEarner | undefined)[] = [top3[1], top3[0], top3[2]]
 
   return (
-    <div className="rounded-[1.75rem] border border-white/10 bg-white/5 p-5 shadow-2xl shadow-cyan-950/20 backdrop-blur-xl sm:p-6">
-      <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="text-xs uppercase tracking-[0.3em] text-cyan-200">Victory Stage</p>
-          <h2 className="mt-1 text-3xl font-black text-white sm:text-4xl">Hall of Fame</h2>
+    <div
+      className="rounded-2xl border-2 bg-white p-5 sm:p-6"
+      style={{ borderColor: '#1E293B', boxShadow: '8px 8px 0px #E2E8F0' }}
+    >
+      <div className="mb-5 flex items-center justify-between">
+        <h2
+          className="text-xl font-extrabold sm:text-2xl"
+          style={{ fontFamily: '"Outfit", system-ui, sans-serif', color: '#1E293B' }}
+        >
+          🏆 Top 3
+        </h2>
+        <div
+          className="flex items-center gap-1.5 rounded-full border-2 px-3 py-1 text-[11px] font-bold uppercase tracking-widest"
+          style={{ borderColor: '#34D399', backgroundColor: '#34D39920', color: '#065F46' }}
+        >
+          <motion.span
+            animate={{ opacity: [1, 0.2, 1] }}
+            transition={{ repeat: Infinity, duration: 1.5 }}
+            className="h-2 w-2 rounded-full bg-[#34D399]"
+          />
+          Live
         </div>
-        <p className="text-sm text-slate-400">Top 3 challengers currently leading the arena</p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-3 sm:items-end">
         {ordered.map((earner) => {
           if (!earner) return null
           const rank = (earner === top3[0] ? 1 : earner === top3[1] ? 2 : 3) as 1 | 2 | 3

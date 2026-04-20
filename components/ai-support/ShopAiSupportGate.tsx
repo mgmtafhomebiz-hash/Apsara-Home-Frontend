@@ -24,6 +24,7 @@ export default function ShopAiSupportGate() {
   const shouldHide =
     pathname.startsWith('/admin') ||
     pathname.startsWith('/partner') ||
+    pathname.startsWith('/ranking') ||
     pathname.endsWith('-setup')
   const partnerSlug = useMemo(() => extractPartnerSlug(pathname), [pathname])
   const [partnerAiVisible, setPartnerAiVisible] = useState(false)
