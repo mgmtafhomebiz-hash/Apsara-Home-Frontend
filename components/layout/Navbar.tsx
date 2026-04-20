@@ -525,11 +525,6 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
 
   const [isLoggingOut, setIsLoggingOut] = useState(false)
 
-  const markLoginRedirectGuard = () => {
-    if (typeof window === 'undefined') return
-    window.sessionStorage.setItem('afhome-skip-login-redirect', '1')
-  }
-
   // const handleLogout = async () => {
   //   setIsLoggingOut(true)
   //   try {
@@ -576,7 +571,7 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
     }
   }
 
-  const handleCustomerLogout = async (callbackUrl: string) => {
+  const handleCustomerLogout = async () => {
     if (isLoggingOut) return
 
     setIsLoggingOut(true)
@@ -592,14 +587,13 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
 
       clearAccessTokenCache()
       dispatch(baseApi.util.resetApiState())
-      markLoginRedirectGuard()
 
       const result = await signOut({
         redirect: false,
-        callbackUrl,
+        callbackUrl: '/login?logged_out=1',
       })
 
-      router.replace(result?.url || callbackUrl)
+      router.replace(result?.url || '/login?logged_out=1')
       router.refresh()
     } finally {
       setIsLoggingOut(false)

@@ -27,6 +27,7 @@ export default function LoginPageClient() {
   const { status, data: session } = useSession();
   const forcePasswordChange = searchParams.get('force-password-change') === '1';
   const switchAccount = searchParams.get('switch') === '1';
+  const justLoggedOut = searchParams.get('logged_out') === '1';
   const passwordChangeRequired = Boolean(session?.user?.passwordChangeRequired);
   const hasReferral = Boolean(searchParams.get('ref') || searchParams.get('referred_by'));
   const callbackPath = resolveCallbackPath(searchParams.get('callback') || searchParams.get('callbackUrl'));
@@ -43,12 +44,14 @@ export default function LoginPageClient() {
 
   useEffect(() => {
     if (status !== 'authenticated') return;
+    if (justLoggedOut) return;
     if (forcePasswordChange || passwordChangeRequired) return;
     if (switchAccount) return;
 
     router.replace(callbackPath);
   }, [
     status,
+    justLoggedOut,
     forcePasswordChange,
     passwordChangeRequired,
     switchAccount,
