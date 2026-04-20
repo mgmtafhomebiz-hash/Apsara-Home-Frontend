@@ -1717,7 +1717,7 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-1.5">
-                          <label className="text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Middle Name</label>
+                          <label className="text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Middle Name <span className="text-red-500">*</span></label>
                           <input
                             type="text"
                             value={form.middle_name}
