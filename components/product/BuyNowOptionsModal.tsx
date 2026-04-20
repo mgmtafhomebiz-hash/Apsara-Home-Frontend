@@ -8,6 +8,7 @@ import Loading from '../Loading';
 import { usePathname, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { useGetPublicGeneralSettingsQuery } from '@/store/api/adminSettingsApi';
+import { resolveCheckoutSource } from '@/libs/checkoutSource';
 import PrimaryButton from '@/components/ui/buttons/PrimaryButton';
 import SecondaryButton from '@/components/ui/buttons/SecondaryButton';
 import OutlineButton from '@/components/ui/buttons/OutlineButton';
@@ -103,6 +104,8 @@ const BuyNowOptionsModal = ({
   };
 
   const persistCheckoutDraft = () => {
+    const checkoutSource = resolveCheckoutSource(pathname);
+
     localStorage.setItem('guest_checkout', JSON.stringify({
       product: {
         ...product,
@@ -120,6 +123,10 @@ const BuyNowOptionsModal = ({
       subtotal,
       handlingFee,
       total,
+      sourceLabel: checkoutSource.sourceLabel ?? null,
+      sourceSlug: checkoutSource.sourceSlug ?? null,
+      sourceHost: checkoutSource.sourceHost ?? null,
+      sourceUrl: checkoutSource.sourceUrl ?? null,
     }));
   };
 

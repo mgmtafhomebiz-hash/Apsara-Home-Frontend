@@ -1007,6 +1007,11 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                             <p className="mt-0.5 text-[11px] uppercase tracking-wide text-slate-400 dark:text-slate-500">
                               {order.payment_status}
                             </p>
+                            {order.source_label ? (
+                              <p className="mt-1 text-[11px] text-sky-600 dark:text-sky-400">
+                                Source: {order.source_label}
+                              </p>
+                            ) : null}
                           </td>
 
                           {/* Date */}

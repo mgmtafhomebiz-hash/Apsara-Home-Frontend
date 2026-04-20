@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation'
 import type { CustomerCheckoutLineItem } from '@/types/CustomerCheckout/types'
 import { useMemo } from 'react'
 import PrimaryButton from '@/components/ui/buttons/PrimaryButton'
+import { resolveCheckoutSource } from '@/libs/checkoutSource'
 
 export default function CartDrawer() {
   const router = useRouter()
@@ -56,6 +57,7 @@ export default function CartDrawer() {
 
     const handlingFee = 0
     const firstItem = checkoutItems[0]
+    const checkoutSource = resolveCheckoutSource()
 
     localStorage.setItem('guest_checkout', JSON.stringify({
       product: {
@@ -76,6 +78,10 @@ export default function CartDrawer() {
       subtotal: selectedTotal,
       handlingFee,
       total: selectedTotal + handlingFee,
+      sourceLabel: checkoutSource.sourceLabel ?? null,
+      sourceSlug: checkoutSource.sourceSlug ?? null,
+      sourceHost: checkoutSource.sourceHost ?? null,
+      sourceUrl: checkoutSource.sourceUrl ?? null,
     }))
 
     setIsOpen(false)
