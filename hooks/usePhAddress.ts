@@ -33,7 +33,7 @@ interface UsePhAddressReturn {
 
 interface UsePhAddressOptions {
     legacyNoProvinceRegions?: boolean
-    source?: 'backend' | 'psgc'
+    source?: 'auto' | 'backend' | 'psgc'
 }
 
 const API_BASE = process.env.NEXT_PUBLIC_LARAVEL_API_URL ?? ''
@@ -46,47 +46,78 @@ const LEGACY_NO_PROVINCE_REGION_CODES = new Set([
     '190000000', // Dinagat Islands in some legacy PSGC datasets
 ])
 
-const fetchAddressList = async (path: string, params?: Record<string, string>): Promise<PsgcItem[]> => {
+const requestJson = async (url: string, timeoutMs: number): Promise<Response> => {
+    const controller = new AbortController()
+    const timeout = window.setTimeout(() => controller.abort(), timeoutMs)
+
+    try {
+        return await fetch(url, {
+            headers: {
+                Accept: 'application/json',
+            },
+            signal: controller.signal,
+        })
+    } finally {
+        window.clearTimeout(timeout)
+    }
+}
+
+type LoadResult = {
+    items: PsgcItem[]
+    ok: boolean
+}
+
+const fetchAddressList = async (path: string, params?: Record<string, string>, timeoutMs = 5000): Promise<LoadResult> => {
     const query = new URLSearchParams(params ?? {})
     const url = `${API_BASE}/api/address/${path}${query.toString() ? `?${query.toString()}` : ''}`
 
     const cached = listCache.get(url)
-    if (cached) return cached
+    if (cached) return { items: cached, ok: true }
 
     const pending = inflight.get(url)
-    if (pending) return pending
+    if (pending) {
+        const items = await pending
+        return { items, ok: true }
+    }
 
-    const request = fetch(url, {
-        headers: {
-            Accept: 'application/json',
-        },
-    })
-        .then((response) => (response.ok ? response.json() : { data: [] }))
+    let succeeded = false
+
+    const request = requestJson(url, timeoutMs)
+        .then((response) => {
+            succeeded = response.ok
+            return response.ok ? response.json() : { data: [] }
+        })
         .then((payload: { data?: PsgcItem[] }) => (payload.data ?? []).sort((a, b) => a.name.localeCompare(b.name)))
         .catch(() => [])
         .finally(() => inflight.delete(url))
 
     inflight.set(url, request)
-    const result = await request
-    listCache.set(url, result)
-    return result
+    const items = await request
+    if (succeeded) {
+        listCache.set(url, items)
+    }
+    return { items, ok: succeeded }
 }
 
-const fetchPsgcList = async (path: string): Promise<PsgcItem[]> => {
+const fetchPsgcList = async (path: string, timeoutMs = 7000): Promise<LoadResult> => {
     const url = `${PSGC_BASE_URL}${path}`
 
     const cached = listCache.get(url)
-    if (cached) return cached
+    if (cached) return { items: cached, ok: true }
 
     const pending = inflight.get(url)
-    if (pending) return pending
+    if (pending) {
+        const items = await pending
+        return { items, ok: true }
+    }
 
-    const request = fetch(url, {
-        headers: {
-            Accept: 'application/json',
-        },
-    })
-        .then((response) => (response.ok ? response.json() : []))
+    let succeeded = false
+
+    const request = requestJson(url, timeoutMs)
+        .then((response) => {
+            succeeded = response.ok
+            return response.ok ? response.json() : []
+        })
         .then((payload: Array<{ code?: string; name?: string; regionName?: string }>) =>
             (payload ?? [])
                 .map((item) => ({
@@ -100,9 +131,44 @@ const fetchPsgcList = async (path: string): Promise<PsgcItem[]> => {
         .finally(() => inflight.delete(url))
 
     inflight.set(url, request)
-    const result = await request
-    listCache.set(url, result)
-    return result
+    const items = await request
+    if (succeeded) {
+        listCache.set(url, items)
+    }
+    return { items, ok: succeeded }
+}
+
+const loadBySource = async (source: 'backend' | 'psgc', path: string, params?: Record<string, string>) => {
+    if (source === 'psgc') {
+        return fetchPsgcList(path)
+    }
+
+    return fetchAddressList(path, params, 2500)
+}
+
+const loadWithFallback = async (
+    preferredSource: UsePhAddressOptions['source'],
+    pathBySource: { backend: { path: string; params?: Record<string, string> }, psgc: { path: string } },
+) => {
+    if (preferredSource === 'psgc') {
+        return fetchPsgcList(pathBySource.psgc.path)
+    }
+
+    if (preferredSource === 'backend') {
+        return fetchAddressList(pathBySource.backend.path, pathBySource.backend.params)
+    }
+
+    const backendResult = await loadBySource('backend', pathBySource.backend.path, pathBySource.backend.params)
+    if (backendResult.ok && backendResult.items.length > 0) {
+        return backendResult
+    }
+
+    const psgcResult = await loadBySource('psgc', pathBySource.psgc.path)
+    if (psgcResult.ok && psgcResult.items.length > 0) {
+        return psgcResult
+    }
+
+    return backendResult.ok ? backendResult : psgcResult
 }
 
 export function usePhAddress(options?: UsePhAddressOptions): UsePhAddressReturn {
@@ -137,12 +203,11 @@ export function usePhAddress(options?: UsePhAddressOptions): UsePhAddressReturn 
             if (active) setLoadingRegions(true)
         })
 
-        const loader = source === 'psgc'
-            ? fetchPsgcList('/regions/')
-            : fetchAddressList('regions')
-
-        loader.then((data) => {
-            if (active) setRegions(data)
+        loadWithFallback(source, {
+            backend: { path: 'regions' },
+            psgc: { path: '/regions/' },
+        }).then((result) => {
+            if (active) setRegions(result.items)
         }).finally(() => {
             if (active) setLoadingRegions(false)
         })
@@ -168,45 +233,52 @@ export function usePhAddress(options?: UsePhAddressOptions): UsePhAddressReturn 
 
         const load = async () => {
             if (source === 'psgc') {
-                const provinceList = await fetchPsgcList(`/regions/${regionCode}/provinces/`)
-                if (!provinceList.length) {
-                    const cityList = await fetchPsgcList(`/regions/${regionCode}/cities-municipalities/`)
+                const provinceResult = await fetchPsgcList(`/regions/${regionCode}/provinces/`)
+                if (!provinceResult.items.length) {
+                    const cityResult = await fetchPsgcList(`/regions/${regionCode}/cities-municipalities/`)
                     if (active) {
                         setNoProvince(true)
-                        setCities(cityList)
+                        setCities(cityResult.items)
                     }
                     return
                 }
 
                 if (active) {
                     setNoProvince(false)
-                    setProvinces(provinceList)
+                    setProvinces(provinceResult.items)
                 }
                 return
             }
 
-            if (options?.legacyNoProvinceRegions && LEGACY_NO_PROVINCE_REGION_CODES.has(regionCode)) {
-                const cityList = await fetchAddressList('cities', { region_code: regionCode })
+            if (source === 'backend' && options?.legacyNoProvinceRegions && LEGACY_NO_PROVINCE_REGION_CODES.has(regionCode)) {
+                const cityResult = await fetchAddressList('cities', { region_code: regionCode })
                 if (active) {
                     setNoProvince(true)
-                    setCities(cityList)
+                    setCities(cityResult.items)
                 }
                 return
             }
 
-            const provinceList = await fetchAddressList('provinces', { region_code: regionCode })
-            if (!provinceList.length) {
-                const cityList = await fetchAddressList('cities', { region_code: regionCode })
+            const provinceResult = await loadWithFallback(source, {
+                backend: { path: 'provinces', params: { region_code: regionCode } },
+                psgc: { path: `/regions/${regionCode}/provinces/` },
+            })
+
+            if (!provinceResult.items.length) {
+                const cityResult = await loadWithFallback(source, {
+                    backend: { path: 'cities', params: { region_code: regionCode } },
+                    psgc: { path: `/regions/${regionCode}/cities-municipalities/` },
+                })
                 if (active) {
                     setNoProvince(true)
-                    setCities(cityList)
+                    setCities(cityResult.items)
                 }
                 return
             }
 
             if (active) {
                 setNoProvince(false)
-                setProvinces(provinceList)
+                setProvinces(provinceResult.items)
             }
         }
 
@@ -232,13 +304,12 @@ export function usePhAddress(options?: UsePhAddressOptions): UsePhAddressReturn 
         setCities([])
         setBarangays([])
 
-        const loader = source === 'psgc'
-            ? fetchPsgcList(`/provinces/${provinceCode}/cities-municipalities/`)
-            : fetchAddressList('cities', { province_code: provinceCode })
-
-        loader
-            .then((data) => {
-                if (active) setCities(data)
+        loadWithFallback(source, {
+            backend: { path: 'cities', params: { province_code: provinceCode } },
+            psgc: { path: `/provinces/${provinceCode}/cities-municipalities/` },
+        })
+            .then((result) => {
+                if (active) setCities(result.items)
             })
             .finally(() => {
                 if (active) setLoadingCities(false)
@@ -261,13 +332,12 @@ export function usePhAddress(options?: UsePhAddressOptions): UsePhAddressReturn 
         setLoadingBarangays(true)
         setBarangays([])
 
-        const loader = source === 'psgc'
-            ? fetchPsgcList(`/cities-municipalities/${cityCode}/barangays/`)
-            : fetchAddressList('barangays', { city_code: cityCode })
-
-        loader
-            .then((data) => {
-                if (active) setBarangays(data)
+        loadWithFallback(source, {
+            backend: { path: 'barangays', params: { city_code: cityCode } },
+            psgc: { path: `/cities-municipalities/${cityCode}/barangays/` },
+        })
+            .then((result) => {
+                if (active) setBarangays(result.items)
             })
             .finally(() => {
                 if (active) setLoadingBarangays(false)

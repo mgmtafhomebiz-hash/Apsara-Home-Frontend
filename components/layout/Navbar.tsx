@@ -490,6 +490,11 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
 
   const [isLoggingOut, setIsLoggingOut] = useState(false)
 
+  const markLoginRedirectGuard = () => {
+    if (typeof window === 'undefined') return
+    window.sessionStorage.setItem('afhome-skip-login-redirect', '1')
+  }
+
   // const handleLogout = async () => {
   //   setIsLoggingOut(true)
   //   try {
@@ -552,6 +557,7 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
 
       clearAccessTokenCache()
       dispatch(baseApi.util.resetApiState())
+      markLoginRedirectGuard()
 
       const result = await signOut({
         redirect: false,
@@ -948,7 +954,7 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                         {/* Logout */}
                         <div className="border-t border-gray-100 dark:border-gray-800 py-1.5">
                           <button
-                            onClick={() => handleCustomerLogout('/shop')}
+                            onClick={() => handleCustomerLogout('/login')}
                             disabled={isLoggingOut}
                             className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-60 group"
                           >
@@ -1319,7 +1325,7 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
 
                     {/* Logout */}
                     <button
-                      onClick={() => { handleCustomerLogout('/'); setMobileOpen(false); }}
+                      onClick={() => { handleCustomerLogout('/login'); setMobileOpen(false); }}
                       disabled={isLoggingOut}
                       className="w-full flex items-center justify-center gap-2 rounded-xl border border-red-100 dark:border-red-900/30 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 px-4 py-2.5 text-sm font-semibold text-red-600 dark:text-red-400 transition-colors disabled:opacity-60"
                     >

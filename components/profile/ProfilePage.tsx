@@ -1728,7 +1728,12 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
                         </div>
                         <button
                           type="button"
-                          onClick={() => signOut({ callbackUrl: '/login' })}
+                          onClick={() => {
+                            if (typeof window !== 'undefined') {
+                              window.sessionStorage.setItem('afhome-skip-login-redirect', '1');
+                            }
+                            signOut({ callbackUrl: '/login' });
+                          }}
                           className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-xs font-semibold text-slate-600 dark:text-gray-300 hover:border-red-200 dark:hover:border-red-800 hover:bg-red-50 dark:hover:bg-red-900/30 hover:text-red-600 dark:hover:text-red-400 transition-colors"
                         >
                           <Icon.LogOut className="h-3.5 w-3.5" />

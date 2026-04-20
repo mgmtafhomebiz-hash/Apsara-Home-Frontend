@@ -154,7 +154,7 @@ export default function CustomerCheckoutAddressForm({
     setField,
     isLoggedIn = false,
 }: CustomerCheckoutAddressFormProps) {
-    const ph = usePhAddress({ source: 'psgc' });
+    const ph = usePhAddress({ source: 'auto' });
     const { data, isLoading } = useCustomerAddressesQuery(undefined, { skip: !isLoggedIn });
     const [setDefaultAddress, { isLoading: settingDefault }] = useSetDefaultCustomerAddressMutation();
     const [createAddress, { isLoading: creatingAddress }] = useCreateCustomerAddressMutation();

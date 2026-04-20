@@ -240,7 +240,7 @@ const EncashmentTab = () => {
   }>({ idFront: false, idBack: false, selfie: false });
   const [verificationErrors, setVerificationErrors] = useState<VerificationErrors>({});
   const [isVerificationSpotlightActive, setIsVerificationSpotlightActive] = useState(false);
-  const phVerification = usePhAddress({ legacyNoProvinceRegions: true, source: 'psgc' });
+  const phVerification = usePhAddress({ legacyNoProvinceRegions: true, source: 'auto' });
 
   const rows = useMemo(() => data?.requests ?? [], [data?.requests]);
   const methods = useMemo<PaymentMethod[]>(
