@@ -1011,7 +1011,7 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                         {/* Logout */}
                         <div className="border-t border-gray-100 dark:border-gray-800 py-1.5">
                         <button
-                            onClick={() => handleCustomerLogout('/login')}
+                            onClick={() => handleCustomerLogout()}
                             disabled={isLoggingOut}
                             className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-60 group"
                           >
@@ -1382,7 +1382,7 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
 
                     {/* Logout */}
                     <button
-                      onClick={() => { handleCustomerLogout('/login'); setMobileOpen(false); }}
+                      onClick={() => { handleCustomerLogout(); setMobileOpen(false); }}
                       disabled={isLoggingOut}
                       className="w-full flex items-center justify-center gap-2 rounded-xl border border-red-100 dark:border-red-900/30 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 px-4 py-2.5 text-sm font-semibold text-red-600 dark:text-red-400 transition-colors disabled:opacity-60"
                     >
