@@ -155,7 +155,7 @@ export default function CustomerCheckoutAddressForm({
     isLoggedIn = false,
 }: CustomerCheckoutAddressFormProps) {
     const ph = usePhAddress({ source: 'auto' });
-    const { data, isLoading } = useCustomerAddressesQuery(undefined, { skip: !isLoggedIn });
+    const { data, isLoading, error: addressesError } = useCustomerAddressesQuery(undefined, { skip: !isLoggedIn });
     const [setDefaultAddress, { isLoading: settingDefault }] = useSetDefaultCustomerAddressMutation();
     const [createAddress, { isLoading: creatingAddress }] = useCreateCustomerAddressMutation();
     const [selectedAddressId, setSelectedAddressId] = useState<number | null>(null);
@@ -163,6 +163,14 @@ export default function CustomerCheckoutAddressForm({
     const [modalView, setModalView] = useState<'list' | 'add'>('list');
     const [actionError, setActionError] = useState('');
     const [draft, setDraft] = useState<CheckoutAddressDraft>(emptyAddressDraft);
+    const [forceGuestMode, setForceGuestMode] = useState(false);
+
+    const hasUnauthorizedAddressAccess = useMemo(() => {
+        const status = (addressesError as { status?: number } | undefined)?.status;
+        return status === 401;
+    }, [addressesError]);
+
+    const effectiveLoggedIn = isLoggedIn && !forceGuestMode && !hasUnauthorizedAddressAccess;
 
     const addresses = useMemo(() => data?.addresses ?? [], [data?.addresses]);
 
@@ -178,12 +186,12 @@ export default function CustomerCheckoutAddressForm({
     }, [setField]);
 
     useEffect(() => {
-        if (isLoggedIn) return;
+        if (effectiveLoggedIn) return;
         setField('region', ph.address.region);
         setField('province', ph.noProvince ? ph.address.region : ph.address.province);
         setField('city', ph.address.city);
         setField('barangay', ph.address.barangay);
-    }, [isLoggedIn, ph.address.region, ph.address.province, ph.address.city, ph.address.barangay, ph.noProvince, setField]);
+    }, [effectiveLoggedIn, ph.address.region, ph.address.province, ph.address.city, ph.address.barangay, ph.noProvince, setField]);
 
     const selectedAddress = useMemo(
         () => addresses.find(address => address.id === selectedAddressId) ?? null,
@@ -217,6 +225,13 @@ export default function CustomerCheckoutAddressForm({
             applyAddressToForm(address);
             setActionError('');
         } catch (error) {
+            const status = (error as { status?: number; data?: { message?: string } })?.status;
+            if (status === 401) {
+                setForceGuestMode(true);
+                setIsModalOpen(false);
+                setActionError('');
+                return;
+            }
             const message = (error as { data?: { message?: string } })?.data?.message;
             setActionError(message || 'Unable to set that address as default right now.');
         }
@@ -252,6 +267,13 @@ export default function CustomerCheckoutAddressForm({
             setActionError('');
             setIsModalOpen(false);
         } catch (error) {
+            const status = (error as { status?: number; data?: { message?: string; errors?: Record<string, string[]> } })?.status;
+            if (status === 401) {
+                setForceGuestMode(true);
+                setIsModalOpen(false);
+                setActionError('');
+                return;
+            }
             const apiError = error as { data?: { message?: string; errors?: Record<string, string[]> } };
             const firstValidationMessage = Object.values(apiError?.data?.errors ?? {})[0]?.[0];
             setActionError(firstValidationMessage || apiError?.data?.message || 'Unable to save the new shipping address right now.');
@@ -259,13 +281,13 @@ export default function CustomerCheckoutAddressForm({
     };
 
     useEffect(() => {
-        if (!isLoggedIn || addresses.length === 0) return;
+        if (!effectiveLoggedIn || addresses.length === 0) return;
         const currentSelection = addresses.find(address => address.id === selectedAddressId);
         if (currentSelection) return;
         const nextAddress = addresses.find(address => address.is_default) ?? addresses[0];
         if (nextAddress.id === selectedAddressId) return;
         queueMicrotask(() => { setSelectedAddressId(nextAddress.id); applyAddressToForm(nextAddress); });
-    }, [addresses, applyAddressToForm, isLoggedIn, selectedAddressId]);
+    }, [addresses, applyAddressToForm, effectiveLoggedIn, selectedAddressId]);
 
     useEffect(() => {
         if (!isModalOpen || addresses.length > 0) return;
@@ -273,7 +295,7 @@ export default function CustomerCheckoutAddressForm({
     }, [addresses.length, isModalOpen]);
 
     /* ─── Guest mode ─── */
-    if (!isLoggedIn) {
+    if (!effectiveLoggedIn) {
         return (
             <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700  p-6">
                 <h2 className="text-sm font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2.5">
