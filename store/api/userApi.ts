@@ -35,6 +35,7 @@ export interface MeResponse {
     };
     email_verified?: boolean;
     password_change_required?: boolean;
+    two_factor_enabled?: boolean;
 }
 
 export interface CustomerAddress {
@@ -82,6 +83,7 @@ export interface UpdateProfilePayload {
     region?: string;
     zip_code?: string;
     avatar_url?: string;
+    two_factor_enabled?: boolean;
 }
 
 export interface ChangePasswordPayload {
@@ -111,6 +113,31 @@ export interface ReferralTreeResponse {
         total_pv?: number;
     };
     children: ReferralTreeNode[];
+}
+
+export interface MemberActivityItem {
+    id: number;
+    activity_type: string;
+    action: string;
+    title: string;
+    description: string;
+    created_at?: string | null;
+    ip_address?: string;
+    user_agent?: string;
+}
+
+export interface MemberSessionItem {
+    id: number;
+    token_id: number;
+    device: string;
+    platform: string;
+    browser: string;
+    location: string;
+    ip_address?: string;
+    user_agent?: string;
+    created_at?: string | null;
+    last_active_at?: string | null;
+    is_current: boolean;
 }
 
 export interface UsernameChangeRequest {
@@ -227,6 +254,30 @@ export const userApi = baseApi.injectEndpoints({
                 method: 'GET',
             }),
         }),
+
+        memberActivity: builder.query<{ items: MemberActivityItem[] }, void>({
+            query: () => ({
+                url: '/api/auth/activity',
+                method: 'GET',
+            }),
+            providesTags: ['User'],
+        }),
+
+        memberSessions: builder.query<{ items: MemberSessionItem[] }, void>({
+            query: () => ({
+                url: '/api/auth/sessions',
+                method: 'GET',
+            }),
+            providesTags: ['User'],
+        }),
+
+        revokeMemberSession: builder.mutation<{ message: string; revoked_token_id: number; is_current: boolean }, number>({
+            query: (tokenId) => ({
+                url: `/api/auth/sessions/${tokenId}`,
+                method: 'DELETE',
+            }),
+            invalidatesTags: ['User'],
+        }),
     })
 })
 
@@ -241,4 +292,7 @@ export const {
     useSendUsernameChangeOtpMutation,
     useSubmitUsernameChangeRequestMutation,
     useUsernameChangeLatestQuery,
+    useMemberActivityQuery,
+    useMemberSessionsQuery,
+    useRevokeMemberSessionMutation,
 } = userApi
