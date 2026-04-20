@@ -52,15 +52,15 @@ function FloatingInput({ id, type = 'text', label, value, onChange, autoComplete
                 onChange={onChange}
                 placeholder=" "
                 autoComplete={autoComplete}
-                className="peer h-14 w-full rounded-[22px] border border-gray-300 dark:border-white/18 bg-white dark:bg-white/12 px-4 pb-3 pt-6 text-sm text-gray-900 dark:text-white outline-none transition-all duration-200 placeholder:text-transparent focus:border-orange-400 dark:focus:border-orange-400/60 focus:bg-white dark:focus:bg-white/18"
+                className="peer h-11 w-full rounded-[18px] border border-gray-300 dark:border-white/18 bg-white dark:bg-white/12 px-4 pb-2 pt-5 text-sm text-gray-900 dark:text-white outline-none transition-all duration-200 placeholder:text-transparent focus:border-sky-400 dark:focus:border-sky-400/60 focus:bg-white dark:focus:bg-white/18"
             />
             <label
                 htmlFor={id}
                 className={`pointer-events-none absolute left-4 origin-left bg-transparent px-1 text-gray-500 dark:text-white/55 transition-all duration-200 ${
                     hasValue
-                        ? 'top-2 text-[11px] text-orange-500 dark:text-orange-300'
+                        ? 'top-2 text-[11px] text-sky-500 dark:text-sky-300'
                         : 'top-1/2 -translate-y-1/2 text-sm'
-                } peer-focus:top-2 peer-focus:translate-y-0 peer-focus:text-[11px] peer-focus:text-orange-500 dark:peer-focus:text-orange-300 peer-[:not(:placeholder-shown)]:top-2 peer-[:not(:placeholder-shown)]:translate-y-0 peer-[:not(:placeholder-shown)]:text-[11px] peer-[:not(:placeholder-shown)]:text-orange-500 dark:peer-[:not(:placeholder-shown)]:text-orange-300 peer-autofill:top-2 peer-autofill:translate-y-0 peer-autofill:text-[11px] peer-autofill:text-orange-500 dark:peer-autofill:text-orange-300`}
+                } peer-focus:top-2 peer-focus:translate-y-0 peer-focus:text-[11px] peer-focus:text-sky-500 dark:peer-focus:text-sky-300 peer-[:not(:placeholder-shown)]:top-2 peer-[:not(:placeholder-shown)]:translate-y-0 peer-[:not(:placeholder-shown)]:text-[11px] peer-[:not(:placeholder-shown)]:text-sky-500 dark:peer-[:not(:placeholder-shown)]:text-sky-300 peer-autofill:top-2 peer-autofill:translate-y-0 peer-autofill:text-[11px] peer-autofill:text-sky-500 dark:peer-autofill:text-sky-300`}
             >
                 {label}
             </label>
@@ -225,22 +225,22 @@ const LoginForm = ({ onSwitchToSignUp, onRequirePasswordChange }: LoginFormProps
                             type="checkbox"
                             checked={form.rememberMe}
                             onChange={(e) => setForm((prev) => ({ ...prev, rememberMe: e.target.checked }))}
-                            className="h-4 w-4 rounded border-white/30 bg-white/10 accent-orange-500"
+                            className="h-4 w-4 rounded border-white/30 bg-white/10 accent-sky-500"
                         />
                         <span className="text-xs">Remember me</span>
                     </label>
                     <Link
                         href="/forgot-password"
-                        className="text-orange-400 hover:text-orange-300 font-semibold transition-colors"
+                        className="text-sky-500 hover:text-sky-400 font-semibold transition-colors"
                     >
                         Forgot Password
                     </Link>
                 </div>
 
-                <PrimaryButton
+            <PrimaryButton
                     type="submit"
                     disabled={isLoading}
-                    className="w-full"
+                    className="w-full py-3 px-5 text-sm"
                 >
                     {isLoading ? (
                         <>
