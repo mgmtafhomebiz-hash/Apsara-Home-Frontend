@@ -28,23 +28,13 @@ const getSettingValue = (value: string | null | undefined, fallback: string): st
 };
 
 const footerLinks = {
-  shop: [
-    { name: 'Living Room', href: '/by-room/living-room' },
-    { name: 'Bedroom', href: '/by-room/bedroom' },
-    { name: 'Dining', href: '/by-room/dining' },
-    { name: 'Home Office', href: '/by-room/home-office' },
-    { name: 'Outdoor', href: '/by-room/outdoor' },
-  ],
   company: [
-    { name: 'Home', href: '/' },
-    { name: 'Shop', href: '/shop' },
-    { name: 'Blog', href: '/blog' },
-    { name: 'Community', href: '/community' },
-    { name: 'Ecosystem', href: '/#ecosystem' },
-    { name: 'Earnings', href: '/#earnings' },
-    { name: 'Benefits', href: '/#benefits' },
-    { name: 'Team', href: '/#team' },
-    { name: 'Training', href: '/#training' },
+    { name: 'About us', href: '/about-us' },
+    { name: 'Privacy Policy', href: '/privacy-policy' },
+    { name: 'Terms and Conditions', href: '/terms-and-conditions' },
+    { name: 'Income Disclaimer', href: '/income-disclaimer' },
+    { name: 'Cookie Policy', href: '/cookie-policy' },
+    { name: 'Rewards and Commissions', href: '/rewards-and-commissions' },
   ],
   support: [
     { name: 'Contact Us', href: '/#contact' },
@@ -53,7 +43,6 @@ const footerLinks = {
     { name: 'FAQs', href: '#' },
     { name: 'Shipping Info', href: '#' },
     { name: 'Returns', href: '#' },
-    { name: 'Track Order', href: '/track-order' },
   ],
 };
 
@@ -61,6 +50,18 @@ const socialLinks = [
   { icon: Facebook, href: 'https://www.facebook.com/AFHomePH/', label: 'Facebook' },
   { icon: Instagram, href: 'https://www.instagram.com/afhome.ph/', label: 'Instagram' },
   { icon: TikTokIcon, href: 'https://www.tiktok.com/@afhomeph', label: 'TikTok' },
+];
+
+const paymentLogos = [
+  { name: 'GCash', file: 'gcash.svg' },
+  { name: 'Maya', file: 'maya.svg' },
+  { name: 'Visa', file: 'visa.svg' },
+  { name: 'Mastercard', file: 'mastercard.svg' },
+  { name: 'BPI', file: 'bpi.svg' },
+  { name: 'BDO', file: 'bdo.svg' },
+  { name: 'Landbank', file: 'landbank.svg' },
+  { name: 'UnionBank', file: 'unionbank.svg' },
+  { name: 'Cash on Delivery', file: 'cod.svg' },
 ];
 
 export default function Footer() {
@@ -176,16 +177,16 @@ export default function Footer() {
 
           {/* Company Links */}
           <motion.div variants={itemVariants}>
-            <h4 className="font-display font-semibold text-lg mb-6">Navigation</h4>
+            <h4 className="font-display font-semibold text-lg mb-6">Informations</h4>
             <ul className="space-y-3">
               {footerLinks.company.map((link) => (
                 <li key={link.name}>
-                  <a
+                  <Link
                     href={link.href}
                     className="text-gray-600 dark:text-white/70 hover:text-orange-500 dark:hover:text-orange-400 transition-colors text-sm"
                   >
                     {link.name}
-                  </a>
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -215,6 +216,24 @@ export default function Footer() {
                 </li>
               ))}
             </ul>
+          </motion.div>
+
+          {/* Payments */}
+          <motion.div variants={itemVariants} className="col-span-2 md:col-span-1">
+            <h4 className="font-display font-semibold text-lg mb-3">Payments</h4>
+            <p className="text-gray-600 dark:text-white/70 text-sm mb-4">We accept:</p>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
+              {paymentLogos.map((logo) => (
+                <img
+                  key={logo.name}
+                  src={`/payment-logos/${logo.file}`}
+                  alt={logo.name}
+                  className="h-7 w-auto object-contain"
+                  loading="lazy"
+                  title={logo.name}
+                />
+              ))}
+            </div>
           </motion.div>
 
           {/* Contact Info */}
@@ -264,24 +283,24 @@ export default function Footer() {
             © {new Date().getFullYear()} AFhome. All rights reserved.
           </p>
           <div className="flex gap-6">
-            <a
-              href="#"
+            <Link
+              href="/privacy-policy"
               className="text-gray-500 dark:text-white/50 hover:text-gray-900 dark:hover:text-white text-sm transition-colors"
             >
               Privacy Policy
-            </a>
-            <a
-              href="#"
+            </Link>
+            <Link
+              href="/terms-and-conditions"
               className="text-gray-500 dark:text-white/50 hover:text-gray-900 dark:hover:text-white text-sm transition-colors"
             >
-              Terms of Service
-            </a>
-            <a
-              href="#"
+              Terms and Conditions
+            </Link>
+            <Link
+              href="/cookie-policy"
               className="text-gray-500 dark:text-white/50 hover:text-gray-900 dark:hover:text-white text-sm transition-colors"
             >
-              Cookies
-            </a>
+              Cookie Policy
+            </Link>
           </div>
         </motion.div>
       </div>

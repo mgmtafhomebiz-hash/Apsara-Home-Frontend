@@ -13,6 +13,17 @@ import PrimaryButton from '@/components/ui/buttons/PrimaryButton';
 
 const REMEMBER_USER_EMAIL_KEY = 'afhome_user_login'
 const BLOCKED_KEYWORDS = ['banned', 'blocked', 'contact support']
+const TWO_FACTOR_PREFIX = '2FA_REQUIRED|'
+
+function parseTwoFactorError(rawMessage: string): { token: string; message: string } | null {
+    if (!rawMessage.startsWith(TWO_FACTOR_PREFIX)) return null
+    const payload = rawMessage.slice(TWO_FACTOR_PREFIX.length)
+    const [token = '', ...rest] = payload.split('|')
+    return {
+        token: token.trim(),
+        message: (rest.join('|') || 'A verification code was sent to your email.').trim(),
+    }
+}
 
 function resolveCallbackPath(value: string | null | undefined): string {
     const normalized = String(value ?? '').trim()
@@ -85,6 +96,8 @@ const LoginForm = ({ onSwitchToSignUp, onRequirePasswordChange }: LoginFormProps
     const [showPass, setShowPass] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
+    const [otpCode, setOtpCode] = useState('');
+    const [otpChallengeToken, setOtpChallengeToken] = useState('');
     const [form, setForm] = useState({
         email: '',
         password: '',
@@ -118,12 +131,16 @@ const LoginForm = ({ onSwitchToSignUp, onRequirePasswordChange }: LoginFormProps
         setError('');
         setIsLoading(true);
 
-        clearAccessTokenCache()
-        await signOut({ redirect: false })
+        if (!otpChallengeToken) {
+            clearAccessTokenCache()
+            await signOut({ redirect: false })
+        }
 
         const result = await signIn('credentials', {
             email: form.email,
             password: form.password,
+            otp: otpChallengeToken ? otpCode : undefined,
+            otp_challenge_token: otpChallengeToken || undefined,
             redirect: false,
             callbackUrl: callbackPath,
         })
@@ -157,6 +174,14 @@ const LoginForm = ({ onSwitchToSignUp, onRequirePasswordChange }: LoginFormProps
             router.replace(callbackPath);
         } else {
             const rawError = String(result?.error ?? '').trim()
+            const twoFactor = parseTwoFactorError(rawError)
+            if (twoFactor) {
+                setOtpChallengeToken(twoFactor.token)
+                setOtpCode('')
+                setError(twoFactor.message)
+                setIsLoading(false)
+                return
+            }
             const isBlockedError = BLOCKED_KEYWORDS.some((keyword) => rawError.toLowerCase().includes(keyword))
             const message = isBlockedError
                 ? 'Your account has been banned. Please contact support for assistance.'
@@ -219,6 +244,55 @@ const LoginForm = ({ onSwitchToSignUp, onRequirePasswordChange }: LoginFormProps
                     <p className="mt-1.5 text-[11px] text-gray-400 dark:text-white/55">Passwords are case-sensitive.</p>
                 </div>
 
+                {otpChallengeToken ? (
+                    <div className="">
+                        <FloatingInput
+                            id="login-otp"
+                            type="text"
+                            label="Email OTP Code"
+                            value={otpCode}
+                            onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                            autoComplete="one-time-code"
+                        />
+                        <div className="mt-2 flex items-center justify-between gap-2">
+                            <p className="text-[11px] text-gray-400 dark:text-white/55">OTP was sent to your account email.</p>
+                            <button
+                                type="button"
+                                onClick={async () => {
+                                    setError('')
+                                    setIsLoading(true)
+                                    try {
+                                        const resend = await signIn('credentials', {
+                                            email: form.email,
+                                            password: form.password,
+                                            otp_challenge_token: otpChallengeToken,
+                                            resend_otp: '1',
+                                            redirect: false,
+                                        })
+                                        const msg = String(resend?.error ?? '').trim()
+                                        const twoFactor = parseTwoFactorError(msg)
+                                        if (twoFactor) {
+                                            setOtpChallengeToken(twoFactor.token)
+                                            setError(twoFactor.message)
+                                        } else if (msg) {
+                                            setError(msg)
+                                        } else {
+                                            setError('OTP re-sent. Please check your email.')
+                                        }
+                                    } catch {
+                                        setError('Failed to resend OTP. Please try again.')
+                                    } finally {
+                                        setIsLoading(false)
+                                    }
+                                }}
+                                className="text-xs font-semibold text-orange-500 hover:text-orange-400 transition-colors"
+                            >
+                                Resend OTP
+                            </button>
+                        </div>
+                    </div>
+                ) : null}
+
                 <div className="flex items-center justify-between text-xs">
                     <label className="flex items-center gap-2 text-gray-500 dark:text-white/70 cursor-pointer">
                         <input
@@ -248,7 +322,7 @@ const LoginForm = ({ onSwitchToSignUp, onRequirePasswordChange }: LoginFormProps
                             <span>Signing in...</span>
                         </>
                     ) : (
-                        <span>Sign in</span>
+                        <span>{otpChallengeToken ? 'Verify & Sign in' : 'Sign in'}</span>
                     )}
                 </PrimaryButton>
             </form>

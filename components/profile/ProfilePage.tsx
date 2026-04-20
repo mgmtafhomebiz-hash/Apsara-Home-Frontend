@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import { MeResponse, ReferralTreeNode, useChangePasswordMutation, useMeQuery, useReferralTreeQuery, useUpdateProfileMutation, useSendUsernameChangeOtpMutation, useSubmitUsernameChangeRequestMutation, useUsernameChangeLatestQuery } from '@/store/api/userApi';
+import { MeResponse, ReferralTreeNode, useChangePasswordMutation, useMeQuery, useReferralTreeQuery, useUpdateProfileMutation, useSendUsernameChangeOtpMutation, useSubmitUsernameChangeRequestMutation, useUsernameChangeLatestQuery, useMemberActivityQuery, useMemberSessionsQuery, useRevokeMemberSessionMutation } from '@/store/api/userApi';
 import { signOut, useSession } from 'next-auth/react';
 import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import Loading from '../Loading';
@@ -260,10 +260,13 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
     pollingInterval: 15000,
   });
   const { data: usernameChangeLatest, refetch: refetchUsernameChangeLatest } = useUsernameChangeLatestQuery();
+  const { data: activityData, isLoading: isActivityLoading } = useMemberActivityQuery();
+  const { data: sessionsData, isLoading: isSessionsLoading } = useMemberSessionsQuery();
   const [updateProfile, { isLoading: isSaving }] = useUpdateProfileMutation();
   const [changePassword, { isLoading: isChangingPassword }] = useChangePasswordMutation();
   const [sendUsernameChangeOtp, { isLoading: isSendingUsernameOtp }] = useSendUsernameChangeOtpMutation();
   const [submitUsernameChangeRequest, { isLoading: isSubmittingUsernameChange }] = useSubmitUsernameChangeRequestMutation();
+  const [revokeMemberSession, { isLoading: isRevokingSession }] = useRevokeMemberSessionMutation();
 
   const [activeTab, setActiveTab] = useState<Tab>('profile');
 
@@ -288,6 +291,7 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
     language: 'en',
     currency: 'PHP',
   });
+  const [isUpdatingTwoFactor, setIsUpdatingTwoFactor] = useState(false);
 
   const [profileMsg, setProfileMsg] = useState<AlertMsg | null>(null);
   const [usernameMsg, setUsernameMsg] = useState<AlertMsg | null>(null);
@@ -297,9 +301,13 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
   const [treeStatusFilter, setTreeStatusFilter] = useState<TreeStatusFilter>('all');
   const [referralPage, setReferralPage] = useState(1);
   const REFERRAL_PAGE_SIZE = 10;
+  const ACTIVITY_PAGE_SIZE = 6;
+  const [activityPage, setActivityPage] = useState(1);
+  const [sessionPage, setSessionPage] = useState(1);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [isAvatarPreviewOpen, setIsAvatarPreviewOpen] = useState(false);
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
+  const [revokingTokenId, setRevokingTokenId] = useState<number | null>(null);
   const [isMobileReferralTreeOpen, setIsMobileReferralTreeOpen] = useState(false);
   const [isMobileViewOpen, setIsMobileViewOpen] = useState(false);
   const [addressForm, setAddressForm] = useState<AddressFormState>({ address: '', zipCode: '' });
@@ -321,6 +329,11 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
       setUsernameRequest(profileData?.username ?? '');
     }
   }, [profileData, session]);
+
+  useEffect(() => {
+    if (!profileData) return;
+    setPrefs((prev) => ({ ...prev, twoFactorEnabled: Boolean(profileData.two_factor_enabled) }));
+  }, [profileData?.two_factor_enabled, profileData]);
 
   useEffect(() => {
     if (!isAddressModalOpen) return;
@@ -477,6 +490,36 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
 
   const togglePref = (field: keyof PreferencesState) =>
     setPrefs((prev) => (typeof prev[field] === 'boolean' ? { ...prev, [field]: !prev[field] } : prev));
+
+  const handleToggleTwoFactor = async () => {
+    const nextEnabled = !prefs.twoFactorEnabled;
+    const previousEnabled = prefs.twoFactorEnabled;
+    setPrefs((prev) => ({ ...prev, twoFactorEnabled: nextEnabled }));
+    setIsUpdatingTwoFactor(true);
+    setProfileMsg(null);
+
+    try {
+      await updateProfile({
+        name: form.name.trim() || profileData?.name || session?.user?.name || 'AF Home User',
+        phone: form.phone.trim() || undefined,
+        two_factor_enabled: nextEnabled,
+      }).unwrap();
+
+      setProfileMsg({
+        type: 'success',
+        text: `Two-factor authentication ${nextEnabled ? 'enabled' : 'disabled'} successfully.`,
+      });
+    } catch (err: unknown) {
+      const apiError = err as { data?: { message?: string } };
+      setPrefs((prev) => ({ ...prev, twoFactorEnabled: previousEnabled }));
+      setProfileMsg({
+        type: 'error',
+        text: apiError?.data?.message || 'Failed to update two-factor authentication.',
+      });
+    } finally {
+      setIsUpdatingTwoFactor(false);
+    }
+  };
 
   const handleCopyReferralLink = async (type: 'member' | 'shopping') => {
     const link = type === 'member' ? memberReferralLink : shoppingReferralLink;
@@ -983,13 +1026,45 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
     ];
   }, [profileData?.address, profileData?.barangay, profileData?.city, profileData?.province, profileData?.region, profileData?.zip_code, form.name, form.phone]);
 
-  const recentActivity = [
-    { title: 'Updated profile details', time: '2 hours ago' },
-    { title: 'Placed order #AF-19341', time: 'Yesterday' },
-    { title: 'Added 3 items to wishlist', time: '2 days ago' },
-    { title: 'Changed account password', time: '1 week ago' },
-    { title: 'Added billing address', time: '2 weeks ago' },
-  ];
+  const formatRelativeTime = (value?: string | null) => {
+    if (!value) return 'Unknown time';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return 'Unknown time';
+    const diffMs = Date.now() - date.getTime();
+    const diffMinutes = Math.max(1, Math.floor(diffMs / (1000 * 60)));
+    if (diffMinutes < 60) return `${diffMinutes} min ago`;
+    const diffHours = Math.floor(diffMinutes / 60);
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    const diffDays = Math.floor(diffHours / 24);
+    if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+    return date.toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
+  const recentActivity = (activityData?.items ?? []).map((item) => ({
+    title: item.title || 'Account activity',
+    time: formatRelativeTime(item.created_at ?? null),
+    rawTime: item.created_at ?? null,
+  }));
+
+  const sessionItems = sessionsData?.items ?? [];
+  const activityTotalPages = Math.max(1, Math.ceil(recentActivity.length / ACTIVITY_PAGE_SIZE));
+  const sessionTotalPages = Math.max(1, Math.ceil(sessionItems.length / ACTIVITY_PAGE_SIZE));
+  const paginatedRecentActivity = recentActivity.slice(
+    (activityPage - 1) * ACTIVITY_PAGE_SIZE,
+    activityPage * ACTIVITY_PAGE_SIZE
+  );
+  const paginatedSessionItems = sessionItems.slice(
+    (sessionPage - 1) * ACTIVITY_PAGE_SIZE,
+    sessionPage * ACTIVITY_PAGE_SIZE
+  );
+
+  useEffect(() => {
+    setActivityPage((prev) => Math.min(prev, activityTotalPages));
+  }, [activityTotalPages]);
+
+  useEffect(() => {
+    setSessionPage((prev) => Math.min(prev, sessionTotalPages));
+  }, [sessionTotalPages]);
 
   const TABS: { key: Tab; label: string; Icon: (p: React.SVGProps<SVGSVGElement>) => React.ReactElement }[] = [
     { key: 'profile', label: 'Profile', Icon: Icon.User },
@@ -1033,6 +1108,24 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
       return;
     }
     router.push('/');
+  };
+
+  const handleRevokeSession = async (tokenId: number, isCurrent: boolean) => {
+    if (!tokenId) return;
+    setRevokingTokenId(tokenId);
+    try {
+      const result = await revokeMemberSession(tokenId).unwrap();
+      if (isCurrent || result.is_current) {
+        await signOut({ callbackUrl: '/login' });
+        return;
+      }
+      setProfileMsg({ type: 'success', text: 'Device signed out successfully.' });
+    } catch (err: unknown) {
+      const apiError = err as { data?: { message?: string } };
+      setProfileMsg({ type: 'error', text: apiError?.data?.message || 'Failed to sign out this device.' });
+    } finally {
+      setRevokingTokenId(null);
+    }
   };
 
 
@@ -1707,9 +1800,12 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
                               ? 'Your account is protected with 2FA.'
                               : 'Add an extra layer of security by enabling 2FA.'}
                           </p>
+                          {isUpdatingTwoFactor ? (
+                            <p className="text-[11px] text-sky-600 dark:text-sky-400 mt-1">Updating 2FA setting...</p>
+                          ) : null}
                         </div>
                       </div>
-                      <Toggle checked={prefs.twoFactorEnabled} onChange={() => togglePref('twoFactorEnabled')} />
+                      <Toggle checked={prefs.twoFactorEnabled} onChange={handleToggleTwoFactor} disabled={isUpdatingTwoFactor} />
                     </div>
                   </div>
 
@@ -2065,48 +2161,142 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
                       <p className="text-xs text-slate-500 dark:text-gray-400 mt-0.5">A log of your recent account actions.</p>
                     </div>
                     <div className="space-y-2">
-                      {recentActivity.map((item, i) => (
-                        <motion.div
-                          key={item.title}
-                          variants={fadeUp}
-                          initial="hidden"
-                          animate="visible"
-                          custom={i}
-                          className="flex items-start gap-3.5 rounded-xl border border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-gray-800/50 px-4 py-3.5 hover:border-slate-200 dark:hover:border-slate-600 transition-colors"
-                        >
-                          <div className="mt-0.5 h-7 w-7 rounded-full bg-sky-100 dark:bg-sky-900/30 text-sky-500 dark:text-sky-400 flex items-center justify-center shrink-0">
-                            {getActivityIcon(item.title)}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-slate-800 dark:text-gray-200 truncate">{item.title}</p>
-                            <p className="text-xs text-slate-400 dark:text-gray-500 mt-0.5">{item.time}</p>
-                          </div>
-                        </motion.div>
-                      ))}
+                      {isActivityLoading ? (
+                        <div className="space-y-2 animate-pulse">
+                          {[1, 2, 3].map((i) => (
+                            <div key={i} className="h-14 rounded-xl bg-slate-100 dark:bg-gray-700" />
+                          ))}
+                        </div>
+                      ) : recentActivity.length > 0 ? (
+                        paginatedRecentActivity.map((item, i) => (
+                          <motion.div
+                            key={`${item.title}-${(activityPage - 1) * ACTIVITY_PAGE_SIZE + i}`}
+                            variants={fadeUp}
+                            initial="hidden"
+                            animate="visible"
+                            custom={i}
+                            className="flex items-start gap-3.5 rounded-xl border border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-gray-800/50 px-4 py-3.5 hover:border-slate-200 dark:hover:border-slate-600 transition-colors"
+                          >
+                            <div className="mt-0.5 h-7 w-7 rounded-full bg-sky-100 dark:bg-sky-900/30 text-sky-500 dark:text-sky-400 flex items-center justify-center shrink-0">
+                              {getActivityIcon(item.title)}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-slate-800 dark:text-gray-200 truncate">{item.title}</p>
+                              <p className="text-xs text-slate-400 dark:text-gray-500 mt-0.5">{item.time}</p>
+                            </div>
+                          </motion.div>
+                        ))
+                      ) : (
+                        <p className="text-sm text-slate-500 dark:text-gray-400">No recent activity yet.</p>
+                      )}
                     </div>
+                    {recentActivity.length > ACTIVITY_PAGE_SIZE && (
+                      <div className="mt-4 flex items-center justify-center gap-3">
+                        <button
+                          type="button"
+                          disabled={activityPage <= 1}
+                          onClick={() => setActivityPage((p) => Math.max(1, p - 1))}
+                          className="flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 px-3.5 py-2 text-xs font-semibold text-slate-600 dark:text-gray-300 hover:border-[#2c5f4f]/40 hover:text-[#2c5f4f] dark:hover:bg-gray-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                          <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6" /></svg>
+                          Prev
+                        </button>
+                        <p className="text-xs text-slate-500 dark:text-gray-400 font-medium">
+                          Page <span className="text-slate-800 dark:text-gray-300 font-bold">{activityPage}</span> / {activityTotalPages}
+                        </p>
+                        <button
+                          type="button"
+                          disabled={activityPage >= activityTotalPages}
+                          onClick={() => setActivityPage((p) => Math.min(activityTotalPages, p + 1))}
+                          className="flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 px-3.5 py-2 text-xs font-semibold text-slate-600 dark:text-gray-300 hover:border-[#2c5f4f]/40 hover:text-[#2c5f4f] dark:hover:bg-gray-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                          Next
+                          <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6" /></svg>
+                        </button>
+                      </div>
+                    )}
                   </div>
 
-                  {/* Login sessions (placeholder) */}
+                  {/* Login sessions */}
                   <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-gray-800 p-5 md:p-6">
                     <div className="mb-4">
                       <h3 className="text-base font-bold text-slate-900 dark:text-white">Active Sessions</h3>
                       <p className="text-xs text-slate-500 dark:text-gray-400 mt-0.5">Devices currently logged into your account.</p>
                     </div>
-                    <div className="rounded-xl border border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-gray-800 px-4 py-3.5 flex items-center justify-between gap-4">
-                      <div className="flex items-center gap-3">
-                        <div className="h-8 w-8 rounded-lg bg-sky-100 dark:bg-sky-900/30 text-sky-500 dark:text-sky-400 flex items-center justify-center">
-                          <Icon.Shield className="h-4 w-4" />
+                    <div className="space-y-2">
+                      {isSessionsLoading ? (
+                        <div className="space-y-2 animate-pulse">
+                          {[1, 2].map((i) => (
+                            <div key={i} className="h-16 rounded-xl bg-slate-100 dark:bg-gray-700" />
+                          ))}
                         </div>
-                        <div>
-                          <p className="text-sm font-semibold text-slate-800 dark:text-gray-200">Current Device</p>
-                          <p className="text-xs text-slate-500 dark:text-gray-400">Windows - Chrome - Manila, PH</p>
-                        </div>
-                      </div>
-                      <span className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-100 dark:border-emerald-700 px-2 py-1 rounded-full">
-                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 inline-block" />
-                        Active now
-                      </span>
+                      ) : sessionItems.length > 0 ? (
+                        paginatedSessionItems.map((session) => (
+                          <div key={session.id} className="rounded-xl border border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-gray-800 px-4 py-3.5 flex items-center justify-between gap-4">
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className={`h-8 w-8 rounded-lg flex items-center justify-center ${session.is_current ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400' : 'bg-sky-100 dark:bg-sky-900/30 text-sky-500 dark:text-sky-400'}`}>
+                                <Icon.Shield className="h-4 w-4" />
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-sm font-semibold text-slate-800 dark:text-gray-200 truncate">
+                                  {session.is_current ? 'Current Device' : session.device}
+                                </p>
+                                <p className="text-xs text-slate-500 dark:text-gray-400 truncate">
+                                  {session.platform} - {session.browser} - {session.location}
+                                </p>
+                                <p className="text-[11px] text-slate-400 dark:text-gray-500 mt-0.5">
+                                  Last active: {formatRelativeTime(session.last_active_at ?? session.created_at ?? null)}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {session.is_current ? (
+                                <span className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-100 dark:border-emerald-700 px-2 py-1 rounded-full whitespace-nowrap">
+                                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 inline-block" />
+                                  Active now
+                                </span>
+                              ) : null}
+                              <button
+                                type="button"
+                                onClick={() => handleRevokeSession(session.token_id, session.is_current)}
+                                disabled={isRevokingSession && revokingTokenId === session.token_id}
+                                className="inline-flex items-center gap-1.5 rounded-xl border border-red-200 dark:border-red-800 bg-white dark:bg-gray-800 px-3 py-1.5 text-xs font-semibold text-red-600 dark:text-red-400 hover:bg-red-600 dark:hover:bg-red-700 hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                <Icon.LogOut className="h-3.5 w-3.5" />
+                                {isRevokingSession && revokingTokenId === session.token_id ? 'Signing out...' : 'Sign out'}
+                              </button>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-sm text-slate-500 dark:text-gray-400">No active sessions found.</p>
+                      )}
                     </div>
+                    {sessionItems.length > ACTIVITY_PAGE_SIZE && (
+                      <div className="mt-4 flex items-center justify-center gap-3">
+                        <button
+                          type="button"
+                          disabled={sessionPage <= 1}
+                          onClick={() => setSessionPage((p) => Math.max(1, p - 1))}
+                          className="flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 px-3.5 py-2 text-xs font-semibold text-slate-600 dark:text-gray-300 hover:border-[#2c5f4f]/40 hover:text-[#2c5f4f] dark:hover:bg-gray-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                          <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6" /></svg>
+                          Prev
+                        </button>
+                        <p className="text-xs text-slate-500 dark:text-gray-400 font-medium">
+                          Page <span className="text-slate-800 dark:text-gray-300 font-bold">{sessionPage}</span> / {sessionTotalPages}
+                        </p>
+                        <button
+                          type="button"
+                          disabled={sessionPage >= sessionTotalPages}
+                          onClick={() => setSessionPage((p) => Math.min(sessionTotalPages, p + 1))}
+                          className="flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 px-3.5 py-2 text-xs font-semibold text-slate-600 dark:text-gray-300 hover:border-[#2c5f4f]/40 hover:text-[#2c5f4f] dark:hover:bg-gray-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                          Next
+                          <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6" /></svg>
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </motion.div>
               )}
