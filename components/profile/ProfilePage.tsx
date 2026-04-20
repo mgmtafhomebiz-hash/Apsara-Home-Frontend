@@ -45,6 +45,7 @@ import WalletTab from './WalletTab';
 import InteriorRequestsTab from './InteriorRequestsTab';
 import { usePhAddress } from '@/hooks/usePhAddress';
 import { containsBlockedWord } from '@/libs/badWords';
+import { getProfileCompletion } from '@/libs/profileCompletion';
 
 
 type ProfileFormState = {
@@ -462,15 +463,13 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
   const completion = useMemo(() => {
     if (isVerified) return 100;
 
-    const checks = [
-      Boolean(form.name.trim()),
-      Boolean(form.email.trim()),
-      Boolean(form.phone.trim()),
-      Boolean(form.username.trim()),
-      Boolean(bio.trim()),
-    ];
-    return Math.round((checks.filter(Boolean).length / checks.length) * 100);
-  }, [bio, form, isVerified]);
+    return getProfileCompletion(profileData ?? {
+      ...form,
+      email: form.email,
+      username: form.username,
+      phone: form.phone,
+    }).percentage;
+  }, [form, isVerified, profileData]);
 
   const onChange = (field: keyof ProfileFormState) => (e: ChangeEvent<HTMLInputElement>) =>
     setForm((prev) => ({ ...prev, [field]: e.target.value }));

@@ -4,6 +4,12 @@ export interface MeResponse {
     id: number;
     name: string;
     email: string;
+    middle_name?: string | null;
+    birth_date?: string | null;
+    gender?: 'male' | 'female' | 'other' | null;
+    occupation?: string | null;
+    work_location?: 'local' | 'overseas' | null;
+    country?: string | null;
     username?: string;
     referrer_id?: number;
     referrer_username?: string | null;
@@ -35,6 +41,8 @@ export interface MeResponse {
     };
     email_verified?: boolean;
     password_change_required?: boolean;
+    profile_complete?: boolean;
+    profile_completion_percentage?: number;
 }
 
 export interface CustomerAddress {
@@ -73,8 +81,14 @@ export interface CreateCustomerAddressPayload {
 
 export interface UpdateProfilePayload {
     name: string;
+    middle_name?: string;
     username?: string;
     phone?: string;
+    birth_date?: string;
+    gender?: 'male' | 'female' | 'other';
+    occupation?: string;
+    work_location?: 'local' | 'overseas';
+    country?: string;
     address?: string;
     barangay?: string;
     city?: string;
