@@ -165,7 +165,7 @@ export default function Footer() {
                   rel="noopener noreferrer"
                   whileHover={{ scale: 1.1, y: -2 }}
                   whileTap={{ scale: 0.95 }}
-                  className="w-10 h-10 bg-gray-300/60 dark:bg-white/10 rounded-full flex items-center justify-center hover:bg-orange-500 hover:text-white transition-colors"
+                  className="w-10 h-10 bg-gray-300/60 dark:bg-white/10 rounded-full flex items-center justify-center hover:bg-sky-500 hover:text-white transition-colors"
                   aria-label={social.label}
                 >
                   <social.icon size={18} />
@@ -182,7 +182,7 @@ export default function Footer() {
                 <li key={link.name}>
                   <Link
                     href={link.href}
-                    className="text-gray-600 dark:text-white/70 hover:text-orange-500 dark:hover:text-orange-400 transition-colors text-sm"
+                    className="text-gray-600 dark:text-white/70 hover:text-sky-500 dark:hover:text-sky-400 transition-colors text-sm"
                   >
                     {link.name}
                   </Link>
@@ -200,14 +200,14 @@ export default function Footer() {
                   {link.href.startsWith('/') ? (
                     <Link
                       href={link.href}
-                      className="text-gray-600 dark:text-white/70 hover:text-orange-500 dark:hover:text-orange-400 transition-colors text-sm"
+                      className="text-gray-600 dark:text-white/70 hover:text-sky-500 dark:hover:text-sky-400 transition-colors text-sm"
                     >
                       {link.name}
                     </Link>
                   ) : (
                     <a
                       href={link.href}
-                      className="text-gray-600 dark:text-white/70 hover:text-orange-500 dark:hover:text-orange-400 transition-colors text-sm"
+                      className="text-gray-600 dark:text-white/70 hover:text-sky-500 dark:hover:text-sky-400 transition-colors text-sm"
                     >
                       {link.name}
                     </a>
@@ -242,25 +242,25 @@ export default function Footer() {
             </h4>
             <ul className="space-y-4">
               <li className="flex items-start gap-3">
-                <MapPin size={18} className="text-orange-500 flex-shrink-0 mt-1" />
+                <MapPin size={18} className="text-sky-500 flex-shrink-0 mt-1" />
                 <span className="text-gray-600 dark:text-white/70 text-sm">
                   {address}
                 </span>
               </li>
               <li className="flex items-center gap-3">
-                <Phone size={18} className="text-orange-500 flex-shrink-0" />
+                <Phone size={18} className="text-sky-500 flex-shrink-0" />
                 <a
                   href={`tel:${contactNumber}`}
-                  className="text-gray-600 dark:text-white/70 hover:text-orange-500 dark:hover:text-orange-400 transition-colors text-sm"
+                  className="text-gray-600 dark:text-white/70 hover:text-sky-500 dark:hover:text-sky-400 transition-colors text-sm"
                 >
                   {contactNumber}
                 </a>
               </li>
               <li className="flex items-center gap-3">
-                <Mail size={18} className="text-orange-500 flex-shrink-0" />
+                <Mail size={18} className="text-sky-500 flex-shrink-0" />
                 <a
                   href={`mailto:${supportEmail}`}
-                  className="text-gray-600 dark:text-white/70 hover:text-orange-500 dark:hover:text-orange-400 transition-colors text-sm"
+                  className="text-gray-600 dark:text-white/70 hover:text-sky-500 dark:hover:text-sky-400 transition-colors text-sm"
                 >
 
                   {supportEmail}
