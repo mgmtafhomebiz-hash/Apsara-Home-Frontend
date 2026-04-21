@@ -142,7 +142,7 @@ export default function MembersStats({ stats, onCardClick }: MembersStatsProps) 
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.04 }}
           >
-            <Card className={`h-full border ${card.border} bg-white shadow-none transition-all duration-300 hover:-translate-y-0.5 hover:shadow-sm dark:bg-slate-900/95 dark:hover:bg-slate-900`}>
+            <Card className={`h-full border ${card.border} bg-white shadow-none transition-all duration-300 hover:-translate-y-0.5 dark:bg-slate-900/95 dark:hover:bg-slate-900`}>
               <Card.Content className="p-4">
                 <button
                   type="button"

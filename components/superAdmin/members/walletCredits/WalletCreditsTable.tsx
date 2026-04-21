@@ -1,6 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
+import DataTableShell from '@/components/superAdmin/DataTableShell'
 import { MemberWallet, TIER_COLORS, STATUS_CONFIG, php, pv, getInitials, timeAgo } from './types'
 
 interface WalletCreditsTableProps {
@@ -97,66 +98,65 @@ export default function WalletCreditsTable({ wallets, sortKey, onAdjust }: Walle
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.2 }}
-      className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden"
+      className="space-y-0"
     >
-      {/* Card header */}
-      <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3">
-        <div>
-          <h2 className="text-sm font-bold text-slate-800">Member Wallets</h2>
-          <p className="text-xs text-slate-400 mt-0.5">{wallets.length} members listed</p>
-        </div>
-        <span className="text-xs text-slate-400 bg-slate-50 border border-slate-100 px-2.5 py-1 rounded-full font-medium capitalize">
-          By {sortKey.replace(/([A-Z])/g, ' $1').toLowerCase()}
-        </span>
-      </div>
-
-      <div className="overflow-x-auto">
-        <table className="w-full text-left">
-          <thead>
-            <tr className="border-b border-slate-100 dark:border-slate-800 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60">
-              <th className="px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wide">Member</th>
-              <th className="px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wide">Tier</th>
-              <th className="px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wide">Cash Balance</th>
-              <th className="px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wide">PV Balance</th>
-              <th className="px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wide">Locked</th>
-              <th className="px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wide">Available</th>
-              <th className="px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wide">Status</th>
-              <th className="px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wide">Last Txn</th>
-              <th className="px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wide">Action</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100 dark:divide-slate-800/70 dark:divide-slate-800/70">
-            {wallets.length === 0 ? (
-              <tr>
-                <td colSpan={9} className="px-5 py-14 text-center">
-                  <div className="flex flex-col items-center gap-2">
-                    <svg className="w-8 h-8 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                    <p className="text-sm font-semibold text-slate-500">No members found</p>
-                    <p className="text-xs text-slate-400">Try adjusting your search or filter</p>
-                  </div>
-                </td>
+      <DataTableShell
+        title="Member Wallets"
+        subtitle="Review cash and PV wallet balances"
+        badge={(
+          <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400">
+            By {sortKey.replace(/([A-Z])/g, ' $1').toLowerCase()}
+          </span>
+        )}
+        footer={(
+          <div className="flex items-center justify-between text-xs text-slate-400">
+            <span>
+              Showing <span className="font-semibold text-slate-600 dark:text-slate-300">{wallets.length}</span> members
+            </span>
+            <span>
+              Total cash balance:{' '}
+              <span className="font-bold text-emerald-600">{php(totalCash)}</span>
+            </span>
+          </div>
+        )}
+      >
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead>
+              <tr className="border-b border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-800/40">
+                <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-400">Member</th>
+                <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-400">Tier</th>
+                <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-400">Cash Balance</th>
+                <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-400">PV Balance</th>
+                <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-400">Locked</th>
+                <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-400">Available</th>
+                <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-400">Status</th>
+                <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-400">Last Txn</th>
+                <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-400">Action</th>
               </tr>
-            ) : (
-              wallets.map(w => (
-                <WalletRow key={w.id} wallet={w} onAdjust={() => onAdjust(w)} />
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Footer */}
-      <div className="px-5 py-3.5 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400">
-        <span>
-          Showing <span className="font-semibold text-slate-600">{wallets.length}</span> members
-        </span>
-        <span>
-          Total cash balance:{' '}
-          <span className="font-bold text-emerald-600">{php(totalCash)}</span>
-        </span>
-      </div>
+            </thead>
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800/70">
+              {wallets.length === 0 ? (
+                <tr>
+                  <td colSpan={9} className="px-5 py-14 text-center">
+                    <div className="flex flex-col items-center gap-2">
+                      <svg className="w-8 h-8 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                      <p className="text-sm font-semibold text-slate-500">No members found</p>
+                      <p className="text-xs text-slate-400">Try adjusting your search or filter</p>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                wallets.map((w) => (
+                  <WalletRow key={w.id} wallet={w} onAdjust={() => onAdjust(w)} />
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </DataTableShell>
     </motion.div>
   )
 }

@@ -97,29 +97,29 @@ export default function AccountingDashboardMain() {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         <div className="lg:col-span-8 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-          <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm">
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
             <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Total Requests (Snapshot)</p>
             <p className="mt-1 text-2xl font-bold text-slate-900 dark:text-white">{summary.totalCount}</p>
             <p className="text-sm text-slate-600 dark:text-slate-400">{formatMoney(summary.totalAmount)}</p>
           </div>
-          <div className="rounded-2xl border border-amber-200 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10 p-4 shadow-sm">
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-500/30 dark:bg-amber-500/10">
             <p className="text-xs uppercase tracking-wide text-amber-700 dark:text-amber-300">For Approval</p>
             <p className="mt-1 text-2xl font-bold text-amber-800 dark:text-amber-300">{summary.forApprovalCount}</p>
             <p className="text-sm text-amber-700 dark:text-amber-300">{formatMoney(summary.forApprovalAmount)}</p>
           </div>
-          <div className="rounded-2xl border border-blue-200 dark:border-blue-500/30 bg-blue-50 dark:bg-blue-500/10 p-4 shadow-sm">
+          <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-500/30 dark:bg-blue-500/10">
             <p className="text-xs uppercase tracking-wide text-blue-700 dark:text-blue-300">For Release</p>
             <p className="mt-1 text-2xl font-bold text-blue-800 dark:text-blue-300">{summary.forReleaseCount}</p>
             <p className="text-sm text-blue-700 dark:text-blue-300">{formatMoney(summary.forReleaseAmount)}</p>
           </div>
-          <div className="rounded-2xl border border-emerald-200 dark:border-emerald-500/30 bg-emerald-50 dark:bg-emerald-500/10 p-4 shadow-sm">
+          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-500/30 dark:bg-emerald-500/10">
             <p className="text-xs uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Released</p>
             <p className="mt-1 text-2xl font-bold text-emerald-800 dark:text-emerald-300">{summary.releasedCount}</p>
             <p className="text-sm text-emerald-700 dark:text-emerald-300">{formatMoney(summary.releasedAmount)}</p>
           </div>
         </div>
 
-        <div className="lg:col-span-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm">
+        <div className="lg:col-span-4 rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-semibold text-slate-800 dark:text-white">Processing Pipeline</h2>
             <span className="text-[11px] text-slate-500 dark:text-slate-400">Auto-updated</span>
@@ -157,7 +157,7 @@ export default function AccountingDashboardMain() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        <div className="lg:col-span-8 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm p-4">
+        <div className="lg:col-span-8 rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
           <div className="flex items-center justify-between gap-3 mb-3">
             <h2 className="text-sm font-semibold text-slate-800 dark:text-white">Quick Actions</h2>
             <Link href="/admin/encashment" className="text-xs font-semibold text-teal-600 hover:text-teal-700 dark:text-teal-400 dark:hover:text-teal-300">
@@ -192,7 +192,7 @@ export default function AccountingDashboardMain() {
           </div>
         </div>
 
-        <div className="lg:col-span-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm p-4">
+        <div className="lg:col-span-4 rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
           <h2 className="text-sm font-semibold text-slate-800 dark:text-white mb-3">Channel Mix</h2>
           <div className="space-y-2 text-sm">
             {[
@@ -217,8 +217,8 @@ export default function AccountingDashboardMain() {
         </div>
       </div>
 
-      <div className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm overflow-hidden">
-        <div className="border-b border-slate-100 dark:border-slate-800 dark:border-slate-800 px-4 py-3">
+      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+        <div className="border-b border-slate-200 px-4 py-3 dark:border-slate-800">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-sm font-semibold text-slate-800 dark:text-white">Priority Queue</h2>
             <span className="text-xs text-slate-500 dark:text-slate-400">Oldest requests first</span>
@@ -278,7 +278,7 @@ export default function AccountingDashboardMain() {
         )}
       </div>
 
-      <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm p-4">
+      <div className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold text-slate-800 dark:text-white">Risk and Exceptions</h2>
           <span className="text-xs text-slate-500 dark:text-slate-400">For finance audit</span>

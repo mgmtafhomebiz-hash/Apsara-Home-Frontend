@@ -230,7 +230,7 @@ export default function InteriorRequestsPageMain() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center rounded-2xl border border-slate-200 bg-white p-16 shadow-sm">
+      <div className="flex items-center justify-center rounded-2xl border border-slate-200 bg-white p-16 dark:border-slate-800 dark:bg-slate-900">
         <div className="text-center">
           <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-cyan-600 border-t-transparent" />
           <p className="mt-3 text-sm text-slate-500">Loading interior requests…</p>
@@ -241,7 +241,7 @@ export default function InteriorRequestsPageMain() {
 
   if (isError) {
     return (
-      <div className="flex items-center gap-3 rounded-2xl border border-red-200 bg-red-50 p-6 shadow-sm">
+      <div className="flex items-center gap-3 rounded-2xl border border-red-200 bg-red-50 p-6 dark:border-red-900/40 dark:bg-red-950/30">
         <AlertTriangle className="h-5 w-5 shrink-0 text-red-500" />
         <p className="text-sm text-red-700">Could not load the interior request queue. Please try again.</p>
       </div>
@@ -252,10 +252,10 @@ export default function InteriorRequestsPageMain() {
     <div className="space-y-5">
 
       {/* ── Page header ── */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
+      <div className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900 md:p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="flex items-start gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-cyan-50">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-cyan-100 bg-cyan-50 dark:border-cyan-900/30 dark:bg-cyan-500/10">
               <Inbox className="h-5 w-5 text-cyan-600" />
             </div>
             <div>
@@ -266,7 +266,7 @@ export default function InteriorRequestsPageMain() {
               </p>
             </div>
           </div>
-          <div className="rounded-xl border border-cyan-100 bg-cyan-50 px-4 py-3">
+          <div className="rounded-xl border border-cyan-100 bg-cyan-50 px-4 py-3 dark:border-cyan-900/30 dark:bg-cyan-500/10">
             <p className="text-[11px] font-semibold uppercase tracking-wide text-cyan-700">Secure Delivery</p>
             <p className="mt-1 max-w-55 text-xs text-cyan-800">
               Visible replies trigger inbox notifications and email alerts for the customer.
@@ -297,7 +297,7 @@ export default function InteriorRequestsPageMain() {
       <div className="grid gap-5 xl:grid-cols-[minmax(0,320px)_minmax(0,1fr)]">
 
         {/* Request list */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <LayoutList className="h-4 w-4 text-slate-400" />
@@ -306,7 +306,7 @@ export default function InteriorRequestsPageMain() {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as 'all' | InteriorRequestStatus)}
-              className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-slate-600 outline-none focus:border-cyan-300 focus:ring-2 focus:ring-cyan-100"
+              className="rounded-[18px] border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-600 outline-none transition-all focus:border-sky-400 dark:border-white/18 dark:bg-white/12 dark:text-slate-200 dark:focus:border-sky-400/60"
             >
               <option value="all">All Statuses</option>
               <option value="pending">Pending</option>
@@ -320,7 +320,7 @@ export default function InteriorRequestsPageMain() {
 
           <div className="mt-4 space-y-2">
             {requests.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center">
+                <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center dark:border-slate-800 dark:bg-slate-900">
                 <p className="text-sm text-slate-400">No requests for this filter.</p>
               </div>
             ) : (
@@ -337,8 +337,8 @@ export default function InteriorRequestsPageMain() {
                     }}
                     className={`group w-full rounded-xl border p-3.5 text-left transition-all ${
                       active
-                        ? 'border-cyan-300 bg-cyan-50 shadow-sm'
-                        : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
+                      ? 'border-sky-300 bg-sky-50'
+                        : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:hover:bg-slate-800/50'
                     }`}
                   >
                     <div className="flex items-start justify-between gap-2">
@@ -377,7 +377,7 @@ export default function InteriorRequestsPageMain() {
           <div className="space-y-4">
 
             {/* Request header */}
-            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
+            <div className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900 md:p-6">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
                   <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">{selected.reference}</p>
@@ -409,7 +409,7 @@ export default function InteriorRequestsPageMain() {
                   { label: 'Preferred Schedule', value: formatDateTime(selected.preferred_date, selected.preferred_time) },
                   { label: 'Assigned To', value: selected.assigned_admin?.name || 'Unassigned' },
                 ].map((item) => (
-                  <div key={item.label} className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                  <div key={item.label} className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-950">
                     <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">{item.label}</p>
                     <p className="mt-1 text-sm font-semibold text-slate-800">{item.value}</p>
                   </div>
@@ -425,7 +425,7 @@ export default function InteriorRequestsPageMain() {
             </div>
 
             {/* Actions panel */}
-            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
+            <div className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900 md:p-6">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <h3 className="text-base font-bold text-slate-900">Request Actions</h3>
@@ -436,7 +436,7 @@ export default function InteriorRequestsPageMain() {
                 <button
                   type="button"
                   onClick={() => void handleAssignToMe()}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-3.5 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
+                className="inline-flex items-center gap-1.5 rounded-[18px] border border-gray-300 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 transition hover:border-slate-400 hover:bg-slate-50 dark:border-white/18 dark:bg-white/12 dark:text-slate-200 dark:hover:bg-white/18"
                 >
                   <UserCheck className="h-3.5 w-3.5" />
                   Assign To Me
@@ -460,7 +460,7 @@ export default function InteriorRequestsPageMain() {
               <div className="mt-5 grid gap-4 lg:grid-cols-[200px_minmax(0,1fr)]">
 
                 {/* Left: Status controls */}
-                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950">
                   <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">Status Control</p>
 
                   <label className="mt-4 block text-[11px] font-semibold uppercase tracking-wide text-slate-500">
@@ -469,7 +469,7 @@ export default function InteriorRequestsPageMain() {
                   <select
                     value={effectiveReplyStatus}
                     onChange={(e) => setReplyStatus(e.target.value as InteriorRequestStatus)}
-                    className="mt-2 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-cyan-300 focus:ring-2 focus:ring-cyan-100"
+                    className="mt-2 w-full rounded-[18px] border border-gray-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition-all focus:border-sky-400 dark:border-white/18 dark:bg-white/12 dark:text-slate-200 dark:focus:border-sky-400/60"
                   >
                     <option value="pending">Pending</option>
                     <option value="reviewing">Reviewing</option>
@@ -483,7 +483,7 @@ export default function InteriorRequestsPageMain() {
                     type="button"
                     onClick={() => void handleSaveRequest()}
                     disabled={isSavingRequest}
-                    className="mt-3 w-full rounded-lg bg-cyan-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-cyan-700 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="mt-3 w-full rounded-[18px] bg-sky-500 px-3 py-2 text-xs font-semibold text-white transition hover:bg-sky-600 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {isSavingRequest ? 'Saving…' : 'Save Status'}
                   </button>
@@ -504,7 +504,7 @@ export default function InteriorRequestsPageMain() {
                       <select
                         value={replyType}
                         onChange={(e) => setReplyType(e.target.value as InteriorRequestUpdateType)}
-                        className="mt-2 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 outline-none focus:border-cyan-300 focus:ring-2 focus:ring-cyan-100"
+                    className="mt-2 w-full rounded-[18px] border border-gray-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition-all focus:border-sky-400 dark:border-white/18 dark:bg-white/12 dark:text-slate-200 dark:focus:border-sky-400/60"
                       >
                         <option value="message">Message</option>
                         <option value="estimate">Estimate</option>
@@ -518,7 +518,7 @@ export default function InteriorRequestsPageMain() {
                         value={replyTitle}
                         onChange={(e) => setReplyTitle(e.target.value)}
                         placeholder="Short, customer-facing title"
-                        className="mt-2 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 outline-none focus:border-cyan-300 focus:ring-2 focus:ring-cyan-100"
+                        className="mt-2 w-full rounded-[18px] border border-gray-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition-all focus:border-sky-400 dark:border-white/18 dark:bg-white/12 dark:text-slate-200 dark:focus:border-sky-400/60"
                       />
                     </div>
                   </div>
@@ -530,21 +530,21 @@ export default function InteriorRequestsPageMain() {
                       onChange={(e) => setReplyMessage(e.target.value)}
                       rows={4}
                       placeholder="Write the estimate note, schedule update, design message, or internal comment here."
-                      className="mt-2 w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-700 outline-none focus:border-cyan-300 focus:ring-2 focus:ring-cyan-100"
+                      className="mt-2 w-full resize-none rounded-[18px] border border-gray-300 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition-all focus:border-sky-400 dark:border-white/18 dark:bg-white/12 dark:text-slate-200 dark:focus:border-sky-400/60"
                     />
                   </div>
 
-                  <div className="mt-3 flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                  <div className="mt-3 flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-950">
                     <input
                       type="checkbox"
                       checked={replyVisible}
                       onChange={(e) => setReplyVisible(e.target.checked)}
-                      className="mt-0.5 h-4 w-4 rounded border-slate-300 text-cyan-600 focus:ring-cyan-500"
+                      className="mt-0.5 h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
                     />
                     <div>
                       <p className="flex items-center gap-1.5 text-sm font-semibold text-slate-800">
                         {replyVisible
-                          ? <><Eye className="h-3.5 w-3.5 text-cyan-600" /> Visible to customer</>
+                          ? <><Eye className="h-3.5 w-3.5 text-sky-600" /> Visible to customer</>
                           : <><EyeOff className="h-3.5 w-3.5 text-slate-400" /> Internal note only</>
                         }
                       </p>
@@ -562,7 +562,7 @@ export default function InteriorRequestsPageMain() {
                       type="button"
                       onClick={() => void handleSendReply()}
                       disabled={isSendingReply || !replyTitle.trim() || !replyMessage.trim()}
-                      className="inline-flex items-center gap-1.5 rounded-lg bg-cyan-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-cyan-700 disabled:cursor-not-allowed disabled:opacity-60"
+                      className="inline-flex items-center gap-1.5 rounded-[18px] bg-sky-500 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-sky-600 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       <Send className="h-3.5 w-3.5" />
                       {isSendingReply
@@ -578,7 +578,7 @@ export default function InteriorRequestsPageMain() {
             </div>
 
             {/* Timeline */}
-            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
+            <div className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900 md:p-6">
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <h3 className="flex items-center gap-2 text-base font-bold text-slate-900">
@@ -610,7 +610,7 @@ export default function InteriorRequestsPageMain() {
                             <span className="mt-2 h-full min-h-10 w-px bg-slate-200" />
                           )}
                         </div>
-                        <div className="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3.5">
+                        <div className="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3.5 dark:border-slate-800 dark:bg-slate-950">
                           <div className="flex flex-wrap items-start justify-between gap-2">
                             <div className="flex items-center gap-2">
                               <span className={`rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${meta.badge}`}>
@@ -645,7 +645,7 @@ export default function InteriorRequestsPageMain() {
 
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white p-16 shadow-sm">
+          <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white p-16 dark:border-slate-800 dark:bg-slate-900">
             <Inbox className="h-10 w-10 text-slate-300" />
             <p className="mt-3 text-sm font-medium text-slate-500">No request selected</p>
             <p className="mt-1 text-xs text-slate-400">Pick a request from the list to view details.</p>

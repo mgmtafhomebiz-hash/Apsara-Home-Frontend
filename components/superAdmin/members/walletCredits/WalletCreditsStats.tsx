@@ -62,7 +62,7 @@ export default function WalletCreditsStats() {
       className="grid grid-cols-2 lg:grid-cols-4 gap-4"
     >
       {STATS.map((s, i) => (
-        <div key={i} className={`bg-white border ${s.border} rounded-2xl p-4 shadow-sm`}>
+        <div key={i} className={`bg-white border ${s.border} rounded-2xl p-4 dark:bg-slate-900`}>
           <div className="flex items-center gap-3 mb-3">
             <div className={`h-9 w-9 rounded-xl ${s.bg} ${s.text} flex items-center justify-center shrink-0`}>
               {s.icon}
