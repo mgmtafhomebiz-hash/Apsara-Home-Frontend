@@ -1,14 +1,22 @@
-import withPWAInit from "next-pwa";
 import type { NextConfig } from "next";
 
-const withPWA = withPWAInit({
-  dest: "public",
-  disable: process.env.NODE_ENV === "development",
-  register: true,
-  skipWaiting: true,
-});
+const withPWA = require("next-pwa");
 
 const nextConfig: NextConfig = {
+  webpack(config, { dev }) {
+    if (dev) {
+      config.watchOptions = {
+        ignored: [
+          "**/DumpStack.log.tmp",
+          "**/hiberfil.sys",
+          "**/pagefile.sys",
+          "**/swapfile.sys",
+        ],
+      };
+    }
+
+    return config;
+  },
   images: {
     remotePatterns: [
       {
@@ -39,4 +47,16 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withPWA(nextConfig);
+const isProduction = process.env.NODE_ENV === "production";
+
+export default isProduction
+  ? withPWA({
+      ...nextConfig,
+      pwa: {
+        dest: "public",
+        disable: false,
+        register: true,
+        skipWaiting: true,
+      },
+    })
+  : nextConfig;
