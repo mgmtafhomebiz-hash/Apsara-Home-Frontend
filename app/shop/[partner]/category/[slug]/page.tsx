@@ -125,6 +125,15 @@ async function getPartnerCategoryPageData(partnerSlug: string, categorySlug: str
     const allowedCategories = filterPartnerCategories(categoriesJson.categories ?? [], partner)
     const category = allowedCategories.find((item) => normalizeCategorySlug(item.url, item.name) === categorySlug)
     if (!category) return null
+    const selectedProductIdSet = new Set(partner.featuredProductIds)
+
+    if (selectedProductIdSet.size === 0) {
+      return {
+        category,
+        categories: allowedCategories,
+        products: [] as DisplayProduct[],
+      }
+    }
 
     const productsRes = await fetch(`${apiUrl}/api/products?page=1&per_page=200&status=1&cat_id=${category.id}`, {
       method: 'GET',
@@ -140,7 +149,7 @@ async function getPartnerCategoryPageData(partnerSlug: string, categorySlug: str
       category,
       categories: allowedCategories,
       products: (productsJson.products ?? [])
-        .filter((product) => product.catid === category.id)
+        .filter((product) => product.catid === category.id && selectedProductIdSet.has(product.id))
         .map((product) => mapProductToDisplay(product, apiUrl)),
     }
   } catch {

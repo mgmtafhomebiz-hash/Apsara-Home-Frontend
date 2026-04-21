@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { usePathname } from 'next/navigation'
 import type { Category } from '@/store/api/categoriesApi'
 import { ROOM_OPTIONS } from '@/libs/roomConfig'
 
@@ -44,6 +45,7 @@ interface ProductFilterProps {
 }
 
 export default function ProductFilter({ onFilterChange, className = '', pvRange: propPvRange = [0, 5000], search: propSearch = '', categories = [], currentCategory, maxPrice = 10000, isBrandPage = false, brands = [], currentBrand, isRoomPage = false, currentRoom }: ProductFilterProps) {
+  const pathname = usePathname()
   const [priceRange, setPriceRange] = useState<[number, number]>([0, maxPrice])
   const [sortBy, setSortBy] = useState<'default' | 'asc' | 'desc'>('default')
   const [inStockOnly, setInStockOnly] = useState(false)
@@ -54,6 +56,26 @@ export default function ProductFilter({ onFilterChange, className = '', pvRange:
   const [showPvInfo, setShowPvInfo] = useState(false)
   const [showAllBrands, setShowAllBrands] = useState(false)
   const [brandSearch, setBrandSearch] = useState('')
+  const shopPathMatch = pathname.match(/^\/shop\/([^/]+)\/(?:product|category(?:\/[^/]+)?)\/?$/i)
+  const partnerSlugFromPath = shopPathMatch?.[1]
+  const hasAllCategorySelected = !currentCategory || currentCategory.toLowerCase() === 'all products' || currentCategory.toLowerCase() === 'all category'
+
+  const resolveCategorySlug = (category: Category) =>
+    category.url
+      ? category.url.replace(/^https?:\/\/[^/]+/i, '').replace(/^\/+category\//, '').replace(/\/+$/, '')
+      : category.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')
+
+  const getAllCategoryPath = () => (
+    partnerSlugFromPath ? `/shop/${partnerSlugFromPath}/product` : '/category'
+  )
+
+  const getCategoryPath = (category: Category) => {
+    const categorySlug = resolveCategorySlug(category)
+    if (partnerSlugFromPath) {
+      return `/shop/${partnerSlugFromPath}/category/${categorySlug}`
+    }
+    return `/category/${categorySlug}`
+  }
 
 
   const discountPresets = [
@@ -270,10 +292,10 @@ export default function ProductFilter({ onFilterChange, className = '', pvRange:
         <div className="flex flex-wrap gap-1.5 sm:gap-2">
           <button
             onClick={() => {
-              window.location.href = '/category'
+              window.location.href = getAllCategoryPath()
             }}
             className={`px-3 py-1 rounded-full text-sm font-medium transition-colors cursor-pointer ${
-              !currentCategory && !propSearch 
+              hasAllCategorySelected && !propSearch
                 ? 'bg-sky-100 text-sky-600 dark:bg-sky-900/30 dark:text-sky-400' 
                 : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 hover:bg-sky-100 hover:text-sky-600 dark:hover:bg-sky-900/30 dark:hover:text-sky-400'
             }`}
@@ -284,10 +306,7 @@ export default function ProductFilter({ onFilterChange, className = '', pvRange:
             <button
               key={category.id}
               onClick={() => {
-                const categorySlug = category.url
-                  ? category.url.replace(/^https?:\/\/[^/]+/i, '').replace(/^\/+category\//, '').replace(/\/+$/, '')
-                  : category.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')
-                window.location.href = `/category/${categorySlug}`
+                window.location.href = getCategoryPath(category)
               }}
               className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium transition-colors cursor-pointer ${
                 currentCategory === category.name || propSearch === category.name
