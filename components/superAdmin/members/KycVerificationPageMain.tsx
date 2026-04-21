@@ -10,6 +10,7 @@ import {
   useRejectMemberKycMutation,
 } from '@/store/api/membersApi'
 import { showErrorToast, showSuccessToast } from '@/libs/toast'
+import DataTableShell from '@/components/superAdmin/DataTableShell'
 
 /* --- helpers ----------------------------------------------- */
 
@@ -75,7 +76,7 @@ function StatCard({
   bg: string; text: string; border: string
 }) {
   return (
-    <div className={`bg-white border ${border} rounded-2xl p-4 shadow-sm`}>
+    <div className={`bg-white border ${border} rounded-2xl p-4 dark:bg-slate-900`}>
       <div className="flex items-center gap-3 mb-3">
         <div className={`h-9 w-9 rounded-xl ${bg} ${text} flex items-center justify-center shrink-0`}>
           {icon}
@@ -141,7 +142,7 @@ function DetailModal({ item, onClose, onAction }: {
         initial={{ opacity: 0, scale: 0.95, y: 12 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 12 }}
-        className="relative bg-white rounded-2xl shadow-xl w-full max-w-2xl z-10 overflow-hidden"
+        className="relative w-full max-w-2xl overflow-hidden rounded-2xl border border-slate-200 bg-white z-10 dark:border-slate-800 dark:bg-slate-900"
       >
         {/* Header */}
         <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between gap-4">
@@ -263,7 +264,7 @@ function ActionModal({ action, busy, notes, onNotes, onConfirm, onClose }: {
         initial={{ opacity: 0, scale: 0.95, y: 12 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 12 }}
-        className="relative bg-white rounded-2xl shadow-xl w-full max-w-md z-60 overflow-hidden"
+        className="relative w-full max-w-md overflow-hidden rounded-2xl border border-slate-200 bg-white z-60 dark:border-slate-800 dark:bg-slate-900"
       >
         <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3">
           <div className={`h-9 w-9 rounded-xl flex items-center justify-center shrink-0 ${
@@ -301,21 +302,21 @@ function ActionModal({ action, busy, notes, onNotes, onConfirm, onClose }: {
             onChange={e => onNotes(e.target.value)}
             rows={4}
             placeholder={isApprove ? 'Optional note for audit trail...' : 'Explain rejection reason (min 5 characters)...'}
-            className="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-400 bg-slate-50 text-slate-700 placeholder-slate-400 transition resize-none"
+            className="w-full rounded-[18px] border border-gray-300 bg-white px-4 py-2.5 text-sm text-slate-700 placeholder:text-slate-400 outline-none transition-all duration-200 focus:border-sky-400 focus:bg-white dark:border-white/18 dark:bg-white/12 dark:text-white dark:placeholder:text-white/55 dark:focus:border-sky-400/60 dark:focus:bg-white/18 resize-none"
           />
         </div>
 
         <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
           <button
             onClick={onClose}
-            className="flex-1 py-2.5 rounded-xl text-sm font-semibold border border-slate-200 text-slate-600 hover:border-slate-300 transition"
+            className="flex-1 rounded-[18px] border border-gray-300 px-4 py-2.5 text-sm font-semibold text-slate-600 transition hover:border-slate-400 dark:border-white/18 dark:text-slate-200"
           >
             Cancel
           </button>
           <button
             onClick={onConfirm}
             disabled={busy}
-            className={`flex-1 py-2.5 rounded-xl text-sm font-bold text-white disabled:opacity-60 transition-all ${
+            className={`flex-1 rounded-[18px] px-4 py-2.5 text-sm font-bold text-white disabled:opacity-60 transition-all ${
               isApprove ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-red-500 hover:bg-red-600'
             }`}
           >
@@ -387,7 +388,7 @@ function KycRow({ row, onView, onAction, isBusy }: {
         <div className="flex items-center gap-1.5">
           <button
             onClick={onView}
-            className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300 transition-all"
+            className="rounded-[18px] border border-gray-300 px-3 py-1.5 text-xs font-semibold text-slate-600 transition-all hover:border-slate-400 hover:bg-slate-50 dark:border-white/18 dark:text-slate-200 dark:hover:bg-white/10"
           >
             View
           </button>
@@ -396,14 +397,14 @@ function KycRow({ row, onView, onAction, isBusy }: {
               <button
                 onClick={() => onAction('approve', row.id)}
                 disabled={isBusy}
-                className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 disabled:opacity-50 transition-all"
+                className="rounded-[18px] border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 transition-all hover:bg-emerald-100 disabled:opacity-50"
               >
                 Approve
               </button>
               <button
                 onClick={() => onAction('reject', row.id)}
                 disabled={isBusy}
-                className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 disabled:opacity-50 transition-all"
+                className="rounded-[18px] border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-600 transition-all hover:bg-red-100 disabled:opacity-50"
               >
                 Reject
               </button>
@@ -482,7 +483,7 @@ export default function KycVerificationPageMain() {
           <h1 className="text-xl font-bold text-slate-800">KYC / Verifications</h1>
           <p className="text-sm text-slate-500 mt-0.5">Review identity submissions before account activation</p>
         </div>
-        <button className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 hover:border-slate-300 text-slate-700 rounded-xl text-sm font-semibold transition-all shadow-sm hover:shadow">
+        <button className="flex items-center gap-2 rounded-[18px] border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition-all hover:border-slate-400 dark:border-white/18 dark:bg-white/12 dark:text-slate-200">
           <svg className="w-4 h-4 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
           </svg>
@@ -542,7 +543,7 @@ export default function KycVerificationPageMain() {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl shadow-sm p-4 space-y-3"
+        className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3 dark:border-slate-800 dark:bg-slate-900"
       >
         {/* Search */}
         <div className="relative">
@@ -553,7 +554,7 @@ export default function KycVerificationPageMain() {
             value={search}
             onChange={e => { setSearch(e.target.value); setPage(1) }}
             placeholder="Search reference, full name, ID number..."
-            className="w-full pl-9 pr-4 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-400 bg-slate-50 text-slate-700 placeholder-slate-400 transition"
+            className="h-11 w-full rounded-[18px] border border-gray-300 bg-white pl-9 pr-4 text-sm text-slate-900 outline-none transition-all duration-200 placeholder:text-gray-400 focus:border-sky-400 focus:bg-white dark:border-white/18 dark:bg-white/12 dark:text-white dark:placeholder:text-white/55 dark:focus:border-sky-400/60 dark:focus:bg-white/18"
           />
         </div>
 
@@ -563,12 +564,12 @@ export default function KycVerificationPageMain() {
             <button
               key={tab.key}
               onClick={() => { setFilter(tab.key); setPage(1) }}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
+              className={`rounded-[18px] border px-3.5 py-1.5 text-xs font-semibold transition-all ${
                 filter === tab.key
                   ? tab.key === 'all'
-                    ? 'bg-slate-800 text-white border-slate-800'
+                    ? 'border-slate-800 bg-slate-800 text-white dark:border-slate-700 dark:bg-slate-700'
                     : `${STATUS_CONFIG[tab.key as MemberKycStatus]?.tab} border-current`
-                  : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300'
+                  : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400'
               }`}
             >
               {tab.label}
@@ -597,7 +598,7 @@ export default function KycVerificationPageMain() {
 
       {/* -- Loading skeleton -- */}
       {isLoading ? (
-        <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden animate-pulse">
+        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white animate-pulse dark:border-slate-800 dark:bg-slate-900">
           <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800 flex gap-3">
             <div className="h-4 w-32 bg-slate-100 rounded-lg" />
           </div>
@@ -628,81 +629,103 @@ export default function KycVerificationPageMain() {
           )}
 
           {/* Table */}
-          <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden">
-            <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-              <h2 className="text-sm font-bold text-slate-800">Verification Requests</h2>
-              <span className="text-xs text-slate-400 bg-slate-50 border border-slate-100 px-2.5 py-1 rounded-full font-medium">
+          <DataTableShell
+            title="Verification Requests"
+            subtitle="Review identity submissions before account activation"
+            badge={(
+              <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400">
                 {rows.length} shown
               </span>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-left min-w-225">
-                <thead>
-                  <tr className="border-b border-slate-100 dark:border-slate-800 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60">
-                    {['Reference', 'Member', 'KYC Data', 'Submitted', 'Status', 'Actions'].map(h => (
-                      <th key={h} className="px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wide">{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/70 dark:divide-slate-800/70">
-                  {rows.length ? (
-                    rows.map(row => (
-                      <KycRow
-                        key={row.id}
-                        row={row}
-                        onView={() => setSelected(row)}
-                        onAction={openActionModal}
-                        isBusy={busyId === row.id}
-                      />
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan={6} className="px-5 py-14 text-center">
-                        <div className="flex flex-col items-center gap-2">
-                          <svg className="w-8 h-8 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                          </svg>
-                          <p className="text-sm font-semibold text-slate-500">No KYC requests found</p>
-                          <p className="text-xs text-slate-400">Try adjusting your search or filter</p>
-                        </div>
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Pagination */}
-            <div className="px-5 py-3.5 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400">
-              <span>
-                Showing{' '}
-                <span className="font-semibold text-slate-600">
-                  {data?.meta?.from ?? 0}-{data?.meta?.to ?? 0}
-                </span>{' '}
-                of <span className="font-semibold text-slate-600">{data?.meta?.total ?? 0}</span>
-              </span>
-              <div className="flex items-center gap-1.5">
-                <button
-                  onClick={() => setPage(p => Math.max(1, p - 1))}
-                  disabled={(data?.meta?.current_page ?? 1) <= 1}
-                  className="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
-                >
-                  Prev
-                </button>
-                <span className="px-2 text-slate-500">
-                  {data?.meta?.current_page ?? 1} / {data?.meta?.last_page ?? 1}
+            )}
+            footer={(
+              <div className="flex items-center justify-between text-xs text-slate-400">
+                <span>
+                  Showing{' '}
+                  <span className="font-semibold text-slate-600 dark:text-slate-300">
+                    {data?.meta?.from ?? 0}-{data?.meta?.to ?? 0}
+                  </span>{' '}
+                  of <span className="font-semibold text-slate-600 dark:text-slate-300">{data?.meta?.total ?? 0}</span>
                 </span>
-                <button
-                  onClick={() => setPage(p => p + 1)}
-                  disabled={(data?.meta?.current_page ?? 1) >= (data?.meta?.last_page ?? 1)}
-                  className="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
-                >
-                  Next
-                </button>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                    disabled={(data?.meta?.current_page ?? 1) <= 1}
+                    className="rounded-[18px] border border-gray-300 px-3 py-1.5 text-slate-600 transition hover:border-slate-400 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-white/18 dark:text-slate-200 dark:hover:bg-white/10"
+                  >
+                    Prev
+                  </button>
+                  <span className="px-2 text-slate-500 dark:text-slate-400">
+                    {data?.meta?.current_page ?? 1} / {data?.meta?.last_page ?? 1}
+                  </span>
+                  <button
+                    onClick={() => setPage(p => p + 1)}
+                    disabled={(data?.meta?.current_page ?? 1) >= (data?.meta?.last_page ?? 1)}
+                    className="rounded-[18px] border border-gray-300 px-3 py-1.5 text-slate-600 transition hover:border-slate-400 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-white/18 dark:text-slate-200 dark:hover:bg-white/10"
+                  >
+                    Next
+                  </button>
+                </div>
               </div>
-            </div>
-          </div>
+            )}
+          >
+            {isLoading ? (
+              <div className="animate-pulse">
+                <div className="px-5 py-4 border-b border-slate-200 dark:border-slate-800 flex gap-3">
+                  <div className="h-4 w-32 bg-slate-100 rounded-lg" />
+                </div>
+                <div className="divide-y divide-slate-100 dark:divide-slate-800/70">
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <div key={i} className="px-4 py-4 flex items-center gap-4">
+                      <div className="h-9 w-9 rounded-full bg-slate-100 shrink-0" />
+                      <div className="flex-1 space-y-2">
+                        <div className="h-3 w-36 bg-slate-100 rounded" />
+                        <div className="h-2.5 w-24 bg-slate-100 rounded" />
+                      </div>
+                      <div className="h-6 w-20 bg-slate-100 rounded-full" />
+                      <div className="h-7 w-16 bg-slate-100 rounded-lg" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[1120px] text-left">
+                  <thead>
+                    <tr className="border-b border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-800/40">
+                      {['Reference', 'Member', 'KYC Data', 'Submitted', 'Status', 'Actions'].map(h => (
+                        <th key={h} className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-400">{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800/70">
+                    {rows.length ? (
+                      rows.map(row => (
+                        <KycRow
+                          key={row.id}
+                          row={row}
+                          onView={() => setSelected(row)}
+                          onAction={openActionModal}
+                          isBusy={busyId === row.id}
+                        />
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={6} className="px-5 py-14 text-center">
+                          <div className="flex flex-col items-center gap-2">
+                            <svg className="w-8 h-8 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                            </svg>
+                            <p className="text-sm font-semibold text-slate-500">No KYC requests found</p>
+                            <p className="text-xs text-slate-400">Try adjusting your search or filter</p>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </DataTableShell>
         </motion.div>
       )}
 
