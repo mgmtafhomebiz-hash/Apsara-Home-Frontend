@@ -656,7 +656,29 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
     }
 
     try {
-      await navigator.clipboard.writeText(link);
+      if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(link);
+      } else if (typeof document !== 'undefined') {
+        const textarea = document.createElement('textarea');
+        textarea.value = link;
+        textarea.setAttribute('readonly', '');
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        textarea.style.pointerEvents = 'none';
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+
+        const copied = document.execCommand('copy');
+        document.body.removeChild(textarea);
+
+        if (!copied) {
+          throw new Error('Copy command failed');
+        }
+      } else {
+        throw new Error('Clipboard unavailable');
+      }
+
       setReferralMsg({ type: 'success', text: type === 'member' ? 'Signup referral link copied.' : 'Shopping referral link copied.' });
     } catch {
       setReferralMsg({ type: 'error', text: 'Failed to copy referral link.' });

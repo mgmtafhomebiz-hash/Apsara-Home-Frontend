@@ -187,9 +187,9 @@ export const authApi = baseApi.injectEndpoints({
         }
 
         return {
-          error: lastError ?? {
-            status: 404,
-            data: { message: 'Referral validation route could not be found.' },
+          error: {
+            status: lastError?.status ?? 404,
+            data: { message: 'Unable to check referral code right now.' },
           },
         }
       },
