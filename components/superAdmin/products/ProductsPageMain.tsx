@@ -12,6 +12,7 @@ import { useGetPublicProductBrandsQuery } from "@/store/api/productBrandsApi";
 import { useGetSuppliersQuery } from "@/store/api/suppliersApi";
 import ProductsToolbar from './ProductsToolbar'
 import ProductsTable from './ProductsTable'
+import DataTableShell from '../DataTableShell'
 import AddProductModal from './AddProductModal'
 import EditProductModal from './EditProductModal'
 import BulkEditProductsModal from './BulkEditProductsModal'
@@ -57,7 +58,7 @@ function StatCard({
   colorClass: string
 }) {
   return (
-    <div className="bg-white rounded-2xl border border-slate-100 px-5 py-4 flex items-center gap-3">
+    <div className="rounded-2xl border border-slate-200 bg-white px-5 py-4 flex items-center gap-3 dark:border-slate-800 dark:bg-slate-900">
       <div className={`h-9 w-9 rounded-xl flex items-center justify-center shrink-0 ${colorClass}`}>
         {icon}
       </div>
@@ -110,7 +111,7 @@ function ManualCheckoutSelectionModal({
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 12, scale: 0.97 }}
           transition={{ duration: 0.22, ease: 'easeOut' }}
-          className="w-full max-w-4xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900"
+          className="w-full max-w-4xl overflow-hidden rounded-3xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
         >
           <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-5 dark:border-slate-800">
             <div>
@@ -878,14 +879,14 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
               type="button"
               onClick={handleToggleManualCheckoutMode}
               disabled={isSavingManualMode}
-              className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors border shadow-sm ${
+              className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors border ${
                 manualHeaderToggle
                   ? 'border-teal-200 bg-teal-50 text-teal-700'
                   : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
               }`}
             >
               <div className={`relative h-5 w-9 rounded-full transition-colors ${manualHeaderToggle ? 'bg-teal-500' : 'bg-slate-200'}`}>
-                <div className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${manualHeaderToggle ? 'left-4' : 'left-0.5'}`} />
+                <div className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition-transform ${manualHeaderToggle ? 'left-4' : 'left-0.5'}`} />
               </div>
               <span className="hidden sm:inline">
                 {isSavingManualMode
@@ -898,7 +899,7 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
             </button>
           <button
             onClick={() => setShowActivityLogs(true)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-white hover:bg-slate-50 text-slate-700 rounded-xl text-sm font-semibold transition-colors border border-slate-200 shadow-sm"
+            className="flex items-center gap-2 px-4 py-2.5 bg-white hover:bg-slate-50 text-slate-700 rounded-xl text-sm font-semibold transition-colors border border-slate-200"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2m-6 9 2 2 4-4"/>
@@ -907,7 +908,7 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
           </button>
           <button
             onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-sm font-semibold transition-colors shadow-sm shadow-teal-500/30 shrink-0"
+            className="flex items-center gap-2 px-4 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-sm font-semibold transition-colors shrink-0"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4"/>
@@ -1040,22 +1041,24 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
             </div>
           )}
 
-          <ProductsTable
-            rows={visibleProducts}
-            currentPage={visibleMeta?.current_page ?? 1}
-            totalPages={visibleMeta?.last_page ?? 1}
-            totalRecords={visibleMeta?.total ?? visibleProducts.length}
-            from={visibleMeta?.from ?? null}
-            to={visibleMeta?.to ?? null}
-            onPageChange={setPage}
-            onEdit={setEditProduct}
-            onDelete={handleDelete}
-            isDeletingIds={deletingIds}
-            selectedIds={selectedIds}
-            onToggleSelect={handleToggleSelect}
-            onToggleSelectAll={handleToggleSelectAll}
-            onViewManualCheckout={(product) => openManualSelectionModal([product])}
-          />
+          <DataTableShell>
+            <ProductsTable
+              rows={visibleProducts}
+              currentPage={visibleMeta?.current_page ?? 1}
+              totalPages={visibleMeta?.last_page ?? 1}
+              totalRecords={visibleMeta?.total ?? visibleProducts.length}
+              from={visibleMeta?.from ?? null}
+              to={visibleMeta?.to ?? null}
+              onPageChange={setPage}
+              onEdit={setEditProduct}
+              onDelete={handleDelete}
+              isDeletingIds={deletingIds}
+              selectedIds={selectedIds}
+              onToggleSelect={handleToggleSelect}
+              onToggleSelectAll={handleToggleSelectAll}
+              onViewManualCheckout={(product) => openManualSelectionModal([product])}
+            />
+          </DataTableShell>
         </div>
       )}
 
