@@ -36,13 +36,14 @@ type FloatingInputProps = {
   value: string
   onChange: (e: ChangeEvent<HTMLInputElement>) => void
   onBlur?: (e: FocusEvent<HTMLInputElement>) => void
+  onPaste?: (e: React.ClipboardEvent<HTMLInputElement>) => void
   required?: boolean
   disabled?: boolean
   maxLength?: number
   endContent?: ReactNode
 }
 
-function FloatingInput({ id, type = 'text', label, value, onChange, onBlur, required, disabled, maxLength, endContent }: FloatingInputProps) {
+function FloatingInput({ id, type = 'text', label, value, onChange, onBlur, onPaste, required, disabled, maxLength, endContent }: FloatingInputProps) {
   return (
     <div className="w-full">
       <label htmlFor={id} className={labelClass}>
@@ -55,6 +56,7 @@ function FloatingInput({ id, type = 'text', label, value, onChange, onBlur, requ
           value={value}
           onChange={onChange}
           onBlur={onBlur}
+          onPaste={onPaste}
           required={required}
           disabled={disabled}
           maxLength={maxLength}
@@ -132,7 +134,14 @@ type FieldAvailability = {
 
 const getApiErrorMessage = (error: unknown, fallback: string) => {
   const candidate = error as { data?: { message?: string } }
-  return candidate?.data?.message || fallback
+  const message = candidate?.data?.message || fallback
+  const lowerMessage = message.toLowerCase()
+
+  if (lowerMessage.includes('could not be found') || lowerMessage.includes('route api/')) {
+    return 'Unable to check referral code right now.'
+  }
+
+  return message
 }
 
 const isReferralCodeFormatValid = (value: string) => /^[A-Za-z0-9]+$/.test(value)
@@ -194,27 +203,9 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
   }
 
   const handleReferralInputChange = (value: string) => {
-    const trimmed = value.trim()
-    const shouldNormalizeImmediately =
-      trimmed.includes('://') ||
-      trimmed.includes('/ref/') ||
-      trimmed.includes('?ref=') ||
-      trimmed.includes('&ref=') ||
-      trimmed.includes('referred_by=')
-
     setForm((prev) => ({
       ...prev,
-      referredBy: shouldNormalizeImmediately ? normalizeReferralCode(value) : value,
-    }))
-  }
-
-  const handleReferralInputBlur = (value: string) => {
-    const normalized = normalizeReferralCode(value)
-    if (!normalized || normalized === value) return
-
-    setForm((prev) => ({
-      ...prev,
-      referredBy: normalized,
+      referredBy: value,
     }))
   }
 
@@ -463,7 +454,6 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
             label="Referral Code / Referral Link"
             value={form.referredBy}
             onChange={(e) => handleReferralInputChange(e.target.value)}
-            onBlur={(e) => handleReferralInputBlur(e.target.value)}
             required
           />
           {referralAvailability.message ? (
