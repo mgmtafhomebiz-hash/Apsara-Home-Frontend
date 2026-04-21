@@ -492,7 +492,11 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
           {visibleNavItems.map((item) => {
             const hasChildren = !!item.children?.length
             const childActive = isChildActive(item.children)
-            const active = item.path ? isActive(item.path) : childActive
+            const active = item.id === 'finance'
+              ? pathname === '/admin/finance'
+              : item.path
+                ? isActive(item.path)
+                : childActive
             const exactActive = item.path ? isExactActive(item.path) : false
             const menuOpen = isAccounting || isFinanceOfficer ? true : openMenus.includes(item.id) || childActive || exactActive
 
