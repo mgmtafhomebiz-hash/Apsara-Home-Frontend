@@ -337,6 +337,7 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
   const usernameMsgTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const referralMsgTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mainContentRef = useRef<HTMLDivElement | null>(null);
+  const completeInformationRef = useRef<HTMLDivElement | null>(null);
   const phAddress = usePhAddress();
   const profileData = data ?? initialProfile;
 
@@ -570,6 +571,17 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
         && profileData?.zip_code?.trim(),
       ),
       hint: 'Street, region, city, barangay, and ZIP code.',
+    },
+    {
+      label: 'Personal Details',
+      done: Boolean(
+        form.birth_date.trim()
+        && form.gender
+        && form.occupation.trim()
+        && form.work_location
+        && (form.work_location === 'local' || form.country.trim()),
+      ),
+      hint: 'Birth date, gender, occupation, work location, and country.',
     },
   ]), [
     form.birth_date,
@@ -1071,8 +1083,8 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
       setUsernameMsg({ type: 'error', text: 'Username is required.' });
       return;
     }
-    if (!/^[A-Za-z]+$/.test(nextUsername)) {
-      setUsernameMsg({ type: 'error', text: 'Username must contain letters only (A-Z).' });
+    if (!/^[A-Za-z0-9]+$/.test(nextUsername)) {
+      setUsernameMsg({ type: 'error', text: 'Username must contain letters and numbers only.' });
       return;
     }
     if (containsBlockedWord(nextUsername)) {
@@ -1644,6 +1656,9 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
                           onClick={() => {
                             if (item.label === 'Address') setIsAddressModalOpen(true);
                             if (item.label === 'Username') setActiveTab('change-username');
+                            if (item.label === 'Personal Details') {
+                              completeInformationRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                            }
                           }}
                           className={`text-left rounded-xl border px-4 py-3 transition-colors ${
                             item.done
@@ -1756,7 +1771,7 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
                       </div>
                     </div>
 
-                    <div className="mt-6 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50/70 dark:bg-gray-700/20 p-4 md:p-5">
+                    <div ref={completeInformationRef} className="mt-6 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50/70 dark:bg-gray-700/20 p-4 md:p-5">
                       <div className="flex items-center justify-between gap-3 mb-4">
                         <div>
                           <h4 className="text-sm font-bold text-slate-900 dark:text-white">Complete Information</h4>
@@ -2590,8 +2605,8 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
                             type="text"
                             value={hasPendingUsernameRequest ? pendingRequestedUsername : usernameRequest}
                             onChange={(e) => {
-                              const onlyLetters = e.target.value.replace(/[^A-Za-z]/g, '');
-                              setUsernameRequest(onlyLetters);
+                              const normalizedUsername = e.target.value.replace(/[^A-Za-z0-9]/g, '');
+                              setUsernameRequest(normalizedUsername);
                               if (usernameOtpToken) {
                                 setUsernameOtpToken(null);
                                 setUsernameOtp('');
