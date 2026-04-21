@@ -196,8 +196,8 @@ export default function AddMemberModal({ isOpen, onClose, onSubmit, isLoading = 
                       placeholder="e.g. Juan dela Cruz"
                       className={`w-full pl-10 pr-4 py-2.5 border rounded-lg text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed
                         ${errors.name && touched.name
-                          ? 'bg-red-50 dark:bg-red-950 border-red-300 dark:border-red-800 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500/30 focus:border-red-500'
-                          : 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500'
+                          ? 'h-11 w-full rounded-[18px] border border-red-300 bg-red-50 px-4 text-sm text-gray-900 placeholder-gray-500 outline-none transition-all duration-200 focus:border-red-500 focus:bg-red-50 focus:ring-0 dark:border-red-800 dark:bg-red-950 dark:text-white dark:placeholder-gray-500'
+                          : 'h-11 w-full rounded-[18px] border border-gray-300 bg-white px-4 text-sm text-gray-900 placeholder-gray-400 outline-none transition-all duration-200 focus:border-sky-400 focus:bg-white focus:ring-0 dark:border-white/18 dark:bg-white/12 dark:text-white dark:placeholder-white/55'
                       }`}
                     />
                   </div>
@@ -239,8 +239,8 @@ export default function AddMemberModal({ isOpen, onClose, onSubmit, isLoading = 
                       placeholder="e.g. juan@afhome.com"
                       className={`w-full pl-10 pr-4 py-2.5 border rounded-lg text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed
                         ${errors.email && touched.email
-                          ? 'bg-red-50 dark:bg-red-950 border-red-300 dark:border-red-800 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500/30 focus:border-red-500'
-                          : 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500'
+                          ? 'h-11 w-full rounded-[18px] border border-red-300 bg-red-50 px-4 text-sm text-gray-900 placeholder-gray-500 outline-none transition-all duration-200 focus:border-red-500 focus:bg-red-50 focus:ring-0 dark:border-red-800 dark:bg-red-950 dark:text-white dark:placeholder-gray-500'
+                          : 'h-11 w-full rounded-[18px] border border-gray-300 bg-white px-4 text-sm text-gray-900 placeholder-gray-400 outline-none transition-all duration-200 focus:border-sky-400 focus:bg-white focus:ring-0 dark:border-white/18 dark:bg-white/12 dark:text-white dark:placeholder-white/55'
                       }`}
                     />
                   </div>
@@ -262,7 +262,7 @@ export default function AddMemberModal({ isOpen, onClose, onSubmit, isLoading = 
                       value={form.status}
                       onChange={(e) => setForm(p => ({ ...p, status: e.target.value as MemberStatus }))}
                       disabled={isLoading}
-                      className="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500 dark:focus:ring-sky-400/30 dark:focus:border-sky-400 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="h-11 w-full rounded-[18px] border border-gray-300 bg-white px-4 text-sm text-gray-900 outline-none transition-all duration-200 focus:border-sky-400 focus:bg-white focus:ring-0 dark:border-white/18 dark:bg-white/12 dark:text-white dark:placeholder-white/55 dark:focus:border-sky-400/60 dark:focus:bg-white/18 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <option value="active">Active</option>
                       <option value="pending">Pending</option>
@@ -276,7 +276,7 @@ export default function AddMemberModal({ isOpen, onClose, onSubmit, isLoading = 
                       value={form.tier}
                       onChange={(e) => setForm(p => ({ ...p, tier: e.target.value as MemberTier }))}
                       disabled={isLoading}
-                      className="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500 dark:focus:ring-sky-400/30 dark:focus:border-sky-400 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="h-11 w-full rounded-[18px] border border-gray-300 bg-white px-4 text-sm text-gray-900 outline-none transition-all duration-200 focus:border-sky-400 focus:bg-white focus:ring-0 dark:border-white/18 dark:bg-white/12 dark:text-white dark:placeholder-white/55 dark:focus:border-sky-400/60 dark:focus:bg-white/18 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <option value="Home Starter">🏠 Home Starter</option>
                       <option value="Home Builder">🧱 Home Builder</option>
