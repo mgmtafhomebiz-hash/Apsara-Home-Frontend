@@ -46,6 +46,13 @@ interface EmailAvailabilityResponse {
   message: string
 }
 
+interface ReferralAvailabilityResponse {
+  available: boolean
+  message: string
+  normalized_referral: string
+  referrer_username?: string | null
+}
+
 interface LogoutResponse {
   message: string
 }
@@ -137,6 +144,14 @@ export const authApi = baseApi.injectEndpoints({
       }),
     }),
 
+    checkReferralAvailability: builder.query<ReferralAvailabilityResponse, string>({
+      query: (referredBy) => ({
+        url: '/api/auth/register/check-referral',
+        method: 'GET',
+        params: { referred_by: referredBy },
+      }),
+    }),
+
     logout: builder.mutation<LogoutResponse, void>({
       query: () => ({
         url: '/api/auth/logout',
@@ -177,6 +192,7 @@ export const {
   useResendRegisterOtpMutation,
   useLazyCheckEmailAvailabilityQuery,
   useLazyCheckUsernameAvailabilityQuery,
+  useLazyCheckReferralAvailabilityQuery,
   useLogoutMutation,
   useAdminLoginMutation,
   useGetAdminMeQuery,

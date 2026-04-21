@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, type ChangeEvent, type ReactNode } from 'react'
-import { motion } from 'framer-motion'
-import { useRegisterMutation } from '@/store/api/authApi'
+import { useEffect, useState, type ChangeEvent, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
+import { AnimatePresence, motion } from 'framer-motion'
+import { useLazyCheckEmailAvailabilityQuery, useLazyCheckReferralAvailabilityQuery, useLazyCheckUsernameAvailabilityQuery, useRegisterMutation } from '@/store/api/authApi'
 import Loading from './Loading'
 import { useSearchParams } from 'next/navigation'
 import { showErrorToast, showSuccessToast } from '@/libs/toast'
@@ -64,21 +65,83 @@ const passwordChecks = (password: string) => ([
   { label: 'At least one special character', passed: /[^A-Za-z0-9]/.test(password) },
 ])
 
+const termsSections = [
+  {
+    title: '1. Independent Distributor Agreement',
+    body: 'By becoming a distributor of our company, you agree to be bound by the terms and conditions outlined in this agreement. You acknowledge that you are an independent contractor and not an employee, partner, or agent of the company.',
+  },
+  {
+    title: '2. Distributor Obligations',
+    body: 'As a distributor, you agree to adhere to all applicable laws, regulations, and ethical guidelines in promoting and selling our products and services, represent the company honestly and accurately, maintain a positive and professional image, and attend company-provided training and development programs.',
+  },
+  {
+    title: '3. Compensation Plan',
+    body: 'Our company uses a compensation plan that rewards distributors for sales and building a network. The details of the compensation plan, including commission structure, bonus eligibility, and qualification criteria, are outlined in a separate document, which is an integral part of these terms and conditions.',
+  },
+  {
+    title: '4. Product Purchase Requirements',
+    body: 'To remain an active distributor and qualify for commissions and bonuses, you are required to meet monthly or quarterly product purchase requirements. These requirements may include personal consumption and or retail sales requirements. Failure to meet these requirements may result in the loss of commissions and bonuses.',
+  },
+  {
+    title: '5. Downline Structure',
+    body: 'You may build and manage a network of distributors, commonly referred to as your downline. You understand that your commissions and bonuses may be based on the sales performance and activities of your downline. However, you are responsible for training, supporting, and motivating your downline members.',
+  },
+  {
+    title: '6. Termination and Resignation',
+    body: 'Either party may terminate this agreement at any time with written notice. You understand that in the event of termination or resignation, you will no longer be eligible to receive commissions, bonuses, or other benefits associated with the MLM business.',
+  },
+  {
+    title: '7. Intellectual Property',
+    body: 'All trademarks, logos, copyrighted materials, and other intellectual property owned by the company are protected and may not be used without written permission. Any unauthorized use of company intellectual property may result in legal action.',
+  },
+  {
+    title: '8. Non-Disparagement',
+    body: 'During and after the term of this agreement, you agree not to make any disparaging or defamatory statements about the company, its products, or other distributors. Violation of this clause may result in termination and legal consequences.',
+  },
+  {
+    title: '9. Product Returns and Refunds',
+    body: 'Our company has a product return policy that allows customers to request refunds or exchanges within a specified time frame. You understand that you are responsible for handling customer returns and refunds, and any costs associated with the process.',
+  },
+  {
+    title: '10. Governing Law and Jurisdiction',
+    body: 'This agreement shall be governed by and construed in accordance with the laws of the Philippines. Any disputes arising from this agreement shall be subject to the exclusive jurisdiction of the courts of the Philippines.',
+  },
+]
+
 interface SignUpFormProps {
   onSwitchToLogin: () => void
+}
+
+type FieldAvailability = {
+  status: 'idle' | 'checking' | 'available' | 'unavailable'
+  message: string
+}
+
+const getApiErrorMessage = (error: unknown, fallback: string) => {
+  const candidate = error as { data?: { message?: string } }
+  return candidate?.data?.message || fallback
 }
 
 export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
   const searchParams = useSearchParams()
   const [register, { isLoading }] = useRegisterMutation()
+  const [checkEmailAvailability] = useLazyCheckEmailAvailabilityQuery()
+  const [checkReferralAvailability] = useLazyCheckReferralAvailabilityQuery()
+  const [checkUsernameAvailability] = useLazyCheckUsernameAvailabilityQuery()
   const initialReferral = normalizeReferralCode(searchParams.get('ref') ?? searchParams.get('referred_by') ?? '') || getStoredReferralCode()
 
   const [showPass, setShowPass] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
+  const [showTermsModal, setShowTermsModal] = useState(false)
+  const [acceptedTerms, setAcceptedTerms] = useState(false)
+  const [isMounted, setIsMounted] = useState(false)
   const [error, setError] = useState('')
   const [step, setStep] = useState<'form' | 'otp'>('form')
   const [verificationToken, setVerificationToken] = useState('')
   const [pendingEmail, setPendingEmail] = useState('')
+  const [emailAvailability, setEmailAvailability] = useState<FieldAvailability>({ status: 'idle', message: '' })
+  const [referralAvailability, setReferralAvailability] = useState<FieldAvailability>({ status: 'idle', message: '' })
+  const [usernameAvailability, setUsernameAvailability] = useState<FieldAvailability>({ status: 'idle', message: '' })
   const [form, setForm] = useState({
     firstName: '',
     lastName: '',
@@ -91,11 +154,113 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
   })
 
   const passwordRequirements = passwordChecks(form.password)
+  const normalizedEmail = form.email.trim()
+  const normalizedReferral = normalizeReferralCode(form.referredBy)
+  const normalizedUsername = form.username.trim()
+  const confirmPasswordStatus =
+    form.confirmPassword.length === 0
+      ? null
+      : form.password === form.confirmPassword
+        ? { type: 'match' as const, message: 'Passwords match.' }
+        : { type: 'mismatch' as const, message: 'Passwords do not match yet.' }
 
   const showError = (message: string): false => {
     setError(message)
     return false
   }
+
+  useEffect(() => {
+    setIsMounted(true)
+    return () => setIsMounted(false)
+  }, [])
+
+  useEffect(() => {
+    const email = normalizedEmail
+
+    if (!email) {
+      setEmailAvailability({ status: 'idle', message: '' })
+      return
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setEmailAvailability({ status: 'unavailable', message: 'Enter a valid email address.' })
+      return
+    }
+
+    setEmailAvailability({ status: 'checking', message: 'Checking email availability...' })
+
+    const timer = window.setTimeout(async () => {
+      try {
+        const response = await checkEmailAvailability(email, true).unwrap()
+        setEmailAvailability({
+          status: response.available ? 'available' : 'unavailable',
+          message: response.message,
+        })
+      } catch (apiError: unknown) {
+        const message = getApiErrorMessage(apiError, 'Unable to check email availability right now.')
+        setEmailAvailability({ status: 'unavailable', message })
+      }
+    }, 450)
+
+    return () => window.clearTimeout(timer)
+  }, [checkEmailAvailability, normalizedEmail])
+
+  useEffect(() => {
+    const username = normalizedUsername
+
+    if (!username) {
+      setUsernameAvailability({ status: 'idle', message: '' })
+      return
+    }
+
+    if (!/^[A-Za-z0-9]+$/.test(username)) {
+      setUsernameAvailability({ status: 'unavailable', message: 'Username must contain letters and numbers only.' })
+      return
+    }
+
+    setUsernameAvailability({ status: 'checking', message: 'Checking username availability...' })
+
+    const timer = window.setTimeout(async () => {
+      try {
+        const response = await checkUsernameAvailability(username, true).unwrap()
+        setUsernameAvailability({
+          status: response.available ? 'available' : 'unavailable',
+          message: response.message,
+        })
+      } catch (apiError: unknown) {
+        const message = getApiErrorMessage(apiError, 'Unable to check username availability right now.')
+        setUsernameAvailability({ status: 'unavailable', message })
+      }
+    }, 450)
+
+    return () => window.clearTimeout(timer)
+  }, [checkUsernameAvailability, normalizedUsername])
+
+  useEffect(() => {
+    const referral = normalizedReferral
+
+    if (!referral) {
+      setReferralAvailability({ status: 'idle', message: '' })
+      return
+    }
+
+    setReferralAvailability({ status: 'checking', message: 'Checking referral code...' })
+
+    const timer = window.setTimeout(async () => {
+      try {
+        const response = await checkReferralAvailability(referral, true).unwrap()
+        setReferralAvailability({
+          status: response.available ? 'available' : 'unavailable',
+          message: response.message,
+        })
+      } catch (apiError: unknown) {
+        const message = getApiErrorMessage(apiError, 'Unable to check referral code right now.')
+        setReferralAvailability({ status: 'unavailable', message })
+      }
+    }, 450)
+
+    return () => window.clearTimeout(timer)
+  }, [checkReferralAvailability, normalizedReferral])
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -113,12 +278,19 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
     if (!mobileNumber) return showError('Mobile number is required.')
     if (!/^(\+?63|0)?9\d{9}$/.test(mobileNumber.replace(/\s+/g, ''))) return showError('Enter a valid Philippine mobile number.')
     if (!email) return showError('Email address is required.')
+    if (emailAvailability.status === 'unavailable') return showError(emailAvailability.message || 'This email is already registered.')
+    if (emailAvailability.status !== 'available') return showError('Please wait until email availability is confirmed.')
     if (!username) return showError('Username is required.')
-    if (!/^[A-Za-z]+$/.test(username)) return showError('Username must contain letters only.')
+    if (!/^[A-Za-z0-9]+$/.test(username)) return showError('Username must contain letters and numbers only.')
+    if (usernameAvailability.status === 'unavailable') return showError(usernameAvailability.message || 'This username is already taken.')
+    if (usernameAvailability.status !== 'available') return showError('Please wait until username availability is confirmed.')
     if (!referral) return showError('Referral code is required.')
+    if (referralAvailability.status === 'unavailable') return showError(referralAvailability.message || 'Referral code is invalid or unavailable.')
+    if (referralAvailability.status !== 'available') return showError('Please wait until referral code validation is confirmed.')
     if (!form.password) return showError('Password is required.')
     if (form.password.length < 8) return showError('Password must be at least 8 characters.')
     if (form.password !== form.confirmPassword) return showError('Passwords do not match.')
+    if (!acceptedTerms) return showError('You must read and accept the Terms and Conditions to continue.')
 
     const result = await register({
       name: `${firstName} ${lastName}`.trim(),
@@ -206,6 +378,11 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
           <p className="text-[11px] text-gray-500 dark:text-white/55 -mt-2">Use your Philippine mobile number, for example +63 912 345 6789.</p>
 
           <FloatingInput id="signup-email" type="email" label="Email Address" required value={form.email} onChange={(e) => setForm((prev) => ({ ...prev, email: e.target.value }))} />
+          {emailAvailability.message ? (
+            <p className={`text-[11px] -mt-2 ${emailAvailability.status === 'available' ? 'text-emerald-600 dark:text-emerald-300' : emailAvailability.status === 'checking' ? 'text-sky-600 dark:text-sky-300' : 'text-red-600 dark:text-red-300'}`}>
+              {emailAvailability.message}
+            </p>
+          ) : null}
 
           <FloatingInput
             id="signup-username"
@@ -214,15 +391,25 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
             value={form.username}
             onChange={(e) => setForm((prev) => ({ ...prev, username: e.target.value.replace(/\s+/g, '') }))}
           />
-          <p className="text-[11px] text-gray-500 dark:text-white/55 -mt-2">Letters only, no spaces or symbols.</p>
+          <p className="text-[11px] text-gray-500 dark:text-white/55 -mt-2">Letters and numbers only, no spaces or symbols.</p>
+          {usernameAvailability.message ? (
+            <p className={`text-[11px] -mt-2 ${usernameAvailability.status === 'available' ? 'text-emerald-600 dark:text-emerald-300' : usernameAvailability.status === 'checking' ? 'text-sky-600 dark:text-sky-300' : 'text-red-600 dark:text-red-300'}`}>
+              {usernameAvailability.message}
+            </p>
+          ) : null}
 
           <FloatingInput
             id="signup-referred-by"
-            label="Referral Code"
+            label="Referral Code / Referral Link"
             value={form.referredBy}
             onChange={(e) => setForm((prev) => ({ ...prev, referredBy: e.target.value }))}
             required
           />
+          {referralAvailability.message ? (
+            <p className={`text-[11px] -mt-2 ${referralAvailability.status === 'available' ? 'text-emerald-600 dark:text-emerald-300' : referralAvailability.status === 'checking' ? 'text-sky-600 dark:text-sky-300' : 'text-red-600 dark:text-red-300'}`}>
+              {referralAvailability.message}
+            </p>
+          ) : null}
 
           <div>
             <FloatingInput
@@ -259,8 +446,36 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
               <button type="button" onClick={() => setShowConfirm((p) => !p)} className="text-gray-400 dark:text-white/60 hover:text-gray-700 dark:hover:text-white/80 transition-colors cursor-pointer">
                 <EyeIcon open={showConfirm} />
               </button>
-            )}
-          />
+              )}
+            />
+          {confirmPasswordStatus ? (
+            <p className={`text-[11px] -mt-2 ${confirmPasswordStatus.type === 'match' ? 'text-emerald-600 dark:text-emerald-300' : 'text-red-600 dark:text-red-300'}`}>
+              {confirmPasswordStatus.message}
+            </p>
+          ) : null}
+
+          <div className="rounded-2xl border border-gray-200 bg-gray-50/70 px-4 py-3 dark:border-white/10 dark:bg-white/5">
+            <button
+              type="button"
+              onClick={() => setShowTermsModal(true)}
+              className="flex w-full items-start gap-3 text-left"
+            >
+              <span className={`mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded border text-[11px] font-bold ${
+                acceptedTerms
+                  ? 'border-emerald-500 bg-emerald-500 text-white'
+                  : 'border-gray-300 bg-white text-transparent dark:border-white/20 dark:bg-transparent'
+              }`}>
+                ✓
+              </span>
+              <span className="text-xs leading-relaxed text-gray-600 dark:text-white/70">
+                I have read and agree to the{' '}
+                <span className="font-semibold text-sky-600 dark:text-sky-300">Terms and Conditions</span>.
+                <span className="block mt-1 text-[11px] text-gray-500 dark:text-white/50">
+                  Click here to review the agreement before continuing.
+                </span>
+              </span>
+            </button>
+          </div>
 
           <div className="flex gap-3 pt-2">
             <PrimaryButton type="submit" disabled={isLoading} className="flex-1 py-3 px-5 text-sm">
@@ -276,6 +491,91 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
           </div>
         </form>
       )}
+
+      {isMounted
+        ? createPortal(
+            <AnimatePresence>
+              {showTermsModal ? (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="fixed inset-0 z-[999] flex items-center justify-center bg-slate-950/72 px-4 py-6 backdrop-blur-[2px]"
+                >
+                  <motion.div
+                    initial={{ opacity: 0, y: 24, scale: 0.96 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 16, scale: 0.98 }}
+                    transition={{ duration: 0.24, ease: 'easeOut' }}
+                    className="w-full max-w-3xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl dark:border-white/10 dark:bg-slate-900"
+                  >
+                <div className="flex items-start justify-between gap-4 border-b border-slate-200 px-6 py-5 dark:border-white/10">
+                  <div>
+                    <img
+                      src="/Images/af_home_logo.png"
+                      alt="AF Home"
+                      className="h-12 w-auto"
+                    />
+                    <h3 className="mt-3 text-xl font-bold text-slate-900 dark:text-white">Terms and Conditions</h3>
+                    <p className="mt-2 text-sm text-slate-500 dark:text-white/60">
+                      The following are the latest Terms and Conditions of AF Home.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowTermsModal(false)}
+                    className="rounded-full border border-slate-200 px-3 py-1 text-sm font-medium text-slate-500 transition hover:border-slate-300 hover:text-slate-700 dark:border-white/10 dark:text-white/60 dark:hover:border-white/20 dark:hover:text-white"
+                  >
+                    Close
+                  </button>
+                </div>
+
+                <div className="max-h-[65vh] space-y-5 overflow-y-auto px-6 py-5">
+                  {termsSections.map((section) => (
+                    <div key={section.title}>
+                      <h4 className="text-sm font-bold text-slate-900 dark:text-white">{section.title}</h4>
+                      <p className="mt-2 text-sm leading-7 text-slate-600 dark:text-white/70">{section.body}</p>
+                    </div>
+                  ))}
+
+                  <div>
+                    <p className="text-sm leading-7 text-slate-600 dark:text-white/70">
+                      By signing below or by accepting these terms and conditions electronically, you acknowledge that you have read,
+                      understood, and agreed to abide by the terms and conditions of AF Home.
+                    </p>
+                    <p className="mt-3 text-sm font-medium text-slate-700 dark:text-white/80">
+                      Need clarification? Reach us anytime through the Contact Us page.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-3 border-t border-slate-200 px-6 py-5 sm:flex-row sm:justify-end dark:border-white/10">
+                  <button
+                    type="button"
+                    onClick={() => setShowTermsModal(false)}
+                    className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 dark:border-white/10 dark:text-white/70 dark:hover:bg-white/5"
+                  >
+                    Not Now
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAcceptedTerms(true)
+                      setShowTermsModal(false)
+                    }}
+                    className="rounded-xl bg-sky-500 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-sky-600"
+                  >
+                    I Agree
+                  </button>
+                </div>
+                  </motion.div>
+                </motion.div>
+              ) : null}
+            </AnimatePresence>,
+            document.body,
+          )
+        : null}
     </motion.div>
   )
 }
