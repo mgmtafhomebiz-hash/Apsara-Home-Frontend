@@ -317,7 +317,7 @@ const Header = ({ onMenuClick }: HeaderProps) => {
     const isDashboardPage = pathname?.startsWith('/admin/dashboard');
 
     return (
-        <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center gap-4 border-b border-slate-100 dark:border-slate-800 bg-white px-4 dark:border-slate-800 dark:bg-slate-900">
+        <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center gap-4 border border-slate-100 dark:border-slate-800 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md px-4">
             <button
                 onClick={onMenuClick}
                 className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 transition-colors hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800 lg:hidden"
@@ -419,7 +419,7 @@ const Header = ({ onMenuClick }: HeaderProps) => {
                                 animate={{ opacity: 1, y: 0, scale: 1 }}
                                 exit={{ opacity: 0, y: 8, scale: 0.95 }}
                                 transition={{ duration: 0.15 }}
-                                className="absolute right-0 top-full z-50 mt-2 w-85 overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-xl dark:border-slate-800 dark:bg-slate-900"
+                                className="absolute right-0 top-full z-50 mt-2 w-85 overflow-hidden rounded-2xl border border-slate-100 bg-white dark:border-slate-800 dark:bg-slate-900"
                             >
                                 {/* Header */}
                                 <div className="flex items-center justify-between border-b border-teal-100/60 bg-linear-to-r from-teal-50 to-white px-4 py-3 dark:border-slate-800 dark:from-teal-500/10 dark:to-slate-900">
@@ -560,7 +560,7 @@ const Header = ({ onMenuClick }: HeaderProps) => {
                                 initial={{ opacity: 0, y: 8, scale: 0.95 }}
                                 animate={{ opacity: 1, y: 0, scale: 1 }}
                                 exit={{ opacity: 0, y: 8, scale: 0.95 }}
-                                className="absolute right-0 top-full z-50 mt-2 w-48 overflow-hidden rounded-2xl border border-slate-100 bg-white py-1 shadow-xl dark:border-slate-800 dark:bg-slate-900"
+                                className="absolute right-0 top-full z-50 mt-2 w-48 overflow-hidden rounded-2xl border border-slate-100 bg-white py-1 dark:border-slate-800 dark:bg-slate-900"
                             >
                                 {userMenuItems.map((item) => (
                                     <button
