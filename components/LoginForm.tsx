@@ -1,7 +1,7 @@
 'use client';
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useSearchParams } from "next/navigation";
@@ -10,9 +10,32 @@ import Loading from '@/components/Loading'
 import { showErrorToast, showInfoToast, showSuccessToast } from '@/libs/toast'
 import { clearAccessTokenCache } from "@/store/api/baseApi";
 import PrimaryButton from '@/components/ui/buttons/PrimaryButton';
+import SecondaryButton from '@/components/ui/buttons/SecondaryButton';
 
 const REMEMBER_USER_EMAIL_KEY = 'afhome_user_login'
 const BLOCKED_KEYWORDS = ['banned', 'blocked', 'contact support']
+const TWO_FACTOR_PREFIX = '2FA_REQUIRED|'
+const MFA_APPROVAL_PREFIX = 'MFA_APPROVAL_REQUIRED|'
+
+function parseTwoFactorError(rawMessage: string): { token: string; message: string } | null {
+    if (!rawMessage.startsWith(TWO_FACTOR_PREFIX)) return null
+    const payload = rawMessage.slice(TWO_FACTOR_PREFIX.length)
+    const [token = '', ...rest] = payload.split('|')
+    return {
+        token: token.trim(),
+        message: (rest.join('|') || 'A verification code was sent to your email.').trim(),
+    }
+}
+
+function parseMfaApprovalError(rawMessage: string): { token: string; message: string } | null {
+    if (!rawMessage.startsWith(MFA_APPROVAL_PREFIX)) return null
+    const payload = rawMessage.slice(MFA_APPROVAL_PREFIX.length)
+    const [token = '', ...rest] = payload.split('|')
+    return {
+        token: token.trim(),
+        message: (rest.join('|') || 'Approve this login from your email first.').trim(),
+    }
+}
 
 function resolveCallbackPath(value: string | null | undefined): string {
     const normalized = String(value ?? '').trim()
@@ -41,34 +64,27 @@ type FloatingInputProps = {
 }
 
 function FloatingInput({ id, type = 'text', label, value, onChange, autoComplete, endContent }: FloatingInputProps) {
-    const hasValue = value.trim().length > 0
-
     return (
-        <div className="relative w-full">
-            <input
-                id={id}
-                type={type}
-                value={value}
-                onChange={onChange}
-                placeholder=" "
-                autoComplete={autoComplete}
-                className="peer h-14 w-full rounded-[22px] border border-gray-300 dark:border-white/18 bg-white dark:bg-white/12 px-4 pb-3 pt-6 text-sm text-gray-900 dark:text-white outline-none transition-all duration-200 placeholder:text-transparent focus:border-orange-400 dark:focus:border-orange-400/60 focus:bg-white dark:focus:bg-white/18"
-            />
-            <label
-                htmlFor={id}
-                className={`pointer-events-none absolute left-4 origin-left bg-transparent px-1 text-gray-500 dark:text-white/55 transition-all duration-200 ${
-                    hasValue
-                        ? 'top-2 text-[11px] text-orange-500 dark:text-orange-300'
-                        : 'top-1/2 -translate-y-1/2 text-sm'
-                } peer-focus:top-2 peer-focus:translate-y-0 peer-focus:text-[11px] peer-focus:text-orange-500 dark:peer-focus:text-orange-300 peer-[:not(:placeholder-shown)]:top-2 peer-[:not(:placeholder-shown)]:translate-y-0 peer-[:not(:placeholder-shown)]:text-[11px] peer-[:not(:placeholder-shown)]:text-orange-500 dark:peer-[:not(:placeholder-shown)]:text-orange-300 peer-autofill:top-2 peer-autofill:translate-y-0 peer-autofill:text-[11px] peer-autofill:text-orange-500 dark:peer-autofill:text-orange-300`}
-            >
+        <div className="w-full">
+            <label htmlFor={id} className="block text-xs font-semibold text-gray-600 dark:text-white/80 mb-1.5">
                 {label}
             </label>
-            {endContent ? (
-                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-white/60">
-                    {endContent}
-                </div>
-            ) : null}
+            <div className="relative w-full">
+                <input
+                    id={id}
+                    type={type}
+                    value={value}
+                    onChange={onChange}
+                    placeholder=""
+                    autoComplete={autoComplete}
+                    className="h-11 w-full rounded-[18px] border border-gray-300 dark:border-white/18 bg-white dark:bg-white/12 px-4 text-sm text-gray-900 dark:text-white outline-none transition-all duration-200 focus:border-sky-400 dark:focus:border-sky-400/60 focus:bg-white dark:focus:bg-white/18"
+                />
+                {endContent ? (
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-white/60">
+                        {endContent}
+                    </div>
+                ) : null}
+            </div>
         </div>
     )
 }
@@ -85,6 +101,7 @@ const LoginForm = ({ onSwitchToSignUp, onRequirePasswordChange }: LoginFormProps
     const [showPass, setShowPass] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
+    const [mfaChallengeToken, setMfaChallengeToken] = useState('');
     const [form, setForm] = useState({
         email: '',
         password: '',
@@ -93,6 +110,8 @@ const LoginForm = ({ onSwitchToSignUp, onRequirePasswordChange }: LoginFormProps
 
     const blockedFromRedirect = searchParams.get('blocked') === '1'
     const callbackPath = resolveCallbackPath(searchParams.get('callback') || searchParams.get('callbackUrl'))
+    const apiBaseUrl = (process.env.NEXT_PUBLIC_LARAVEL_API_URL || '').trim()
+    const autoLoginInFlightRef = useRef(false)
 
     const set = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) =>
         setForm(f => ({ ...f, [field]: e.target.value }))
@@ -111,19 +130,19 @@ const LoginForm = ({ onSwitchToSignUp, onRequirePasswordChange }: LoginFormProps
         })
     }, [])
 
-
-
-    const handleSignIn = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const attemptSignIn = useCallback(async (source: 'manual' | 'auto' = 'manual') => {
         setError('');
         setIsLoading(true);
 
-        clearAccessTokenCache()
-        await signOut({ redirect: false })
+        if (!mfaChallengeToken) {
+            clearAccessTokenCache()
+            await signOut({ redirect: false })
+        }
 
         const result = await signIn('credentials', {
             email: form.email,
             password: form.password,
+            mfa_challenge_token: mfaChallengeToken || undefined,
             redirect: false,
             callbackUrl: callbackPath,
         })
@@ -142,7 +161,6 @@ const LoginForm = ({ onSwitchToSignUp, onRequirePasswordChange }: LoginFormProps
             const session = await getSession()
             const passwordChangeRequired = Boolean(session?.user?.passwordChangeRequired)
 
-            // Refresh session in all client components
             if (updateSession) {
                 await updateSession()
             }
@@ -153,10 +171,25 @@ const LoginForm = ({ onSwitchToSignUp, onRequirePasswordChange }: LoginFormProps
                 return
             }
 
-            showSuccessToast('Login successful. Welcome back!')
+            showSuccessToast(source === 'auto' ? 'Login approved. Welcome back!' : 'Login successful. Welcome back!')
             router.replace(callbackPath);
+            router.refresh();
         } else {
             const rawError = String(result?.error ?? '').trim()
+            const mfaApproval = parseMfaApprovalError(rawError)
+            if (mfaApproval) {
+                setMfaChallengeToken(mfaApproval.token)
+                setError(mfaApproval.message)
+                setIsLoading(false)
+                return
+            }
+            const twoFactor = parseTwoFactorError(rawError)
+            if (twoFactor) {
+                setMfaChallengeToken(twoFactor.token)
+                setError(twoFactor.message)
+                setIsLoading(false)
+                return
+            }
             const isBlockedError = BLOCKED_KEYWORDS.some((keyword) => rawError.toLowerCase().includes(keyword))
             const message = isBlockedError
                 ? 'Your account has been banned. Please contact support for assistance.'
@@ -164,7 +197,65 @@ const LoginForm = ({ onSwitchToSignUp, onRequirePasswordChange }: LoginFormProps
             setError(message)
             showErrorToast(message)
         }
+    }, [callbackPath, form.email, form.password, form.rememberMe, mfaChallengeToken, onRequirePasswordChange, router, updateSession])
+
+    const handleSignIn = async (e: React.FormEvent) => {
+        e.preventDefault();
+        await attemptSignIn('manual')
     };
+
+    useEffect(() => {
+        if (!mfaChallengeToken || !apiBaseUrl) return
+
+        let isCancelled = false
+        const pollStatus = async () => {
+            if (isCancelled || autoLoginInFlightRef.current) return
+            try {
+                const response = await fetch(`${apiBaseUrl}/api/auth/login/mfa/status`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Accept: 'application/json',
+                    },
+                    body: JSON.stringify({
+                        mfa_challenge_token: mfaChallengeToken,
+                    }),
+                })
+                const data = await response.json().catch(() => null)
+                const status = String(data?.status || '')
+                const message = String(data?.message || '')
+
+                if (status === 'approved') {
+                    autoLoginInFlightRef.current = true
+                    setError('Approval confirmed. Signing you in automatically...')
+                    await attemptSignIn('auto')
+                    autoLoginInFlightRef.current = false
+                    return
+                }
+
+                if (status === 'denied') {
+                    setError(message || 'This sign-in request was denied.')
+                    setMfaChallengeToken('')
+                    return
+                }
+
+                if (status === 'expired' || response.status === 410) {
+                    setError(message || 'Sign-in approval expired. Please sign in again.')
+                    setMfaChallengeToken('')
+                }
+            } catch {
+                // no-op: keep waiting and polling
+            }
+        }
+
+        const intervalId = window.setInterval(pollStatus, 2500)
+        void pollStatus()
+
+        return () => {
+            isCancelled = true
+            window.clearInterval(intervalId)
+        }
+    }, [apiBaseUrl, attemptSignIn, mfaChallengeToken])
 
     return (
         <motion.div
@@ -187,18 +278,16 @@ const LoginForm = ({ onSwitchToSignUp, onRequirePasswordChange }: LoginFormProps
                         Your account has been banned. Please contact support for assistance.
                     </div>
                 )}
-                <div>
-                    <FloatingInput
-                        id="login-email"
-                        type="text"
-                        label="Username or Email"
-                        value={form.email}
-                        onChange={set('email')}
-                        autoComplete="username email"
-                    />
-                </div>
+                <FloatingInput
+                    id="login-email"
+                    type="text"
+                    label="Username or Email"
+                    value={form.email}
+                    onChange={set('email')}
+                    autoComplete="username email"
+                />
 
-                <div className="">
+                <div>
                     <FloatingInput
                         id="login-password"
                         type={showPass ? 'text' : 'password'}
@@ -219,19 +308,75 @@ const LoginForm = ({ onSwitchToSignUp, onRequirePasswordChange }: LoginFormProps
                     <p className="mt-1.5 text-[11px] text-gray-400 dark:text-white/55">Passwords are case-sensitive.</p>
                 </div>
 
+                {mfaChallengeToken ? (
+                    <div className="">
+                        <div className="rounded-xl border border-orange-200 bg-orange-50 px-4 py-3 text-sm text-orange-900 dark:border-orange-300/30 dark:bg-orange-500/15 dark:text-orange-200">
+                            <p className="font-semibold">New device sign-in check</p>
+                            <p className="mt-1 text-xs text-orange-800/90 dark:text-orange-200/90">
+                                We sent an approval link to your email. Tap <strong>Yes, it is me</strong> and we will sign you in automatically.
+                            </p>
+                        </div>
+                        <div className="mt-2 flex items-center justify-between gap-2">
+                            <button
+                                type="button"
+                                onClick={async () => {
+                                    setError('')
+                                    setIsLoading(true)
+                                    try {
+                                        const resend = await signIn('credentials', {
+                                            email: form.email,
+                                            password: form.password,
+                                            mfa_challenge_token: mfaChallengeToken,
+                                            resend_mfa_approval: '1',
+                                            redirect: false,
+                                        })
+                                        const msg = String(resend?.error ?? '').trim()
+                                        const mfaApproval = parseMfaApprovalError(msg)
+                                        if (mfaApproval) {
+                                            setMfaChallengeToken(mfaApproval.token)
+                                            setError(mfaApproval.message)
+                                        } else if (msg) {
+                                            setError(msg)
+                                        } else {
+                                            setError('A new approval email was sent. Please check your inbox.')
+                                        }
+                                    } catch {
+                                        setError('Failed to resend approval email. Please try again.')
+                                    } finally {
+                                        setIsLoading(false)
+                                    }
+                                }}
+                                className="text-xs font-semibold text-orange-500 hover:text-orange-400 transition-colors"
+                            >
+                                Resend Email
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setMfaChallengeToken('')
+                                    setError('')
+                                }}
+                                className="text-xs font-semibold text-slate-500 hover:text-slate-700 dark:text-white/70 dark:hover:text-white transition-colors"
+                            >
+                                Start Over
+                            </button>
+                        </div>
+                    </div>
+                ) : null}
+
                 <div className="flex items-center justify-between text-xs">
                     <label className="flex items-center gap-2 text-gray-500 dark:text-white/70 cursor-pointer">
                         <input
                             type="checkbox"
                             checked={form.rememberMe}
                             onChange={(e) => setForm((prev) => ({ ...prev, rememberMe: e.target.checked }))}
-                            className="h-4 w-4 rounded border-white/30 bg-white/10 accent-orange-500"
+                            className="h-4 w-4 rounded border-white/30 bg-white/10 accent-sky-500"
                         />
                         <span className="text-xs">Remember me</span>
                     </label>
                     <Link
                         href="/forgot-password"
-                        className="text-orange-400 hover:text-orange-300 font-semibold transition-colors"
+                        className="text-sky-500 hover:text-sky-400 font-semibold transition-colors"
                     >
                         Forgot Password
                     </Link>
@@ -240,7 +385,7 @@ const LoginForm = ({ onSwitchToSignUp, onRequirePasswordChange }: LoginFormProps
                 <PrimaryButton
                     type="submit"
                     disabled={isLoading}
-                    className="w-full"
+                    className="w-full py-3 px-5 text-sm"
                 >
                     {isLoading ? (
                         <>
@@ -248,7 +393,7 @@ const LoginForm = ({ onSwitchToSignUp, onRequirePasswordChange }: LoginFormProps
                             <span>Signing in...</span>
                         </>
                     ) : (
-                        <span>Sign in</span>
+                        <span>{mfaChallengeToken ? 'Continue Sign in' : 'Sign in'}</span>
                     )}
                 </PrimaryButton>
             </form>

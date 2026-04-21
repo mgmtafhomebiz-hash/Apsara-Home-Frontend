@@ -704,7 +704,7 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
           <Button
             size="sm"
             variant="secondary"
-            className="border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm"
+            className="rounded-[18px] border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition-all hover:border-slate-400 dark:border-white/18 dark:bg-white/12 dark:text-slate-200"
           >
             <svg className="w-4 h-4 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -745,7 +745,7 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="rounded-3xl border border-slate-200 bg-white/95 p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900"
+        className="rounded-3xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900"
       >
         {/* Search */}
         <div className="hidden relative flex-1 min-w-50">
@@ -756,7 +756,7 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
             value={search}
             onChange={e => { setSearch(e.target.value); setPage(1) }}
             placeholder="Search checkout ID, customer, product…"
-            className="w-full pl-9 pr-4 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-400 bg-slate-50 text-slate-700 placeholder-slate-400 transition"
+            className="h-11 w-full rounded-[18px] border border-gray-300 bg-white pl-9 pr-4 text-sm text-slate-900 outline-none transition-all duration-200 placeholder:text-gray-400 focus:border-sky-400 focus:bg-white dark:border-white/18 dark:bg-white/12 dark:text-white dark:placeholder:text-white/55 dark:focus:border-sky-400/60 dark:focus:bg-white/18"
           />
         </div>
 
@@ -765,7 +765,7 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
           hidden
           value={sortBy}
           onChange={e => setSortBy(e.target.value as typeof sortBy)}
-          className="text-sm border border-slate-200 rounded-xl px-3 py-2.5 bg-slate-50 text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-400 transition"
+          className="rounded-[18px] border border-gray-300 bg-white px-3 py-2.5 text-sm text-slate-700 transition outline-none focus:border-sky-400 focus:bg-white dark:border-white/18 dark:bg-white/12 dark:text-slate-200 dark:focus:border-sky-400/60 dark:focus:bg-white/18"
         >
           <option value="default">Sort: Default</option>
           <option value="customer_az">Customer A–Z</option>
@@ -863,7 +863,7 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
 
       {/* ── Loading ── */}
       {isLoading ? (
-        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm animate-pulse dark:border-slate-800 dark:bg-slate-900">
+        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white animate-pulse dark:border-slate-800 dark:bg-slate-900">
           <div className="border-b border-slate-100 dark:border-slate-800 px-5 py-4 dark:border-slate-800">
             <div className="h-4 w-28 rounded-lg bg-slate-100 dark:bg-slate-800" />
           </div>
@@ -892,10 +892,10 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
             <div className="google-loading-bar" />
           )}
 
-          <div className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-none dark:border-[#24324a] dark:bg-[#121a2b]">
-            <div className="flex items-center justify-between border-b border-slate-100 bg-white px-5 py-4 dark:border-[#24324a] dark:bg-[#121a2b]">
+          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+            <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-5 py-4 dark:border-slate-800 dark:bg-slate-900">
               <h2 className="text-sm font-bold text-slate-800 dark:text-white">Order Queue</h2>
-              <Chip size="sm" variant="soft" className="border border-slate-100 bg-slate-50 text-slate-500 dark:border-[#31405f] dark:bg-[#1c2740] dark:text-slate-200">
+              <Chip size="sm" variant="soft" className="border border-slate-200 bg-slate-50 text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
                 {visibleOrders.length} orders
               </Chip>
             </div>
@@ -903,9 +903,10 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
             <div className="overflow-x-auto overflow-y-visible">
               <table aria-label="Admin orders table" className="min-w-full text-sm">
                 <thead>
-                  <tr className="border-b border-slate-100 bg-slate-50 dark:border-[#24324a] dark:bg-[#1d2840]">
+                  <tr className="border-b border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-800/40">
                     <th className="min-w-[220px] px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-300">Product</th>
                     <th className="min-w-[150px] px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-300">Checkout</th>
+                    <th className="min-w-[150px] px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-300">Source</th>
                     <th className="min-w-[140px] px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-300">Date</th>
                     <th className="min-w-[200px] px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-300">Customer</th>
                     <th className="min-w-[120px] px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-300">Amount</th>
@@ -960,10 +961,10 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                         <tr
                           id={`admin-order-row-${order.id}`}
                           key={order.id}
-                          className={`group border-b border-slate-100 transition-colors dark:border-[#24324a] ${
+                          className={`group border-b border-slate-100 transition-colors dark:border-slate-800 ${
                             highlightedOrderId === order.id
                               ? 'bg-teal-50/80 ring-1 ring-inset ring-teal-200 animate-pulse dark:bg-teal-500/10 dark:ring-teal-500/30'
-                              : 'bg-white hover:bg-slate-50/60 dark:bg-[#121a2b] dark:hover:bg-[#18233a]'
+                              : 'bg-white hover:bg-slate-50/60 dark:bg-slate-900 dark:hover:bg-slate-800/50'
                           }`}
                         >
                           {/* Product */}
@@ -1007,6 +1008,24 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                             <p className="mt-0.5 text-[11px] uppercase tracking-wide text-slate-400 dark:text-slate-500">
                               {order.payment_status}
                             </p>
+                          </td>
+
+                          {/* Source */}
+                          <td className="px-5 py-3.5 align-middle">
+                            {order.source_label ? (
+                              <div className="space-y-1">
+                                <p className="text-[12px] font-semibold text-sky-600 dark:text-sky-400">
+                                  {order.source_label}
+                                </p>
+                                {order.source_host ? (
+                                  <p className="text-[11px] text-slate-400 dark:text-slate-500">
+                                    {order.source_host}
+                                  </p>
+                                ) : null}
+                              </div>
+                            ) : (
+                              <span className="text-[11px] text-slate-300 dark:text-slate-600">-</span>
+                            )}
                           </td>
 
                           {/* Date */}

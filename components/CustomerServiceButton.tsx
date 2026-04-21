@@ -3,9 +3,13 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import ChatModal from './ChatModal'
+import { usePathname } from 'next/navigation'
 
 export default function CustomerServiceButton() {
   const [isOpen, setIsOpen] = useState(false)
+  const pathname = usePathname()
+
+  if (pathname.startsWith('/ranking')) return null
 
   return (
     <>

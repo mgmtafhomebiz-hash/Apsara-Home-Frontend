@@ -5,9 +5,10 @@ import { AnimatePresence, motion } from 'framer-motion';
 import Image from 'next/image';
 import { useMemo, useState } from 'react';
 import Loading from '../Loading';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { useGetPublicGeneralSettingsQuery } from '@/store/api/adminSettingsApi';
+import { resolveCheckoutSource } from '@/libs/checkoutSource';
 import PrimaryButton from '@/components/ui/buttons/PrimaryButton';
 import SecondaryButton from '@/components/ui/buttons/SecondaryButton';
 import OutlineButton from '@/components/ui/buttons/OutlineButton';
@@ -49,6 +50,7 @@ const BuyNowOptionsModal = ({
   const [modalSelectedVariantSku, setModalSelectedVariantSku] = useState(selectedVariant?.sku ?? '');
   const loading = false;
   const router = useRouter();
+  const pathname = usePathname();
 
   const variantOptions = useMemo(
     () =>
@@ -102,6 +104,8 @@ const BuyNowOptionsModal = ({
   };
 
   const persistCheckoutDraft = () => {
+    const checkoutSource = resolveCheckoutSource(pathname);
+
     localStorage.setItem('guest_checkout', JSON.stringify({
       product: {
         ...product,
@@ -119,6 +123,10 @@ const BuyNowOptionsModal = ({
       subtotal,
       handlingFee,
       total,
+      sourceLabel: checkoutSource.sourceLabel ?? null,
+      sourceSlug: checkoutSource.sourceSlug ?? null,
+      sourceHost: checkoutSource.sourceHost ?? null,
+      sourceUrl: checkoutSource.sourceUrl ?? null,
     }));
   };
 
@@ -141,7 +149,8 @@ const BuyNowOptionsModal = ({
 
     if (status !== 'authenticated') {
       handleClose();
-      router.push('/login');
+      const callbackPath = pathname || '/shop';
+      router.push(`/login?callback=${encodeURIComponent(callbackPath)}`);
       return;
     }
 

@@ -12,6 +12,7 @@ import { useSession } from "next-auth/react";
 import Header from "@/components/landing-page/Header";
 
 type Mode = 'login' | 'signup' | 'force-password-change'
+const LOGIN_REDIRECT_GUARD_KEY = 'afhome-skip-login-redirect'
 
 function resolveCallbackPath(value: string | null | undefined): string {
   const normalized = String(value ?? '').trim();
@@ -24,22 +25,39 @@ export default function LoginPageClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { status, data: session } = useSession();
-  const role = String(session?.user?.role ?? '').toLowerCase();
-  const isCustomerSession = status === 'authenticated' && (role === 'customer' || role === '');
   const forcePasswordChange = searchParams.get('force-password-change') === '1';
   const switchAccount = searchParams.get('switch') === '1';
+  const justLoggedOut = searchParams.get('logged_out') === '1';
   const passwordChangeRequired = Boolean(session?.user?.passwordChangeRequired);
   const hasReferral = Boolean(searchParams.get('ref') || searchParams.get('referred_by'));
   const callbackPath = resolveCallbackPath(searchParams.get('callback') || searchParams.get('callbackUrl'));
   const [manualMode, setManualMode] = useState<'login' | 'signup' | null>(null);
 
   useEffect(() => {
-    if (!isCustomerSession) return;
+    if (typeof window === 'undefined') return;
 
-    if (!passwordChangeRequired && !forcePasswordChange && !switchAccount) {
-      router.replace(callbackPath);
-    }
-  }, [callbackPath, forcePasswordChange, isCustomerSession, passwordChangeRequired, router, switchAccount]);
+    const shouldSkipRedirect = window.sessionStorage.getItem(LOGIN_REDIRECT_GUARD_KEY) === '1';
+    if (!shouldSkipRedirect) return;
+
+    window.sessionStorage.removeItem(LOGIN_REDIRECT_GUARD_KEY);
+  }, []);
+
+  useEffect(() => {
+    if (status !== 'authenticated') return;
+    if (justLoggedOut) return;
+    if (forcePasswordChange || passwordChangeRequired) return;
+    if (switchAccount) return;
+
+    router.replace(callbackPath);
+  }, [
+    status,
+    justLoggedOut,
+    forcePasswordChange,
+    passwordChangeRequired,
+    switchAccount,
+    router,
+    callbackPath,
+  ]);
 
   const mode: Mode = passwordChangeRequired || forcePasswordChange
     ? 'force-password-change'

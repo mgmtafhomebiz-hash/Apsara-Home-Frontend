@@ -300,8 +300,7 @@ export default function ItemCard({ product, brandName }: ItemCardProps) {
             ))}
           </div>
           <span className="text-xs text-gray-400 dark:text-gray-500">
-            {hasRating ? `${averageRating.toFixed(1)} ?? ` : 'No rating yet ?? '}
-            {soldCount} sold
+            {hasRating ? `${averageRating.toFixed(1)} · ` : ''}{(soldCount ?? 0)} sold
           </span>
         </div>
       </div>

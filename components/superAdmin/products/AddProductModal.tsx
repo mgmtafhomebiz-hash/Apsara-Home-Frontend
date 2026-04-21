@@ -1583,7 +1583,7 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
           <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             onClick={handleClose}
-            className="fixed inset-0 z-50 bg-slate-950/55 backdrop-blur-md"
+            className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
           />
 
           <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5">
@@ -1593,25 +1593,24 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
               exit={{ opacity: 0, scale: 0.95, y: 12 }}
               transition={{ duration: 0.2, ease: 'easeOut' }}
               onClick={e => e.stopPropagation()}
-              className="flex max-h-[94vh] w-full max-w-6xl flex-col overflow-hidden rounded-[32px] border border-white/70 bg-white shadow-[0_32px_100px_-36px_rgba(15,23,42,0.55)]"
+              className="flex max-h-[94vh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-2xl"
             >
               {/* â”€â”€ Header â”€â”€ */}
-              <div className="shrink-0 border-b border-slate-200/80 bg-gradient-to-r from-teal-50 via-white to-cyan-50 px-4 py-4 sm:px-6 sm:py-5">
+              <div className="shrink-0 border-b border-slate-100 px-6 py-5">
                 <div className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-500 to-cyan-500 shadow-lg shadow-teal-500/30">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-teal-500 shadow-md shadow-teal-500/30">
                     <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
                     </svg>
                   </div>
                   <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-teal-600">Catalog Workspace</p>
-                    <h2 className="mt-1 text-lg font-bold leading-none text-slate-900">Add New Product</h2>
-                    <p className="mt-1 text-xs text-slate-500">Choose manual entry or bulk CSV import in a cleaner product form.</p>
+                    <h2 className="text-slate-800 font-bold text-base leading-none">Add New Product</h2>
+                    <p className="text-slate-400 text-xs mt-1">Choose manual entry or bulk CSV import.</p>
                   </div>
                 </div>
                   <div className="flex items-center gap-3">
-                  <div className="flex rounded-2xl border border-slate-200 bg-white/90 p-1 shadow-sm">
+                  <div className="flex rounded-xl border border-slate-200 bg-white/90 p-1 shadow-sm">
                     {[
                       { value: 'manual', label: 'Manual' },
                       { value: 'csv', label: 'CSV Import' },
@@ -1635,7 +1634,7 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
                     type="button"
                     onClick={handleClose}
                     disabled={isBusy}
-                    className="flex h-10 w-10 items-center justify-center rounded-2xl text-slate-400 transition-colors hover:bg-white hover:text-slate-700 disabled:opacity-40"
+                    className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 disabled:opacity-40"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12"/>
@@ -1655,7 +1654,7 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
                     }}
                   />
                 ) : (
-                <div ref={formContentRef} className="flex-1 space-y-6 overflow-y-auto bg-gradient-to-b from-slate-50/80 via-white to-slate-50/60 px-4 py-4 sm:px-6 sm:py-6">
+                <div ref={formContentRef} className="flex-1 space-y-6 overflow-y-auto bg-white px-6 py-6">
 
                   {/* Server error */}
                   {serverError && (
@@ -2062,9 +2061,9 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
                     {/* Status */}
                     <Field label="Status">
                       <div className="flex items-center p-1 bg-slate-100 rounded-xl gap-0.5">
-                        {[{ value: '1', label: 'Active' }, { value: '0', label: 'Inactive (Draft)' }].map(opt => (
+                        {[{ value: '1', label: 'Active' }, { value: '0', label: 'Inactive (Draft)' }].map((opt, index) => (
                           <Button
-                            key={opt.value}
+                            key={`product-status-${index}-${opt.value}`}
                             type="button"
                             onPress={() => set('pd_status', opt.value)}
                             variant="tertiary"
@@ -2221,7 +2220,7 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
                           {globalColors.length > 0 && (
                             <div className="mt-3 flex flex-wrap gap-2">
                               {globalColors.map((color, colorIndex) => (
-                                <span key={`${getVariantColorKey(color)}-${colorIndex}`} className="inline-flex items-center gap-1.5 rounded-full border border-teal-100 bg-white pl-1 pr-2.5 py-1 shadow-sm">
+                                <span key={`global-color-${colorIndex}-${getVariantColorKey(color)}`} className="inline-flex items-center gap-1.5 rounded-full border border-teal-100 bg-white pl-1 pr-2.5 py-1 shadow-sm">
                                   <span className="h-5 w-5 rounded-full shrink-0 border border-slate-200" style={{ backgroundColor: color.hex }} />
                                   <span className="text-xs font-medium text-slate-700">{color.name !== color.hex ? color.name : color.hex}</span>
                                   <button
@@ -2274,7 +2273,7 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
                             {globalPrimaryValues.length > 0 && (
                               <div className="flex flex-wrap gap-2">
                                 {globalPrimaryValues.map((value, valueIndex) => (
-                                  <span key={`${value}-${valueIndex}`} className="inline-flex items-center gap-1.5 rounded-full border border-teal-100 bg-teal-50/70 pl-3 pr-2 py-1.5 shadow-sm">
+                                  <span key={`global-primary-${valueIndex}-${value || 'empty'}`} className="inline-flex items-center gap-1.5 rounded-full border border-teal-100 bg-teal-50/70 pl-3 pr-2 py-1.5 shadow-sm">
                                     <span className="text-xs font-medium text-slate-700">{value}</span>
                                     <button
                                       type="button"
@@ -2314,7 +2313,7 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
                             {globalSizeValues.length > 0 && (
                               <div className="flex flex-wrap gap-2">
                                 {globalSizeValues.map((value, valueIndex) => (
-                                  <span key={`${value}-${valueIndex}`} className="inline-flex items-center gap-1.5 rounded-full border border-teal-100 bg-white pl-3 pr-2 py-1.5 shadow-sm">
+                                  <span key={`global-size-${valueIndex}-${value || 'empty'}`} className="inline-flex items-center gap-1.5 rounded-full border border-teal-100 bg-white pl-3 pr-2 py-1.5 shadow-sm">
                                     <span className="text-xs font-medium text-slate-700">{value}</span>
                                     <button
                                       type="button"
@@ -2610,9 +2609,9 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
                                       <div className="space-y-1">
                                         <label className="text-[11px] font-semibold text-slate-500 block">Status</label>
                                         <div className="flex items-center p-0.5 bg-slate-100 rounded-lg gap-0.5">
-                                          {[{ value: '1', label: 'Active' }, { value: '0', label: 'Inactive' }].map(opt => (
+                                          {[{ value: '1', label: 'Active' }, { value: '0', label: 'Inactive' }].map((opt, index) => (
                                             <button
-                                              key={opt.value}
+                                              key={`variant-status-${index}-${opt.value}`}
                                               type="button"
                                               onClick={() => setVariant(index, 'pv_status', opt.value)}
                                               className={`flex-1 py-1.5 rounded-md text-[11px] font-semibold transition-all ${
@@ -2695,7 +2694,7 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
                 )}
 
                 {/* â”€â”€ Sticky footer â”€â”€ */}
-                {entryMode === 'manual' && <div className="flex shrink-0 items-center gap-3 border-t border-slate-200/80 bg-white/95 px-4 py-3 sm:px-6 sm:py-4">
+                {entryMode === 'manual' && <div className="flex shrink-0 items-center gap-3 border-t border-slate-100 bg-white px-6 py-4">
                   <p className="text-xs text-slate-400 flex-1">
                     Fields marked <span className="text-red-400 font-semibold">*</span> are required
                   </p>
@@ -2704,14 +2703,14 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
                     onPress={handleClose}
                     isDisabled={isBusy}
                     variant="outline"
-                    className="h-11 rounded-2xl border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700"
+                    className="h-11 rounded-xl border-slate-200 bg-slate-100 hover:bg-slate-200 px-5 text-sm font-semibold text-slate-700"
                   >
                     Cancel
                   </Button>
                   <Button
                     type="submit"
                     isDisabled={isBusy}
-                    className="h-11 rounded-2xl bg-gradient-to-r from-teal-600 to-cyan-600 px-6 text-sm font-bold text-white shadow-lg shadow-teal-500/25"
+                    className="h-11 rounded-xl bg-teal-600 hover:bg-teal-700 px-6 text-sm font-bold text-white shadow-sm shadow-teal-500/30"
                   >
                     {isBusy ? (
                       <>

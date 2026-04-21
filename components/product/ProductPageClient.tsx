@@ -8,6 +8,7 @@ import StickyAddToCart from './StickyAddToCart';
 import { useGetProductBrandQuery } from '@/store/api/productsApi';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { setStoredReferralCode } from '@/libs/referral';
+import { resolveCheckoutSource } from '@/libs/checkoutSource';
 import { useSession } from 'next-auth/react';
 import type { ProductReviewSummary } from '@/store/api/productsApi';
 import { useGetPublicGeneralSettingsQuery } from '@/store/api/adminSettingsApi';
@@ -237,6 +238,7 @@ const ProductPageClient = ({ product, categoryLabel, reviewSummary }: ProductPag
             const subtotal = unitPrice * quantity;
             const handlingFee = 0;
             const total = subtotal + handlingFee;
+            const checkoutSource = resolveCheckoutSource();
 
             localStorage.setItem('guest_checkout', JSON.stringify({
                 product: {
@@ -255,6 +257,10 @@ const ProductPageClient = ({ product, categoryLabel, reviewSummary }: ProductPag
                 subtotal,
                 handlingFee,
                 total,
+                sourceLabel: checkoutSource.sourceLabel ?? null,
+                sourceSlug: checkoutSource.sourceSlug ?? null,
+                sourceHost: checkoutSource.sourceHost ?? null,
+                sourceUrl: checkoutSource.sourceUrl ?? null,
             }));
             router.replace('/checkout/customer');
         } catch {

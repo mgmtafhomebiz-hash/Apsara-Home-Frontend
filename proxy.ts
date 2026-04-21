@@ -104,6 +104,13 @@ export async function proxy(req: NextRequest) {
       ? '__Secure-supplier-next-auth.session-token'
       : 'supplier-next-auth.session-token',
   });
+  const partnerToken = await getToken({
+    req,
+    secret: process.env.NEXTAUTH_SECRET,
+    cookieName: process.env.NODE_ENV === 'production'
+      ? '__Secure-partner-next-auth.session-token'
+      : 'partner-next-auth.session-token',
+  });
   const passwordChangeRequired = Boolean((token as { passwordChangeRequired?: boolean } | null)?.passwordChangeRequired);
 
   const isAdminLoginPage = pathname === "/admin/login";
@@ -143,15 +150,15 @@ export async function proxy(req: NextRequest) {
   }
 
   if (isPartnerLoginPage) {
-    const role = String((adminToken as { role?: string } | null)?.role ?? "").toLowerCase();
-    const userLevelId = Number((adminToken as { userLevelId?: number } | null)?.userLevelId ?? 0);
+    const role = String((partnerToken as { role?: string } | null)?.role ?? "").toLowerCase();
+    const userLevelId = Number((partnerToken as { userLevelId?: number } | null)?.userLevelId ?? 0);
     const isWebContent = role === "web_content" || userLevelId === 4;
 
-    if (adminToken && isWebContent) {
+    if (partnerToken && isWebContent) {
       return NextResponse.redirect(new URL("/partner/webpages/partner-storefronts", req.url));
     }
 
-    if (adminToken && !isWebContent) {
+    if (partnerToken && !isWebContent) {
       return NextResponse.redirect(new URL(getAdminRedirectPath(role), req.url));
     }
 
@@ -238,15 +245,19 @@ export async function proxy(req: NextRequest) {
   }
 
   if (isPartnerRoute) {
-    if (!adminToken) {
+    if (!partnerToken) {
       const loginUrl = new URL("/partner/login", req.url);
       loginUrl.searchParams.set("callback", pathname);
       return NextResponse.redirect(loginUrl);
     }
 
-    const role = String((adminToken as { role?: string } | null)?.role ?? "").toLowerCase();
-    const userLevelId = Number((adminToken as { userLevelId?: number } | null)?.userLevelId ?? 0);
+    const role = String((partnerToken as { role?: string } | null)?.role ?? "").toLowerCase();
+    const userLevelId = Number((partnerToken as { userLevelId?: number } | null)?.userLevelId ?? 0);
     const isWebContent = role === "web_content" || userLevelId === 4;
+
+    if (!isWebContent) {
+      return NextResponse.redirect(new URL(getAdminRedirectPath(role), req.url));
+    }
 
     const allowed =
       pathname === "/partner" ||

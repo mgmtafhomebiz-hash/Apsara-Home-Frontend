@@ -8,6 +8,5 @@ export const metadata = buildPageMetadata({
 });
 
 export default function Home() {
-  console.log("Test post")
   return <LandingPage />;
 }

@@ -27,7 +27,7 @@ interface MembersPageMainProps {
 
 function SkeletonTable() {
     return (
-        <div className="animate-pulse overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <div className="animate-pulse overflow-hidden rounded-2xl border border-slate-100 bg-white dark:border-slate-800 dark:bg-slate-900">
             <div className="border-b border-slate-100 px-5 py-4 dark:border-slate-800">
                 <div className="h-4 w-28 rounded-lg bg-slate-100 dark:bg-slate-800/60" />
             </div>
@@ -568,7 +568,7 @@ const MembersPageMain = ({ initialData = null, initialStats = null }: MembersPag
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 12, scale: 0.98 }}
                         transition={{ duration: 0.2 }}
-                        className="relative w-full max-w-3xl overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-2xl"
+                        className="relative w-full max-w-3xl overflow-hidden rounded-3xl border border-slate-100 bg-white dark:border-slate-800 dark:bg-slate-900"
                     >
                         <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-4 dark:border-slate-800">
                             <div>
@@ -629,7 +629,7 @@ const MembersPageMain = ({ initialData = null, initialStats = null }: MembersPag
                                                 value={statModalSearch}
                                                 onChange={(event) => setStatModalSearch(event.target.value)}
                                                 placeholder="Search member, email, address, tier..."
-                                                className="w-full rounded-2xl border border-slate-200 bg-white py-3 pl-10 pr-4 text-sm text-slate-800 outline-none transition focus:border-teal-400 focus:ring-2 focus:ring-teal-100"
+                                                className="h-11 w-full rounded-[18px] border border-gray-300 bg-white px-4 pl-10 text-sm text-gray-900 outline-none transition-all duration-200 focus:border-sky-400 focus:bg-white focus:ring-0 dark:border-white/18 dark:bg-white/12 dark:text-white dark:placeholder-white/55 dark:focus:border-sky-400/60 dark:focus:bg-white/18"
                                             />
                                         </div>
                                         {debouncedStatModalSearch !== '' ? (

@@ -23,8 +23,10 @@ const resolveAccessToken = async (): Promise<string | undefined> => {
 
     if (!tokenPromise) {
         const pathname = window.location.pathname || ''
-        const sessionPath = pathname.startsWith('/admin') || pathname.startsWith('/partner')
+        const sessionPath = pathname.startsWith('/admin')
             ? '/api/admin/auth/session'
+            : pathname.startsWith('/partner')
+              ? '/api/partner/auth/session'
             : pathname.startsWith('/supplier')
               ? '/api/supplier/auth/session'
               : '/api/auth/session'
@@ -127,6 +129,6 @@ const baseQueryWithBanCheck: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQ
 export const baseApi = createApi({
     reducerPath: 'api',
     baseQuery: baseQueryWithBanCheck,
-    tagTypes: ['User', 'Members', 'Products', 'Categories', 'Brands', 'Orders', 'Encashment', 'AdminUsers', 'AdminNotifications', 'CustomerNotifications', 'Wishlist', 'WebPages', 'Suppliers', 'InteriorRequests', 'AdminSettings', 'ExpenseCategories', 'Expenses', 'Cart', 'SearchHistory'],
+    tagTypes: ['User', 'Members', 'Products', 'Categories', 'Brands', 'Orders', 'Encashment', 'AdminUsers', 'AdminNotifications', 'CustomerNotifications', 'Wishlist', 'WebPages', 'Suppliers', 'InteriorRequests', 'AdminSettings', 'ExpenseCategories', 'Expenses', 'Cart', 'SearchHistory', 'ActivityLogs'],
     endpoints: () => ({}),
 })

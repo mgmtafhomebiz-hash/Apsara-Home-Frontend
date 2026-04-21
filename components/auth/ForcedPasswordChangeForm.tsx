@@ -162,7 +162,12 @@ export default function ForcedPasswordChangeForm() {
 
         <button
           type="button"
-          onClick={() => signOut({ callbackUrl: '/login' })}
+          onClick={() => {
+            if (typeof window !== 'undefined') {
+              window.sessionStorage.setItem('afhome-skip-login-redirect', '1');
+            }
+            signOut({ callbackUrl: '/login' });
+          }}
           className="w-full text-sm font-semibold text-white/70 transition hover:text-white"
         >
           Use a different account

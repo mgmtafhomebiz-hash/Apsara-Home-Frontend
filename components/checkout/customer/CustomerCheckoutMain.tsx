@@ -17,6 +17,7 @@ import { CheckoutOnlineBankingProvider, useCreateCheckoutSessionMutation, useVal
 import { useGetPublicGeneralSettingsQuery } from "@/store/api/adminSettingsApi";
 import { getStoredReferralCode } from "@/libs/referral";
 import { useMeQuery } from "@/store/api/userApi";
+import { useLazyGetPublicProductQuery } from "@/store/api/productsApi";
 import type { Category } from '@/store/api/categoriesApi';
 import { User, ArrowLeft } from 'lucide-react';
 
@@ -97,13 +98,30 @@ const CustomerCheckoutMain = ({ initialCategories = [] }: { initialCategories?: 
     const isLoggedIn = isCustomerSession;
     const { data: meData } = useMeQuery(undefined, { skip: !isCustomerSession });
     const { data: publicSettingsData } = useGetPublicGeneralSettingsQuery();
+    const [fetchProduct, { data: fullProductData }] = useLazyGetPublicProductQuery();
+    const [checkoutRefreshTrigger, setCheckoutRefreshTrigger] = useState(0);
 
-    const checkoutData = useMemo(() => readCheckoutDraft(), []);
+    const checkoutData = useMemo(() => readCheckoutDraft(), [checkoutRefreshTrigger]);
     const storedReferral = useMemo(() => readStoredReferral(), []);
     const memberReferral = (meData?.referrer_username ?? '').trim();
     const effectiveReferral = isLoggedIn ? memberReferral : storedReferral;
     const hasLockedReferral = effectiveReferral.trim() !== '';
     const shouldRequireReferral = !isLoggedIn && !hasLockedReferral;
+
+    useEffect(() => {
+        if (checkoutData?.product?.id) {
+            fetchProduct(checkoutData.product.id);
+        }
+    }, [checkoutData?.product?.id, fetchProduct]);
+
+    useEffect(() => {
+        const handleVariantChange = () => {
+            setCheckoutRefreshTrigger(prev => prev + 1);
+        };
+
+        window.addEventListener('checkout-variant-changed', handleVariantChange);
+        return () => window.removeEventListener('checkout-variant-changed', handleVariantChange);
+    }, []);
 
     const [formOverrides, setFormOverrides] = useState<GuestForm>(defaultForm);
     const [errors, setErrors] = useState<FormErrors>({});
@@ -268,6 +286,10 @@ const CustomerCheckoutMain = ({ initialCategories = [] }: { initialCategories?: 
                     ? selectedOnlineBankingProvider
                     : undefined,
                 voucher_code: voucherInfo?.code,
+                source_label: checkoutData.sourceLabel ?? null,
+                source_slug: checkoutData.sourceSlug ?? null,
+                source_host: checkoutData.sourceHost ?? null,
+                source_url: checkoutData.sourceUrl ?? null,
                 customer: {
                     name: form.name,
                     email: form.email,

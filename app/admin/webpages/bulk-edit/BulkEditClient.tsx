@@ -1,7 +1,6 @@
 ﻿'use client'
 
 import { useMemo, useState } from 'react'
-import * as XLSX from 'xlsx'
 import { showErrorToast, showSuccessToast } from '@/libs/toast'
 import { useBulkUpdateApplyMutation, useBulkUpdatePreviewMutation } from '@/store/api/productsApi'
 
@@ -44,6 +43,90 @@ export default function BulkEditClient() {
 
   const parsedRows = useMemo(() => rows, [rows])
 
+  const parseCsvLine = (line: string) => {
+    const values: string[] = []
+    let current = ''
+    let inQuotes = false
+
+    for (let index = 0; index < line.length; index += 1) {
+      const char = line[index]
+      const nextChar = line[index + 1]
+
+      if (char === '"') {
+        if (inQuotes && nextChar === '"') {
+          current += '"'
+          index += 1
+        } else {
+          inQuotes = !inQuotes
+        }
+        continue
+      }
+
+      if (char === ',' && !inQuotes) {
+        values.push(current)
+        current = ''
+        continue
+      }
+
+      current += char
+    }
+
+    values.push(current)
+    return values
+  }
+
+  const parseCsv = (content: string) => {
+    const normalizedContent = content.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n')
+    const lines: string[] = []
+    let current = ''
+    let inQuotes = false
+
+    for (let index = 0; index < normalizedContent.length; index += 1) {
+      const char = normalizedContent[index]
+      const nextChar = normalizedContent[index + 1]
+
+      if (char === '"') {
+        if (inQuotes && nextChar === '"') {
+          current += '"'
+          index += 1
+        } else {
+          inQuotes = !inQuotes
+        }
+        continue
+      }
+
+      if (char === '\n' && !inQuotes) {
+        lines.push(current)
+        current = ''
+        continue
+      }
+
+      current += char
+    }
+
+    if (current || lines.length > 0) {
+      lines.push(current)
+    }
+
+    const nonEmptyLines = lines.filter((line) => line.trim() !== '')
+    if (nonEmptyLines.length === 0) return []
+
+    const [headerLine, ...dataLines] = nonEmptyLines
+    const headers = parseCsvLine(headerLine).map((header) => normalizeKey(header))
+
+    return dataLines.map((line) => {
+      const cells = parseCsvLine(line)
+      const row: Record<string, unknown> = {}
+
+      headers.forEach((header, index) => {
+        if (!header) return
+        row[header] = cells[index] ?? ''
+      })
+
+      return row
+    })
+  }
+
   const handleFile = async (file: File) => {
     setIsParsing(true)
     setApplySummary(null)
@@ -52,22 +135,16 @@ export default function BulkEditClient() {
     setFileName(file.name)
 
     try {
-      const buffer = await file.arrayBuffer()
-      const workbook = XLSX.read(buffer, { type: 'array' })
-      const sheetName = workbook.SheetNames[0]
-      const sheet = workbook.Sheets[sheetName]
-      const json = XLSX.utils.sheet_to_json(sheet, { defval: '' }) as Array<Record<string, unknown>>
-      const normalized = json.map((row) => {
-        const normalizedRow: Record<string, unknown> = {}
-        Object.keys(row).forEach((key) => {
-          normalizedRow[normalizeKey(key)] = row[key]
-        })
-        return normalizedRow
-      })
-      setRows(normalized)
-      showSuccessToast(`Loaded ${normalized.length} rows from ${file.name}`)
+      if (!file.name.toLowerCase().endsWith('.csv')) {
+        throw new Error('Only CSV files are supported.')
+      }
+
+      const content = await file.text()
+      const parsed = parseCsv(content)
+      setRows(parsed)
+      showSuccessToast(`Loaded ${parsed.length} rows from ${file.name}`)
     } catch {
-      showErrorToast('Failed to read the file. Please upload a valid Excel file.')
+      showErrorToast('Failed to read the file. Please upload a valid CSV file.')
       setRows([])
       setFileName(null)
     } finally {
@@ -201,7 +278,7 @@ export default function BulkEditClient() {
               <p className="text-xs font-bold uppercase tracking-[0.24em] text-cyan-700">Bulk Workspace</p>
               <h2 className="mt-2 text-xl font-bold text-slate-900">Bulk Edit Interface</h2>
               <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-500">
-                Upload a CSV or XLSX file to apply product updates across multiple items in one streamlined pass.
+                Upload a CSV file to apply product updates across multiple items in one streamlined pass.
                 Use SKU or Product ID plus any fields you want to change. Suggested headers:
                 <span className="block mt-2 text-xs text-slate-500">
                   Product Name, Category, Shop By Room, Material, SRP Price, Member Price, Dealer Price,
@@ -226,7 +303,7 @@ export default function BulkEditClient() {
                 </svg>
               </div>
               <p className="mt-3 text-sm font-semibold text-slate-900">Drop your file here</p>
-              <p className="mt-1 text-xs text-slate-500">CSV, XLSX up to 10MB</p>
+              <p className="mt-1 text-xs text-slate-500">CSV up to 10MB</p>
               <span className="mt-4 inline-flex items-center gap-2 rounded-full bg-cyan-600 px-4 py-2 text-xs font-semibold text-white transition group-hover:bg-cyan-700">
                 Browse Files
                 <span className="inline-flex h-2 w-2 rounded-full bg-white/90 animate-ping" />
@@ -234,7 +311,7 @@ export default function BulkEditClient() {
               <input
                 id="bulk-edit-upload"
                 type="file"
-                accept=".xlsx,.xls,.csv"
+                accept=".csv,text/csv"
                 className="sr-only"
                 onChange={(event) => {
                   const file = event.target.files?.[0]

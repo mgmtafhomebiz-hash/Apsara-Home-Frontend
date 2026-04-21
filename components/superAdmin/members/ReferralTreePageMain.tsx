@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import AdminPagination from '@/components/superAdmin/AdminPagination'
+import DataTableShell from '@/components/superAdmin/DataTableShell'
 import { Member } from '@/types/members/types'
 import { AdminReferralNode, useGetMembersQuery, useGetMembersReferralTreeQuery } from '@/store/api/membersApi'
 
@@ -117,7 +118,7 @@ function NetworkPreviewNode({
 
   return (
     <div className={level > 0 ? 'ml-4 border-l border-slate-200/80 pl-4' : ''}>
-      <div className="rounded-2xl border border-slate-200/80 bg-white/90 p-3 shadow-[0_8px_24px_rgba(15,23,42,0.04)]">
+      <div className="rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900">
         <div className="flex items-start gap-3">
           <div className="relative shrink-0">
             <Avatar
@@ -184,16 +185,15 @@ function TreeNodeCard({
 
   return (
     <div className={depth > 0 ? 'ml-5 border-l border-slate-200/70 pl-4' : ''}>
-      <div className={`group relative overflow-hidden rounded-[28px] border bg-white/95 p-4 shadow-[0_18px_50px_rgba(15,23,42,0.06)] transition-all duration-200 hover:-translate-y-0.5 hover:border-cyan-200 hover:shadow-[0_20px_55px_rgba(13,148,136,0.12)] ${depth === 0 ? 'border-slate-200' : 'border-slate-100'}`}>
-        <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-cyan-400 via-teal-400 to-emerald-400 opacity-80" />
+      <div className={`group relative overflow-hidden rounded-[28px] border bg-white p-4 transition-all duration-200 hover:border-cyan-200 ${depth === 0 ? 'border-slate-200 dark:border-slate-800' : 'border-slate-100 dark:border-slate-800'}`}>
         <div className="flex items-start gap-4">
           <div className="relative shrink-0">
             <Avatar
               name={node.name}
               avatar={node.avatar}
-              className="h-12 w-12 rounded-[18px] shadow-lg"
+              className="h-12 w-12 rounded-[18px]"
               textClassName="text-sm font-bold text-white"
-              fallbackClassName={`flex items-center justify-center ${depth === 0 ? 'bg-gradient-to-br from-cyan-500 via-teal-500 to-emerald-500' : 'bg-gradient-to-br from-slate-500 to-slate-700'}`}
+              fallbackClassName={`flex items-center justify-center ${depth === 0 ? 'bg-sky-500' : 'bg-slate-500'}`}
             />
             <span className={`absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-white ${status.dot}`} />
           </div>
@@ -230,7 +230,7 @@ function TreeNodeCard({
           {hasChildren && (
             <button
               onClick={() => setOpen((value) => !value)}
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-400 shadow-sm transition-all hover:border-cyan-200 hover:bg-cyan-50 hover:text-cyan-700"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-400 transition-all hover:border-cyan-200 hover:bg-cyan-50 hover:text-cyan-700 dark:border-slate-800 dark:bg-slate-900"
               aria-label={open ? 'Collapse referrals' : 'Expand referrals'}
             >
               <svg className={`h-4 w-4 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -283,7 +283,7 @@ function ListRow({
             <Avatar
               name={member.name}
               avatar={member.avatar}
-              className="h-10 w-10 shrink-0 rounded-2xl shadow-md"
+              className="h-10 w-10 shrink-0 rounded-2xl"
               textClassName="text-xs font-bold text-white"
               fallbackClassName="flex items-center justify-center bg-gradient-to-br from-cyan-500 via-teal-500 to-emerald-500"
             />
@@ -317,7 +317,7 @@ function ListRow({
             <button
               type="button"
               onClick={() => setOpen((value) => !value)}
-              className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-[11px] font-semibold text-slate-600 shadow-sm transition-all hover:border-cyan-200 hover:bg-cyan-50 hover:text-cyan-700"
+              className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-[11px] font-semibold text-slate-600 transition-all hover:border-cyan-200 hover:bg-cyan-50 hover:text-cyan-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300"
               aria-label={open ? 'Hide network details' : 'Show network details'}
             >
               Explore
@@ -338,7 +338,7 @@ function ListRow({
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.18 }}
-                className="overflow-hidden rounded-[24px] border border-slate-200 bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.12),transparent_35%),radial-gradient(circle_at_bottom_right,rgba(16,185,129,0.10),transparent_35%),white] p-4 shadow-[0_16px_40px_rgba(15,23,42,0.06)]"
+                className="overflow-hidden rounded-[24px] border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900"
               >
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
@@ -354,7 +354,7 @@ function ListRow({
                       { label: 'Total Network', value: String(totalNetwork) },
                       { label: 'Commission', value: php(member.earnings ?? 0) },
                     ].map((item) => (
-                      <div key={item.label} className="rounded-2xl border border-white/70 bg-white/80 px-3 py-2 text-right shadow-sm">
+                      <div key={item.label} className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-right dark:border-slate-800 dark:bg-slate-950">
                         <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">{item.label}</p>
                         <p className="mt-1 text-sm font-bold text-slate-900">{item.value}</p>
                       </div>
@@ -367,7 +367,7 @@ function ListRow({
                     <NetworkPreviewNode node={referralNode} />
                   </div>
                 ) : (
-                  <div className="mt-4 rounded-2xl border border-dashed border-slate-200 bg-white/70 px-4 py-6 text-center">
+                  <div className="mt-4 rounded-2xl border border-dashed border-slate-200 bg-white px-4 py-6 text-center dark:border-slate-800 dark:bg-slate-900">
                     <p className="text-sm font-semibold text-slate-700">No referral tree record found</p>
                     <p className="mt-1 text-xs text-slate-400">This customer is in the customer table but has no visible referral branch yet.</p>
                   </div>
@@ -432,12 +432,12 @@ export default function ReferralTreePageMain() {
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        className="overflow-hidden rounded-[32px] border border-slate-200 bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.18),transparent_32%),radial-gradient(circle_at_bottom_right,rgba(16,185,129,0.14),transparent_30%),linear-gradient(135deg,#ffffff,#f8fafc)] p-6 shadow-[0_30px_80px_rgba(15,23,42,0.08)]"
+        className="overflow-hidden rounded-[28px] border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900"
       >
         <div className="flex flex-wrap items-start justify-between gap-5">
           <div className="max-w-2xl">
-            <span className="inline-flex items-center rounded-full border border-cyan-100 bg-white/90 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-cyan-700 shadow-sm">
-              Modern Referral Explorer
+            <span className="inline-flex items-center rounded-full border border-sky-100 bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-sky-700 dark:border-sky-900/40 dark:bg-slate-900 dark:text-sky-300">
+              Referral Overview
             </span>
             <h1 className="mt-4 text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">Commission / Referral Tree</h1>
             <p className="mt-2 max-w-xl text-sm leading-6 text-slate-500">
@@ -446,12 +446,12 @@ export default function ReferralTreePageMain() {
           </div>
 
           <div className="grid min-w-[250px] gap-3 sm:grid-cols-2">
-            <div className="rounded-2xl border border-white/70 bg-white/85 p-4 shadow-sm backdrop-blur">
+            <div className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
               <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">Visible roots</p>
               <p className="mt-2 text-2xl font-black text-slate-900">{filteredTree.length}</p>
               <p className="mt-1 text-xs text-slate-500">Top-level branches currently in view</p>
             </div>
-            <div className="rounded-2xl border border-white/70 bg-white/85 p-4 shadow-sm backdrop-blur">
+            <div className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
               <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">Total members</p>
               <p className="mt-2 text-2xl font-black text-slate-900">{summary?.totalMembers ?? 0}</p>
               <p className="mt-1 text-xs text-slate-500">Based on the current customer database</p>
@@ -472,10 +472,9 @@ export default function ReferralTreePageMain() {
           { label: 'Total Referrals', value: String(summary?.totalReferrals ?? 0), accent: 'from-fuchsia-500 to-violet-500' },
           { label: 'Avg. Commission/Member', value: php(summary?.avgCommissionPerMember ?? 0), accent: 'from-sky-500 to-sky-500' },
         ].map((stat) => (
-          <div key={stat.label} className="group relative overflow-hidden rounded-[28px] border border-slate-200 bg-white p-4 shadow-[0_18px_50px_rgba(15,23,42,0.05)]">
-            <div className={`absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${stat.accent}`} />
+          <div key={stat.label} className="group relative overflow-hidden rounded-[28px] border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
             <div className="flex items-center gap-3">
-              <div className={`flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br ${stat.accent} text-white shadow-md`}>
+              <div className={`flex h-12 w-12 items-center justify-center rounded-2xl text-white ${stat.accent}`}>
                 <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
@@ -493,7 +492,7 @@ export default function ReferralTreePageMain() {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="rounded-[28px] border border-slate-200 bg-white/95 p-4 shadow-[0_18px_50px_rgba(15,23,42,0.05)]"
+        className="rounded-[28px] border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900"
       >
         <div className="flex flex-wrap items-center gap-3">
           <div className="relative min-w-[240px] flex-1">
@@ -508,7 +507,7 @@ export default function ReferralTreePageMain() {
                 setSearch(event.target.value)
                 setListPage(1)
               }}
-              className="w-full rounded-2xl border border-slate-200 bg-slate-50/90 py-3 pl-10 pr-4 text-sm text-slate-700 transition placeholder:text-slate-400 focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100"
+              className="h-11 w-full rounded-[18px] border border-gray-300 bg-white py-3 pl-10 pr-4 text-sm text-slate-900 outline-none transition-all duration-200 placeholder:text-gray-400 focus:border-sky-400 focus:bg-white dark:border-white/18 dark:bg-white/12 dark:text-white dark:placeholder:text-white/55 dark:focus:border-sky-400/60 dark:focus:bg-white/18"
             />
           </div>
 
@@ -516,21 +515,21 @@ export default function ReferralTreePageMain() {
             {tab === 'tree' && (
               <button
                 onClick={() => setExpandAll((value) => !value)}
-                className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-600 transition hover:border-cyan-200 hover:bg-cyan-50 hover:text-cyan-700"
+                className="rounded-[18px] border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 transition hover:border-slate-400 hover:bg-slate-50 dark:border-white/18 dark:bg-white/12 dark:text-slate-200 dark:hover:bg-white/18"
               >
                 {expandAll ? 'Collapse All' : 'Expand All'}
               </button>
             )}
-            <div className="flex items-center rounded-2xl border border-slate-200 bg-slate-50 p-1.5 shadow-inner">
+            <div className="flex items-center rounded-[18px] border border-gray-300 bg-white p-1.5 dark:border-white/18 dark:bg-white/12">
               <button
                 onClick={() => setTab('tree')}
-                className={`rounded-xl px-4 py-2.5 text-sm font-semibold transition-all ${tab === 'tree' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                className={`rounded-[14px] px-4 py-2.5 text-sm font-semibold transition-all ${tab === 'tree' ? 'border border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-400/30 dark:bg-sky-500/10 dark:text-sky-300' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'}`}
               >
                 Tree View
               </button>
               <button
                 onClick={() => setTab('list')}
-                className={`rounded-xl px-4 py-2.5 text-sm font-semibold transition-all ${tab === 'list' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                className={`rounded-[14px] px-4 py-2.5 text-sm font-semibold transition-all ${tab === 'list' ? 'border border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-400/30 dark:bg-sky-500/10 dark:text-sky-300' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'}`}
               >
                 List View
               </button>
@@ -546,17 +545,17 @@ export default function ReferralTreePageMain() {
         transition={{ duration: 0.2 }}
       >
         {isLoading || isFetching ? (
-          <div className="rounded-[28px] border border-slate-200 bg-white p-12 text-center shadow-[0_18px_50px_rgba(15,23,42,0.05)]">
+          <div className="rounded-[28px] border border-slate-200 bg-white p-12 text-center dark:border-slate-800 dark:bg-slate-900">
             <p className="text-sm text-slate-500">Loading referral tree...</p>
           </div>
         ) : isError ? (
-          <div className="rounded-[28px] border border-rose-200 bg-rose-50 p-12 text-center shadow-[0_18px_50px_rgba(15,23,42,0.05)]">
+          <div className="rounded-[28px] border border-rose-200 bg-rose-50 p-12 text-center dark:border-rose-900/40 dark:bg-rose-950/30">
             <p className="text-sm font-semibold text-rose-600">Failed to load referral tree data.</p>
           </div>
         ) : tab === 'tree' ? (
           <div className="space-y-3">
             {filteredTree.length === 0 ? (
-              <div className="rounded-[28px] border border-slate-200 bg-white p-12 text-center shadow-[0_18px_50px_rgba(15,23,42,0.05)]">
+              <div className="rounded-[28px] border border-slate-200 bg-white p-12 text-center dark:border-slate-800 dark:bg-slate-900">
                 <p className="text-sm font-semibold text-slate-700">No results found</p>
                 <p className="mt-1 text-xs text-slate-400">Try a different search term</p>
               </div>
@@ -565,24 +564,32 @@ export default function ReferralTreePageMain() {
             )}
           </div>
         ) : (
-          <div className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_18px_50px_rgba(15,23,42,0.05)]">
-            <div className="border-b border-slate-100 dark:border-slate-800 bg-[linear-gradient(180deg,#f8fafc,white)] px-5 py-4">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Customer Table View</p>
-                  <h2 className="mt-1 text-lg font-bold text-slate-900">Paginated customer list with referral explorer</h2>
-                </div>
-                <div className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-500">
-                  <span>Page records</span>
-                  <span className="font-bold text-slate-800">{listMembers.length}</span>
+          <DataTableShell
+            title="Customer Table View"
+            subtitle="Paginated customer list with referral explorer"
+            badge={(
+              <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400">
+                Page records {listMembers.length}
+              </span>
+            )}
+            footer={(
+              <div className="flex items-center justify-between text-xs text-slate-400">
+                <p>
+                  Showing <span className="font-semibold text-slate-700 dark:text-slate-300">{listMembers.length}</span> customer records on this page
+                </p>
+                <div className="text-xs text-slate-400">
+                  Page earnings:{' '}
+                  <span className="font-bold text-teal-700">
+                    {php(listMembers.reduce((sum, member) => sum + (member.earnings ?? 0), 0))}
+                  </span>
                 </div>
               </div>
-            </div>
-
+            )}
+          >
             <div className="overflow-x-auto">
               <table className="w-full min-w-[820px] text-left">
                 <thead>
-                  <tr className="border-b border-slate-100 dark:border-slate-800 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60/90">
+                  <tr className="border-b border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-800/40">
                     <th className="px-5 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Member</th>
                     <th className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Tier</th>
                     <th className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Commission</th>
@@ -622,19 +629,6 @@ export default function ReferralTreePageMain() {
                 </tbody>
               </table>
             </div>
-
-            <div className="flex items-center justify-between border-t border-slate-100 px-5 py-3">
-              <p className="text-xs text-slate-400">
-                Showing <span className="font-semibold text-slate-700">{listMembers.length}</span> customer records on this page
-              </p>
-              <div className="text-xs text-slate-400">
-                Page earnings:{' '}
-                <span className="font-bold text-teal-700">
-                  {php(listMembers.reduce((sum, member) => sum + (member.earnings ?? 0), 0))}
-                </span>
-              </div>
-            </div>
-
             <AdminPagination
               currentPage={listMeta?.current_page ?? 1}
               totalPages={listMeta?.last_page ?? 1}
@@ -643,7 +637,7 @@ export default function ReferralTreePageMain() {
               totalRecords={listMeta?.total ?? listMembers.length}
               onPageChange={setListPage}
             />
-          </div>
+          </DataTableShell>
         )}
       </motion.div>
 
@@ -651,7 +645,7 @@ export default function ReferralTreePageMain() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.2 }}
-        className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-[0_18px_50px_rgba(15,23,42,0.05)]"
+        className="rounded-[28px] border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900"
       >
         <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Tier Legend</p>
         <div className="flex flex-wrap gap-2">

@@ -54,6 +54,10 @@ export interface AdminOrder {
   customer_email?: string | null
   customer_phone?: string | null
   customer_address?: string | null
+  source_label?: string | null
+  source_slug?: string | null
+  source_host?: string | null
+  source_url?: string | null
   paid_at?: string | null
   created_at?: string | null
   updated_at?: string | null

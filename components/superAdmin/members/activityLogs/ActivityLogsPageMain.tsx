@@ -1,28 +1,43 @@
 'use client';
 
 import { useMemo, useState } from "react";
-import { MOCK_LOGS } from "./types";
 import { motion } from "framer-motion";
+import { useGetActivityLogsQuery } from "@/store/api/activityLogsApi";
 import ActivityLogsStats from "./ActivityLogsStats";
 import ActivityLogsToolbar from "./ActivityLogsToolbar";
 import ActivityLogsTable from "./ActivityLogsTable";
+import Loading from "@/components/Loading";
 
 const ActivityLogsPageMain = () => {
   const [search, setSearch] = useState('');
   const [actionFilter, setActionFilter] = useState('all');
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [page, setPage] = useState(1);
+  const { data: logsData, isLoading } = useGetActivityLogsQuery({
+    page,
+    perPage: 50,
+    activity_type: actionFilter === 'all' ? undefined : (actionFilter as any),
+    search: search.trim() || undefined,
+  });
+
+  const logs = logsData?.data || [];
 
   const filtered = useMemo(() => {
     const q = search.trim().toLocaleLowerCase()
-    return MOCK_LOGS.filter(log => {
-        if (q && !log.memberName.toLowerCase().includes(q) && 
-                 !log.memberEmail.toLowerCase().includes(q) &&
-                 !log.detail.toLowerCase().includes(q)) return false
-        if (actionFilter !== 'all' && log.action !== actionFilter) return false;
-        if (statusFilter !== 'all' && log.status !== statusFilter) return false;
-        return true;
+    return logs.filter(log => {
+      if (q && !log.customer?.name.toLowerCase().includes(q) &&
+               !log.customer?.email.toLowerCase().includes(q) &&
+               !log.description?.toLowerCase().includes(q)) return false
+      return true;
     })
-  }, [search, actionFilter, statusFilter])
+  }, [logs, search])
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loading />
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -33,24 +48,23 @@ const ActivityLogsPageMain = () => {
             className="flex items-start justify-between gap-4 flex-wrap"
         >
             <div>
-                <h1 className="text-xl font-bold text-slate-800">Members Activity Logs</h1>
-                <p className="text-sm text-slate-500 mt-0.5">Track all member actions = logins, purchase, encashment, and more</p>
+                <h1 className="text-xl font-bold text-gray-800 dark:text-white">Members Activity Logs</h1>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-0.5">Track all member actions - logins, purchases, encashment, and more</p>
             </div>
         </motion.div>
 
-        <ActivityLogsStats />
+        <ActivityLogsStats logs={logs} />
 
-        <ActivityLogsToolbar 
+        <ActivityLogsToolbar
             search={search}
             actionFilter={actionFilter}
-            statusFilter={statusFilter}
             total={filtered.length}
             onSearch={setSearch}
             onActionFilter={setActionFilter}
-            onStatusFilter={setStatusFilter}
+            isLoading={isLoading}
         />
-      
-      <ActivityLogsTable logs={filtered}/>
+
+      <ActivityLogsTable logs={filtered} />
     </div>
   )
 }

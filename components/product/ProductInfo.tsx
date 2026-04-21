@@ -20,6 +20,7 @@ import { useGetWishlistQuery, useAddWishlistMutation, useRemoveWishlistMutation,
 import OutlineButton from "@/components/ui/buttons/OutlineButton";
 import PrimaryButton from "@/components/ui/buttons/PrimaryButton";
 import { Package, Truck, CheckCircle } from "lucide-react";
+import { usePathname } from 'next/navigation';
 
 
 const CartIcon = () => (
@@ -169,6 +170,7 @@ const buildVariantTitleParts = (variant?: NonNullable<CategoryProduct['variants'
 
 const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, reviewSummary }: ProductInfoProps) => {
     const { addToCart } = useCart();
+    const pathname = usePathname();
     const { data: session, status, update: updateSession } = useSession();
     const isLoggedIn = Boolean(session?.user);
     const { data: me } = useMeQuery(undefined, { skip: !isLoggedIn });
@@ -208,7 +210,8 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, 
     const handleWishlistToggle = async () => {
         if (!isLoggedIn) {
             // Redirect to login if not logged in
-            window.location.href = '/login';
+            const callbackPath = pathname || '/shop';
+            window.location.href = `/login?callback=${encodeURIComponent(callbackPath)}`;
             return;
         }
 

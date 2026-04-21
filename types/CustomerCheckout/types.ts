@@ -62,6 +62,10 @@ export interface CustomerCheckoutData {
   subtotal: number;
   handlingFee: number;
   total: number;
+  sourceLabel?: string | null;
+  sourceSlug?: string | null;
+  sourceHost?: string | null;
+  sourceUrl?: string | null;
 }
 
 export type PaymentMethod = 'gcash' | 'maya' | 'online_banking' | 'card';

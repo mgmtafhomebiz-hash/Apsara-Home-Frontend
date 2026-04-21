@@ -10,6 +10,7 @@ import AdminPagination from '@/components/superAdmin/AdminPagination'
 import { MemberStatus, MemberTier } from "@/types/members/types"
 import { useDeleteMemberMutation, useGenerateMemberTemporaryPasswordMutation, useUpdateMemberMutation } from "@/store/api/membersApi"
 import { createPortal } from "react-dom"
+import DataTableShell from '@/components/superAdmin/DataTableShell'
 
 const avatarColors = [
   'bg-teal-500', 'bg-blue-500', 'bg-purple-500', 'bg-pink-500',
@@ -248,26 +249,26 @@ function EditMemberModal({
           <div className="grid gap-4 md:grid-cols-2">
             <label className="block">
               <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Full Name</span>
-              <input value={form.name} onChange={(e) => updateField('name', e.target.value)} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 focus:border-teal-400 focus:outline-none focus:ring-4 focus:ring-teal-100 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 dark:placeholder-slate-500" />
+              <input value={form.name} onChange={(e) => updateField('name', e.target.value)} className="h-11 w-full rounded-[18px] border border-gray-300 bg-white px-4 text-sm text-gray-900 outline-none transition-all duration-200 focus:border-sky-400 focus:bg-white focus:ring-0 dark:border-white/18 dark:bg-white/12 dark:text-white dark:placeholder-white/55 dark:focus:border-sky-400/60 dark:focus:bg-white/18" />
             </label>
             <label className="block">
               <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Username</span>
-              <input value={form.username} onChange={(e) => updateField('username', e.target.value)} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 focus:border-teal-400 focus:outline-none focus:ring-4 focus:ring-teal-100 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 dark:placeholder-slate-500" />
+              <input value={form.username} onChange={(e) => updateField('username', e.target.value)} className="h-11 w-full rounded-[18px] border border-gray-300 bg-white px-4 text-sm text-gray-900 outline-none transition-all duration-200 focus:border-sky-400 focus:bg-white focus:ring-0 dark:border-white/18 dark:bg-white/12 dark:text-white dark:placeholder-white/55 dark:focus:border-sky-400/60 dark:focus:bg-white/18" />
             </label>
             <label className="block md:col-span-2">
               <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Email</span>
-              <input type="email" value={form.email} onChange={(e) => updateField('email', e.target.value)} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 focus:border-teal-400 focus:outline-none focus:ring-4 focus:ring-teal-100 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 dark:placeholder-slate-500" />
+              <input type="email" value={form.email} onChange={(e) => updateField('email', e.target.value)} className="h-11 w-full rounded-[18px] border border-gray-300 bg-white px-4 text-sm text-gray-900 outline-none transition-all duration-200 focus:border-sky-400 focus:bg-white focus:ring-0 dark:border-white/18 dark:bg-white/12 dark:text-white dark:placeholder-white/55 dark:focus:border-sky-400/60 dark:focus:bg-white/18" />
             </label>
             <label className="block md:col-span-2">
               <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Contact Number</span>
-              <input value={form.contactNumber} onChange={(e) => updateField('contactNumber', e.target.value)} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 focus:border-teal-400 focus:outline-none focus:ring-4 focus:ring-teal-100 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 dark:placeholder-slate-500" />
+              <input value={form.contactNumber} onChange={(e) => updateField('contactNumber', e.target.value)} className="h-11 w-full rounded-[18px] border border-gray-300 bg-white px-4 text-sm text-gray-900 outline-none transition-all duration-200 focus:border-sky-400 focus:bg-white focus:ring-0 dark:border-white/18 dark:bg-white/12 dark:text-white dark:placeholder-white/55 dark:focus:border-sky-400/60 dark:focus:bg-white/18" />
             </label>
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
             <label className="block">
               <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Status</span>
-              <select value={form.status} onChange={(e) => updateField('status', e.target.value as MemberStatus)} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 focus:border-teal-400 focus:outline-none focus:ring-4 focus:ring-teal-100">
+              <select value={form.status} onChange={(e) => updateField('status', e.target.value as MemberStatus)} className="h-11 w-full rounded-[18px] border border-gray-300 bg-white px-4 text-sm text-gray-900 outline-none transition-all duration-200 focus:border-sky-400 focus:bg-white focus:ring-0 dark:border-white/18 dark:bg-white/12 dark:text-white dark:focus:border-sky-400/60 dark:focus:bg-white/18">
                 <option value="active">Active</option>
                 <option value="pending">Pending</option>
                 <option value="blocked">Blocked</option>
@@ -276,7 +277,7 @@ function EditMemberModal({
             </label>
             <label className="block">
               <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Tier</span>
-              <select value={form.tier} onChange={(e) => updateField('tier', e.target.value as MemberTier)} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 focus:border-teal-400 focus:outline-none focus:ring-4 focus:ring-teal-100">
+              <select value={form.tier} onChange={(e) => updateField('tier', e.target.value as MemberTier)} className="h-11 w-full rounded-[18px] border border-gray-300 bg-white px-4 text-sm text-gray-900 outline-none transition-all duration-200 focus:border-sky-400 focus:bg-white focus:ring-0 dark:border-white/18 dark:bg-white/12 dark:text-white dark:focus:border-sky-400/60 dark:focus:bg-white/18">
                 <option value="Home Starter">Home Starter</option>
                 <option value="Home Builder">Home Builder</option>
                 <option value="Home Stylist">Home Stylist</option>
@@ -289,27 +290,27 @@ function EditMemberModal({
           <div className="grid gap-4 md:grid-cols-2">
             <label className="block md:col-span-2">
               <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Address Line</span>
-              <input value={form.addressLine} onChange={(e) => updateField('addressLine', e.target.value)} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 focus:border-teal-400 focus:outline-none focus:ring-4 focus:ring-teal-100 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 dark:placeholder-slate-500" />
+              <input value={form.addressLine} onChange={(e) => updateField('addressLine', e.target.value)} className="h-11 w-full rounded-[18px] border border-gray-300 bg-white px-4 text-sm text-gray-900 outline-none transition-all duration-200 focus:border-sky-400 focus:bg-white focus:ring-0 dark:border-white/18 dark:bg-white/12 dark:text-white dark:placeholder-white/55 dark:focus:border-sky-400/60 dark:focus:bg-white/18" />
             </label>
             <label className="block">
               <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Barangay</span>
-              <input value={form.barangay} onChange={(e) => updateField('barangay', e.target.value)} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 focus:border-teal-400 focus:outline-none focus:ring-4 focus:ring-teal-100 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 dark:placeholder-slate-500" />
+              <input value={form.barangay} onChange={(e) => updateField('barangay', e.target.value)} className="h-11 w-full rounded-[18px] border border-gray-300 bg-white px-4 text-sm text-gray-900 outline-none transition-all duration-200 focus:border-sky-400 focus:bg-white focus:ring-0 dark:border-white/18 dark:bg-white/12 dark:text-white dark:placeholder-white/55 dark:focus:border-sky-400/60 dark:focus:bg-white/18" />
             </label>
             <label className="block">
               <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">City</span>
-              <input value={form.city} onChange={(e) => updateField('city', e.target.value)} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 focus:border-teal-400 focus:outline-none focus:ring-4 focus:ring-teal-100 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 dark:placeholder-slate-500" />
+              <input value={form.city} onChange={(e) => updateField('city', e.target.value)} className="h-11 w-full rounded-[18px] border border-gray-300 bg-white px-4 text-sm text-gray-900 outline-none transition-all duration-200 focus:border-sky-400 focus:bg-white focus:ring-0 dark:border-white/18 dark:bg-white/12 dark:text-white dark:placeholder-white/55 dark:focus:border-sky-400/60 dark:focus:bg-white/18" />
             </label>
             <label className="block">
               <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Province</span>
-              <input value={form.province} onChange={(e) => updateField('province', e.target.value)} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 focus:border-teal-400 focus:outline-none focus:ring-4 focus:ring-teal-100 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 dark:placeholder-slate-500" />
+              <input value={form.province} onChange={(e) => updateField('province', e.target.value)} className="h-11 w-full rounded-[18px] border border-gray-300 bg-white px-4 text-sm text-gray-900 outline-none transition-all duration-200 focus:border-sky-400 focus:bg-white focus:ring-0 dark:border-white/18 dark:bg-white/12 dark:text-white dark:placeholder-white/55 dark:focus:border-sky-400/60 dark:focus:bg-white/18" />
             </label>
             <label className="block">
               <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Region</span>
-              <input value={form.region} onChange={(e) => updateField('region', e.target.value)} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 focus:border-teal-400 focus:outline-none focus:ring-4 focus:ring-teal-100 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 dark:placeholder-slate-500" />
+              <input value={form.region} onChange={(e) => updateField('region', e.target.value)} className="h-11 w-full rounded-[18px] border border-gray-300 bg-white px-4 text-sm text-gray-900 outline-none transition-all duration-200 focus:border-sky-400 focus:bg-white focus:ring-0 dark:border-white/18 dark:bg-white/12 dark:text-white dark:placeholder-white/55 dark:focus:border-sky-400/60 dark:focus:bg-white/18" />
             </label>
             <label className="block">
               <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Zip Code</span>
-              <input value={form.zipCode} onChange={(e) => updateField('zipCode', e.target.value)} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 focus:border-teal-400 focus:outline-none focus:ring-4 focus:ring-teal-100 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 dark:placeholder-slate-500" />
+              <input value={form.zipCode} onChange={(e) => updateField('zipCode', e.target.value)} className="h-11 w-full rounded-[18px] border border-gray-300 bg-white px-4 text-sm text-gray-900 outline-none transition-all duration-200 focus:border-sky-400 focus:bg-white focus:ring-0 dark:border-white/18 dark:bg-white/12 dark:text-white dark:placeholder-white/55 dark:focus:border-sky-400/60 dark:focus:bg-white/18" />
             </label>
           </div>
 
@@ -806,18 +807,28 @@ const MembersTable = ({
     )
   }
 
-  return (
-    <div className="overflow-visible rounded-2xl border border-slate-100 bg-white shadow-none dark:border-slate-800 dark:bg-slate-900">
-      {quickMessage && (
-        <div className="border-b border-slate-100 dark:border-slate-800 bg-teal-50 px-4 py-2 text-sm text-teal-700 dark:border-slate-800 dark:bg-teal-500/10 dark:text-teal-300">
-          {quickMessage}
-        </div>
-      )}
-      <div className="overflow-x-auto overflow-y-visible">
+    return (
+      <DataTableShell
+        title="Members"
+        subtitle="Browse, filter, and manage member records."
+        footer={<AdminPagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          from={from}
+          to={to}
+          totalRecords={totalRecords}
+          onPageChange={onPageChange}
+        />}
+      >
+        {quickMessage && (
+          <div className="border-b border-slate-100 bg-teal-50 px-4 py-2 text-sm text-teal-700 dark:border-slate-800 dark:bg-teal-500/10 dark:text-teal-300">
+            {quickMessage}
+          </div>
+        )}
         <table className="min-w-full text-sm">
-          <thead>
-            <tr className="border-b border-slate-100 dark:border-slate-800 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60/80 dark:border-slate-800 dark:bg-slate-800/60">
-              <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-300">Member</th>
+          <thead className="sticky top-0 z-10">
+            <tr className="border-b border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-800/70">
+              <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-300">Member</th>
               <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-300">Status</th>
               <th className="hidden px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-300 sm:table-cell">Tier</th>
               <th className="hidden px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-300 md:table-cell">Orders</th>
@@ -833,7 +844,7 @@ const MembersTable = ({
           <AnimatePresence mode="wait" initial={false}>
             <motion.tbody
               key={`members-page-${currentPage}`}
-              className="divide-y divide-slate-100 dark:divide-slate-800/70 dark:divide-slate-800/70 dark:divide-slate-800/70"
+              className="divide-y divide-slate-100 dark:divide-slate-800/70"
               variants={pageVariants}
               initial="initial"
               animate="animate"
@@ -849,7 +860,7 @@ const MembersTable = ({
                   <motion.tr
                     key={member.id}
                     variants={rowVariants}
-                    className="group cursor-pointer border-b border-slate-100 dark:border-slate-800 transition-colors hover:bg-slate-50/60 dark:border-white/5 dark:hover:bg-slate-800/40"
+                    className="group cursor-pointer border-b border-slate-100 transition-colors hover:bg-sky-50/50 dark:border-slate-800 dark:hover:bg-slate-800/40"
                   >
                     {/* Member */}
                   <td className="px-5 py-3.5">
@@ -1004,16 +1015,6 @@ const MembersTable = ({
             </motion.tbody>
           </AnimatePresence>
         </table>
-      </div>
-
-      <AdminPagination
-        currentPage={currentPage}
-        totalPages={totalPages}
-        from={from}
-        to={to}
-        totalRecords={totalRecords}
-        onPageChange={onPageChange}
-      />
 
       <AnimatePresence>
         {selectedMember && (
@@ -1143,7 +1144,7 @@ const MembersTable = ({
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
+      </DataTableShell>
   )
 }
 

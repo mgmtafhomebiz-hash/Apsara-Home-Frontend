@@ -4,7 +4,15 @@ export interface MeResponse {
     id: number;
     name: string;
     email: string;
+    first_name?: string;
+    last_name?: string;
     username?: string;
+    middle_name?: string | null;
+    birth_date?: string | null;
+    gender?: 'male' | 'female' | 'other' | null;
+    occupation?: string | null;
+    work_location?: 'local' | 'overseas' | null;
+    country?: string | null;
     referrer_id?: number;
     referrer_username?: string | null;
     referrer_name?: string | null;
@@ -14,6 +22,10 @@ export interface MeResponse {
     city?: string;
     province?: string;
     region?: string;
+    barangay_code?: string;
+    city_code?: string;
+    province_code?: string;
+    region_code?: string;
     zip_code?: string;
     avatar_url?: string;
     rank?: number;
@@ -35,6 +47,9 @@ export interface MeResponse {
     };
     email_verified?: boolean;
     password_change_required?: boolean;
+    profile_complete?: boolean;
+    profile_completion_percentage?: number;
+    two_factor_enabled?: boolean;
 }
 
 export interface CustomerAddress {
@@ -73,15 +88,28 @@ export interface CreateCustomerAddressPayload {
 
 export interface UpdateProfilePayload {
     name: string;
+    first_name?: string;
+    last_name?: string;
     username?: string;
     phone?: string;
+    middle_name?: string;
+    birth_date?: string;
+    gender?: 'male' | 'female' | 'other';
+    occupation?: string;
+    work_location?: 'local' | 'overseas';
+    country?: string;
     address?: string;
     barangay?: string;
     city?: string;
     province?: string;
     region?: string;
+    barangay_code?: string;
+    city_code?: string;
+    province_code?: string;
+    region_code?: string;
     zip_code?: string;
     avatar_url?: string;
+    two_factor_enabled?: boolean;
 }
 
 export interface ChangePasswordPayload {
@@ -111,6 +139,31 @@ export interface ReferralTreeResponse {
         total_pv?: number;
     };
     children: ReferralTreeNode[];
+}
+
+export interface MemberActivityItem {
+    id: number;
+    activity_type: string;
+    action: string;
+    title: string;
+    description: string;
+    created_at?: string | null;
+    ip_address?: string;
+    user_agent?: string;
+}
+
+export interface MemberSessionItem {
+    id: number;
+    token_id: number;
+    device: string;
+    platform: string;
+    browser: string;
+    location: string;
+    ip_address?: string;
+    user_agent?: string;
+    created_at?: string | null;
+    last_active_at?: string | null;
+    is_current: boolean;
 }
 
 export interface UsernameChangeRequest {
@@ -144,6 +197,7 @@ export interface SubmitUsernameChangeResponse {
 }
 
 export const userApi = baseApi.injectEndpoints({
+    overrideExisting: true,
     endpoints:  (builder) => ({
         me: builder.query<MeResponse, void>({
             query: () => ({
@@ -227,6 +281,30 @@ export const userApi = baseApi.injectEndpoints({
                 method: 'GET',
             }),
         }),
+
+        memberActivity: builder.query<{ items: MemberActivityItem[] }, void>({
+            query: () => ({
+                url: '/api/auth/activity',
+                method: 'GET',
+            }),
+            providesTags: ['User'],
+        }),
+
+        memberSessions: builder.query<{ items: MemberSessionItem[] }, void>({
+            query: () => ({
+                url: '/api/auth/sessions',
+                method: 'GET',
+            }),
+            providesTags: ['User'],
+        }),
+
+        revokeMemberSession: builder.mutation<{ message: string; revoked_token_id: number; is_current: boolean }, number>({
+            query: (tokenId) => ({
+                url: `/api/auth/sessions/${tokenId}`,
+                method: 'DELETE',
+            }),
+            invalidatesTags: ['User'],
+        }),
     })
 })
 
@@ -241,4 +319,7 @@ export const {
     useSendUsernameChangeOtpMutation,
     useSubmitUsernameChangeRequestMutation,
     useUsernameChangeLatestQuery,
+    useMemberActivityQuery,
+    useMemberSessionsQuery,
+    useRevokeMemberSessionMutation,
 } = userApi
