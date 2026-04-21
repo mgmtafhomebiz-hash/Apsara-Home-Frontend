@@ -7,7 +7,7 @@ import Image from 'next/image'
 import { createPortal } from 'react-dom'
 import { Card, Label, SearchField } from '@heroui/react'
 import { useCart } from '@/context/CartContext'
-import { SessionProvider, useSession, signOut } from 'next-auth/react'
+import { useSession, signOut } from 'next-auth/react'
 import { useLogoutMutation } from '@/store/api/authApi'
 import { baseApi, clearAccessTokenCache } from '@/store/api/baseApi'
 import type { Category } from '@/store/api/categoriesApi'
@@ -1978,10 +1978,6 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
 }
 
 export default function Navbar({ initialCategories = [] }: { initialCategories?: Category[] }) {
-  return (
-    <SessionProvider>
-      <NavbarInner initialCategories={initialCategories} />
-    </SessionProvider>
-  )
+  return <NavbarInner initialCategories={initialCategories} />
 }
 
