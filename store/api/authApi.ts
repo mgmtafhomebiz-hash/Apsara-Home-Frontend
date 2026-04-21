@@ -1,3 +1,4 @@
+import type { FetchArgs, FetchBaseQueryError } from '@reduxjs/toolkit/query'
 import { baseApi } from './baseApi'
 
 interface RegisterPayload {
@@ -51,6 +52,15 @@ interface ReferralAvailabilityResponse {
   message: string
   normalized_referral: string
   referrer_username?: string | null
+}
+
+const isMissingReferralRouteError = (error: FetchBaseQueryError | undefined) => {
+  if (!error) return false
+  if (error.status === 404) return true
+
+  const payload = error.data as { message?: string } | undefined
+  const message = String(payload?.message ?? '').toLowerCase()
+  return message.includes('could not be found') || message.includes('not found')
 }
 
 interface LogoutResponse {
@@ -145,11 +155,44 @@ export const authApi = baseApi.injectEndpoints({
     }),
 
     checkReferralAvailability: builder.query<ReferralAvailabilityResponse, string>({
-      query: (referredBy) => ({
-        url: '/api/auth/register/check-referral',
-        method: 'GET',
-        params: { referred_by: referredBy },
-      }),
+      async queryFn(referredBy, _api, _extraOptions, baseQuery) {
+        const params = { referred_by: referredBy }
+        const candidateUrls = [
+          '/api/auth/register/check-referral',
+          '/api/auth/check-referral',
+          '/api/register/check-referral',
+        ]
+
+        let lastError: FetchBaseQueryError | undefined
+
+        for (const url of candidateUrls) {
+          const result = await baseQuery({
+            url,
+            method: 'GET',
+            params,
+          } as FetchArgs)
+
+          if ('data' in result && result.data) {
+            return { data: result.data as ReferralAvailabilityResponse }
+          }
+
+          if ('error' in result) {
+            const error = result.error as FetchBaseQueryError
+            if (!isMissingReferralRouteError(error)) {
+              return { error }
+            }
+
+            lastError = error
+          }
+        }
+
+        return {
+          error: lastError ?? {
+            status: 404,
+            data: { message: 'Referral validation route could not be found.' },
+          },
+        }
+      },
     }),
 
     logout: builder.mutation<LogoutResponse, void>({

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, type ChangeEvent, type ReactNode } from 'react'
+import { useEffect, useState, type ChangeEvent, type FocusEvent, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useLazyCheckEmailAvailabilityQuery, useLazyCheckReferralAvailabilityQuery, useLazyCheckUsernameAvailabilityQuery, useRegisterMutation } from '@/store/api/authApi'
@@ -18,19 +18,31 @@ const EyeIcon = ({ open }: { open: boolean }) => open
 const labelClass = 'block text-xs font-semibold text-gray-600 dark:text-white/80 mb-1.5'
 const inputClass = 'h-11 w-full rounded-[18px] border border-gray-300 dark:border-white/18 bg-white dark:bg-white/12 px-4 text-sm text-gray-900 dark:text-white outline-none transition-all duration-200 focus:border-sky-400 dark:focus:border-sky-400/60 focus:bg-white dark:focus:bg-white/18 disabled:cursor-not-allowed disabled:opacity-60'
 
+const formatPhilippineMobile = (value: string) => {
+  const digits = value.replace(/\D/g, '').slice(0, 11)
+  const first = digits.slice(0, 4)
+  const second = digits.slice(4, 7)
+  const third = digits.slice(7, 11)
+
+  if (digits.length <= 4) return first
+  if (digits.length <= 7) return `${first}-${second}`
+  return `${first}-${second}-${third}`
+}
+
 type FloatingInputProps = {
   id: string
   type?: string
   label: string
   value: string
   onChange: (e: ChangeEvent<HTMLInputElement>) => void
+  onBlur?: (e: FocusEvent<HTMLInputElement>) => void
   required?: boolean
   disabled?: boolean
   maxLength?: number
   endContent?: ReactNode
 }
 
-function FloatingInput({ id, type = 'text', label, value, onChange, required, disabled, maxLength, endContent }: FloatingInputProps) {
+function FloatingInput({ id, type = 'text', label, value, onChange, onBlur, required, disabled, maxLength, endContent }: FloatingInputProps) {
   return (
     <div className="w-full">
       <label htmlFor={id} className={labelClass}>
@@ -42,6 +54,7 @@ function FloatingInput({ id, type = 'text', label, value, onChange, required, di
           type={type}
           value={value}
           onChange={onChange}
+          onBlur={onBlur}
           required={required}
           disabled={disabled}
           maxLength={maxLength}
@@ -113,7 +126,7 @@ interface SignUpFormProps {
 }
 
 type FieldAvailability = {
-  status: 'idle' | 'checking' | 'available' | 'unavailable' | 'deferred'
+  status: 'idle' | 'checking' | 'available' | 'unavailable'
   message: string
 }
 
@@ -122,10 +135,7 @@ const getApiErrorMessage = (error: unknown, fallback: string) => {
   return candidate?.data?.message || fallback
 }
 
-const isMissingRouteError = (error: unknown) => {
-  const message = getApiErrorMessage(error, '').toLowerCase()
-  return message.includes('could not be found') || message.includes('not found')
-}
+const isReferralCodeFormatValid = (value: string) => /^[A-Za-z0-9]+$/.test(value)
 
 export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
   const searchParams = useSearchParams()
@@ -159,9 +169,18 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
   })
 
   const passwordRequirements = passwordChecks(form.password)
+  const mobileDigits = form.mobileNumber.replace(/\D/g, '')
   const normalizedEmail = form.email.trim()
   const normalizedReferral = normalizeReferralCode(form.referredBy)
   const normalizedUsername = form.username.trim()
+  const mobileNumberStatus =
+    mobileDigits.length === 0
+      ? null
+      : mobileDigits.length < 11
+        ? { type: 'invalid' as const, message: 'Mobile number is incomplete. It must be 11 digits.' }
+        : !/^09\d{9}$/.test(mobileDigits)
+          ? { type: 'invalid' as const, message: 'Mobile number must start with 09 and contain exactly 11 digits.' }
+          : { type: 'valid' as const, message: 'Mobile number format is valid.' }
   const confirmPasswordStatus =
     form.confirmPassword.length === 0
       ? null
@@ -172,6 +191,31 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
   const showError = (message: string): false => {
     setError(message)
     return false
+  }
+
+  const handleReferralInputChange = (value: string) => {
+    const trimmed = value.trim()
+    const shouldNormalizeImmediately =
+      trimmed.includes('://') ||
+      trimmed.includes('/ref/') ||
+      trimmed.includes('?ref=') ||
+      trimmed.includes('&ref=') ||
+      trimmed.includes('referred_by=')
+
+    setForm((prev) => ({
+      ...prev,
+      referredBy: shouldNormalizeImmediately ? normalizeReferralCode(value) : value,
+    }))
+  }
+
+  const handleReferralInputBlur = (value: string) => {
+    const normalized = normalizeReferralCode(value)
+    if (!normalized || normalized === value) return
+
+    setForm((prev) => ({
+      ...prev,
+      referredBy: normalized,
+    }))
   }
 
   useEffect(() => {
@@ -249,6 +293,11 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
       return
     }
 
+    if (!isReferralCodeFormatValid(referral)) {
+      setReferralAvailability({ status: 'unavailable', message: 'Invalid referral link or code.' })
+      return
+    }
+
     setReferralAvailability({ status: 'checking', message: 'Checking referral code...' })
 
     const timer = window.setTimeout(async () => {
@@ -256,17 +305,9 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
         const response = await checkReferralAvailability(referral, true).unwrap()
         setReferralAvailability({
           status: response.available ? 'available' : 'unavailable',
-          message: response.message,
+          message: response.available ? 'Referral code is valid.' : 'Invalid referral code.',
         })
       } catch (apiError: unknown) {
-        if (isMissingRouteError(apiError)) {
-          setReferralAvailability({
-            status: 'deferred',
-            message: 'Referral code will be validated when you submit the form.',
-          })
-          return
-        }
-
         const message = getApiErrorMessage(apiError, 'Unable to check referral code right now.')
         setReferralAvailability({ status: 'unavailable', message })
       }
@@ -281,7 +322,7 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
 
     const firstName = form.firstName.trim()
     const lastName = form.lastName.trim()
-    const mobileNumber = form.mobileNumber.trim()
+    const mobileNumber = mobileDigits
     const email = form.email.trim()
     const username = form.username.trim()
     const referral = normalizeReferralCode(form.referredBy)
@@ -289,7 +330,8 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
     if (!firstName) return showError('First name is required.')
     if (!lastName) return showError('Last name is required.')
     if (!mobileNumber) return showError('Mobile number is required.')
-    if (!/^(\+?63|0)?9\d{9}$/.test(mobileNumber.replace(/\s+/g, ''))) return showError('Enter a valid Philippine mobile number.')
+    if (mobileNumber.length < 11) return showError('Mobile number is incomplete. It must be 11 digits.')
+    if (!/^09\d{9}$/.test(mobileNumber)) return showError('Enter a valid Philippine mobile number in 11-digit format, like 0929-226-0447.')
     if (!email) return showError('Email address is required.')
     if (emailAvailability.status === 'unavailable') return showError(emailAvailability.message || 'This email is already registered.')
     if (emailAvailability.status !== 'available') return showError('Please wait until email availability is confirmed.')
@@ -386,9 +428,14 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
             label="Mobile Number"
             required
             value={form.mobileNumber}
-            onChange={(e) => setForm((prev) => ({ ...prev, mobileNumber: e.target.value.replace(/[^\d+\s()-]/g, '') }))}
+            onChange={(e) => setForm((prev) => ({ ...prev, mobileNumber: formatPhilippineMobile(e.target.value) }))}
           />
-          <p className="text-[11px] text-gray-500 dark:text-white/55 -mt-2">Use your Philippine mobile number, for example +63 912 345 6789.</p>
+          <p className="text-[11px] text-gray-500 dark:text-white/55 -mt-2">Use 11 digits only. Format: 0929-226-0447.</p>
+          {mobileNumberStatus ? (
+            <p className={`text-[11px] -mt-2 ${mobileNumberStatus.type === 'valid' ? 'text-emerald-600 dark:text-emerald-300' : 'text-red-600 dark:text-red-300'}`}>
+              {mobileNumberStatus.message}
+            </p>
+          ) : null}
 
           <FloatingInput id="signup-email" type="email" label="Email Address" required value={form.email} onChange={(e) => setForm((prev) => ({ ...prev, email: e.target.value }))} />
           {emailAvailability.message ? (
@@ -415,14 +462,15 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
             id="signup-referred-by"
             label="Referral Code / Referral Link"
             value={form.referredBy}
-            onChange={(e) => setForm((prev) => ({ ...prev, referredBy: e.target.value }))}
+            onChange={(e) => handleReferralInputChange(e.target.value)}
+            onBlur={(e) => handleReferralInputBlur(e.target.value)}
             required
           />
           {referralAvailability.message ? (
             <p className={`text-[11px] -mt-2 ${
               referralAvailability.status === 'available'
                 ? 'text-emerald-600 dark:text-emerald-300'
-                : referralAvailability.status === 'checking' || referralAvailability.status === 'deferred'
+                : referralAvailability.status === 'checking'
                   ? 'text-sky-600 dark:text-sky-300'
                   : 'text-red-600 dark:text-red-300'
             }`}>
