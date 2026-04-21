@@ -33,26 +33,28 @@ export default function WalletCreditsToolbar({
 }: WalletCreditsToolbarProps) {
   return (
     <DataFilterBar
-      search={search}
+      searchLabel="Search member"
+      searchValue={search}
       onSearch={onSearch}
-      searchPlaceholder="Search member..."
       filters={[
         {
           key: 'tier',
-          label: 'Tier',
+          ariaLabel: 'Tier',
           value: tierFilter,
           onChange: onTierFilter,
           options: ['All Tiers', 'Bronze', 'Silver', 'Gold', 'Platinum', 'Diamond'].map((label) => ({ label, value: label })),
         },
         {
           key: 'status',
-          label: 'Status',
+          ariaLabel: 'Status',
           value: statusFilter,
           onChange: onStatusFilter,
           options: ['All Status', 'Active', 'Inactive', 'Suspended'].map((label) => ({ label, value: label })),
         },
       ]}
-      actions={(
+      onClear={() => { onSearch(''); onTierFilter('All Tiers'); onStatusFilter('All Status'); }}
+      clearDisabled={!search && tierFilter === 'All Tiers' && statusFilter === 'All Status'}
+      summaryLeft={(
         <div className="flex items-center gap-1 rounded-[18px] border border-gray-300 bg-white p-1 dark:border-white/18 dark:bg-white/12">
           {SORT_OPTIONS.map((option) => (
             <button
