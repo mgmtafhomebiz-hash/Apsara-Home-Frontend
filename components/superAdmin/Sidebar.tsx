@@ -329,6 +329,7 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
 
   const isActive = (path: string) => pathname === path || pathname.startsWith(`${path}/`)
   const isChildActive = (children?: SubItem[]) => Boolean(children?.some((c) => pathname === c.path))
+  const isExactActive = (path: string) => pathname === path
 
   const visibleNavItems = navItems
     .map((item) => {
@@ -448,7 +449,7 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
 
       <aside className={`
         fixed top-0 left-0 h-screen z-30 flex flex-col
-        bg-white/95 dark:bg-slate-900 border-r border-slate-200/80 dark:border-slate-700/50 shadow-[0_18px_40px_rgba(15,23,42,0.08)] dark:shadow-none backdrop-blur-xl
+        bg-white/95 dark:bg-slate-900 border-r border-slate-200/80 dark:border-slate-700/50 backdrop-blur-xl
         transition-all duration-300 ease-in-out
         ${isOpen ? 'translate-x-0' : '-translate-x-full'}
         ${isCollapsed ? 'w-16' : 'w-64'}
@@ -490,18 +491,20 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
         <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-0.5" style={{ scrollbarWidth: 'none' }}>
           {visibleNavItems.map((item) => {
             const hasChildren = !!item.children?.length
-            const menuOpen = isAccounting || isFinanceOfficer ? true : openMenus.includes(item.id)
-            const active = item.path ? isActive(item.path) : isChildActive(item.children)
+            const childActive = isChildActive(item.children)
+            const active = item.path ? isActive(item.path) : childActive
+            const exactActive = item.path ? isExactActive(item.path) : false
+            const menuOpen = isAccounting || isFinanceOfficer ? true : openMenus.includes(item.id) || childActive || exactActive
 
             return (
               <div key={item.id}>
                 {hasChildren ? (
                   <button
                     onClick={() => !isCollapsed && !isAccounting && !isFinanceOfficer && toggleMenu(item.id)}
-                    title={isCollapsed ? item.label : undefined}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-200 group relative
+                      title={isCollapsed ? item.label : undefined}
+                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-all duration-200 group relative
                       ${active
-                        ? 'bg-gradient-to-r from-teal-500/14 to-cyan-500/10 text-teal-700 ring-1 ring-teal-200/80 shadow-sm dark:from-teal-500/15 dark:to-transparent dark:text-teal-400 dark:ring-0 dark:shadow-none'
+                      ? 'bg-sky-500 text-white dark:bg-sky-600 dark:text-white'
                         : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100'}
                       ${isCollapsed ? 'justify-center' : ''}
                     `}
@@ -511,7 +514,7 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
                       <>
                         <span className="flex-1 text-left font-medium">{item.label}</span>
                         {typeof item.badge === 'number' && item.badge > 0 && (
-                          <span className="bg-teal-500 text-white text-xs px-1.5 py-0.5 rounded-full font-bold min-w-[20px] text-center shadow-sm">
+                          <span className="bg-sky-500 text-white text-xs px-1.5 py-0.5 rounded-full font-bold min-w-[20px] text-center">
                             {item.badge}
                           </span>
                         )}
@@ -527,9 +530,9 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
                 ) : (
                   <Link href={item.path ?? '#'} prefetch onClick={() => isOpen && onClose()}
                     title={isCollapsed ? item.label : undefined}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-200 group relative
+                    className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-all duration-200 group relative
                       ${active
-                        ? 'bg-gradient-to-r from-teal-500/14 to-cyan-500/10 text-teal-700 ring-1 ring-teal-200/80 shadow-sm dark:from-teal-500/15 dark:to-transparent dark:text-teal-400 dark:ring-0 dark:shadow-none'
+                        ? 'bg-sky-500 text-white dark:bg-sky-600 dark:text-white'
                         : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100'}
                       ${isCollapsed ? 'justify-center' : ''}
                     `}
@@ -551,7 +554,7 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
                         exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }}
                         className="overflow-hidden"
                       >
-                        <div className="ml-4 mt-0.5 pl-3 border-l border-slate-200 dark:border-slate-700 py-1 space-y-0.5">
+                        <div className="ml-5 mt-1 pl-4 border-l border-slate-200 dark:border-slate-700 py-1.5 space-y-1">
                           {item.children?.map((child) => (
                             <Link
                               key={child.path}
@@ -562,19 +565,18 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
                                 if (child.path === '/admin/members') prefetchMembersData()
                                 if (isOpen) onClose()
                               }}
-                              className={`flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs transition-all duration-200
-                                ${isActive(child.path)
-                                  ? 'text-teal-700 dark:text-teal-400 font-semibold bg-teal-50/80 dark:bg-transparent'
+                              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs transition-all duration-200
+                                ${isExactActive(child.path)
+                                  ? 'text-sky-700 dark:text-sky-300 font-semibold bg-sky-50 dark:bg-sky-900/30'
                                   : 'text-slate-500 dark:text-slate-500 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-transparent'}
                               `}
                             >
-                              <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${isActive(child.path) ? 'bg-teal-500 dark:bg-teal-400' : 'bg-slate-300 dark:bg-slate-600'}`} />
+                              <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${isExactActive(child.path) ? 'bg-sky-500 dark:bg-sky-400' : 'bg-slate-300 dark:bg-slate-600'}`} />
                               <span className="flex-1 truncate">{child.label}</span>
                               {typeof child.badge === 'number' && child.badge > 0 && (
-                                <span className={`min-w-[20px] rounded-full px-1.5 py-0.5 text-[10px] font-semibold text-center ${
-                                  isActive(child.path)
-                                    ? 'bg-teal-100 text-teal-700 dark:bg-teal-500/15 dark:text-teal-300'
-                                    : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'
+                                <span className={`${isExactActive(child.path)
+                                  ? 'inline-flex items-center rounded-full border border-sky-200 bg-sky-50 px-2 py-0.5 text-[11px] font-semibold text-sky-700 dark:border-sky-900/50 dark:bg-sky-900/30 dark:text-sky-300'
+                                  : 'min-w-[20px] rounded-full px-1.5 py-0.5 text-[10px] font-semibold text-center bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'
                                 }`}>
                                   {child.badge}
                                 </span>
