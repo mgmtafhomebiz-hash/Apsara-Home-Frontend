@@ -8,10 +8,13 @@ import WalletCreditsToolbar from './WalletCreditsToolbar'
 import WalletCreditsTable from './WalletCreditsTable'
 import AdjustWalletModal from './AdjustWalletModal'
 
+type TierFilter = 'All Tiers' | MemberWallet['tier']
+type StatusFilter = 'All Status' | 'Active' | 'Pending' | 'Blocked'
+
 export default function WalletCreditsPageMain() {
   const [search,        setSearch]        = useState('')
-  const [tierFilter,    setTierFilter]    = useState('All Tiers')
-  const [statusFilter,  setStatusFilter]  = useState('All Status')
+  const [tierFilter,    setTierFilter]    = useState<TierFilter>('All Tiers')
+  const [statusFilter,  setStatusFilter]  = useState<StatusFilter>('All Status')
   const [sortKey,       setSortKey]       = useState<SortKey>('cashBalance')
   const [adjustTarget,  setAdjustTarget]  = useState<MemberWallet | null>(null)
 

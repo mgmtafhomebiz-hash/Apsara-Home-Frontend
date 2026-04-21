@@ -1,22 +1,41 @@
 'use client'
 
 import DataFilterBar from '@/components/superAdmin/DataFilterBar'
-import { SortKey } from './types'
+import { MemberWallet, SortKey } from './types'
 
-const SORT_OPTIONS: { key: SortKey; label: string }[] = [
+const SORT_OPTIONS: Array<{ key: SortKey; label: string }> = [
   { key: 'cashBalance', label: 'Cash Balance' },
   { key: 'pvBalance', label: 'PV Balance' },
   { key: 'lockedAmount', label: 'Locked' },
   { key: 'availableAmount', label: 'Available' },
 ]
 
+const TIER_OPTIONS = [
+  'All Tiers',
+  'Home Starter',
+  'Home Builder',
+  'Home Stylist',
+  'Lifestyle Consultant',
+  'Lifestyle Elite',
+] as const
+
+const STATUS_OPTIONS = [
+  'All Status',
+  'Active',
+  'Pending',
+  'Blocked',
+] as const
+
+type TierFilterValue = (typeof TIER_OPTIONS)[number] | MemberWallet['tier']
+type StatusFilterValue = (typeof STATUS_OPTIONS)[number]
+
 interface WalletCreditsToolbarProps {
   search: string
   onSearch: (v: string) => void
-  tierFilter: string
-  onTierFilter: (v: string) => void
-  statusFilter: string
-  onStatusFilter: (v: string) => void
+  tierFilter: TierFilterValue
+  onTierFilter: (v: TierFilterValue) => void
+  statusFilter: StatusFilterValue
+  onStatusFilter: (v: StatusFilterValue) => void
   sortKey: SortKey
   onSortKey: (v: SortKey) => void
 }
@@ -41,24 +60,29 @@ export default function WalletCreditsToolbar({
           key: 'tier',
           ariaLabel: 'Tier',
           value: tierFilter,
-          onChange: onTierFilter,
-          options: ['All Tiers', 'Bronze', 'Silver', 'Gold', 'Platinum', 'Diamond'].map((label) => ({ label, value: label })),
+          onChange: (value) => onTierFilter(value as TierFilterValue),
+          options: TIER_OPTIONS.map((label) => ({ label, value: label })),
         },
         {
           key: 'status',
           ariaLabel: 'Status',
           value: statusFilter,
-          onChange: onStatusFilter,
-          options: ['All Status', 'Active', 'Inactive', 'Suspended'].map((label) => ({ label, value: label })),
+          onChange: (value) => onStatusFilter(value as StatusFilterValue),
+          options: STATUS_OPTIONS.map((label) => ({ label, value: label })),
         },
       ]}
-      onClear={() => { onSearch(''); onTierFilter('All Tiers'); onStatusFilter('All Status'); }}
+      onClear={() => {
+        onSearch('')
+        onTierFilter('All Tiers')
+        onStatusFilter('All Status')
+      }}
       clearDisabled={!search && tierFilter === 'All Tiers' && statusFilter === 'All Status'}
       summaryLeft={(
         <div className="flex items-center gap-1 rounded-[18px] border border-gray-300 bg-white p-1 dark:border-white/18 dark:bg-white/12">
           {SORT_OPTIONS.map((option) => (
             <button
               key={option.key}
+              type="button"
               onClick={() => onSortKey(option.key)}
               className={`rounded-[14px] px-3 py-1.5 text-xs font-semibold transition-all ${
                 sortKey === option.key

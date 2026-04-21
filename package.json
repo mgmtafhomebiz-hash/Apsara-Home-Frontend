@@ -10,7 +10,8 @@
     "dev": "next dev --webpack",
     "build": "next build --webpack",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "vitest run --pool=threads"
   },
   "dependencies": {
     "@heroui/react": "^3.0.2",
