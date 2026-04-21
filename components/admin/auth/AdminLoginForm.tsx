@@ -9,10 +9,41 @@ import { signIn, signOut } from "next-auth/react";
 import { baseApi, clearAccessTokenCache } from "@/store/api/baseApi";
 import { useAppDispatch } from "@/store/hooks";
 import { clearAdminSession, clearPartnerSession } from "@/libs/adminSession";
+import PrimaryButton from '@/components/ui/buttons/PrimaryButton';
 
 const EyeIcon = ({ open }: { open: boolean }) => open
-    ? <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" /><line x1="1" y1="1" x2="23" y2="23" /></svg>
-    : <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
+    ? <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" /><line x1="1" y1="1" x2="23" y2="23" /></svg>
+    : <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
+
+function FloatingInput({ id, type = 'text', label, value, onChange, autoComplete, endContent }: {
+    id: string; type?: string; label: string; value: string;
+    onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    autoComplete?: string; endContent?: React.ReactNode;
+}) {
+    return (
+        <div className="w-full">
+            <label htmlFor={id} className="block text-xs font-semibold text-gray-600 dark:text-white/80 mb-1.5">
+                {label}
+            </label>
+            <div className="relative w-full">
+                <input
+                    id={id}
+                    type={type}
+                    value={value}
+                    onChange={onChange}
+                    placeholder=""
+                    autoComplete={autoComplete}
+                    className="h-11 w-full rounded-[18px] border border-gray-300 dark:border-white/18 bg-white dark:bg-white/12 px-4 text-sm text-gray-900 dark:text-white outline-none transition-all duration-200 focus:border-sky-400 dark:focus:border-sky-400/60 focus:bg-white dark:focus:bg-white/18"
+                />
+                {endContent && (
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-white/60">
+                        {endContent}
+                    </div>
+                )}
+            </div>
+        </div>
+    )
+}
 
 const BAN_KEYWORDS = ['suspended', 'banned', 'restricted', 'contact a super admin']
 const TWO_FACTOR_PREFIX = '2FA_REQUIRED|'
@@ -139,243 +170,206 @@ const AdminLoginForm = () => {
         }
     }
     return (
-        <div className="min-h-screen w-full bg-slate-950 flex items-center justify-center px-4 relative overflow-hidden">
-
-            {/* BACKGROUND GRID */}
-            <div className="absolute inset-0 bg-[linear-gradient(rgba(99,102,241,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(99,102,241,0.04)_1px,transparent_1px)] bg-[size:48px_48px]" />
-
-            {/* GLOW BLOBS */}
-            <div className="absolute top-0 left-1/4 w-96 h-96 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none" />
-            <div className="absolute bottom-0 right-1/4 w-80 h-80 bg-violet-600/10 rounded-full blur-3xl pointer-events-none" />
-
+        <div className="min-h-screen w-full flex items-center justify-center px-4 bg-gray-50 dark:bg-gray-900">
             <motion.div
-                initial={{ opacity: 0, y: 25, scale: 0.97 }}
+                initial={{ opacity: 0, y: 32, scale: 0.95 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
-                transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-                className="relative z-10 w-full max-w-sm"
+                transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+                className="w-full max-w-md"
             >
-
-                {/* CARD */}
-                <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-700/60 rounded-2xl shadow-2xl shadow-black/40 overflow-hidden">
-
-                    {/* ── BANNED / SUSPENDED SCREEN ── */}
+                <div className="bg-white/90 dark:bg-slate-800/85 backdrop-blur-xl border border-gray-200 dark:border-white/10 rounded-3xl p-8">
                     <AnimatePresence mode="wait">
-                    {(isSuspendedRedirect || banMessage) ? (
-                        <motion.div
-                            key="banned"
-                            initial={{ opacity: 0, scale: 0.97 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.97 }}
-                            transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-                            className="px-8 py-10 flex flex-col items-center text-center"
-                        >
-                            {/* Top red bar */}
-                            <div className="absolute top-0 left-0 right-0 h-0.5 bg-linear-to-r from-red-600 via-red-400 to-red-600" />
-
-                            {/* Pulsing lock icon */}
-                            <div className="relative mb-6">
-                                <motion.div
-                                    animate={{ scale: [1, 1.08, 1], opacity: [1, 0.8, 1] }}
-                                    transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut' }}
-                                    className="h-20 w-20 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center"
-                                >
-                                    <svg className="w-9 h-9 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                                    </svg>
-                                </motion.div>
-                                <motion.span
-                                    animate={{ scale: [1, 1.2, 1] }}
-                                    transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
-                                    className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-red-500 border-2 border-slate-900 flex items-center justify-center"
-                                >
-                                    <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                                    </svg>
-                                </motion.span>
-                            </div>
-
-                            <h2 className="text-lg font-bold text-white mb-1.5">Account Suspended</h2>
-                            <p className="text-sm text-slate-400 leading-relaxed mb-5">
-                                {banMessage || 'Your session was ended because your account has been suspended by a Super Admin.'}
-                            </p>
-
-                            <div className="w-full rounded-xl border border-red-500/15 bg-red-500/8 px-4 py-3 mb-6 text-left">
-                                <p className="text-xs text-red-400/80 leading-relaxed">
-                                    You will not be able to access the admin portal until a Super Admin lifts the restriction on your account.
-                                </p>
-                            </div>
-
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setBanMessage('');
-                                    setForm({ login: '', password: '' });
-                                    setOtpCode('');
-                                    setOtpChallengeToken('');
-                                    setLockoutSeconds(0);
-                                    if (isSuspendedRedirect) {
-                                        router.replace(loginPath);
-                                    }
-                                }}
-                                className="w-full py-2.5 rounded-xl border border-slate-700 text-slate-400 hover:text-slate-200 hover:border-slate-500 text-sm font-medium transition-all"
-                            >
-                                Back to Login
-                            </button>
-                        </motion.div>
-                    ) : (
-                    <div className="p-8">
-                    {/* LOGO + HEADING */}
-                    <div className="flex flex-col items-center mb-8">
-                        <div className="mb-4 p-3 rounded-xl bg-indigo-600/15 border border-indigo-500/20">
-                            <Image
-                                src="/Images/af_home_logo.png"
-                                alt="AF HOME"
-                                width={80}
-                                height={26}
-                                className="h-7 w-auto object-contain brightness-0 invert opacity-90"
-                            />
-                        </div>
-                        <h1 className="text-xl font-bold text-white tracking-tight">{isPartnerLogin ? 'Partner Portal' : 'Admin Portal'}</h1>
-                        <p className="text-slate-400 text-xs mt-1">Sign in to your admin account</p>
-                    </div>
-
-                    <form onSubmit={handleSign}>
-                        {(error || lockoutSeconds > 0) && (
+                        {(isSuspendedRedirect || banMessage) ? (
                             <motion.div
-                                initial={{ opacity: 0, y: -6 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                className="flex items-center gap-2.5 bg-red-500/10 border rounded-2xl px-3.5 py-2.5 text-xs text-red-400"
+                                key="banned"
+                                initial={{ opacity: 0, scale: 0.97 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.97 }}
+                                transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+                                className="flex flex-col items-center text-center"
                             >
-                                <svg className="shrink-0 w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                    <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
-                                </svg>
-                                {lockoutSeconds > 0 ? `Too many login attempts. Try again in ${lockoutSeconds} seconds.` : error}
-                            </motion.div>
-                        )}
-
-                        {/* USERNAME */}
-                        <div>
-                            <label className="block text-xs font-semibold text-slate-300 mb-1.5">Email or Username</label>
-                            <div className="relative">
-                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
-                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
-                                    </svg>
-                                </span>
-                                <input
-                                    type="text"
-                                    placeholder="Enter email or username"
-                                    value={form.login}
-                                    onChange={set('login')}
-                                    required
-                                    autoComplete="username"
-                                    className="w-full pl-9 pr-4 py-2.5 bg-slate-800/80 border border-slate-700/80 rounded-xl text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all"
-                                />
-                            </div>
-                        </div>
-
-                        {/* PASSWORD */}
-                        <div className="mt-1.5">
-                            <label className="block text-xs font-semibold text-slate-300 mb-1.5">Password</label>
-                            <div className="relative">
-                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
-                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                                    </svg>
-                                </span>
-                                <input 
-                                    type={showPass ? 'text' : 'password'}
-                                    placeholder="Enter your password"
-                                    value={form.password}
-                                    onChange={set('password')}
-                                    required
-                                    autoComplete="current-password"
-                                    className="w-full pl-9 pr-11 py-2.5 bg-slate-800/80 border border-slate-700/80 rounded-xl text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all"
-                                />
+                                <div className="relative mb-6">
+                                    <motion.div
+                                        animate={{ scale: [1, 1.08, 1], opacity: [1, 0.8, 1] }}
+                                        transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut' }}
+                                        className="h-20 w-20 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center"
+                                    >
+                                        <svg className="w-9 h-9 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                        </svg>
+                                    </motion.div>
+                                    <motion.span
+                                        animate={{ scale: [1, 1.2, 1] }}
+                                        transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
+                                        className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-red-500 border-2 border-white dark:border-slate-800 flex items-center justify-center"
+                                    >
+                                        <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                                        </svg>
+                                    </motion.span>
+                                </div>
+                                <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-1.5">Account Suspended</h2>
+                                <p className="text-sm text-gray-500 dark:text-white/70 leading-relaxed mb-5">
+                                    {banMessage || 'Your session was ended because your account has been suspended by a Super Admin.'}
+                                </p>
+                                <div className="w-full rounded-xl border border-red-200 bg-red-50 dark:border-red-400/20 dark:bg-red-500/20 px-4 py-3 mb-6 text-left">
+                                    <p className="text-xs text-red-700 dark:text-red-300 leading-relaxed">
+                                        You will not be able to access the admin portal until a Super Admin lifts the restriction on your account.
+                                    </p>
+                                </div>
                                 <button
                                     type="button"
-                                    onClick={() => setShowPass(p => !p)}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
+                                    onClick={() => {
+                                        setBanMessage('');
+                                        setForm({ login: '', password: '' });
+                                        setOtpCode('');
+                                        setOtpChallengeToken('');
+                                        setLockoutSeconds(0);
+                                        if (isSuspendedRedirect) router.replace(loginPath);
+                                    }}
+                                    className="w-full py-2.5 rounded-full border border-gray-300 dark:border-white/20 text-gray-500 dark:text-white/70 hover:text-gray-800 dark:hover:text-white hover:border-gray-400 dark:hover:border-white/40 text-sm font-medium transition-all"
                                 >
-                                    <EyeIcon open={showPass}/>
+                                    Back to Login
                                 </button>
-                            </div>
-                        </div>
-
-                        {otpChallengeToken ? (
-                            <div className="mt-3">
-                                <label className="block text-xs font-semibold text-slate-300 mb-1.5">Email OTP Code</label>
-                                <input
-                                    type="text"
-                                    value={otpCode}
-                                    onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                                    required
-                                    inputMode="numeric"
-                                    placeholder="Enter 6-digit code"
-                                    className="w-full px-4 py-2.5 bg-slate-800/80 border border-slate-700/80 rounded-xl text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all"
-                                />
-                                <div className="mt-2 flex items-center justify-between">
-                                    <p className="text-[11px] text-slate-400">OTP was sent to your account email.</p>
-                                    <button
-                                        type="button"
-                                        onClick={async () => {
-                                            setError('')
-                                            setIsLoading(true)
-                                            try {
-                                                const resend = await signIn(providerId, {
-                                                    login: form.login,
-                                                    password: form.password,
-                                                    otp_challenge_token: otpChallengeToken,
-                                                    resend_otp: '1',
-                                                    redirect: false,
-                                                })
-                                                const msg = resend?.error ?? ''
-                                                const twoFactor = parseTwoFactorError(msg)
-                                                if (twoFactor) {
-                                                    setOtpChallengeToken(twoFactor.token)
-                                                    setError(twoFactor.message)
-                                                } else if (msg) {
-                                                    setError(msg)
-                                                } else {
-                                                    setError('OTP re-sent. Please check your email.')
-                                                }
-                                            } catch {
-                                                setError('Failed to resend OTP. Please try again.')
-                                            } finally {
-                                                setIsLoading(false)
-                                            }
-                                        }}
-                                        className="text-xs font-semibold text-indigo-300 hover:text-indigo-200 transition"
-                                    >
-                                        Resend OTP
-                                    </button>
+                            </motion.div>
+                        ) : (
+                            <motion.div
+                                key="form"
+                                initial={{ opacity: 0, x: -24 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: 24 }}
+                                transition={{ duration: 0.25 }}
+                            >
+                                <div className="mb-6">
+                                    <Image
+                                        src="/Images/af_home_logo.png"
+                                        alt="AF HOME"
+                                        width={80}
+                                        height={26}
+                                        className="h-10 w-auto object-contain dark:brightness-0 dark:invert mb-4"
+                                    />
+                                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">Welcome back!</h2>
+                                    <p className="text-gray-500 dark:text-white/70 text-sm">
+                                        Sign in to your {isPartnerLogin ? 'Partner' : 'Admin'} account
+                                    </p>
                                 </div>
-                            </div>
-                        ) : null}
 
-                        {/* SUBMIT */}
-                        <button
-                            type="submit"
-                            disabled={isLoading || lockoutSeconds > 0}
-                            className="w-full mt-2 bg-indigo-600 hover:bg-indigo-500 active:scale-[0.99] disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold py-2.5 rounded-xl tracking-wide transition-all duration-200 shadow-lg shadow-indigo-600/25 flex items-center justify-center gap-2"
-                        >
-                            {isLoading ? (
-                                <>
-                                    <Loading size={14}/>
-                                    <span>Signing in...</span>
-                                </>
-                            ):(
-                                <span>{lockoutSeconds > 0 ? `Try again in ${lockoutSeconds}s` : otpChallengeToken ? 'Verify & Sign In' : 'Sign In'}</span>                            )}
-                        </button>
-                    </form>
-                    </div>
-                    )}
+                                <form className="space-y-4" onSubmit={handleSign}>
+                                    {(error || lockoutSeconds > 0) && (
+                                        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-700 dark:border-red-400/20 dark:bg-red-500/20 dark:text-red-300">
+                                            {lockoutSeconds > 0 ? `Too many login attempts. Try again in ${lockoutSeconds} seconds.` : error}
+                                        </div>
+                                    )}
+
+                                    <FloatingInput
+                                        id="admin-login"
+                                        type="text"
+                                        label="Email or Username"
+                                        value={form.login}
+                                        onChange={set('login')}
+                                        autoComplete="username"
+                                    />
+
+                                    <div>
+                                        <FloatingInput
+                                            id="admin-password"
+                                            type={showPass ? 'text' : 'password'}
+                                            label="Password"
+                                            value={form.password}
+                                            onChange={set('password')}
+                                            autoComplete="current-password"
+                                            endContent={(
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowPass(p => !p)}
+                                                    className="text-gray-400 dark:text-white/60 hover:text-gray-700 dark:hover:text-white/80 transition-colors"
+                                                >
+                                                    <EyeIcon open={showPass} />
+                                                </button>
+                                            )}
+                                        />
+                                        <p className="mt-1.5 text-[11px] text-gray-400 dark:text-white/55">Passwords are case-sensitive.</p>
+                                    </div>
+
+                                    {otpChallengeToken ? (
+                                        <div>
+                                            <div className="rounded-xl border border-orange-200 bg-orange-50 px-4 py-3 text-sm text-orange-900 dark:border-orange-300/30 dark:bg-orange-500/15 dark:text-orange-200">
+                                                <p className="font-semibold">2-Factor Authentication</p>
+                                                <p className="mt-1 text-xs text-orange-800/90 dark:text-orange-200/90">
+                                                    A 6-digit code was sent to your account email.
+                                                </p>
+                                            </div>
+                                            <div className="mt-3">
+                                                <FloatingInput
+                                                    id="admin-otp"
+                                                    type="text"
+                                                    label="OTP Code"
+                                                    value={otpCode}
+                                                    onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                                                    autoComplete="one-time-code"
+                                                />
+                                            </div>
+                                            <div className="mt-2 flex items-center justify-between gap-2">
+                                                <p className="text-[11px] text-gray-400 dark:text-white/55">Check your email for the code.</p>
+                                                <button
+                                                    type="button"
+                                                    onClick={async () => {
+                                                        setError('')
+                                                        setIsLoading(true)
+                                                        try {
+                                                            const resend = await signIn(providerId, {
+                                                                login: form.login,
+                                                                password: form.password,
+                                                                otp_challenge_token: otpChallengeToken,
+                                                                resend_otp: '1',
+                                                                redirect: false,
+                                                            })
+                                                            const msg = resend?.error ?? ''
+                                                            const twoFactor = parseTwoFactorError(msg)
+                                                            if (twoFactor) {
+                                                                setOtpChallengeToken(twoFactor.token)
+                                                                setError(twoFactor.message)
+                                                            } else if (msg) {
+                                                                setError(msg)
+                                                            } else {
+                                                                setError('OTP re-sent. Please check your email.')
+                                                            }
+                                                        } catch {
+                                                            setError('Failed to resend OTP. Please try again.')
+                                                        } finally {
+                                                            setIsLoading(false)
+                                                        }
+                                                    }}
+                                                    className="text-xs font-semibold text-sky-500 hover:text-sky-400 transition-colors"
+                                                >
+                                                    Resend Code
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ) : null}
+
+                                    <PrimaryButton
+                                        type="submit"
+                                        disabled={isLoading || lockoutSeconds > 0}
+                                        className="w-full py-3 px-5 text-sm"
+                                    >
+                                        {isLoading ? (
+                                            <>
+                                                <Loading size={14} />
+                                                <span>Signing in...</span>
+                                            </>
+                                        ) : (
+                                            <span>{lockoutSeconds > 0 ? `Try again in ${lockoutSeconds}s` : otpChallengeToken ? 'Verify & Sign In' : 'Sign in'}</span>
+                                        )}
+                                    </PrimaryButton>
+                                </form>
+                            </motion.div>
+                        )}
                     </AnimatePresence>
                 </div>
 
-                {/* FOOTER */}
-                <p className="text-center text-xs text-slate-600 mt-5">
-                    AF HOME Admin Portal &copy; {new Date().getFullYear()}
+                <p className="text-center text-xs text-gray-400 dark:text-gray-600 mt-5">
+                    AF HOME {isPartnerLogin ? 'Partner' : 'Admin'} Portal &copy; {new Date().getFullYear()}
                 </p>
             </motion.div>
         </div>
