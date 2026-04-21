@@ -40,4 +40,16 @@ const nextConfig = {
   },
 } satisfies NextConfig & { pwa: object };
 
-export default withPWA(nextConfig);
+const isProduction = process.env.NODE_ENV === "production";
+
+export default isProduction
+  ? withPWA({
+      ...nextConfig,
+      pwa: {
+        dest: "public",
+        disable: false,
+        register: true,
+        skipWaiting: true,
+      },
+    })
+  : nextConfig;
