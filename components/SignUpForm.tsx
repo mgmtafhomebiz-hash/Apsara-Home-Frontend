@@ -113,13 +113,18 @@ interface SignUpFormProps {
 }
 
 type FieldAvailability = {
-  status: 'idle' | 'checking' | 'available' | 'unavailable'
+  status: 'idle' | 'checking' | 'available' | 'unavailable' | 'deferred'
   message: string
 }
 
 const getApiErrorMessage = (error: unknown, fallback: string) => {
   const candidate = error as { data?: { message?: string } }
   return candidate?.data?.message || fallback
+}
+
+const isMissingRouteError = (error: unknown) => {
+  const message = getApiErrorMessage(error, '').toLowerCase()
+  return message.includes('could not be found') || message.includes('not found')
 }
 
 export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
@@ -254,6 +259,14 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
           message: response.message,
         })
       } catch (apiError: unknown) {
+        if (isMissingRouteError(apiError)) {
+          setReferralAvailability({
+            status: 'deferred',
+            message: 'Referral code will be validated when you submit the form.',
+          })
+          return
+        }
+
         const message = getApiErrorMessage(apiError, 'Unable to check referral code right now.')
         setReferralAvailability({ status: 'unavailable', message })
       }
@@ -286,7 +299,7 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
     if (usernameAvailability.status !== 'available') return showError('Please wait until username availability is confirmed.')
     if (!referral) return showError('Referral code is required.')
     if (referralAvailability.status === 'unavailable') return showError(referralAvailability.message || 'Referral code is invalid or unavailable.')
-    if (referralAvailability.status !== 'available') return showError('Please wait until referral code validation is confirmed.')
+    if (referralAvailability.status === 'checking') return showError('Please wait until referral code validation is confirmed.')
     if (!form.password) return showError('Password is required.')
     if (form.password.length < 8) return showError('Password must be at least 8 characters.')
     if (form.password !== form.confirmPassword) return showError('Passwords do not match.')
@@ -406,7 +419,13 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
             required
           />
           {referralAvailability.message ? (
-            <p className={`text-[11px] -mt-2 ${referralAvailability.status === 'available' ? 'text-emerald-600 dark:text-emerald-300' : referralAvailability.status === 'checking' ? 'text-sky-600 dark:text-sky-300' : 'text-red-600 dark:text-red-300'}`}>
+            <p className={`text-[11px] -mt-2 ${
+              referralAvailability.status === 'available'
+                ? 'text-emerald-600 dark:text-emerald-300'
+                : referralAvailability.status === 'checking' || referralAvailability.status === 'deferred'
+                  ? 'text-sky-600 dark:text-sky-300'
+                  : 'text-red-600 dark:text-red-300'
+            }`}>
               {referralAvailability.message}
             </p>
           ) : null}
