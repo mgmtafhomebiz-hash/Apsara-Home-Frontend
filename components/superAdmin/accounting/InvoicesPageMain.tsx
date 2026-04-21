@@ -247,7 +247,7 @@ export default function InvoicesPageMain() {
         <p className="text-sm text-slate-500 mt-0.5">Issued payout invoices from released encashment requests.</p>
       </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-white shadow-sm p-4">
+      <div className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
         <div className="grid gap-4 xl:grid-cols-[1fr_auto] xl:items-start">
           <div className="space-y-3">
             <input
@@ -257,7 +257,7 @@ export default function InvoicesPageMain() {
                 setPage(1)
               }}
               placeholder="Search invoice, reference, affiliate..."
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-800"
+              className="w-full rounded-[18px] border border-gray-300 px-3 py-2 text-sm text-slate-800 outline-none transition-all focus:border-sky-400 dark:border-white/18 dark:bg-white/12 dark:text-slate-200 dark:focus:border-sky-400/60"
             />
 
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_auto] lg:items-end">
@@ -270,7 +270,7 @@ export default function InvoicesPageMain() {
                     setReleasedFrom(e.target.value)
                     setPage(1)
                   }}
-                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-800"
+                  className="mt-1 w-full rounded-[18px] border border-gray-300 px-3 py-2 text-sm text-slate-800 outline-none transition-all focus:border-sky-400 dark:border-white/18 dark:bg-white/12 dark:text-slate-200 dark:focus:border-sky-400/60"
                 />
               </label>
 
@@ -283,7 +283,7 @@ export default function InvoicesPageMain() {
                     setReleasedTo(e.target.value)
                     setPage(1)
                   }}
-                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-800"
+                  className="mt-1 w-full rounded-[18px] border border-gray-300 px-3 py-2 text-sm text-slate-800 outline-none transition-all focus:border-sky-400 dark:border-white/18 dark:bg-white/12 dark:text-slate-200 dark:focus:border-sky-400/60"
                 />
               </label>
 
@@ -295,21 +295,21 @@ export default function InvoicesPageMain() {
                   setSearch('')
                   setPage(1)
                 }}
-                className="h-[40px] rounded-xl border border-slate-200 px-4 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+                className="h-[40px] rounded-[18px] border border-gray-300 px-4 text-xs font-semibold text-slate-600 transition hover:border-slate-400 hover:bg-slate-50 dark:border-white/18 dark:text-slate-200 dark:hover:bg-white/10"
               >
                 Clear Filters
               </button>
             </div>
           </div>
 
-          <div className="min-w-[240px] rounded-xl border border-slate-200 bg-slate-50/60 p-3">
+          <div className="min-w-[240px] rounded-xl border border-slate-200 bg-slate-50/60 p-3 dark:border-slate-800 dark:bg-slate-950">
             <p className="text-[11px] uppercase tracking-wide text-slate-500">Total Released (Current Page)</p>
             <p className="mt-1 text-xl font-bold text-slate-800">{formatMoney(totalReleased)}</p>
             <button
               type="button"
               onClick={() => openBulkPrintView(selectedRows)}
               disabled={selectedRows.length === 0}
-              className="mt-3 w-full rounded-lg border border-teal-200 px-3 py-2 text-xs font-semibold text-teal-700 hover:bg-teal-50 disabled:cursor-not-allowed disabled:opacity-50"
+            className="mt-3 w-full rounded-[18px] border border-teal-200 px-3 py-2 text-xs font-semibold text-teal-700 transition hover:bg-teal-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-teal-900/30 dark:bg-teal-500/10 dark:text-teal-300"
             >
               Print Selected ({selectedRows.length})
             </button>
@@ -324,7 +324,7 @@ export default function InvoicesPageMain() {
       ) : null}
 
       {isLoading ? (
-        <div className="rounded-2xl border border-slate-100 bg-white p-4 animate-pulse">
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 animate-pulse dark:border-slate-800 dark:bg-slate-900">
           <div className="space-y-2">
             {Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="h-10 rounded bg-slate-100" />
@@ -335,10 +335,10 @@ export default function InvoicesPageMain() {
         <div className="space-y-3">
           {isFetching ? <div className="google-loading-bar" /> : null}
 
-          <div className="rounded-2xl border border-slate-100 bg-white shadow-sm overflow-hidden">
+          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
             <div className="overflow-auto">
               <table className="w-full min-w-[1100px]">
-                <thead className="bg-slate-50 border-b border-slate-100 dark:border-slate-800">
+                <thead className="bg-slate-50 border-b border-slate-200 dark:border-slate-800 dark:bg-slate-800/40">
                   <tr className="text-left text-xs text-slate-500">
                     <th className="px-4 py-3 font-semibold">
                       <input
@@ -360,7 +360,7 @@ export default function InvoicesPageMain() {
                 <tbody>
                   {displayRows.length ? (
                     displayRows.map((row) => (
-                      <tr key={row.id} className="border-b border-slate-50 last:border-b-0 text-sm">
+                      <tr key={row.id} className="border-b border-slate-50 last:border-b-0 text-sm dark:border-slate-800">
                         <td className="px-4 py-3">
                           <input
                             type="checkbox"
@@ -382,13 +382,13 @@ export default function InvoicesPageMain() {
                           <div className="flex items-center gap-2">
                             <button
                               onClick={() => setSelectedRow(row)}
-                              className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                              className="rounded-[18px] border border-gray-300 px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-slate-400 hover:bg-slate-50 dark:border-white/18 dark:text-slate-200 dark:hover:bg-white/10"
                             >
                               View
                             </button>
                             <button
                               onClick={() => openPrintView(row)}
-                              className="rounded-lg border border-teal-200 px-2.5 py-1.5 text-xs font-semibold text-teal-700 hover:bg-teal-50"
+                              className="rounded-[18px] border border-teal-200 px-2.5 py-1.5 text-xs font-semibold text-teal-700 transition hover:bg-teal-50 dark:border-teal-900/30 dark:bg-teal-500/10 dark:text-teal-300"
                             >
                               Print
                             </button>
@@ -421,15 +421,15 @@ export default function InvoicesPageMain() {
 
       {selectedRow ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
-          <div className="w-full max-w-2xl rounded-2xl border border-slate-200 bg-white shadow-xl">
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 px-5 py-4">
+          <div className="w-full max-w-2xl rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+            <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4 dark:border-slate-800">
               <div>
                 <h2 className="text-base font-bold text-slate-800">Invoice Details</h2>
                 <p className="text-xs text-slate-500 mt-0.5">{selectedRow.invoice_no || selectedRow.reference_no}</p>
               </div>
               <button
                 onClick={() => setSelectedRow(null)}
-                className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+                className="rounded-[18px] border border-gray-300 px-2.5 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-slate-400 hover:bg-slate-50 dark:border-white/18 dark:text-slate-200 dark:hover:bg-white/10"
               >
                 Close
               </button>
@@ -437,11 +437,11 @@ export default function InvoicesPageMain() {
 
             <div className="space-y-4 px-5 py-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                <div className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5">
+                <div className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5 dark:border-slate-800 dark:bg-slate-950">
                   <p className="text-xs uppercase tracking-wide text-slate-500">Invoice No</p>
                   <p className="mt-1 font-semibold text-slate-800">{selectedRow.invoice_no || 'Pending'}</p>
                 </div>
-                <div className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5">
+                <div className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5 dark:border-slate-800 dark:bg-slate-950">
                   <p className="text-xs uppercase tracking-wide text-slate-500">Encashment Ref</p>
                   <p className="mt-1 font-semibold text-slate-800">{selectedRow.reference_no}</p>
                 </div>
@@ -461,17 +461,17 @@ export default function InvoicesPageMain() {
                 </div>
               </div>
 
-              <div className="rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-2.5">
+              <div className="rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-2.5 dark:border-emerald-900/30 dark:bg-emerald-500/10">
                 <p className="text-xs uppercase tracking-wide text-emerald-700">Released Amount</p>
                 <p className="mt-1 text-2xl font-bold text-emerald-800">{formatMoney(selectedRow.amount)}</p>
                 <p className="text-xs text-emerald-700">Released at {formatDate(selectedRow.released_at)}</p>
               </div>
             </div>
 
-            <div className="flex justify-end gap-2 border-t border-slate-100 px-5 py-3">
+            <div className="flex justify-end gap-2 border-t border-slate-100 px-5 py-3 dark:border-slate-800">
               <button
                 onClick={() => openPrintView(selectedRow)}
-                className="rounded-xl border border-teal-200 px-3 py-2 text-xs font-semibold text-teal-700 hover:bg-teal-50"
+                className="rounded-[18px] border border-teal-200 px-3 py-2 text-xs font-semibold text-teal-700 transition hover:bg-teal-50 dark:border-teal-900/30 dark:bg-teal-500/10 dark:text-teal-300"
               >
                 Download / Print
               </button>

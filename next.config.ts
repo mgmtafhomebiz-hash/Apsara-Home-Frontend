@@ -1,21 +1,14 @@
 import type { NextConfig } from "next";
 
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const withPWA = require("next-pwa");
 
-const nextConfig: NextConfig = {
-  webpack(config, { dev }) {
-    if (dev) {
-      config.watchOptions = {
-        ignored: [
-          "**/DumpStack.log.tmp",
-          "**/hiberfil.sys",
-          "**/pagefile.sys",
-          "**/swapfile.sys",
-        ],
-      };
-    }
-
-    return config;
+const nextConfig = {
+  pwa: {
+    dest: "public",
+    disable: process.env.NODE_ENV === "development",
+    register: true,
+    skipWaiting: true,
   },
   images: {
     remotePatterns: [
@@ -45,7 +38,7 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-};
+} satisfies NextConfig & { pwa: object };
 
 const isProduction = process.env.NODE_ENV === "production";
 

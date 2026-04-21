@@ -56,7 +56,7 @@ function ToolbarSelect({
       isDisabled={isDisabled}
       className="w-full"
     >
-      <Select.Trigger className="flex min-h-11 w-full items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 text-left text-sm text-slate-700 transition-all duration-200 hover:bg-white focus:border-teal-300 focus:bg-white disabled:cursor-not-allowed disabled:opacity-60">
+      <Select.Trigger className="flex min-h-11 w-full items-center justify-between rounded-xl border border-slate-200 bg-white px-3 text-left text-sm text-slate-700 transition-all duration-200 hover:bg-slate-50 focus:border-sky-400 focus:bg-white disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800 dark:focus:border-sky-400">
         <span className="truncate">{selectedLabel}</span>
         <Select.Indicator className="h-4 w-4 text-slate-400" />
       </Select.Trigger>
@@ -132,7 +132,7 @@ export default function ProductsToolbar({
   const showSupplierFilter = typeof onSupplierFilterId === 'function' && uniqueSupplierOptions.length > 0
 
   return (
-    <Card className="border border-slate-200 bg-white shadow-none">
+    <Card className="border border-slate-200 bg-white shadow-none dark:border-slate-800 dark:bg-slate-900">
       <Card.Content className="space-y-4 p-4 sm:p-5">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
           <div className="flex flex-wrap items-center gap-2">
@@ -143,8 +143,8 @@ export default function ProductsToolbar({
                 variant={status === tab.value ? 'primary' : 'tertiary'}
                 onPress={() => onStatus(tab.value)}
                 className={status === tab.value
-                  ? 'rounded-xl bg-teal-600 px-4 text-xs font-semibold text-white hover:bg-teal-700'
-                  : 'rounded-xl border border-transparent px-4 text-xs font-semibold text-slate-500 hover:bg-slate-50 hover:text-slate-700'}
+                  ? 'rounded-xl bg-sky-600 px-4 text-xs font-semibold text-white hover:bg-sky-700'
+                  : 'rounded-xl border border-transparent px-4 text-xs font-semibold text-slate-500 hover:bg-slate-50 hover:text-slate-700 dark:hover:bg-slate-800'}
               >
                 {tab.label}
               </Button>
@@ -160,7 +160,7 @@ export default function ProductsToolbar({
                 className="w-full"
               >
                 <Label className="sr-only">Search products</Label>
-                <SearchField.Group className="flex min-h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 transition-all duration-200 focus-within:border-teal-300 focus-within:bg-white">
+                <SearchField.Group className="flex min-h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 transition-all duration-200 focus-within:border-sky-400 focus-within:bg-white dark:border-slate-700 dark:bg-slate-900 dark:focus-within:border-sky-400">
                   <SearchField.SearchIcon className="h-4 w-4 text-slate-400" />
                   <SearchField.Input
                     placeholder="Search by name or SKU..."
@@ -177,11 +177,11 @@ export default function ProductsToolbar({
                   size="sm"
                   variant="secondary"
                   onPress={onViewManualCheckout}
-                  className="min-h-11 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                  className="min-h-11 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
                 >
                   View Manual Checkout
                 </Button>
-                <Chip size="sm" variant="soft" className="h-11 border border-emerald-200 bg-emerald-50 px-3 text-sm font-medium text-emerald-700">
+                <Chip size="sm" variant="soft" className="h-11 border border-emerald-200 bg-emerald-50 px-3 text-sm font-medium text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-900/20 dark:text-emerald-300">
                   {manualCheckoutCount} added
                 </Chip>
               </div>
@@ -189,14 +189,14 @@ export default function ProductsToolbar({
 
             {selectedCount > 0 && onViewSelected ? (
               <div className="flex items-center gap-2 self-start lg:self-auto">
-                <Chip size="sm" variant="soft" className="h-11 border border-teal-200 bg-teal-50 px-3 text-sm font-medium text-teal-700">
+                <Chip size="sm" variant="soft" className="h-11 border border-sky-200 bg-sky-50 px-3 text-sm font-medium text-sky-700 dark:border-sky-900/40 dark:bg-sky-900/20 dark:text-sky-300">
                   {selectedCount} selected
                 </Chip>
                 <Button
                   size="sm"
                   variant="primary"
                   onPress={onViewSelected}
-                  className="min-h-11 rounded-xl bg-teal-600 px-4 text-sm font-semibold text-white hover:bg-teal-700"
+                  className="min-h-11 rounded-xl bg-sky-600 px-4 text-sm font-semibold text-white hover:bg-sky-700"
                 >
                   Add to Manual Checkout
                 </Button>
@@ -242,7 +242,7 @@ export default function ProductsToolbar({
           ) : null}
 
           <div className="flex items-center justify-start xl:justify-end">
-            <Chip size="sm" variant="soft" className="h-11 border border-slate-200 bg-slate-50 px-3 text-sm font-medium text-slate-600">
+            <Chip size="sm" variant="soft" className="h-11 border border-slate-200 bg-slate-50 px-3 text-sm font-medium text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
               <span className="font-semibold text-slate-800">{resultCount.toLocaleString()}</span>&nbsp;results
             </Chip>
           </div>

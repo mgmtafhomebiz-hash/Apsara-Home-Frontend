@@ -304,7 +304,7 @@ export default function ProductsTable({
   }
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-100 bg-white dark:border-slate-800 dark:bg-slate-900">
+    <div className="w-full">
       <Table className="w-full">
         <Table.ScrollContainer>
           <Table.Content

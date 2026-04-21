@@ -56,13 +56,13 @@ export default function WalletCreditsPageMain() {
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex items-start justify-between gap-4 flex-wrap"
+        className="flex flex-wrap items-start justify-between gap-4"
       >
         <div>
           <h1 className="text-xl font-bold text-slate-800">Wallet & Credits</h1>
           <p className="text-sm text-slate-500 mt-0.5">Manage member cash and PV wallet balances</p>
         </div>
-        <button className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 hover:border-slate-300 text-slate-700 rounded-xl text-sm font-semibold transition-all shadow-sm hover:shadow">
+        <button className="flex items-center gap-2 rounded-[18px] border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition-all hover:border-slate-400 dark:border-white/18 dark:bg-white/12 dark:text-slate-200">
           <svg className="w-4 h-4 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
           </svg>
