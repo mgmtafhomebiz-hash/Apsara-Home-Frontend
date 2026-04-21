@@ -187,8 +187,9 @@ export const authApi = baseApi.injectEndpoints({
         }
 
         return {
-          error: {
-            status: lastError?.status ?? 404,
+          error: lastError ?? {
+            status: 'CUSTOM_ERROR',
+            error: 'Unable to check referral code right now.',
             data: { message: 'Unable to check referral code right now.' },
           },
         }
