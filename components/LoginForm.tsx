@@ -173,6 +173,7 @@ const LoginForm = ({ onSwitchToSignUp, onRequirePasswordChange }: LoginFormProps
 
             showSuccessToast(source === 'auto' ? 'Login approved. Welcome back!' : 'Login successful. Welcome back!')
             router.replace(callbackPath);
+            router.refresh();
         } else {
             const rawError = String(result?.error ?? '').trim()
             const mfaApproval = parseMfaApprovalError(rawError)
