@@ -96,6 +96,22 @@ function ProductFilterSkeleton() {
     );
 }
 
+const buildVisiblePages = (totalPages: number, currentPage: number): Array<number | 'ellipsis'> => {
+    if (totalPages <= 7) {
+        return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+
+    if (currentPage <= 4) {
+        return [1, 2, 3, 4, 5, 'ellipsis', totalPages];
+    }
+
+    if (currentPage >= totalPages - 3) {
+        return [1, 'ellipsis', totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
+    }
+
+    return [1, 'ellipsis', currentPage - 1, currentPage, currentPage + 1, 'ellipsis', totalPages];
+};
+
 interface CategoryListProductMainProps {
     slug: string;
     initialCategoryLabel?: string;
@@ -379,6 +395,7 @@ export default function CategoryListProductMain({
 
     const totalPages = Math.max(1, Math.ceil(filteredProducts.length / showCount));
     const boundedCurrentPage = Math.min(currentPage, totalPages);
+    const visiblePages = buildVisiblePages(totalPages, boundedCurrentPage);
     const paginatedProducts = filteredProducts.slice((boundedCurrentPage - 1) * showCount, boundedCurrentPage * showCount);
 
     useEffect(() => {
@@ -545,19 +562,29 @@ export default function CategoryListProductMain({
                                         Previous
                                     </button>
                                     <div className="flex items-center gap-1">
-                                        {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                                            <button
-                                                key={page}
-                                                onClick={() => setCurrentPage(page)}
-                                                className={`w-10 h-10 rounded-lg border transition-colors ${
-                                                    page === boundedCurrentPage
-                                                        ? 'border-sky-500 bg-sky-500 text-white'
-                                                        : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-slate-700 dark:text-gray-200 hover:border-sky-500 dark:hover:border-sky-400'
-                                                }`}
-                                            >
-                                                {page}
-                                            </button>
-                                        ))}
+                                        {visiblePages.map((page, index) => {
+                                            if (page === 'ellipsis') {
+                                                return (
+                                                    <span key={`ellipsis-${index}`} className="w-10 h-10 inline-flex items-center justify-center text-gray-400 dark:text-gray-500">
+                                                        ...
+                                                    </span>
+                                                );
+                                            }
+
+                                            return (
+                                                <button
+                                                    key={page}
+                                                    onClick={() => setCurrentPage(page)}
+                                                    className={`w-10 h-10 rounded-lg border transition-colors ${
+                                                        page === boundedCurrentPage
+                                                            ? 'border-sky-500 bg-sky-500 text-white'
+                                                            : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-slate-700 dark:text-gray-200 hover:border-sky-500 dark:hover:border-sky-400'
+                                                    }`}
+                                                >
+                                                    {page}
+                                                </button>
+                                            );
+                                        })}
                                     </div>
                                     <button
                                         onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}

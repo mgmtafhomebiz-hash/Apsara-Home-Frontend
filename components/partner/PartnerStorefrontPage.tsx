@@ -102,7 +102,7 @@ export default function PartnerStorefrontPage({ partner, data }: Props) {
                 Browse Store
               </Link>
               <Link
-                href="/shop"
+                href="/shop/synergy-shop/product"
                 className="inline-flex items-center rounded-full border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700"
               >
                 Main Synergy Shop

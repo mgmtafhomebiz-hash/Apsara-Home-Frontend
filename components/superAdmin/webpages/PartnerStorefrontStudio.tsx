@@ -6,7 +6,7 @@ import { useSession } from 'next-auth/react'
 import { showErrorToast, showSuccessToast } from '@/libs/toast'
 import { getPartnerStorefrontConfig, parseIdList } from '@/libs/partnerStorefront'
 import { useGetCategoriesQuery } from '@/store/api/categoriesApi'
-import { useGetProductsQuery } from '@/store/api/productsApi'
+import { type Product, useLazyGetProductsQuery } from '@/store/api/productsApi'
 import {
   useCreateAdminWebPageItemMutation,
   useGetAdminWebPageItemsQuery,
@@ -78,6 +78,11 @@ const toDraft = (item?: WebPageItem): DraftState => {
 export default function PartnerStorefrontStudio() {
   const [selectedId, setSelectedId] = useState<number | 'new'>('new')
   const [draft, setDraft] = useState<DraftState>(emptyDraft)
+  const [helperCategoryId, setHelperCategoryId] = useState<number | ''>('')
+  const [selectedProductsCategoryFilter, setSelectedProductsCategoryFilter] = useState<number | 'all'>('all')
+  const [helperProducts, setHelperProducts] = useState<Product[]>([])
+  const [helperProductById, setHelperProductById] = useState<Record<number, Product>>({})
+  const [isLoadingHelperProducts, setIsLoadingHelperProducts] = useState(false)
   const [logoVersion, setLogoVersion] = useState(0)
   const { data: session } = useSession()
   const sessionRole = String(session?.user?.role ?? '').toLowerCase()
@@ -104,7 +109,7 @@ export default function PartnerStorefrontStudio() {
   const [isUploadingLogo, setIsUploadingLogo] = useState(false)
   const logoInputRef = useRef<HTMLInputElement | null>(null)
   const { data: categoriesData } = useGetCategoriesQuery({ per_page: 200 })
-  const { data: productsData } = useGetProductsQuery({ perPage: 100, status: '1' })
+  const [fetchProducts] = useLazyGetProductsQuery()
   const [createItem, { isLoading: isCreating }] = useCreateAdminWebPageItemMutation()
   const [updateItem, { isLoading: isUpdating }] = useUpdateAdminWebPageItemMutation()
 
@@ -124,7 +129,37 @@ export default function PartnerStorefrontStudio() {
   }, [data?.items, allowedStorefrontIds, isPartnerScoped])
 
   const categories = categoriesData?.categories ?? []
-  const products = productsData?.products ?? []
+  const allowedCategoryOptions = useMemo(
+    () => categories.filter((category) => draft.allowedCategoryIds.includes(category.id)),
+    [categories, draft.allowedCategoryIds],
+  )
+  const selectedProducts = useMemo(
+    () => draft.featuredProductIds.map((id) => helperProductById[id]).filter((product): product is Product => Boolean(product)),
+    [draft.featuredProductIds, helperProductById],
+  )
+  const missingSelectedProductIds = useMemo(
+    () => draft.featuredProductIds.filter((id) => !helperProductById[id]),
+    [draft.featuredProductIds, helperProductById],
+  )
+  const selectedProductCategoryOptions = useMemo(
+    () =>
+      Array.from(new Set(selectedProducts.map((product) => product.catid))).map((categoryId) => ({
+        id: categoryId,
+        label: categories.find((category) => category.id === categoryId)?.name ?? `Category ${categoryId}`,
+      })),
+    [selectedProducts, categories],
+  )
+  const filteredSelectedProducts = useMemo(
+    () =>
+      selectedProductsCategoryFilter === 'all'
+        ? selectedProducts
+        : selectedProducts.filter((product) => product.catid === selectedProductsCategoryFilter),
+    [selectedProducts, selectedProductsCategoryFilter],
+  )
+  const filteredMissingSelectedProductIds = useMemo(
+    () => (selectedProductsCategoryFilter === 'all' ? missingSelectedProductIds : []),
+    [missingSelectedProductIds, selectedProductsCategoryFilter],
+  )
 
   const selectStorefront = (item?: WebPageItem) => {
     if (!item) {
@@ -146,27 +181,65 @@ export default function PartnerStorefrontStudio() {
     }
   }
 
-  const toggleCategory = (categoryId: number) => {
-    setDraft((current) => {
-      const nextAllowedCategoryIds = current.allowedCategoryIds.includes(categoryId)
-        ? current.allowedCategoryIds.filter((id) => id !== categoryId)
-        : [...current.allowedCategoryIds, categoryId]
-      const nextDraft = { ...current, allowedCategoryIds: nextAllowedCategoryIds }
+  const getProductIdsByCategory = async (categoryId: number) => {
+    const perPage = 200
+    const firstPage = await fetchProducts({
+      page: 1,
+      perPage,
+      catId: categoryId,
+    }).unwrap()
 
-      if (typeof selectedId === 'number') {
-        const payload = buildStorefrontPayload(nextDraft)
-        updateItem({ type: 'partner-storefront', id: selectedId, data: payload })
-          .unwrap()
-          .then(() => {
-            refetch()
-          })
-          .catch(() => {
-            showErrorToast('Failed to update categories.')
-          })
+    let allProducts = [...(firstPage.products ?? [])]
+    const lastPage = Number(firstPage.meta?.last_page ?? 1)
+
+    for (let page = 2; page <= lastPage; page += 1) {
+      const nextPage = await fetchProducts({
+        page,
+        perPage,
+        catId: categoryId,
+      }).unwrap()
+      allProducts = [...allProducts, ...(nextPage.products ?? [])]
+    }
+
+    return new Set(allProducts.map((product) => product.id))
+  }
+
+  const toggleCategory = async (categoryId: number) => {
+    const isCurrentlySelected = draft.allowedCategoryIds.includes(categoryId)
+    const nextAllowedCategoryIds = isCurrentlySelected
+      ? draft.allowedCategoryIds.filter((id) => id !== categoryId)
+      : [...draft.allowedCategoryIds, categoryId]
+
+    let nextFeaturedProductIds = draft.featuredProductIds
+
+    if (isCurrentlySelected && draft.featuredProductIds.length > 0) {
+      try {
+        const categoryProductIdSet = await getProductIdsByCategory(categoryId)
+        nextFeaturedProductIds = draft.featuredProductIds.filter((id) => !categoryProductIdSet.has(id))
+      } catch {
+        showErrorToast('Failed to filter selected products for this category.')
       }
+    }
 
-      return nextDraft
-    })
+    const nextDraft = {
+      ...draft,
+      allowedCategoryIds: nextAllowedCategoryIds,
+      featuredProductIds: nextFeaturedProductIds,
+    }
+
+    setDraft(nextDraft)
+
+    if (typeof selectedId === 'number') {
+      const payload = buildStorefrontPayload(nextDraft)
+      updateItem({ type: 'partner-storefront', id: selectedId, data: payload })
+        .unwrap()
+        .then(() => {
+          refetch()
+        })
+        .catch(() => {
+          showErrorToast('Failed to update categories.')
+        })
+    }
   }
 
   const buildStorefrontPayload = (nextDraft: DraftState) => {
@@ -196,6 +269,34 @@ export default function PartnerStorefrontStudio() {
         },
       },
     }
+  }
+
+  const toggleFeaturedProduct = (productId: number) => {
+    setDraft((current) => {
+      const nextFeaturedProductIds = current.featuredProductIds.includes(productId)
+        ? current.featuredProductIds.filter((id) => id !== productId)
+        : [...current.featuredProductIds, productId]
+      const nextDraft = { ...current, featuredProductIds: nextFeaturedProductIds }
+
+      if (typeof selectedId === 'number') {
+        if (isPartnerScoped && !allowedStorefrontIds.includes(selectedId)) {
+          showErrorToast('You do not have access to edit this storefront.')
+          return current
+        }
+
+        const payload = buildStorefrontPayload(nextDraft)
+        updateItem({ type: 'partner-storefront', id: selectedId, data: payload })
+          .unwrap()
+          .then(() => {
+            refetch()
+          })
+          .catch(() => {
+            showErrorToast('Failed to update selected products.')
+          })
+      }
+
+      return nextDraft
+    })
   }
 
   const handleLogoUpload = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -401,6 +502,97 @@ export default function PartnerStorefrontStudio() {
       setDraft(toDraft(first))
     }
   }, [isPartnerScoped, storefronts, selectedId])
+
+  useEffect(() => {
+    if (allowedCategoryOptions.length === 0) {
+      setHelperCategoryId('')
+      return
+    }
+
+    setHelperCategoryId((current) => {
+      if (current && allowedCategoryOptions.some((category) => category.id === current)) {
+        return current
+      }
+      return allowedCategoryOptions[0].id
+    })
+  }, [allowedCategoryOptions])
+
+  useEffect(() => {
+    if (selectedProductsCategoryFilter === 'all') return
+    const stillValid = selectedProductCategoryOptions.some((category) => category.id === selectedProductsCategoryFilter)
+    if (!stillValid) {
+      setSelectedProductsCategoryFilter('all')
+    }
+  }, [selectedProductsCategoryFilter, selectedProductCategoryOptions])
+
+  useEffect(() => {
+    let isCancelled = false
+
+    const loadCategoryProducts = async () => {
+      if (!helperCategoryId) {
+        setHelperProducts([])
+        return
+      }
+
+      setIsLoadingHelperProducts(true)
+
+      try {
+        const perPage = 200
+        const firstPage = await fetchProducts({
+          page: 1,
+          perPage,
+          status: '1',
+          catId: helperCategoryId,
+        }).unwrap()
+
+        let allProducts = [...(firstPage.products ?? [])]
+        const lastPage = Number(firstPage.meta?.last_page ?? 1)
+
+        for (let page = 2; page <= lastPage; page += 1) {
+          const nextPage = await fetchProducts({
+            page,
+            perPage,
+            status: '1',
+            catId: helperCategoryId,
+          }).unwrap()
+          allProducts = [...allProducts, ...(nextPage.products ?? [])]
+        }
+
+        const uniqueProducts = Array.from(
+          allProducts.reduce((map, product) => {
+            map.set(product.id, product)
+            return map
+          }, new Map<number, Product>()).values(),
+        )
+
+        if (!isCancelled) {
+          setHelperProducts(uniqueProducts)
+          setHelperProductById((current) => {
+            const next = { ...current }
+            uniqueProducts.forEach((product) => {
+              next[product.id] = product
+            })
+            return next
+          })
+        }
+      } catch {
+        if (!isCancelled) {
+          setHelperProducts([])
+          showErrorToast('Failed to load products for the selected category.')
+        }
+      } finally {
+        if (!isCancelled) {
+          setIsLoadingHelperProducts(false)
+        }
+      }
+    }
+
+    void loadCategoryProducts()
+
+    return () => {
+      isCancelled = true
+    }
+  }, [helperCategoryId, fetchProducts])
 
   if (isLoading) {
     return <div className="rounded-3xl border border-slate-200 bg-white p-12 text-center text-sm text-slate-500 shadow-sm">Loading partner storefronts...</div>
@@ -620,7 +812,8 @@ export default function PartnerStorefrontStudio() {
         </div>
 
         <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
-          <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="space-y-5">
+            <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <h2 className="text-base font-bold text-slate-900">Allowed Categories</h2>
@@ -631,7 +824,7 @@ export default function PartnerStorefrontStudio() {
               </span>
             </div>
 
-            <div className="mt-4 grid gap-2 md:grid-cols-2">
+              <div className="mt-4 grid gap-2 md:grid-cols-2">
               {categories.map((category) => {
                 const active = draft.allowedCategoryIds.includes(category.id)
                 return (
@@ -651,11 +844,98 @@ export default function PartnerStorefrontStudio() {
                   </button>
                 )
               })}
+              </div>
+            </div>
+
+            <div className="flex h-[500px] flex-col rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="text-base font-bold text-slate-900">Selected Products</h2>
+                <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+                  {draft.featuredProductIds.length} selected
+                </span>
+              </div>
+              <p className="mt-1 text-sm text-slate-500">Products checked in Product Helper will appear here and auto-save.</p>
+              <label className="mt-3 block">
+                <span className="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Filter Category</span>
+                <select
+                  value={selectedProductsCategoryFilter}
+                  onChange={(event) => {
+                    const next = event.target.value
+                    if (next === 'all') {
+                      setSelectedProductsCategoryFilter('all')
+                      return
+                    }
+                    const nextId = Number.parseInt(next, 10)
+                    setSelectedProductsCategoryFilter(Number.isFinite(nextId) ? nextId : 'all')
+                  }}
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 outline-none focus:border-emerald-300 focus:bg-white"
+                >
+                  <option value="all">All Categories</option>
+                  {selectedProductCategoryOptions.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.label} (ID {category.id})
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <div className="mt-3 min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
+                {filteredSelectedProducts.map((product) => {
+                  const imageUrl =
+                    (typeof product.image === 'string' && product.image.trim().length > 0
+                      ? product.image
+                      : undefined) ??
+                    (Array.isArray(product.images) && typeof product.images[0] === 'string'
+                      ? product.images[0]
+                      : undefined)
+
+                  return (
+                    <div key={product.id} className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2">
+                      <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg border border-slate-200 bg-white">
+                        {imageUrl ? (
+                          <img src={imageUrl} alt={product.name} className="h-full w-full object-cover" />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center text-[9px] font-semibold uppercase text-slate-400">
+                            No Image
+                          </div>
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-semibold text-slate-900">{product.name}</p>
+                        <p className="text-xs text-slate-500">ID {product.id} - Category {product.catid}</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => toggleFeaturedProduct(product.id)}
+                        className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-600 transition hover:bg-slate-100"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  )
+                })}
+                {filteredMissingSelectedProductIds.map((id) => (
+                  <div key={id} className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2">
+                    <p className="text-xs text-slate-500">Product ID {id}</p>
+                    <button
+                      type="button"
+                      onClick={() => toggleFeaturedProduct(id)}
+                      className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-600 transition hover:bg-slate-100"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ))}
+                {filteredSelectedProducts.length === 0 && filteredMissingSelectedProductIds.length === 0 ? (
+                  <p className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-500">
+                    {draft.featuredProductIds.length === 0 ? 'No selected products yet.' : 'No selected products in this category.'}
+                  </p>
+                ) : null}
+              </div>
             </div>
           </div>
 
           <div className="space-y-5">
-            <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="hidden rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
               <h2 className="text-base font-bold text-slate-900">Featured Product IDs</h2>
               <p className="mt-1 text-sm text-slate-500">These IDs can be used by shop builder sections for curated product cards.</p>
               <textarea
@@ -667,28 +947,85 @@ export default function PartnerStorefrontStudio() {
               />
             </div>
 
-            <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="flex h-[500px] flex-col rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
               <h2 className="text-base font-bold text-slate-900">Product Helper</h2>
-              <p className="mt-1 text-sm text-slate-500">Quick reference from the first 100 active products.</p>
-              <div className="mt-3 max-h-72 space-y-2 overflow-y-auto pr-1">
-                {products.map((product) => (
-                  <button
-                    key={product.id}
-                    type="button"
-                    onClick={() =>
-                      setDraft((current) => ({
-                        ...current,
-                        featuredProductIds: current.featuredProductIds.includes(product.id)
-                          ? current.featuredProductIds
-                          : [...current.featuredProductIds, product.id],
-                      }))
-                    }
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-left transition hover:border-slate-300"
-                  >
-                    <p className="line-clamp-2 text-sm font-semibold text-slate-900">{product.name}</p>
-                    <p className="mt-1 text-xs text-slate-500">ID {product.id} · Category {product.catid}</p>
-                  </button>
-                ))}
+              <p className="mt-1 text-sm text-slate-500">All active products in the selected category.</p>
+              <label className="mt-3 block">
+                <span className="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Category</span>
+                <select
+                  value={helperCategoryId}
+                  onChange={(event) => {
+                    const nextId = Number.parseInt(event.target.value, 10)
+                    setHelperCategoryId(Number.isFinite(nextId) ? nextId : '')
+                  }}
+                  disabled={allowedCategoryOptions.length === 0}
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 outline-none focus:border-emerald-300 focus:bg-white disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {allowedCategoryOptions.length === 0 ? (
+                    <option value="">Select allowed categories first</option>
+                  ) : null}
+                  {allowedCategoryOptions.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name} (ID {category.id})
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <div className="mt-3 min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
+                {isLoadingHelperProducts ? (
+                  <p className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-500">
+                    Loading products...
+                  </p>
+                ) : null}
+                {helperProducts.map((product) => {
+                  const imageUrl =
+                    (typeof product.image === 'string' && product.image.trim().length > 0
+                      ? product.image
+                      : undefined) ??
+                    (Array.isArray(product.images) && typeof product.images[0] === 'string'
+                      ? product.images[0]
+                      : undefined)
+                  const isFeatured = draft.featuredProductIds.includes(product.id)
+
+                  return (
+                    <button
+                      key={product.id}
+                      type="button"
+                      onClick={() => toggleFeaturedProduct(product.id)}
+                      className="relative w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-left transition hover:border-slate-300"
+                    >
+                      <span className="absolute right-3 top-3">
+                        <input
+                          type="checkbox"
+                          checked={isFeatured}
+                          onChange={() => toggleFeaturedProduct(product.id)}
+                          onClick={(event) => event.stopPropagation()}
+                          className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                        />
+                      </span>
+                      <div className="flex items-center gap-3">
+                        <div className="h-12 w-12 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-white">
+                          {imageUrl ? (
+                            <img src={imageUrl} alt={product.name} className="h-full w-full object-cover" />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center text-[10px] font-semibold uppercase text-slate-400">
+                              No Image
+                            </div>
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="line-clamp-2 text-sm font-semibold text-slate-900">{product.name}</p>
+                          <p className="mt-1 text-xs text-slate-500">ID {product.id} - Category {product.catid}</p>
+                        </div>
+                      </div>
+                    </button>
+                  )
+                })}
+                {!isLoadingHelperProducts && allowedCategoryOptions.length > 0 && helperProducts.length === 0 ? (
+                  <p className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-500">
+                    No active products found for this category.
+                  </p>
+                ) : null}
               </div>
             </div>
           </div>
