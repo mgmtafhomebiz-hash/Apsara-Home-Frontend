@@ -41,6 +41,12 @@ const builderCards: ContentCard[] = [
     badge: 'Ads',
   },
   {
+    title: 'Database',
+    description: 'Generate database export snapshots and review the latest export output.',
+    href: '/admin/webpages/database',
+    badge: 'Backup',
+  },
+  {
     title: 'Banners & Promos',
     description: 'Control promo strips, hero banners, campaign links, and schedule windows for active creatives.',
     href: '/admin/webpages/banners',

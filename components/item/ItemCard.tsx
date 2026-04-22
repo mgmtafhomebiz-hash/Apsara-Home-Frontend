@@ -39,9 +39,10 @@ interface Product {
 interface ItemCardProps {
   product: Product
   brandName: string
+  hideDiscountBadge?: boolean
 }
 
-export default function ItemCard({ product, brandName }: ItemCardProps) {
+export default function ItemCard({ product, brandName, hideDiscountBadge = false }: ItemCardProps) {
   const slug = toSlug(product.name)
   const href = `/product/${slug}-i${product.id}`
   const [imageError, setImageError] = useState(false)
@@ -209,7 +210,7 @@ export default function ItemCard({ product, brandName }: ItemCardProps) {
         )}
 
         {/* Discount Badge */}
-        {hasMemberPrice ? (
+        {hasMemberPrice && !hideDiscountBadge ? (
           <div className="absolute top-0 left-0 bg-sky-500 text-white text-xs font-bold px-2 py-1">
             {isLoggedIn ? `Enjoy ${Math.round(((srpPrice - memberPrice) / srpPrice) * 100)}% off` : `Register to get ${Math.round(((srpPrice - memberPrice) / srpPrice) * 100)}% discount`}
           </div>

@@ -3,6 +3,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { useState, useMemo, useEffect, useRef } from 'react';
+import { usePathname } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { Skeleton } from '@heroui/react';
 import Footer from '@/components/landing-page/Footer';
@@ -129,6 +130,16 @@ const titleFromSlug = (slug: string) =>
         .map((chunk) => chunk.charAt(0).toUpperCase() + chunk.slice(1))
         .join(' ');
 
+function PartnerOrderFooter({ partnerName }: { partnerName: string }) {
+    return (
+        <footer className="border-t border-slate-200 bg-white">
+            <div className="mx-auto max-w-7xl px-4 py-6 text-center text-sm text-slate-500 sm:px-6 lg:px-8">
+                Orders from <span className="font-semibold text-slate-800">{partnerName}</span> are still processed through AF Home.
+            </div>
+        </footer>
+    );
+}
+
 export default function CategoryListProductMain({
     slug,
     initialCategoryLabel,
@@ -138,6 +149,8 @@ export default function CategoryListProductMain({
     isLoading = false,
     hasError = false,
 }: CategoryListProductMainProps) {
+    const pathname = usePathname();
+    const isSynergyProductRoute = pathname?.startsWith('/shop/synergy-shop/product') || slug === 'synergy-shop-products';
     const meta = categoryMeta[slug];
     const staticProducts = categoryProducts[slug];
     const hasDynamicProducts = Array.isArray(initialProducts) && initialProducts.length > 0;
@@ -177,8 +190,17 @@ export default function CategoryListProductMain({
                     `
                 }} />
                 <div className="relative min-h-screen text-slate-900 dark:text-white flex flex-col">
-                    <TopBar />
-                    <Navbar initialCategories={initialCategories} />
+                    {!isSynergyProductRoute && <TopBar />}
+                    <Navbar
+                        initialCategories={initialCategories}
+                        logoSrc={isSynergyProductRoute ? '/Images/synergy.png' : '/Images/af_home_logo.png'}
+                        logoAlt={isSynergyProductRoute ? 'Synergy Shop' : 'AF Home'}
+                        logoHref={isSynergyProductRoute ? '/shop/synergy-shop/product' : '/shop'}
+                        hideSignIn={isSynergyProductRoute}
+                        hideNavLinks={isSynergyProductRoute}
+                        stickToTop={isSynergyProductRoute}
+                        showGuestCartWishlist={isSynergyProductRoute}
+                    />
 
                     <main className="flex-1">
                         <div className="bg-gray-50 dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700">
@@ -200,7 +222,7 @@ export default function CategoryListProductMain({
                             </div>
                         </div>
                     </main>
-                    <Footer />
+                    {isSynergyProductRoute ? <PartnerOrderFooter partnerName="Synergy Shop" /> : <Footer />}
                 </div>
             </>
         );
@@ -225,8 +247,17 @@ export default function CategoryListProductMain({
                     `
                 }} />
                 <div className="relative min-h-screen text-slate-900 dark:text-white flex flex-col">
-                    <TopBar />
-                    <Navbar initialCategories={initialCategories} />
+                    {!isSynergyProductRoute && <TopBar />}
+                    <Navbar
+                        initialCategories={initialCategories}
+                        logoSrc={isSynergyProductRoute ? '/Images/synergy.png' : '/Images/af_home_logo.png'}
+                        logoAlt={isSynergyProductRoute ? 'Synergy Shop' : 'AF Home'}
+                        logoHref={isSynergyProductRoute ? '/shop/synergy-shop/product' : '/shop'}
+                        hideSignIn={isSynergyProductRoute}
+                        hideNavLinks={isSynergyProductRoute}
+                        stickToTop={isSynergyProductRoute}
+                        showGuestCartWishlist={isSynergyProductRoute}
+                    />
 
                     <main className="flex-1">
                         <div className="bg-gray-50 dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700">
@@ -252,7 +283,7 @@ export default function CategoryListProductMain({
                             </div>
                         </div>
                     </main>
-                    <Footer />
+                    {isSynergyProductRoute ? <PartnerOrderFooter partnerName="Synergy Shop" /> : <Footer />}
                 </div>
             </>
         );
@@ -442,8 +473,17 @@ export default function CategoryListProductMain({
                 `
             }} />
             <div className="relative min-h-screen text-slate-900 dark:text-white flex flex-col">
-            <TopBar />
-            <Navbar initialCategories={initialCategories} />
+            {!isSynergyProductRoute && <TopBar />}
+            <Navbar
+                initialCategories={initialCategories}
+                logoSrc={isSynergyProductRoute ? '/Images/synergy.png' : '/Images/af_home_logo.png'}
+                logoAlt={isSynergyProductRoute ? 'Synergy Shop' : 'AF Home'}
+                logoHref={isSynergyProductRoute ? '/shop/synergy-shop/product' : '/shop'}
+                hideSignIn={isSynergyProductRoute}
+                hideNavLinks={isSynergyProductRoute}
+                stickToTop={isSynergyProductRoute}
+                showGuestCartWishlist={isSynergyProductRoute}
+            />
 
             <main className="flex-1">
                 {/* Breadcrumb */}
@@ -451,7 +491,7 @@ export default function CategoryListProductMain({
                     <div className="container mx-auto px-4 py-3 flex items-center justify-between">
                         <h1 className="text-base font-bold text-slate-800 dark:text-white">{categoryLabel}</h1>
                         <nav className="flex items-center gap-1.5 text-xs text-gray-400 dark:text-gray-500">
-                            <Link href="/" className="hover:text-sky-500 dark:hover:text-sky-400 transition-colors font-medium">Home</Link>
+                            <Link href={isSynergyProductRoute ? '/shop/synergy-shop' : '/'} className="hover:text-sky-500 dark:hover:text-sky-400 transition-colors font-medium">Home</Link>
                             <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6" /></svg>
                             <span className="text-slate-600 dark:text-gray-300 font-semibold">{categoryLabel}</span>
                         </nav>
@@ -543,9 +583,9 @@ export default function CategoryListProductMain({
                                             transition={{ duration: 0.22, delay: i * 0.02, ease: 'easeOut' }}
                                         >
                                             {viewMode === 'grid' ? (
-                                                <ItemCard key={product.id} product={product} brandName={product.brand || ''} />
+                                                <ItemCard key={product.id} product={product} brandName={product.brand || ''} hideDiscountBadge={isSynergyProductRoute} />
                                             ) : (
-                                                <ListViewProduct key={product.id} product={product} onShareClick={(p) => { setShareProduct(p); setShareModalOpen(true); }} />
+                                                <ListViewProduct key={product.id} product={product} onShareClick={(p) => { setShareProduct(p); setShareModalOpen(true); }} hideDiscountBadge={isSynergyProductRoute} />
                                             )}
                                         </motion.div>
                                     ))}
@@ -599,7 +639,7 @@ export default function CategoryListProductMain({
                     </div>
                 </div>
             </main>
-            <Footer />
+            {isSynergyProductRoute ? <PartnerOrderFooter partnerName="Synergy Shop" /> : <Footer />}
         </div>
         {/* Share Modal */}
         {shareProduct && shareProduct.id && (
@@ -630,9 +670,10 @@ export default function CategoryListProductMain({
 interface ListViewProductProps {
     product: CategoryProduct;
     onShareClick: (product: CategoryProduct) => void;
+    hideDiscountBadge?: boolean;
 }
 
-function ListViewProduct({ product, onShareClick }: ListViewProductProps) {
+function ListViewProduct({ product, onShareClick, hideDiscountBadge = false }: ListViewProductProps) {
     const srpPrice = (product.priceSrp ? Number(product.priceSrp) : undefined) ?? (product.price ? Number(product.price) : undefined) ?? 0
     const memberPrice = (product.priceMember ? Number(product.priceMember) : undefined) ?? (product.priceDp ? Number(product.priceDp) : undefined) ?? 0
     const hasMemberPrice = memberPrice > 0 && memberPrice < srpPrice
@@ -654,7 +695,7 @@ function ListViewProduct({ product, onShareClick }: ListViewProductProps) {
         >
             <div className="relative aspect-square w-20 sm:w-32 bg-gray-100 dark:bg-gray-700 overflow-hidden shrink-0 flex-shrink-0">
                 {/* Discount Badge */}
-                {hasMemberPrice && (
+                {hasMemberPrice && !hideDiscountBadge && (
                     <div className="absolute top-2 left-2 bg-sky-500 text-white text-[10px] sm:text-xs font-bold px-2 py-1 z-10 max-w-[calc(100%-16px)]">
                         {isLoggedIn ? `Enjoy ${Math.round(((srpPrice - memberPrice) / srpPrice) * 100)}% off` : `Register to get ${Math.round(((srpPrice - memberPrice) / srpPrice) * 100)}% discount`}
                     </div>

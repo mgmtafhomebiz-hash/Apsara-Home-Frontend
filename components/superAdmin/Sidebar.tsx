@@ -164,6 +164,7 @@ const navItems: NavItem[] = [
       { label: 'Assembly Guides', path: '/admin/webpages/assembly-guides' },
       { label: 'Bulk Edit', path: '/admin/webpages/bulk-edit' },
       { label: 'Ads Content', path: '/admin/webpages/adds-content' },
+      { label: 'Database', path: '/admin/webpages/database' },
     ],
   },
   {

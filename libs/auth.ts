@@ -15,6 +15,8 @@ type TokenUser = {
     passwordChangeRequired?: boolean;
 };
 
+const isProd = process.env.NODE_ENV === 'production';
+
 export const authOptions: NextAuthOptions = {
     providers: [
         CredentialsProvider({
@@ -192,6 +194,35 @@ export const authOptions: NextAuthOptions = {
     session: {
         strategy: 'jwt',
         maxAge: 30 * 24 * 60 * 60,
+    },
+
+    cookies: {
+        sessionToken: {
+            name: isProd ? '__Secure-member-next-auth.session-token' : 'member-next-auth.session-token',
+            options: {
+                httpOnly: true,
+                sameSite: 'lax',
+                path: '/',
+                secure: isProd,
+            },
+        },
+        csrfToken: {
+            name: isProd ? '__Host-member-next-auth.csrf-token' : 'member-next-auth.csrf-token',
+            options: {
+                httpOnly: true,
+                sameSite: 'lax',
+                path: '/',
+                secure: isProd,
+            },
+        },
+        callbackUrl: {
+            name: isProd ? '__Secure-member-next-auth.callback-url' : 'member-next-auth.callback-url',
+            options: {
+                sameSite: 'lax',
+                path: '/',
+                secure: isProd,
+            },
+        },
     },
 
     callbacks: {

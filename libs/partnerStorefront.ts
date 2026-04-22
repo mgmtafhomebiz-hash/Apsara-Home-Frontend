@@ -11,6 +11,7 @@ export type PartnerStorefrontConfig = {
   displayName: string
   logoUrl: string | null
   logoVersion: string
+  referralLink: string
   heroTitle: string
   heroSubtitle: string
   themeColor: string
@@ -75,6 +76,7 @@ export const getPartnerStorefrontConfig = (item: WebPageItem | undefined): Partn
     displayName: String(fields.display_name ?? item.title ?? slug).trim() || slug,
     logoUrl: String(fields.logo_url ?? item.image_url ?? '').trim() || null,
     logoVersion: String(fields.logo_version ?? '').trim(),
+    referralLink: String(fields.referral_link ?? '').trim(),
     heroTitle: String(fields.hero_title ?? item.subtitle ?? '').trim() || `Shop ${slug}`,
     heroSubtitle: String(fields.hero_subtitle ?? item.body ?? '').trim() || 'Curated products for your partner storefront.',
     themeColor: String(fields.theme_color ?? defaultThemeColor).trim() || defaultThemeColor,
