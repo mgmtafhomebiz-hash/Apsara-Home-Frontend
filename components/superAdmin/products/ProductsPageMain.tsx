@@ -47,6 +47,45 @@ const getEffectiveStockQty = (product: Product) => {
   return activeVariants.reduce((total, variant) => total + Number(variant.qty ?? 0), 0)
 }
 
+const extractZqImportProducts = (payload: Record<string, unknown> | undefined) => {
+  const data = (payload?.data ?? {}) as {
+    hasMore?: unknown
+    nextCursor?: unknown
+    records?: unknown
+  }
+
+  const records = Array.isArray(data.records) ? data.records : []
+  const products: ZqImportListItem[] = records.map((record, index) => {
+    const row = (record ?? {}) as Record<string, unknown>
+    const images = Array.isArray(row.images) ? row.images : []
+    const mainImageObject = images.find((image) => {
+      const item = image as Record<string, unknown>
+      return Boolean(item.isMain)
+    }) as Record<string, unknown> | undefined
+    const firstImageObject = images[0] as Record<string, unknown> | undefined
+
+    return {
+      id: String(row.id ?? index),
+      subject: typeof row.subject === 'string' ? row.subject : '',
+      image: typeof mainImageObject?.image === 'string'
+        ? mainImageObject.image
+        : (typeof firstImageObject?.image === 'string' ? firstImageObject.image : null),
+      productUrl: typeof row.productUrl === 'string' ? row.productUrl : null,
+      sourceType: typeof row.sourceType === 'string' ? row.sourceType : null,
+      status: typeof row.status === 'string' ? row.status : null,
+      importProductStatus: typeof row.importProductStatus === 'string' ? row.importProductStatus : null,
+      createdAt: typeof row.createdAt === 'string' ? row.createdAt : null,
+      published: typeof row.published === 'string' ? row.published : null,
+    }
+  })
+
+  return {
+    products,
+    hasMore: Boolean(data.hasMore),
+    nextCursor: data.nextCursor == null ? null : String(data.nextCursor),
+  }
+}
+
 /* ── Stat card ── */
 function StatCard({
   label, value, sub, icon, colorClass,
@@ -233,11 +272,31 @@ function ManualCheckoutSelectionModal({
   )
 }
 
-function ZqImportPreviewModal({
-  json,
+interface ZqImportListItem {
+  id: string
+  subject: string
+  image: string | null
+  productUrl: string | null
+  sourceType: string | null
+  status: string | null
+  importProductStatus: string | null
+  createdAt: string | null
+  published: string | null
+}
+
+function ZqProductListModal({
+  products,
+  hasMore,
+  nextCursor,
+  isLoadingMore,
+  onLoadMore,
   onClose,
 }: {
-  json: string
+  products: ZqImportListItem[]
+  hasMore: boolean
+  nextCursor: string | null
+  isLoadingMore: boolean
+  onLoadMore: () => void
   onClose: () => void
 }) {
   return (
@@ -254,13 +313,13 @@ function ZqImportPreviewModal({
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 12, scale: 0.97 }}
           transition={{ duration: 0.22, ease: 'easeOut' }}
-          className="w-full max-w-5xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl"
+          className="w-full max-w-6xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl"
         >
           <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-5">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-600">ZQ Product Preview</p>
-              <h2 className="mt-1 text-lg font-bold text-slate-900">Import Product List JSON</h2>
-              <p className="mt-1 text-sm text-slate-500">This is the raw ZQ response so we can validate the product listing payload first.</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-600">ZQ Supplier Products</p>
+              <h2 className="mt-1 text-lg font-bold text-slate-900">Imported Product List</h2>
+              <p className="mt-1 text-sm text-slate-500">Preview muna ito ng fetched ZQ products bago natin sila i-import sa local catalog.</p>
             </div>
             <button
               type="button"
@@ -271,10 +330,99 @@ function ZqImportPreviewModal({
             </button>
           </div>
 
-          <div className="max-h-[75vh] overflow-auto bg-slate-950 p-5">
-            <pre className="whitespace-pre-wrap break-words font-mono text-xs leading-6 text-emerald-100">
-              {json}
-            </pre>
+          <div className="space-y-4 p-5">
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+              <p className="text-sm text-slate-600">
+                <span className="font-semibold text-slate-900">{products.length}</span> product{products.length !== 1 ? 's' : ''} fetched from ZQ
+              </p>
+              <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
+                <span>hasMore: <span className="font-semibold text-slate-700">{hasMore ? 'true' : 'false'}</span></span>
+                <span>nextCursor: <span className="font-semibold text-slate-700">{nextCursor ?? 'null'}</span></span>
+              </div>
+            </div>
+
+            <div className="max-h-[48vh] overflow-auto rounded-2xl border border-slate-200">
+              <table className="min-w-full text-sm">
+                <thead className="sticky top-0 bg-slate-50">
+                  <tr className="border-b border-slate-200">
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Image</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Product</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Source</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Status</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Imported</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Published</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 bg-white">
+                  {products.map((product) => (
+                    <tr key={product.id}>
+                      <td className="px-4 py-3">
+                        <div className="relative h-14 w-14 overflow-hidden rounded-xl border border-slate-200 bg-slate-100">
+                          {product.image ? (
+                            <Image src={product.image} alt={product.subject} fill className="object-cover" unoptimized />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center text-xs text-slate-400">No image</div>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="min-w-0">
+                          <p className="line-clamp-2 font-semibold text-slate-800">{product.subject || 'Untitled product'}</p>
+                          <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                            <span className="font-mono">#{product.id}</span>
+                            {product.productUrl ? (
+                              <a
+                                href={product.productUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="font-medium text-sky-600 hover:text-sky-700"
+                              >
+                                View source
+                              </a>
+                            ) : null}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-slate-600">{product.sourceType ?? '—'}</td>
+                      <td className="px-4 py-3">
+                        <span className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-700">
+                          {product.status ?? '—'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700">
+                          {product.importProductStatus ?? '—'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-xs text-slate-500">{product.published ?? product.createdAt ?? '—'}</td>
+                    </tr>
+                  ))}
+                  {products.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="px-4 py-10 text-center text-sm text-slate-500">
+                        No ZQ products returned for this preview.
+                      </td>
+                    </tr>
+                  ) : null}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3">
+              <p className="text-sm text-slate-500">
+                {hasMore
+                  ? 'May more ZQ products pa. Load more para makuha natin yung next batch.'
+                  : 'Na-load na natin ang current available batch para sa preview na ito.'}
+              </p>
+              <button
+                type="button"
+                onClick={onLoadMore}
+                disabled={!hasMore || isLoadingMore}
+                className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-2 text-sm font-semibold text-sky-700 transition hover:bg-sky-100 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isLoadingMore ? 'Loading...' : hasMore ? 'Load More' : 'No More Products'}
+              </button>
+            </div>
           </div>
         </motion.div>
       </motion.div>
@@ -312,7 +460,9 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
   const [showAddModal,    setShowAddModal]    = useState(false)
   const [showActivityLogs, setShowActivityLogs] = useState(false)
   const [showZqPreviewModal, setShowZqPreviewModal] = useState(false)
-  const [zqPreviewJson, setZqPreviewJson] = useState('')
+  const [zqPreviewProducts, setZqPreviewProducts] = useState<ZqImportListItem[]>([])
+  const [zqHasMore, setZqHasMore] = useState(false)
+  const [zqNextCursor, setZqNextCursor] = useState<string | null>(null)
   const [showManualSelectionModal, setShowManualSelectionModal] = useState(false)
   const [manualSelectionProducts, setManualSelectionProducts] = useState<Product[]>([])
   const [manualSelectionMode, setManualSelectionMode] = useState<'review' | 'view'>('review')
@@ -716,12 +866,35 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
   const handleFetchZqPreview = async () => {
     try {
       const response = await fetchZqImportPreview({ size: 20 }).unwrap()
-      setZqPreviewJson(JSON.stringify(response, null, 2))
+      const extracted = extractZqImportProducts(response.zq)
+      setZqPreviewProducts(extracted.products)
+      setZqHasMore(extracted.hasMore)
+      setZqNextCursor(extracted.nextCursor)
       setShowZqPreviewModal(true)
       showSuccessToast(response.message || 'ZQ product list fetched successfully.')
     } catch (error) {
       const apiError = error as { data?: { message?: string } }
       showErrorToast(apiError?.data?.message || 'Failed to fetch ZQ product list preview.')
+    }
+  }
+
+  const handleLoadMoreZqProducts = async () => {
+    if (!zqHasMore || !zqNextCursor) return
+
+    try {
+      const response = await fetchZqImportPreview({ size: 20, cursor: zqNextCursor }).unwrap()
+      const extracted = extractZqImportProducts(response.zq)
+      setZqPreviewProducts((current) => {
+        const merged = new Map<string, ZqImportListItem>()
+        current.forEach((product) => merged.set(product.id, product))
+        extracted.products.forEach((product) => merged.set(product.id, product))
+        return Array.from(merged.values())
+      })
+      setZqHasMore(extracted.hasMore)
+      setZqNextCursor(extracted.nextCursor)
+    } catch (error) {
+      const apiError = error as { data?: { message?: string } }
+      showErrorToast(apiError?.data?.message || 'Failed to load more ZQ products.')
     }
   }
 
@@ -970,8 +1143,8 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4h16v4H4zm0 8h16v8H4zm4 4h.01M12 16h4" />
             </svg>
-            <span className="hidden sm:inline">{isFetchingZqPreview ? 'Fetching ZQ JSON...' : 'Fetch ZQ JSON'}</span>
-            <span className="sm:hidden">ZQ JSON</span>
+            <span className="hidden sm:inline">{isFetchingZqPreview ? 'Loading ZQ Products...' : 'ZQ Product List'}</span>
+            <span className="sm:hidden">ZQ List</span>
           </button>
           <button
             onClick={() => setShowActivityLogs(true)}
@@ -1170,8 +1343,12 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
         />
       ) : null}
       {showZqPreviewModal ? (
-        <ZqImportPreviewModal
-          json={zqPreviewJson}
+        <ZqProductListModal
+          products={zqPreviewProducts}
+          hasMore={zqHasMore}
+          nextCursor={zqNextCursor}
+          isLoadingMore={isFetchingZqPreview}
+          onLoadMore={handleLoadMoreZqProducts}
           onClose={() => setShowZqPreviewModal(false)}
         />
       ) : null}
