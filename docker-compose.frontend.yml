@@ -1,0 +1,15 @@
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: afhome-frontend
+    restart: unless-stopped
+    env_file:
+      - ./.env.docker
+    ports:
+      - "3001:3000"
+    volumes:
+      - ./:/app
+      - /app/node_modules
+      - /app/.next
