@@ -113,7 +113,27 @@ const highlightText = (text: string, searchTerm: string): Array<{ type: 'highlig
   )
 }
 
-function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[] }) {
+type NavbarProps = {
+  initialCategories?: Category[]
+  logoSrc?: string
+  logoAlt?: string
+  logoHref?: string
+  hideSignIn?: boolean
+  hideNavLinks?: boolean
+  stickToTop?: boolean
+  showGuestCartWishlist?: boolean
+}
+
+function NavbarInner({
+  initialCategories = [],
+  logoSrc = '/Images/af_home_logo.png',
+  logoAlt = 'AF Home',
+  logoHref = '/shop',
+  hideSignIn = false,
+  hideNavLinks = false,
+  stickToTop = false,
+  showGuestCartWishlist = false,
+}: NavbarProps) {
   const router = useRouter()
   const pathname = usePathname()
   const [scrolled, setScrolled] = useState(false)
@@ -606,7 +626,7 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
       initial={{ y: -80 }}
       animate={{ y: 0 }}
       transition={{ duration: 0.5, ease: 'easeOut' }}
-      className={`sticky top-8 z-50 !bg-white dark:!bg-gray-900 dark:border-b dark:border-gray-800 transition-all duration-300 ${scrolled ? 'shadow-lg shadow-black/5 dark:shadow-black/20' : 'shadow-sm'}`}
+      className={`sticky ${stickToTop ? 'top-0' : 'top-8'} z-50 !bg-white dark:!bg-gray-900 dark:border-b dark:border-gray-800 transition-all duration-300 ${scrolled ? 'shadow-lg shadow-black/5 dark:shadow-black/20' : 'shadow-sm'}`}
     >
       <AnimatePresence>
         {isLoggedIn && !isProfileComplete && meData && (
@@ -639,10 +659,10 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16 gap-4">
           {/* Left Section - Logo */}
-          <Link href="/shop" className="flex items-center shrink-0">
+          <Link href={logoHref} className="flex items-center shrink-0">
             <Image
-              src="/Images/af_home_logo.png"
-              alt="AF Home"
+              src={logoSrc}
+              alt={logoAlt}
               width={120}
               height={40}
               className="h-10 w-auto object-contain"
@@ -1039,6 +1059,35 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
               </>
             ) : (
               <>
+                {showGuestCartWishlist && (
+                  <>
+                    <button
+                      onClick={() => setWishlistOpen(true)}
+                      className="relative p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer text-slate-600 dark:text-gray-300"
+                      title="Wishlist"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={() => setIsOpen(true)}
+                      className="relative p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 active:bg-gray-200 dark:active:bg-gray-700 transition-colors cursor-pointer text-slate-600 dark:text-gray-300"
+                      title="Cart"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <circle cx="9" cy="21" r="1" />
+                        <circle cx="20" cy="21" r="1" />
+                        <path d="M1 1h4l2.68 12.39a2 2 0 0 0 2 1.61h7.72a2 2 0 0 0 2-1.61L23 6H6" />
+                      </svg>
+                      {cartCount > 0 && (
+                        <span className="absolute -top-1 -right-1 bg-sky-500 text-white text-[10px] rounded-full min-w-[16px] h-4 px-1 flex items-center justify-center">
+                          {cartCount}
+                        </span>
+                      )}
+                    </button>
+                  </>
+                )}
                 <div className="hidden md:flex">
                   <OutlineButton href="/track-order" className="!px-4 !py-2 !text-sm h-10">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -1051,15 +1100,17 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                   </OutlineButton>
                 </div>
 
-                <motion.div whileTap={{ scale: 0.96 }} transition={{ duration: 0.12 }}>
-                  <PrimaryButton href="/login" className="!px-5 !py-2 !text-sm !rounded-full h-10">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0">
-                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                      <circle cx="12" cy="7" r="4" />
-                    </svg>
-                    Sign in
-                  </PrimaryButton>
-                </motion.div>
+                {!hideSignIn && (
+                  <motion.div whileTap={{ scale: 0.96 }} transition={{ duration: 0.12 }}>
+                    <PrimaryButton href="/login" className="!px-5 !py-2 !text-sm !rounded-full h-10">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                        <circle cx="12" cy="7" r="4" />
+                      </svg>
+                      Sign in
+                    </PrimaryButton>
+                  </motion.div>
+                )}
               </>
             )}
 
@@ -1099,73 +1150,77 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
         </div>
       </div>
 
-      {/* Desktop nav links */}
-      <div className="hidden md:block border-t border-gray-100 dark:border-gray-800">
-        <div className="container mx-auto px-4">
-          <nav className="flex items-center h-11">
-            {navLinks.map((link, index) => {
-              const hasDropdown = link.dropdown || link.mega
-              return (
-                <div
-                  key={link.label}
-                  className={`relative h-full ${index === 0 ? '-ml-4' : ''}`}
-                  onMouseEnter={() => hasDropdown && open(link.label)}
-                  onMouseLeave={close}
-                >
-                  {hasDropdown ? (
-                    <button
-                      type="button"
-                      onClick={() => open(link.label)}
-                      className={`relative px-4 h-full flex items-center text-sm font-medium transition-colors duration-200 group ${
-                        pathname.startsWith(link.href) || activeDropdown === link.label
-                          ? 'text-sky-500'
-                          : 'text-gray-600 dark:text-gray-300 hover:text-sky-500'
-                      }`}
+      {!hideNavLinks && (
+        <>
+          {/* Desktop nav links */}
+          <div className="hidden md:block border-t border-gray-100 dark:border-gray-800">
+            <div className="container mx-auto px-4">
+              <nav className="flex items-center h-11">
+                {navLinks.map((link, index) => {
+                  const hasDropdown = link.dropdown || link.mega
+                  return (
+                    <div
+                      key={link.label}
+                      className={`relative h-full ${index === 0 ? '-ml-4' : ''}`}
+                      onMouseEnter={() => hasDropdown && open(link.label)}
+                      onMouseLeave={close}
                     >
-                      {link.label}
-                      <motion.svg
-                        animate={{ rotate: activeDropdown === link.label ? 180 : 0 }}
-                        transition={{ duration: 0.2 }}
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="11"
-                        height="11"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2.5"
-                        className="ml-1"
-                      >
-                        <polyline points="6 9 12 15 18 9" />
-                      </motion.svg>
-                      <span className={`absolute bottom-0 left-4 right-4 h-0.5 bg-sky-500 transition-transform duration-300 origin-left ${
-                        pathname.startsWith(link.href) ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'
-                      }`} />
-                    </button>
-                  ) : (
-                    <Link
-                      href={link.href}
-                      className={`relative px-4 h-full flex items-center text-sm font-medium transition-colors duration-200 group ${
-                        pathname === link.href
-                          ? 'text-sky-500'
-                          : 'text-gray-600 dark:text-gray-300 hover:text-sky-500'
-                      }`}
-                    >
-                      {link.label}
-                      <span className={`absolute bottom-0 left-4 right-4 h-0.5 bg-sky-500 transition-transform duration-300 origin-left ${
-                        pathname === link.href ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'
-                      }`} />
-                    </Link>
-                  )}
-                </div>
-              )
-            })}
-          </nav>
-        </div>
-      </div>
+                      {hasDropdown ? (
+                        <button
+                          type="button"
+                          onClick={() => open(link.label)}
+                          className={`relative px-4 h-full flex items-center text-sm font-medium transition-colors duration-200 group ${
+                            pathname.startsWith(link.href) || activeDropdown === link.label
+                              ? 'text-sky-500'
+                              : 'text-gray-600 dark:text-gray-300 hover:text-sky-500'
+                          }`}
+                        >
+                          {link.label}
+                          <motion.svg
+                            animate={{ rotate: activeDropdown === link.label ? 180 : 0 }}
+                            transition={{ duration: 0.2 }}
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="11"
+                            height="11"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2.5"
+                            className="ml-1"
+                          >
+                            <polyline points="6 9 12 15 18 9" />
+                          </motion.svg>
+                          <span className={`absolute bottom-0 left-4 right-4 h-0.5 bg-sky-500 transition-transform duration-300 origin-left ${
+                            pathname.startsWith(link.href) ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'
+                          }`} />
+                        </button>
+                      ) : (
+                        <Link
+                          href={link.href}
+                          className={`relative px-4 h-full flex items-center text-sm font-medium transition-colors duration-200 group ${
+                            pathname === link.href
+                              ? 'text-sky-500'
+                              : 'text-gray-600 dark:text-gray-300 hover:text-sky-500'
+                          }`}
+                        >
+                          {link.label}
+                          <span className={`absolute bottom-0 left-4 right-4 h-0.5 bg-sky-500 transition-transform duration-300 origin-left ${
+                            pathname === link.href ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'
+                          }`} />
+                        </Link>
+                      )}
+                    </div>
+                  )
+                })}
+              </nav>
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Desktop dropdown panels */}
       <AnimatePresence>
-        {activeLink?.dropdown && (
+        {!hideNavLinks && activeLink?.dropdown && (
           <motion.div
             initial={{ opacity: 0, y: -4 }}
             animate={{ opacity: 1, y: 0 }}
@@ -1245,7 +1300,7 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
       </AnimatePresence>
 
       <AnimatePresence>
-        {activeLink?.mega && (
+        {!hideNavLinks && activeLink?.mega && (
           <motion.div
             initial={{ opacity: 0, y: -4 }}
             animate={{ opacity: 1, y: 0 }}
@@ -1412,35 +1467,37 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
                       </svg>
                     </span>
                     <div>
-                      <p className="text-sm font-bold text-white">Welcome to AF Home</p>
-                      <p className="text-xs text-white/60 mt-0.5">Sign in to access your account</p>
+                      <p className="text-sm font-bold text-white">Welcome to {logoAlt}</p>
+                      <p className="text-xs text-white/60 mt-0.5">{hideSignIn ? 'Browse and track your orders.' : 'Sign in to access your account'}</p>
                     </div>
                   </div>
                   <div className="bg-white dark:bg-gray-800 px-4 py-3 flex gap-2">
-                    <motion.div whileTap={{ scale: 0.97 }} transition={{ duration: 0.12 }} className="flex-1">
-                      <PrimaryButton
-                      href="/login"
-                        onClick={() => setMobileOpen(false)}
-                        className="!w-full !px-4 !py-2.5 !text-sm !rounded-[18px]"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0">
-                          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                          <circle cx="12" cy="7" r="4" />
-                        </svg>
-                        Sign In
-                      </PrimaryButton>
-                    </motion.div>
+                    {!hideSignIn && (
+                      <motion.div whileTap={{ scale: 0.97 }} transition={{ duration: 0.12 }} className="flex-1">
+                        <PrimaryButton
+                        href="/login"
+                          onClick={() => setMobileOpen(false)}
+                          className="!w-full !px-4 !py-2.5 !text-sm !rounded-[18px]"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                            <circle cx="12" cy="7" r="4" />
+                          </svg>
+                          Sign In
+                        </PrimaryButton>
+                      </motion.div>
+                    )}
                     <Link
                       href="/track-order"
                       onClick={() => setMobileOpen(false)}
-                      className="flex-1 flex items-center justify-center gap-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 px-4 py-2.5 text-sm font-semibold text-gray-700 dark:text-gray-300 transition-colors"
+                      className={`${hideSignIn ? 'w-full' : 'flex-1'} flex items-center justify-center gap-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 px-4 py-2.5 text-sm font-semibold text-gray-700 dark:text-gray-300 transition-colors`}
                     >
                       Track Order
                     </Link>
                   </div>
                 </div>
               )}
-              {navLinks.map((link) => {
+              {!hideNavLinks && navLinks.map((link) => {
                 const hasChildren = link.dropdown || link.mega
                 const isExpanded = mobileExpanded === link.label
 
@@ -1977,7 +2034,27 @@ function NavbarInner({ initialCategories = [] }: { initialCategories?: Category[
   )
 }
 
-export default function Navbar({ initialCategories = [] }: { initialCategories?: Category[] }) {
-  return <NavbarInner initialCategories={initialCategories} />
+export default function Navbar({
+  initialCategories = [],
+  logoSrc = '/Images/af_home_logo.png',
+  logoAlt = 'AF Home',
+  logoHref = '/shop',
+  hideSignIn = false,
+  hideNavLinks = false,
+  stickToTop = false,
+  showGuestCartWishlist = false,
+}: NavbarProps) {
+  return (
+    <NavbarInner
+      initialCategories={initialCategories}
+      logoSrc={logoSrc}
+      logoAlt={logoAlt}
+      logoHref={logoHref}
+      hideSignIn={hideSignIn}
+      hideNavLinks={hideNavLinks}
+      stickToTop={stickToTop}
+      showGuestCartWishlist={showGuestCartWishlist}
+    />
+  )
 }
 

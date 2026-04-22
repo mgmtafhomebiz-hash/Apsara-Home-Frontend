@@ -22,6 +22,7 @@ type DraftState = {
   heroSubtitle: string
   logoUrl: string
   logoVersion: string
+  referralLink: string
   themeColor: string
   accentColor: string
   notificationEmail: string
@@ -38,6 +39,7 @@ const emptyDraft: DraftState = {
   heroSubtitle: '',
   logoUrl: '',
   logoVersion: '',
+  referralLink: '',
   themeColor: '#0f766e',
   accentColor: '#f97316',
   notificationEmail: '',
@@ -65,6 +67,7 @@ const toDraft = (item?: WebPageItem): DraftState => {
     heroSubtitle: config.heroSubtitle,
     logoUrl: config.logoUrl ?? '',
     logoVersion: config.logoVersion ?? '',
+    referralLink: config.referralLink ?? '',
     themeColor: config.themeColor,
     accentColor: config.accentColor,
     notificationEmail: config.notificationEmail,
@@ -259,6 +262,7 @@ export default function PartnerStorefrontStudio() {
           hero_subtitle: nextDraft.heroSubtitle.trim(),
           logo_url: nextDraft.logoUrl.trim(),
           logo_version: nextDraft.logoVersion.trim(),
+          referral_link: nextDraft.referralLink.trim(),
           theme_color: nextDraft.themeColor.trim(),
           accent_color: nextDraft.accentColor.trim(),
           notification_email: nextDraft.notificationEmail.trim(),
@@ -323,7 +327,7 @@ export default function PartnerStorefrontStudio() {
 
       const nextLogoUrl = result.url ?? ''
       const nextVersion = Date.now()
-      const nextDraft = { ...draft, logoUrl: nextLogoUrl, logoVersion: String(nextVersion) }
+    const nextDraft = { ...draft, logoUrl: nextLogoUrl, logoVersion: String(nextVersion) }
       const targetId = typeof selectedId === 'number' ? selectedId : nextDraft.id
 
       setDraft((current) => ({
@@ -346,31 +350,7 @@ export default function PartnerStorefrontStudio() {
           return
         }
 
-        const payload = {
-          key: slug,
-          title: nextDraft.displayName.trim() || slug,
-          subtitle: nextDraft.heroTitle.trim() || `${nextDraft.displayName.trim() || slug} Shop`,
-          body: nextDraft.heroSubtitle.trim(),
-          image_url: nextDraft.logoUrl.trim() || undefined,
-          is_active: true,
-          payload: {
-            fields: {
-              slug,
-              display_name: nextDraft.displayName.trim(),
-              hero_title: nextDraft.heroTitle.trim(),
-              hero_subtitle: nextDraft.heroSubtitle.trim(),
-              logo_url: nextDraft.logoUrl.trim(),
-              logo_version: nextDraft.logoVersion.trim(),
-              theme_color: nextDraft.themeColor.trim(),
-              accent_color: nextDraft.accentColor.trim(),
-              notification_email: nextDraft.notificationEmail.trim(),
-              domain_link: nextDraft.domainLink.trim(),
-              allowed_category_ids: nextDraft.allowedCategoryIds.join(','),
-              featured_product_ids: nextDraft.featuredProductIds.join(','),
-              enable_ai_support: nextDraft.enableAiSupport ? '1' : '0',
-            },
-          },
-        }
+        const payload = buildStorefrontPayload(nextDraft)
 
         try {
           await updateItem({ type: 'partner-storefront', id: targetId, data: payload }).unwrap()
@@ -413,31 +393,11 @@ export default function PartnerStorefrontStudio() {
       return
     }
 
-    const payload = {
-      key: slug,
-      title: draft.displayName.trim() || slug,
-      subtitle: draft.heroTitle.trim() || `${draft.displayName.trim() || slug} Shop`,
-      body: draft.heroSubtitle.trim(),
-      image_url: '',
-      is_active: true,
-      payload: {
-        fields: {
-          slug,
-          display_name: draft.displayName.trim(),
-          hero_title: draft.heroTitle.trim(),
-          hero_subtitle: draft.heroSubtitle.trim(),
-          logo_url: '',
-          logo_version: String(nextVersion),
-          theme_color: draft.themeColor.trim(),
-          accent_color: draft.accentColor.trim(),
-          notification_email: draft.notificationEmail.trim(),
-          domain_link: draft.domainLink.trim(),
-          allowed_category_ids: draft.allowedCategoryIds.join(','),
-          featured_product_ids: draft.featuredProductIds.join(','),
-          enable_ai_support: draft.enableAiSupport ? '1' : '0',
-        },
-      },
-    }
+    const payload = buildStorefrontPayload({
+      ...draft,
+      logoUrl: '',
+      logoVersion: String(nextVersion),
+    })
 
     try {
       await updateItem({ type: 'partner-storefront', id: selectedId, data: payload }).unwrap()
@@ -702,7 +662,7 @@ export default function PartnerStorefrontStudio() {
               />
             </Field>
             
-            <Field label="Logo" className="md:col-span-2">
+            <Field label="Logo Upload">
               <div className="space-y-3">
                 <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
@@ -748,6 +708,21 @@ export default function PartnerStorefrontStudio() {
                     <p className="text-xs text-slate-500">Logo uploaded.</p>
                   </div>
                 ) : null}
+              </div>
+            </Field>
+            <Field label="Referral Upload">
+              <div className="space-y-3">
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                  <p className="text-sm font-semibold text-slate-800">Upload referral link</p>
+                  <p className="mt-1 text-xs text-slate-500">Paste your referral URL for this storefront.</p>
+                </div>
+                <input
+                  value={draft.referralLink}
+                  onChange={(event) => setDraft((current) => ({ ...current, referralLink: event.target.value }))}
+                  placeholder="https://www.afhome.ph/signup?ref=yourcode"
+                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-emerald-300"
+                />
+                <p className="text-[11px] text-slate-500">Saved when you click <span className="font-semibold">Save Storefront</span>.</p>
               </div>
             </Field>
             <Field label="Hero Subtitle" className="md:col-span-2">
