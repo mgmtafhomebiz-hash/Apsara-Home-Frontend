@@ -1,15 +1,7 @@
 import type { NextConfig } from "next";
+import withSerwist from "@serwist/next";
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const withPWA = require("next-pwa");
-
-const nextConfig = {
-  pwa: {
-    dest: "public",
-    disable: process.env.NODE_ENV === "development",
-    register: true,
-    skipWaiting: true,
-  },
+const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
       {
@@ -38,18 +30,10 @@ const nextConfig = {
       },
     ],
   },
-} satisfies NextConfig & { pwa: object };
+};
 
-const isProduction = process.env.NODE_ENV === "production";
-
-export default isProduction
-  ? withPWA({
-      ...nextConfig,
-      pwa: {
-        dest: "public",
-        disable: false,
-        register: true,
-        skipWaiting: true,
-      },
-    })
-  : nextConfig;
+export default withSerwist({
+  swSrc: "sw.ts",
+  swDest: "public/sw.js",
+  disable: process.env.NODE_ENV !== "production",
+})(nextConfig);
