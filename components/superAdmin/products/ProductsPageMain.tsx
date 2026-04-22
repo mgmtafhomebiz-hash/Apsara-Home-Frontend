@@ -6,7 +6,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { useSession } from 'next-auth/react'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { useGetAdminMeQuery } from '@/store/api/authApi'
-import { Product, useGetProductsQuery, useGetPublicProductsQuery, useDeleteProductMutation, useManualCheckoutApplyMutation, ProductsResponse } from "@/store/api/productsApi";
+import { Product, useGetProductsQuery, useGetPublicProductsQuery, useDeleteProductMutation, useManualCheckoutApplyMutation, useFetchZqImportPreviewMutation, ProductsResponse } from "@/store/api/productsApi";
 import { useGetAdminGeneralSettingsQuery, useUpdateAdminGeneralSettingsMutation } from "@/store/api/adminSettingsApi";
 import { useGetPublicProductBrandsQuery } from "@/store/api/productBrandsApi";
 import { useGetSuppliersQuery } from "@/store/api/suppliersApi";
@@ -233,6 +233,55 @@ function ManualCheckoutSelectionModal({
   )
 }
 
+function ZqImportPreviewModal({
+  json,
+  onClose,
+}: {
+  json: string
+  onClose: () => void
+}) {
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.18, ease: 'easeOut' }}
+        className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/55 p-4"
+      >
+        <motion.div
+          initial={{ opacity: 0, y: 18, scale: 0.97 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: 12, scale: 0.97 }}
+          transition={{ duration: 0.22, ease: 'easeOut' }}
+          className="w-full max-w-5xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl"
+        >
+          <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-5">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-600">ZQ Product Preview</p>
+              <h2 className="mt-1 text-lg font-bold text-slate-900">Import Product List JSON</h2>
+              <p className="mt-1 text-sm text-slate-500">This is the raw ZQ response so we can validate the product listing payload first.</p>
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
+            >
+              Close
+            </button>
+          </div>
+
+          <div className="max-h-[75vh] overflow-auto bg-slate-950 p-5">
+            <pre className="whitespace-pre-wrap break-words font-mono text-xs leading-6 text-emerald-100">
+              {json}
+            </pre>
+          </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
+  )
+}
+
 export default function ProductsPageMain({ initialData = null, initialBrandType }: ProductsPageMainProps) {
   const selectionPerPage = 5000
   const router = useRouter()
@@ -262,6 +311,8 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
   const [page,            setPage]            = useState(1)
   const [showAddModal,    setShowAddModal]    = useState(false)
   const [showActivityLogs, setShowActivityLogs] = useState(false)
+  const [showZqPreviewModal, setShowZqPreviewModal] = useState(false)
+  const [zqPreviewJson, setZqPreviewJson] = useState('')
   const [showManualSelectionModal, setShowManualSelectionModal] = useState(false)
   const [manualSelectionProducts, setManualSelectionProducts] = useState<Product[]>([])
   const [manualSelectionMode, setManualSelectionMode] = useState<'review' | 'view'>('review')
@@ -271,6 +322,7 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
   const [removingManualCheckoutIds, setRemovingManualCheckoutIds] = useState<number[]>([])
   const [selectedIds,     setSelectedIds]     = useState<number[]>([])
   const [applyManualCheckout, { isLoading: isApplyingManualCheckout }] = useManualCheckoutApplyMutation()
+  const [fetchZqImportPreview, { isLoading: isFetchingZqPreview }] = useFetchZqImportPreviewMutation()
   const [saveGeneralSettings, { isLoading: isSavingManualMode }] = useUpdateAdminGeneralSettingsMutation()
   const [productOverrides, setProductOverrides] = useState<Record<number, Product>>({})
   const [createdProducts, setCreatedProducts] = useState<Product[]>([])
@@ -661,6 +713,18 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
     }
   }
 
+  const handleFetchZqPreview = async () => {
+    try {
+      const response = await fetchZqImportPreview({ size: 20 }).unwrap()
+      setZqPreviewJson(JSON.stringify(response, null, 2))
+      setShowZqPreviewModal(true)
+      showSuccessToast(response.message || 'ZQ product list fetched successfully.')
+    } catch (error) {
+      const apiError = error as { data?: { message?: string } }
+      showErrorToast(apiError?.data?.message || 'Failed to fetch ZQ product list preview.')
+    }
+  }
+
   const handleDelete = async (id: number) => {
     setDeletingIds(prev => [...prev, id])
     try {
@@ -898,6 +962,18 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
               <span className="sm:hidden">Manual</span>
             </button>
           <button
+            type="button"
+            onClick={handleFetchZqPreview}
+            disabled={isFetchingZqPreview}
+            className="flex items-center gap-2 px-4 py-2.5 bg-sky-50 hover:bg-sky-100 text-sky-700 rounded-xl text-sm font-semibold transition-colors border border-sky-200 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4h16v4H4zm0 8h16v8H4zm4 4h.01M12 16h4" />
+            </svg>
+            <span className="hidden sm:inline">{isFetchingZqPreview ? 'Fetching ZQ JSON...' : 'Fetch ZQ JSON'}</span>
+            <span className="sm:hidden">ZQ JSON</span>
+          </button>
+          <button
             onClick={() => setShowActivityLogs(true)}
             className="flex items-center gap-2 px-4 py-2.5 bg-white hover:bg-slate-50 text-slate-700 rounded-xl text-sm font-semibold transition-colors border border-slate-200"
           >
@@ -1091,6 +1167,12 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
           isSaving={isApplyingManualCheckout}
           removingIds={removingManualCheckoutIds}
           mode={manualSelectionMode}
+        />
+      ) : null}
+      {showZqPreviewModal ? (
+        <ZqImportPreviewModal
+          json={zqPreviewJson}
+          onClose={() => setShowZqPreviewModal(false)}
         />
       ) : null}
     </div>
