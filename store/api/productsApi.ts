@@ -313,6 +313,21 @@ export interface ManualCheckoutApplyResponse {
   }>
 }
 
+export interface ZqImportPreviewPayload {
+  cursor?: string | number | null
+  size?: number
+  keyword?: string
+  status?: string
+  sourceType?: string[]
+  ids?: number[]
+}
+
+export interface ZqImportPreviewResponse {
+  message: string
+  request?: Record<string, unknown>
+  zq: Record<string, unknown>
+}
+
 export interface PublicProductResponse {
   product: Product
 }
@@ -674,12 +689,18 @@ export const productsApi = baseApi.injectEndpoints({
         url: `/api/products/${id}/brand`,
         method: 'GET',
       }),
-      transformResponse: (response: any) => {
+      transformResponse: (response: {
+        brand?: Record<string, unknown>
+        supplier_user?: Record<string, unknown>
+        overall_rating?: number | null
+        total_reviews?: number
+        total_products?: number
+      }) => {
         const brand = response.brand || {};
         const supplierUser = response.supplier_user || {};
         return {
           ...brand,
-          joinedDate: supplierUser.joined_date,
+          joinedDate: typeof supplierUser.joined_date === 'string' ? supplierUser.joined_date : undefined,
           overallRating: response.overall_rating,
           totalReviews: response.total_reviews,
           totalProducts: response.total_products,
@@ -775,6 +796,13 @@ export const productsApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['Products'],
     }),
+    fetchZqImportPreview: builder.mutation<ZqImportPreviewResponse, ZqImportPreviewPayload | void>({
+      query: (body) => ({
+        url: '/api/admin/products/zq/fetch-preview',
+        method: 'POST',
+        body: body ?? {},
+      }),
+    }),
     updateProduct: builder.mutation<{ message: string; product?: Product }, { id: number; data: Partial<CreateProductPayload> }>({
       query: ({ id, data }) => ({
         url: `/api/admin/products/${id}`,
@@ -812,6 +840,7 @@ export const {
   useBulkUpdatePreviewMutation,
   useBulkUpdateApplyMutation,
   useManualCheckoutApplyMutation,
+  useFetchZqImportPreviewMutation,
   useUpdateProductMutation,
   useDeleteProductMutation,
 } = productsApi
