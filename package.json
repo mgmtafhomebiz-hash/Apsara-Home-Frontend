@@ -14,6 +14,9 @@
     "test": "vitest run --pool=threads"
   },
   "dependencies": {
+    "@emnapi/core": "^1.10.0",
+    "@emnapi/runtime": "^1.10.0",
+    "@floating-ui/dom": "^1.7.6",
     "@heroui/react": "^3.0.2",
     "@reduxjs/toolkit": "^2.11.2",
     "@serwist/next": "^9.5.7",
