@@ -1,11 +1,11 @@
 ﻿'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useSession } from 'next-auth/react'
 import { useGetAdminMeQuery } from '@/store/api/authApi'
-import { useCreateProductMutation, CreateProductPayload, Product, normalizeProduct } from '@/store/api/productsApi'
+import { useCreateProductMutation, useFetchZqImportPreviewMutation, useImportZqProductsMutation, CreateProductPayload, Product, normalizeProduct } from '@/store/api/productsApi'
 import { useGetCategoriesQuery } from '@/store/api/categoriesApi'
 import { useGetProductBrandsQuery } from '@/store/api/productBrandsApi'
 import { showErrorToast, showSuccessToast } from '@/libs/toast'
@@ -29,8 +29,10 @@ interface AddProductModalProps {
 interface FormState {
   pd_name: string
   pd_catid: string
+  pd_catsubid: string
   pd_room_type: string
   pd_brand_type: string
+  pd_manual_checkout_enabled: boolean
   pd_description: string
   pd_specifications: string
   pd_price_srp: string
@@ -100,8 +102,10 @@ interface AddProductDraft {
 const defaultForm: FormState = {
   pd_name: '',
   pd_catid: '',
+  pd_catsubid: '',
   pd_room_type: '',
   pd_brand_type: '',
+  pd_manual_checkout_enabled: false,
   pd_description: '',
   pd_specifications: '',
   pd_price_srp: '',
@@ -189,6 +193,43 @@ const WARRANTY_OPTIONS = [
 ] as const
 
 const ADD_PRODUCT_DRAFT_KEY = 'afhome:add-product-draft'
+
+/* ─── ZQ import types + helpers ─────────────────────────────────────────────── */
+
+interface ZqImportListItem {
+  id: string
+  subject: string
+  image: string | null
+  productUrl: string | null
+  sourceType: string | null
+  status: string | null
+  importProductStatus: string | null
+  createdAt: string | null
+  published: string | null
+}
+
+const extractZqImportProducts = (payload: Record<string, unknown> | undefined) => {
+  const data = (payload?.data ?? {}) as { hasMore?: unknown; nextCursor?: unknown; records?: unknown }
+  const records = Array.isArray(data.records) ? data.records : []
+  const products: ZqImportListItem[] = records.map((record, index) => {
+    const row = (record ?? {}) as Record<string, unknown>
+    const images = Array.isArray(row.images) ? row.images : []
+    const mainImg = images.find((img) => Boolean((img as Record<string, unknown>).isMain)) as Record<string, unknown> | undefined
+    const firstImg = images[0] as Record<string, unknown> | undefined
+    return {
+      id: String(row.id ?? index),
+      subject: typeof row.subject === 'string' ? row.subject : '',
+      image: typeof mainImg?.image === 'string' ? mainImg.image : (typeof firstImg?.image === 'string' ? firstImg.image : null),
+      productUrl: typeof row.productUrl === 'string' ? row.productUrl : null,
+      sourceType: typeof row.sourceType === 'string' ? row.sourceType : null,
+      status: typeof row.status === 'string' ? row.status : null,
+      importProductStatus: typeof row.importProductStatus === 'string' ? row.importProductStatus : null,
+      createdAt: typeof row.createdAt === 'string' ? row.createdAt : null,
+      published: typeof row.published === 'string' ? row.published : null,
+    }
+  })
+  return { products, hasMore: Boolean(data.hasMore), nextCursor: data.nextCursor == null ? null : String(data.nextCursor) }
+}
 
 /* â”€â”€â”€ helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
@@ -399,6 +440,12 @@ type PricingSummary = {
 const toSafeNumber = (value: string | number | null | undefined) => {
   const parsed = Number(value)
   return Number.isFinite(parsed) ? parsed : 0
+}
+
+const toCsvSafeCell = (value: string) => {
+  const normalized = value.replace(/\r\n/g, '\n').replace(/\r/g, '\n')
+  const escaped = normalized.replace(/"/g, '""')
+  return `"${escaped}"`
 }
 
 const roundTo = (value: number, digits = 6) => {
@@ -653,8 +700,8 @@ function PricingSummaryPanel({
             <span className="rounded-full bg-blue-600 px-2 py-0.5 text-[9px] md:text-[11px] font-bold text-white">15% of PV</span>
           </div>
           <div className="rounded-xl bg-white border border-slate-100 overflow-hidden divide-y divide-slate-100 dark:divide-slate-800/70 dark:divide-slate-800/70">
-            {bonusRows.map(({ label, rate, value, note }) => (
-              <div key={label} className="flex items-center justify-between px-3 py-2 gap-2">
+            {bonusRows.map(({ label, rate, value, note }, index) => (
+              <div key={`bonus-row-${index}`} className="flex items-center justify-between px-3 py-2 gap-2">
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5">
                     <span className="shrink-0 rounded-full bg-blue-50 px-1.5 py-0.5 text-[9px] md:text-[11px] font-bold text-blue-500">{rate}</span>
@@ -778,7 +825,7 @@ function ModalSelectField({
   return (
     <Select
       aria-label={ariaLabel}
-      selectedKey={value}
+      selectedKey={value || undefined}
       onSelectionChange={(key) => onChange(key == null ? '' : String(key))}
       isDisabled={isDisabled}
       className="w-full"
@@ -832,8 +879,8 @@ function ModalSelectField({
         ) : null}
         <ListBox className="p-1">
           {visibleOptions.length > 0 ? (
-            visibleOptions.map((option) => (
-              <ListBoxItem id={option.value} key={`${option.value}-${option.label}`}>
+            visibleOptions.map((option, index) => (
+              <ListBoxItem id={option.value || `option-${index}`} key={`option-${index}-${option.value || 'empty'}`}>
                 {option.label}
               </ListBoxItem>
             ))
@@ -850,6 +897,11 @@ function ModalSelectField({
 
 const sectionCardCls = 'overflow-hidden rounded-[28px] border border-slate-200/80 bg-white/95 shadow-[0_22px_60px_-36px_rgba(15,23,42,0.35)]'
 const sectionCardBodyCls = 'px-4 py-4 sm:px-5 sm:py-5'
+const EMPTY_SELECT_KEYS = {
+  category: '__empty_category__',
+  room: '__empty_room__',
+  brand: '__empty_brand__',
+} as const
 
 const inputCls = (hasError = false) => [
   'w-full rounded-2xl border bg-slate-50/85 px-4 py-3 text-sm text-slate-700 placeholder-slate-400 shadow-sm',
@@ -881,7 +933,7 @@ const scrollToFirstErrorField = (container: HTMLElement | null) => {
 /* â”€â”€â”€ main component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 export default function AddProductModal({ isOpen, onClose, onSaved }: AddProductModalProps) {
-  const [entryMode, setEntryMode] = useState<'manual' | 'csv'>('manual')
+  const [entryMode, setEntryMode] = useState<'manual' | 'csv' | 'api'>('manual')
   const [form,         setForm]         = useState<FormState>(defaultForm)
   const [errors,       setErrors]       = useState<Errors>({})
   const [serverError,  setServerError]  = useState('')
@@ -904,6 +956,11 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
   const [draftRestored, setDraftRestored] = useState(false)
   const [activeImageAdjustIndex, setActiveImageAdjustIndex] = useState<number | null>(null)
   const activeImagePointerIndexRef = useRef<number | null>(null)
+  const [zqItems, setZqItems] = useState<ZqImportListItem[]>([])
+  const [selectedZqIds, setSelectedZqIds] = useState<Set<string>>(new Set())
+  const [zqHasMore, setZqHasMore] = useState(false)
+  const [zqNextCursor, setZqNextCursor] = useState<string | null>(null)
+  const [zqKeyword, setZqKeyword] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
   const formContentRef = useRef<HTMLDivElement>(null)
 
@@ -919,6 +976,8 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
     role === 'supplier' || role === 'supplier_admin' || Number(adminMe?.user_level_id ?? session?.user?.userLevelId ?? 0) === 8
 
   const [createProduct, { isLoading }] = useCreateProductMutation()
+  const [fetchZqPreview, { isLoading: isFetchingZq }] = useFetchZqImportPreviewMutation()
+  const [importZqProducts, { isLoading: isImportingZq }] = useImportZqProductsMutation()
   const { data: categoriesData } = useGetCategoriesQuery(
     {
       page: 1,
@@ -1520,8 +1579,10 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
     const payload: CreateProductPayload = {
       pd_name:        form.pd_name.trim(),
       pd_catid:       Number(form.pd_catid),
+      pd_catsubid:    form.pd_catsubid.trim() ? Number(form.pd_catsubid) : undefined,
       pd_room_type:   form.pd_room_type.trim() ? Number(form.pd_room_type) : undefined,
       pd_brand_type:  form.pd_brand_type.trim() ? Number(form.pd_brand_type) : undefined,
+      pd_manual_checkout_enabled: form.pd_manual_checkout_enabled || undefined,
       pd_price_srp:   Number(form.pd_price_srp),
       pd_description: form.pd_description.trim() || undefined,
       pd_specifications: nextSpecifications,
@@ -1575,52 +1636,119 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
 
   const isBusy = isLoading || isUploading
 
+  const handleFetchZq = async () => {
+    try {
+      const response = await fetchZqPreview({ size: 20, keyword: zqKeyword.trim() || undefined }).unwrap()
+      const extracted = extractZqImportProducts(response.zq)
+      setZqItems(extracted.products)
+      setZqHasMore(extracted.hasMore)
+      setZqNextCursor(extracted.nextCursor)
+      setSelectedZqIds(new Set())
+      showSuccessToast(response.message || 'Items fetched successfully.')
+    } catch (error) {
+      const apiError = error as { data?: { message?: string } }
+      showErrorToast(apiError?.data?.message || 'Failed to fetch items.')
+    }
+  }
+
+  const handleLoadMoreZq = async () => {
+    if (!zqHasMore || !zqNextCursor) return
+    try {
+      const response = await fetchZqPreview({ size: 20, cursor: zqNextCursor, keyword: zqKeyword.trim() || undefined }).unwrap()
+      const extracted = extractZqImportProducts(response.zq)
+      setZqItems((prev) => {
+        const merged = new Map<string, ZqImportListItem>()
+        prev.forEach((item) => merged.set(item.id, item))
+        extracted.products.forEach((item) => merged.set(item.id, item))
+        return Array.from(merged.values())
+      })
+      setZqHasMore(extracted.hasMore)
+      setZqNextCursor(extracted.nextCursor)
+    } catch (error) {
+      const apiError = error as { data?: { message?: string } }
+      showErrorToast(apiError?.data?.message || 'Failed to load more items.')
+    }
+  }
+
+  const toggleZqSelection = (id: string) => {
+    setSelectedZqIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  const toggleAllZqSelection = () => {
+    if (selectedZqIds.size === zqItems.length && zqItems.length > 0) {
+      setSelectedZqIds(new Set())
+    } else {
+      setSelectedZqIds(new Set(zqItems.map((item) => item.id)))
+    }
+  }
+
+  const handleImportSelected = async () => {
+    if (selectedZqIds.size === 0) return
+    try {
+      const result = await importZqProducts({ ids: [...selectedZqIds] }).unwrap()
+      showSuccessToast(result.message || `${result.summary?.created ?? selectedZqIds.size} product(s) imported successfully.`)
+      onSaved?.()
+      handleClose()
+    } catch (error) {
+      const apiError = error as { data?: { message?: string } }
+      showErrorToast(apiError?.data?.message || 'Failed to import selected items.')
+    }
+  }
+
   /* â”€â”€â”€ render â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   return (
     <AnimatePresence>
       {isOpen && (
-        <>
+        <React.Fragment key="add-product-modal-content">
           <motion.div
+            key="add-product-backdrop"
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             onClick={handleClose}
             className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
           />
 
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5">
+          <div className="fixed inset-0 z-50 flex items-end justify-center p-0 sm:items-center sm:p-5">
             <motion.div
+              key="add-product-modal"
               initial={{ opacity: 0, scale: 0.95, y: 12 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 12 }}
               transition={{ duration: 0.2, ease: 'easeOut' }}
               onClick={e => e.stopPropagation()}
-              className="flex max-h-[94vh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-2xl"
+              className="flex h-[100dvh] w-full max-w-none flex-col overflow-hidden rounded-none border-0 bg-white shadow-2xl sm:h-[94vh] sm:max-w-6xl sm:rounded-2xl sm:border sm:border-slate-100"
             >
               {/* â”€â”€ Header â”€â”€ */}
-              <div className="shrink-0 border-b border-slate-100 px-6 py-5">
-                <div className="flex items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-teal-500 shadow-md shadow-teal-500/30">
-                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="shrink-0 border-b border-slate-100 px-4 py-4 sm:px-6 sm:py-5">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+                <div className="flex items-start gap-3 sm:items-center">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-teal-500 shadow-md shadow-teal-500/30 sm:h-10 sm:w-10">
+                    <svg className="h-4 w-4 text-white sm:h-5 sm:w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
                     </svg>
                   </div>
                   <div>
-                    <h2 className="text-slate-800 font-bold text-base leading-none">Add New Product</h2>
-                    <p className="text-slate-400 text-xs mt-1">Choose manual entry or bulk CSV import.</p>
+                    <h2 className="text-sm font-bold leading-none text-slate-800 sm:text-base">Add New Product</h2>
+                    <p className="mt-1 text-xs text-slate-400">Choose manual entry, bulk CSV import, or API import.</p>
                   </div>
                 </div>
-                  <div className="flex items-center gap-3">
-                  <div className="flex rounded-xl border border-slate-200 bg-white/90 p-1 shadow-sm">
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                  <div className="flex max-w-full flex-wrap rounded-xl border border-slate-200 bg-white/90 p-1 shadow-sm">
                     {[
                       { value: 'manual', label: 'Manual' },
                       { value: 'csv', label: 'CSV Import' },
+                      { value: 'api', label: 'API Import' },
                     ].map((option) => (
                       <Button
-                        key={option.value}
+                        key={`entry-mode-${option.value}`}
                         type="button"
-                        onPress={() => setEntryMode(option.value as 'manual' | 'csv')}
+                        onPress={() => setEntryMode(option.value as 'manual' | 'csv' | 'api')}
                         variant="tertiary"
-                        className={`rounded-xl px-4 py-2 text-xs font-semibold transition ${
+                        className={`rounded-xl px-3 py-2 text-[11px] font-semibold transition sm:px-4 sm:text-xs ${
                           entryMode === option.value
                             ? 'bg-slate-900 text-white shadow-sm'
                             : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'
@@ -1653,6 +1781,242 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
                       onSaved?.()
                     }}
                   />
+                ) : entryMode === 'api' ? (
+                  /* ── ZQ API Import Panel ── */
+                  <div className="flex flex-col flex-1 min-h-0">
+                    {/* Endpoint banner */}
+                    <div className="shrink-0 border-b border-slate-100 bg-slate-50 px-6 py-3">
+                      <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-400">API Endpoint</p>
+                      <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2.5">
+                        <span className="shrink-0 rounded-md bg-sky-100 px-2 py-0.5 text-[10px] font-bold uppercase text-sky-700">POST</span>
+                        <code className="flex-1 truncate font-mono text-xs text-slate-700">/api/admin/products/zq/fetch-preview</code>
+                        <button
+                          type="button"
+                          onClick={() => { navigator.clipboard.writeText('/api/admin/products/zq/fetch-preview') }}
+                          className="shrink-0 text-slate-400 hover:text-slate-600 transition-colors"
+                          title="Copy endpoint"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Search + fetch controls */}
+                    <div className="shrink-0 flex items-center gap-3 border-b border-slate-100 px-6 py-3">
+                      <input
+                        type="text"
+                        placeholder="Search keyword (optional)…"
+                        value={zqKeyword}
+                        onChange={(e) => setZqKeyword(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void handleFetchZq() } }}
+                        className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500/30 focus:border-sky-400"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => void handleFetchZq()}
+                        disabled={isFetchingZq}
+                        className="flex shrink-0 items-center gap-2 rounded-xl bg-sky-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-700 disabled:opacity-60"
+                      >
+                        {isFetchingZq ? (
+                          <>
+                            <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                            </svg>
+                            Fetching…
+                          </>
+                        ) : (
+                          <>
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                            </svg>
+                            Fetch Items
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    {/* Results table */}
+                    <div className="flex-1 overflow-y-auto">
+                      {zqItems.length === 0 ? (
+                        <div className="flex flex-col items-center gap-3 py-16 text-center">
+                          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100">
+                            <svg className="w-6 h-6 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z"/>
+                            </svg>
+                          </div>
+                          <p className="text-sm font-semibold text-slate-500">No items fetched yet</p>
+                          <p className="text-xs text-slate-400">Click <span className="font-semibold">Fetch Items</span> to load products from the ZQ API.</p>
+                        </div>
+                      ) : (
+                        <table className="w-full text-sm">
+                          <thead className="sticky top-0 bg-slate-50 border-b border-slate-100 z-10">
+                            <tr>
+                              <th className="px-4 py-3 text-left w-10">
+                                <input
+                                  type="checkbox"
+                                  checked={selectedZqIds.size === zqItems.length && zqItems.length > 0}
+                                  onChange={toggleAllZqSelection}
+                                  className="h-4 w-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+                                />
+                              </th>
+                              <th className="px-4 py-3 text-left w-14 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Image</th>
+                              <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-400">Subject</th>
+                              <th className="px-4 py-3 text-left w-28 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Source</th>
+                              <th className="px-4 py-3 text-left w-28 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Status</th>
+                              <th className="px-4 py-3 text-left w-32 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Import Status</th>
+                              <th className="px-4 py-3 text-left w-28 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Published</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-50">
+                            {zqItems.map((item) => (
+                              <tr
+                                key={item.id}
+                                onClick={() => toggleZqSelection(item.id)}
+                                className={`cursor-pointer transition-colors hover:bg-slate-50 ${selectedZqIds.has(item.id) ? 'bg-teal-50' : ''}`}
+                              >
+                                <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                                  <input
+                                    type="checkbox"
+                                    checked={selectedZqIds.has(item.id)}
+                                    onChange={() => toggleZqSelection(item.id)}
+                                    className="h-4 w-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+                                  />
+                                </td>
+                                <td className="px-4 py-3">
+                                  {item.image ? (
+                                    <Image
+                                      src={item.image}
+                                      alt={item.subject}
+                                      width={40}
+                                      height={40}
+                                      className="h-10 w-10 rounded-lg object-cover border border-slate-100"
+                                      unoptimized
+                                    />
+                                  ) : (
+                                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100 border border-slate-100">
+                                      <svg className="w-4 h-4 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                      </svg>
+                                    </div>
+                                  )}
+                                </td>
+                                <td className="px-4 py-3">
+                                  <p className="line-clamp-2 text-xs font-medium text-slate-800">{item.subject || '—'}</p>
+                                  {item.productUrl && (
+                                    <a
+                                      href={item.productUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      onClick={(e) => e.stopPropagation()}
+                                      className="mt-0.5 inline-flex items-center gap-1 text-[10px] text-sky-600 hover:underline"
+                                    >
+                                      View source
+                                      <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                                      </svg>
+                                    </a>
+                                  )}
+                                </td>
+                                <td className="px-4 py-3">
+                                  <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600">
+                                    {item.sourceType ?? '—'}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-3">
+                                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                                    item.status === 'active' ? 'bg-emerald-100 text-emerald-700' :
+                                    item.status === 'inactive' ? 'bg-slate-100 text-slate-500' :
+                                    'bg-amber-100 text-amber-700'
+                                  }`}>
+                                    {item.status ?? '—'}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-3">
+                                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                                    item.importProductStatus === 'imported' ? 'bg-teal-100 text-teal-700' :
+                                    item.importProductStatus === 'pending' ? 'bg-amber-100 text-amber-700' :
+                                    'bg-slate-100 text-slate-500'
+                                  }`}>
+                                    {item.importProductStatus ?? '—'}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-3 text-[11px] text-slate-500">
+                                  {item.published ? new Date(item.published).toLocaleDateString() : '—'}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      )}
+
+                      {/* Load more */}
+                      {zqHasMore && zqItems.length > 0 && (
+                        <div className="flex justify-center border-t border-slate-100 py-4">
+                          <button
+                            type="button"
+                            onClick={() => void handleLoadMoreZq()}
+                            disabled={isFetchingZq}
+                            className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-50 disabled:opacity-60"
+                          >
+                            {isFetchingZq ? (
+                              <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                              </svg>
+                            ) : (
+                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7"/>
+                              </svg>
+                            )}
+                            Load More
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* API panel footer */}
+                    <div className="shrink-0 flex items-center gap-3 border-t border-slate-100 bg-white px-6 py-4">
+                      <p className="flex-1 text-xs text-slate-400">
+                        {zqItems.length > 0
+                          ? <><span className="font-semibold text-slate-700">{selectedZqIds.size}</span> of <span className="font-semibold text-slate-700">{zqItems.length}</span> item(s) selected</>
+                          : 'Fetch items, then select which ones to import.'
+                        }
+                      </p>
+                      <button
+                        type="button"
+                        onClick={handleClose}
+                        className="h-11 rounded-xl border border-slate-200 bg-slate-100 px-5 text-sm font-semibold text-slate-700 transition hover:bg-slate-200"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void handleImportSelected()}
+                        disabled={selectedZqIds.size === 0 || isImportingZq}
+                        className="flex h-11 items-center gap-2 rounded-xl bg-teal-600 px-6 text-sm font-bold text-white shadow-sm shadow-teal-500/30 transition hover:bg-teal-700 disabled:opacity-50"
+                      >
+                        {isImportingZq ? (
+                          <>
+                            <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                            </svg>
+                            Importing…
+                          </>
+                        ) : (
+                          <>
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                            </svg>
+                            Import {selectedZqIds.size > 0 ? `${selectedZqIds.size} Selected` : 'Selected'}
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
                 ) : (
                 <div ref={formContentRef} className="flex-1 space-y-6 overflow-y-auto bg-white px-6 py-6">
 
@@ -1824,7 +2188,7 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
                           }
                         }}
                         options={[
-                          { value: '', label: 'Select category...' },
+                          { value: EMPTY_SELECT_KEYS.category, label: 'Select category...' },
                           ...categories.map((cat) => ({ value: String(cat.id), label: cat.name })),
                         ]}
                       />
@@ -1837,10 +2201,10 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
                           value={form.pd_room_type}
                           onChange={(value) => {
                             setRoomTouched(true)
-                            set('pd_room_type', value)
+                            set('pd_room_type', value === EMPTY_SELECT_KEYS.room ? '' : value)
                           }}
                           options={[
-                            { value: '', label: 'Auto / Not assigned' },
+                            { value: EMPTY_SELECT_KEYS.room, label: 'Auto / Not assigned' },
                             ...ROOM_OPTIONS.map((room) => ({ value: String(room.id), label: room.label })),
                           ]}
                         />
@@ -1855,11 +2219,11 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
                         searchable
                         searchPlaceholder="Search brands..."
                         onChange={(value) => {
-                          set('pd_brand_type', value)
+                          set('pd_brand_type', value === EMPTY_SELECT_KEYS.brand ? '' : value)
                           setErrors((prev) => ({ ...prev, pd_brand_type: undefined }))
                         }}
                         options={[
-                          { value: '', label: 'Not assigned' },
+                          { value: EMPTY_SELECT_KEYS.brand, label: 'Not assigned' },
                           ...brands.map((brand) => ({ value: String(brand.id), label: brand.name })),
                         ]}
                       />
@@ -1899,6 +2263,17 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
                       </div>
                     </Field>
 
+                    <Field label="Subcategory ID">
+                      <input
+                        type="number"
+                        min="0"
+                        value={form.pd_catsubid}
+                        onChange={e => set('pd_catsubid', e.target.value)}
+                        placeholder="Numeric subcategory ID (optional)"
+                        className={inputCls()}
+                      />
+                    </Field>
+
                     <Field label="SKU">
                       <div className="space-y-1">
                         <input
@@ -1934,6 +2309,25 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
                         disabled={isLoading}
                         onGenerate={(html) => set('pd_description', html)}
                       />
+                      <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+                        <div className="min-w-0">
+                          <p className="text-[11px] font-semibold text-slate-600">Description CSV Copy</p>
+                          <p className="text-[10px] text-slate-400">Copies a CSV-safe value with your current formatted description.</p>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="tertiary"
+                          className="h-8 shrink-0 rounded-lg border border-slate-200 bg-white px-3 text-[11px] font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
+                          onPress={async () => {
+                            const csvValue = toCsvSafeCell(form.pd_description.trim())
+                            await navigator.clipboard.writeText(csvValue)
+                            showSuccessToast('Description copied in CSV format.')
+                          }}
+                          isDisabled={!form.pd_description.trim()}
+                        >
+                          Copy CSV Description
+                        </Button>
+                      </div>
                       <RichTextEditor
                         value={form.pd_description}
                         onChange={html => set('pd_description', html)}
@@ -2057,7 +2451,7 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
 
                   {/* â”€â”€ Section: Settings â”€â”€ */}
                   <SectionLabel>Settings</SectionLabel>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                     {/* Status */}
                     <Field label="Status">
                       <div className="flex items-center p-1 bg-slate-100 rounded-xl gap-0.5">
@@ -2114,6 +2508,31 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
                         </div>
                         <div className={`relative h-5 w-9 rounded-full transition-colors ${hasVariants ? 'bg-teal-500' : 'bg-slate-200'}`}>
                           <div className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${hasVariants ? 'left-4' : 'left-0.5'}`} />
+                        </div>
+                      </button>
+                    </Field>
+
+                    {/* Manual Checkout */}
+                    <Field label="Manual Checkout">
+                      <button
+                        type="button"
+                        onClick={() => set('pd_manual_checkout_enabled', !form.pd_manual_checkout_enabled)}
+                        className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl border-2 transition-all ${
+                          form.pd_manual_checkout_enabled
+                            ? 'border-violet-300 bg-violet-50'
+                            : 'border-slate-200 bg-white hover:border-slate-300'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <svg className={`w-4 h-4 ${form.pd_manual_checkout_enabled ? 'text-violet-600' : 'text-slate-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
+                          </svg>
+                          <span className={`text-sm font-semibold ${form.pd_manual_checkout_enabled ? 'text-violet-700' : 'text-slate-600'}`}>
+                            {form.pd_manual_checkout_enabled ? 'Enabled' : 'Disabled'}
+                          </span>
+                        </div>
+                        <div className={`relative h-5 w-9 rounded-full transition-colors ${form.pd_manual_checkout_enabled ? 'bg-violet-500' : 'bg-slate-200'}`}>
+                          <div className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${form.pd_manual_checkout_enabled ? 'left-4' : 'left-0.5'}`} />
                         </div>
                       </button>
                     </Field>
@@ -2733,7 +3152,7 @@ export default function AddProductModal({ isOpen, onClose, onSaved }: AddProduct
               </form>
             </motion.div>
           </div>
-        </>
+        </React.Fragment>
       )}
       <ImagePositionEditorModal
         isOpen={activeImageAdjustIndex != null}
