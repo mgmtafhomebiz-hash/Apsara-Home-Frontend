@@ -1,12 +1,12 @@
 'use client'
 
 import Image from 'next/image'
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useSession } from 'next-auth/react'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { useGetAdminMeQuery } from '@/store/api/authApi'
-import { Product, useGetProductsQuery, useGetPublicProductsQuery, useDeleteProductMutation, useManualCheckoutApplyMutation, useFetchZqImportPreviewMutation, ProductsResponse } from "@/store/api/productsApi";
+import { Product, ZqCachedProduct, useFetchZqImportPreviewMutation, useGetProductsQuery, useGetPublicProductsQuery, useDeleteProductMutation, useGetZqCachedProductsQuery, useGetZqProductsSummaryQuery, useManualCheckoutApplyMutation, useSyncZqProductsMutation, ProductsResponse } from "@/store/api/productsApi";
 import { useGetAdminGeneralSettingsQuery, useUpdateAdminGeneralSettingsMutation } from "@/store/api/adminSettingsApi";
 import { useGetPublicProductBrandsQuery } from "@/store/api/productBrandsApi";
 import { useGetSuppliersQuery } from "@/store/api/suppliersApi";
@@ -27,6 +27,58 @@ interface ProductsPageMainProps {
 
 const NEW_BADGE_DAYS = 7
 
+const mapCachedZqProductToLocalRow = (product: ZqCachedProduct): Product => ({
+  id: -Number(product.id || 0),
+  supplierId: 0,
+  supplierName: product.sourceType || 'ZQ Supplier',
+  name: product.subject,
+  description: product.importStatus ? `ZQ import status: ${product.importStatus}` : null,
+  specifications: product.categoryName ?? null,
+  catid: 0,
+  catsubid: 0,
+  priceSrp: Number(product.priceMinCents ?? 0) / 100,
+  priceDp: Number(product.priceMaxCents ?? product.priceMinCents ?? 0) / 100,
+  priceMember: Number(product.priceMinCents ?? 0) / 100,
+  prodpv: 0,
+  qty: Number(product.totalStock ?? 0),
+  weight: 0,
+  brandType: product.brandType ?? undefined,
+  brand: 'ZQ Supplier',
+  type: 1,
+  musthave: false,
+  bestseller: false,
+  salespromo: false,
+  manualCheckoutEnabled: false,
+  verified: false,
+  status: String(product.status ?? '').toLowerCase() === 'published' ? 1 : 0,
+  sku: product.externalId,
+  uploaderName: 'ZQ API',
+  uploaderEmail: null,
+  uploaderRole: 'supplier_api',
+  image: product.primaryImage ?? null,
+  images: product.images ?? (product.primaryImage ? [product.primaryImage] : []),
+  variants: [],
+  soldCount: 0,
+  avgRating: 0,
+  createdAt: product.sourceCreatedAt ?? product.publishedAt ?? null,
+  updatedAt: product.syncedAt ?? product.sourceUpdatedAt ?? null,
+})
+
+const parseZqPreviewMeta = (payload: Record<string, unknown> | undefined) => {
+  const data = (payload?.data && typeof payload.data === 'object') ? payload.data as Record<string, unknown> : {}
+  const records = Array.isArray(data.records) ? data.records : []
+  const hasMore = Boolean(data.hasMore ?? false)
+  const nextCursor = typeof data.nextCursor === 'string' || typeof data.nextCursor === 'number'
+    ? String(data.nextCursor)
+    : null
+
+  return {
+    count: records.length,
+    hasMore,
+    nextCursor,
+  }
+}
+
 const isNewProduct = (product: Product) => {
   if (!product.createdAt) return false
 
@@ -45,45 +97,6 @@ const getEffectiveStockQty = (product: Product) => {
   }
 
   return activeVariants.reduce((total, variant) => total + Number(variant.qty ?? 0), 0)
-}
-
-const extractZqImportProducts = (payload: Record<string, unknown> | undefined) => {
-  const data = (payload?.data ?? {}) as {
-    hasMore?: unknown
-    nextCursor?: unknown
-    records?: unknown
-  }
-
-  const records = Array.isArray(data.records) ? data.records : []
-  const products: ZqImportListItem[] = records.map((record, index) => {
-    const row = (record ?? {}) as Record<string, unknown>
-    const images = Array.isArray(row.images) ? row.images : []
-    const mainImageObject = images.find((image) => {
-      const item = image as Record<string, unknown>
-      return Boolean(item.isMain)
-    }) as Record<string, unknown> | undefined
-    const firstImageObject = images[0] as Record<string, unknown> | undefined
-
-    return {
-      id: String(row.id ?? index),
-      subject: typeof row.subject === 'string' ? row.subject : '',
-      image: typeof mainImageObject?.image === 'string'
-        ? mainImageObject.image
-        : (typeof firstImageObject?.image === 'string' ? firstImageObject.image : null),
-      productUrl: typeof row.productUrl === 'string' ? row.productUrl : null,
-      sourceType: typeof row.sourceType === 'string' ? row.sourceType : null,
-      status: typeof row.status === 'string' ? row.status : null,
-      importProductStatus: typeof row.importProductStatus === 'string' ? row.importProductStatus : null,
-      createdAt: typeof row.createdAt === 'string' ? row.createdAt : null,
-      published: typeof row.published === 'string' ? row.published : null,
-    }
-  })
-
-  return {
-    products,
-    hasMore: Boolean(data.hasMore),
-    nextCursor: data.nextCursor == null ? null : String(data.nextCursor),
-  }
 }
 
 /* ── Stat card ── */
@@ -272,33 +285,39 @@ function ManualCheckoutSelectionModal({
   )
 }
 
-interface ZqImportListItem {
-  id: string
-  subject: string
-  image: string | null
-  productUrl: string | null
-  sourceType: string | null
-  status: string | null
-  importProductStatus: string | null
-  createdAt: string | null
-  published: string | null
-}
-
-function ZqProductListModal({
-  products,
-  hasMore,
-  nextCursor,
-  isLoadingMore,
-  onLoadMore,
-  onClose,
+function ZqSyncProgressModal({
+  isOpen,
+  progress,
+  isImporting,
+  hasStarted,
+  totalToImport,
+  isDiscoveringTotal,
+  onStartImport,
+  onCancel,
 }: {
-  products: ZqImportListItem[]
-  hasMore: boolean
-  nextCursor: string | null
-  isLoadingMore: boolean
-  onLoadMore: () => void
-  onClose: () => void
+  isOpen: boolean
+  progress: {
+    batches: number
+    requested: number
+    synced: number
+    failed: number
+  }
+  isImporting: boolean
+  hasStarted: boolean
+  totalToImport: number
+  isDiscoveringTotal: boolean
+  onStartImport: () => void
+  onCancel: () => void
 }) {
+  if (!isOpen) return null
+
+  const totalProcessed = progress.synced + progress.failed
+  const progressPercent = !hasStarted
+    ? 0
+    : totalToImport > 0
+      ? Math.min(100, Math.round((totalProcessed / totalToImport) * 100))
+      : 0
+
   return (
     <AnimatePresence>
       <motion.div
@@ -306,121 +325,160 @@ function ZqProductListModal({
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.18, ease: 'easeOut' }}
-        className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/55 p-4"
+        className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/45 p-4"
       >
         <motion.div
           initial={{ opacity: 0, y: 18, scale: 0.97 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 12, scale: 0.97 }}
           transition={{ duration: 0.22, ease: 'easeOut' }}
-          className="w-full max-w-6xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl"
+          className="w-full max-w-xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xl"
         >
-          <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-5">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-600">ZQ Supplier Products</p>
-              <h2 className="mt-1 text-lg font-bold text-slate-900">Imported Product List</h2>
-              <p className="mt-1 text-sm text-slate-500">Preview muna ito ng fetched ZQ products bago natin sila i-import sa local catalog.</p>
+          <div className="border-b border-slate-100 px-6 py-5">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-600">ZQ Product Fetch</p>
+            <div className="mt-1 flex items-center gap-2">
+              <h2 className="text-lg font-bold text-slate-900">
+                {isDiscoveringTotal
+                  ? 'Preparing import total'
+                  : isImporting
+                    ? 'Importing ZQ products'
+                    : hasStarted
+                      ? 'Finishing import'
+                      : 'Prepare ZQ import'}
+              </h2>
+              {isImporting || isDiscoveringTotal ? (
+                <motion.span
+                  animate={{ opacity: [0.4, 1, 0.4] }}
+                  transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
+                  className="inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500"
+                />
+              ) : null}
             </div>
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
-            >
-              Close
-            </button>
+            <p className="mt-1 text-sm text-slate-500">
+              {isImporting
+                ? 'Products are being imported one by one into tbl_zqproducts. Once complete, they will appear in the products table below.'
+                : isDiscoveringTotal
+                  ? 'We are counting all available ZQ products first so the progress bar can use the real total.'
+                : hasStarted
+                  ? 'The import is wrapping up now. Please wait a moment while we refresh the table.'
+                  : 'Click Start Import to begin fetching and saving ZQ products one by one into tbl_zqproducts before displaying them in the table.'}
+            </p>
+            {isDiscoveringTotal ? (
+              <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-sky-100 bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-700">
+                <motion.span
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                  className="inline-flex"
+                >
+                  <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 1 1-2.64-6.36" />
+                  </svg>
+                </motion.span>
+                <span>Discovering total products before import starts</span>
+              </div>
+            ) : null}
           </div>
 
-          <div className="space-y-4 p-5">
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-              <p className="text-sm text-slate-600">
-                <span className="font-semibold text-slate-900">{products.length}</span> product{products.length !== 1 ? 's' : ''} fetched from ZQ
-              </p>
-              <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
-                <span>hasMore: <span className="font-semibold text-slate-700">{hasMore ? 'true' : 'false'}</span></span>
-                <span>nextCursor: <span className="font-semibold text-slate-700">{nextCursor ?? 'null'}</span></span>
+          <div className="space-y-5 px-6 py-6">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm font-medium text-slate-600">
+                <span>Progress</span>
+                <span>{hasStarted ? `${progressPercent}%` : (isDiscoveringTotal ? 'Counting...' : 'Ready')}</span>
+              </div>
+              <div className="h-3 overflow-hidden rounded-full bg-slate-100">
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${progressPercent}%` }}
+                  transition={{ type: 'spring', stiffness: 90, damping: 20, mass: 0.8 }}
+                  className="h-full rounded-full bg-gradient-to-r from-sky-500 to-teal-500"
+                />
               </div>
             </div>
 
-            <div className="max-h-[48vh] overflow-auto rounded-2xl border border-slate-200">
-              <table className="min-w-full text-sm">
-                <thead className="sticky top-0 bg-slate-50">
-                  <tr className="border-b border-slate-200">
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Image</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Product</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Source</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Status</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Imported</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Published</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 bg-white">
-                  {products.map((product) => (
-                    <tr key={product.id}>
-                      <td className="px-4 py-3">
-                        <div className="relative h-14 w-14 overflow-hidden rounded-xl border border-slate-200 bg-slate-100">
-                          {product.image ? (
-                            <Image src={product.image} alt={product.subject} fill className="object-cover" unoptimized />
-                          ) : (
-                            <div className="flex h-full w-full items-center justify-center text-xs text-slate-400">No image</div>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="min-w-0">
-                          <p className="line-clamp-2 font-semibold text-slate-800">{product.subject || 'Untitled product'}</p>
-                          <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
-                            <span className="font-mono">#{product.id}</span>
-                            {product.productUrl ? (
-                              <a
-                                href={product.productUrl}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="font-medium text-sky-600 hover:text-sky-700"
-                              >
-                                View source
-                              </a>
-                            ) : null}
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-slate-600">{product.sourceType ?? '—'}</td>
-                      <td className="px-4 py-3">
-                        <span className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-700">
-                          {product.status ?? '—'}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className="inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700">
-                          {product.importProductStatus ?? '—'}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-xs text-slate-500">{product.published ?? product.createdAt ?? '—'}</td>
-                    </tr>
-                  ))}
-                  {products.length === 0 ? (
-                    <tr>
-                      <td colSpan={6} className="px-4 py-10 text-center text-sm text-slate-500">
-                        No ZQ products returned for this preview.
-                      </td>
-                    </tr>
-                  ) : null}
-                </tbody>
-              </table>
+            <motion.div
+              initial="hidden"
+              animate="visible"
+              variants={{
+                hidden: {},
+                visible: { transition: { staggerChildren: 0.05 } },
+              }}
+              className="grid grid-cols-2 gap-3 sm:grid-cols-4"
+            >
+              <motion.div
+                variants={{ hidden: { opacity: 0, y: 6 }, visible: { opacity: 1, y: 0 } }}
+                className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3"
+              >
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Batches</p>
+                <p className="mt-1 text-xl font-bold text-slate-900">{progress.batches.toLocaleString()}</p>
+              </motion.div>
+              <motion.div
+                variants={{ hidden: { opacity: 0, y: 6 }, visible: { opacity: 1, y: 0 } }}
+                className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3"
+              >
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Total Found</p>
+                <p className="mt-1 text-xl font-bold text-slate-900">{totalToImport.toLocaleString()}</p>
+              </motion.div>
+              <motion.div
+                variants={{ hidden: { opacity: 0, y: 6 }, visible: { opacity: 1, y: 0 } }}
+                className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3"
+              >
+                <p className="text-xs font-semibold uppercase tracking-wide text-emerald-500">Synced</p>
+                <p className="mt-1 text-xl font-bold text-emerald-700">{progress.synced.toLocaleString()}</p>
+              </motion.div>
+              <motion.div
+                variants={{ hidden: { opacity: 0, y: 6 }, visible: { opacity: 1, y: 0 } }}
+                className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3"
+              >
+                <p className="text-xs font-semibold uppercase tracking-wide text-rose-500">Failed</p>
+                <p className="mt-1 text-xl font-bold text-rose-700">{progress.failed.toLocaleString()}</p>
+              </motion.div>
+            </motion.div>
+
+            <div className="space-y-3">
+              <p className="rounded-2xl border border-sky-100 bg-sky-50 px-4 py-3 text-sm text-sky-700">
+                {isDiscoveringTotal
+                  ? 'We are scanning every available ZQ page first to get the exact total that will be imported.'
+                  : hasStarted
+                  ? 'This modal keeps a running count while we fetch all available ZQ products. After the import finishes, the full list will be shown in the table with the correct total and pagination.'
+                  : 'The counter will start moving as soon as you click Start Import.'}
+              </p>
+              <div className="rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3">
+                <p className="text-xs font-semibold uppercase tracking-wide text-emerald-500">Imported So Far</p>
+                <motion.p
+                  key={progress.synced}
+                  initial={{ opacity: 0.4, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.22, ease: 'easeOut' }}
+                  className="mt-1 text-xl font-bold text-emerald-700"
+                >
+                  {isDiscoveringTotal
+                    ? 'Counting available ZQ products...'
+                    : hasStarted
+                    ? `${progress.synced.toLocaleString()} product${progress.synced === 1 ? '' : 's'} imported`
+                    : 'Import has not started yet'}
+                </motion.p>
+              </div>
             </div>
 
-            <div className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3">
-              <p className="text-sm text-slate-500">
-                {hasMore
-                  ? 'May more ZQ products pa. Load more para makuha natin yung next batch.'
-                  : 'Na-load na natin ang current available batch para sa preview na ito.'}
-              </p>
+            <div className="flex items-center justify-end gap-3">
               <button
                 type="button"
-                onClick={onLoadMore}
-                disabled={!hasMore || isLoadingMore}
-                className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-2 text-sm font-semibold text-sky-700 transition hover:bg-sky-100 disabled:cursor-not-allowed disabled:opacity-60"
+                onClick={onCancel}
+                className={`rounded-xl border px-4 py-2 text-sm font-semibold transition ${
+                  isImporting || isDiscoveringTotal
+                    ? 'border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100'
+                    : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                }`}
               >
-                {isLoadingMore ? 'Loading...' : hasMore ? 'Load More' : 'No More Products'}
+                {isImporting || isDiscoveringTotal ? 'Cancel Import' : 'Close'}
+              </button>
+              <button
+                type="button"
+                onClick={onStartImport}
+                disabled={isImporting || hasStarted || isDiscoveringTotal}
+                className="rounded-xl bg-teal-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-teal-700 disabled:cursor-not-allowed disabled:bg-teal-300"
+              >
+                {isDiscoveringTotal ? 'Counting Total...' : isImporting ? 'Importing...' : hasStarted ? 'Import Started' : 'Start Import'}
               </button>
             </div>
           </div>
@@ -448,6 +506,8 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
   const role = String(adminMe?.role ?? session?.user?.role ?? '').toLowerCase()
   const isSupplierPortal = role === 'supplier' || pathname.startsWith('/supplier')
   const linkedSupplierId = Number(adminMe?.supplier_id ?? session?.user?.supplierId ?? 0)
+  const normalizedSupplierName = supplierName.toLowerCase().replace(/[^a-z0-9]/g, '')
+  const isZqSupplierAccount = normalizedSupplierName.includes('zqsupplier')
   const [search,          setSearch]          = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [status,          setStatus]          = useState('')
@@ -459,20 +519,30 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
   const [page,            setPage]            = useState(1)
   const [showAddModal,    setShowAddModal]    = useState(false)
   const [showActivityLogs, setShowActivityLogs] = useState(false)
-  const [showZqPreviewModal, setShowZqPreviewModal] = useState(false)
-  const [zqPreviewProducts, setZqPreviewProducts] = useState<ZqImportListItem[]>([])
-  const [zqHasMore, setZqHasMore] = useState(false)
-  const [zqNextCursor, setZqNextCursor] = useState<string | null>(null)
   const [showManualSelectionModal, setShowManualSelectionModal] = useState(false)
   const [manualSelectionProducts, setManualSelectionProducts] = useState<Product[]>([])
   const [manualSelectionMode, setManualSelectionMode] = useState<'review' | 'view'>('review')
   const [editProduct,     setEditProduct]     = useState<Product | null>(null)
   const [showBulkEdit,    setShowBulkEdit]    = useState(false)
+  const [showZqSupplierInline, setShowZqSupplierInline] = useState(false)
+  const [showZqSyncModal, setShowZqSyncModal] = useState(false)
+  const [isSyncingAllZq, setIsSyncingAllZq] = useState(false)
+  const [hasStartedZqImport, setHasStartedZqImport] = useState(false)
+  const [isDiscoveringZqTotal, setIsDiscoveringZqTotal] = useState(false)
+  const [zqTotalToImport, setZqTotalToImport] = useState(0)
+  const zqImportCancelRef = useRef(false)
+  const [zqSyncProgress, setZqSyncProgress] = useState({
+    batches: 0,
+    requested: 0,
+    synced: 0,
+    failed: 0,
+  })
   const [deletingIds,     setDeletingIds]     = useState<number[]>([])
   const [removingManualCheckoutIds, setRemovingManualCheckoutIds] = useState<number[]>([])
   const [selectedIds,     setSelectedIds]     = useState<number[]>([])
   const [applyManualCheckout, { isLoading: isApplyingManualCheckout }] = useManualCheckoutApplyMutation()
-  const [fetchZqImportPreview, { isLoading: isFetchingZqPreview }] = useFetchZqImportPreviewMutation()
+  const [fetchZqImportPreview] = useFetchZqImportPreviewMutation()
+  const [syncZqProducts] = useSyncZqProductsMutation()
   const [saveGeneralSettings, { isLoading: isSavingManualMode }] = useUpdateAdminGeneralSettingsMutation()
   const [productOverrides, setProductOverrides] = useState<Record<number, Product>>({})
   const [createdProducts, setCreatedProducts] = useState<Product[]>([])
@@ -480,7 +550,7 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
   const defaultPerPage = 25
   const searchPerPage = 500
   const perPage = debouncedSearch ? searchPerPage : defaultPerPage
-
+  const canShowZqSupplierSide = !isSupplierPortal || isZqSupplierAccount
   const { data: adminGeneralSettingsData } = useGetAdminGeneralSettingsQuery()
   const manualHeaderToggle = Boolean(adminGeneralSettingsData?.settings?.enable_manual_checkout_mode)
 
@@ -660,6 +730,21 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
   const inactiveCountData = isSupplierPortal ? publicInactiveCountData : adminInactiveCountData
   const refetchActiveCount = isSupplierPortal ? refetchPublicActiveCount : refetchAdminActiveCount
   const refetchInactiveCount = isSupplierPortal ? refetchPublicInactiveCount : refetchAdminInactiveCount
+  const {
+    data: zqSummaryData,
+    refetch: refetchZqSummary,
+  } = useGetZqProductsSummaryQuery(undefined, { skip: !showZqSupplierInline })
+  const {
+    data: zqCachedData,
+    isLoading: isLoadingZqCached,
+    isFetching: isFetchingZqCached,
+    refetch: refetchZqCachedProducts,
+  } = useGetZqCachedProductsQuery({
+    page: debouncedSearch ? 1 : page,
+    perPage,
+    search: debouncedSearch || undefined,
+    brandType: isSupplierPortal ? brandType : undefined,
+  }, { skip: !showZqSupplierInline, refetchOnMountOrArgChange: true })
 
   const [deleteProduct] = useDeleteProductMutation()
 
@@ -722,7 +807,16 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
     })
   }, [brandType, createdProducts, data?.products, initialData?.products, isSupplierPortal, linkedSupplierId, productOverrides, supplierFilterId, useInitialData])
 
+  const zqRows = useMemo(
+    () => (zqCachedData?.products ?? []).map(mapCachedZqProductToLocalRow),
+    [zqCachedData?.products],
+  )
+
   const visibleProducts = useMemo(() => {
+    if (showZqSupplierInline) {
+      return zqRows
+    }
+
     const baseProducts = status === 'new' ? products.filter(isNewProduct) : products
     const categoryFiltered =
       typeof catId === 'number' && catId > 0
@@ -754,7 +848,7 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
 
       return terms.every((term) => haystacks.some((value) => value.includes(term)))
     })
-  }, [catId, debouncedSearch, products, status])
+  }, [catId, debouncedSearch, products, showZqSupplierInline, status, zqRows])
 
   const selectableProducts = useMemo(() => {
     const selectionSource = selectionData?.products
@@ -804,6 +898,17 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
   }, [data?.meta, initialData?.meta, useInitialData])
 
   const visibleMeta = useMemo(() => {
+    if (showZqSupplierInline) {
+      return zqCachedData?.meta ?? {
+        current_page: 1,
+        last_page: 1,
+        per_page: perPage,
+        total: 0,
+        from: 0,
+        to: 0,
+      }
+    }
+
     if (!manualHeaderToggle && !debouncedSearch && status !== 'new') {
       return meta
     }
@@ -816,7 +921,7 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
       from: visibleProducts.length > 0 ? 1 : 0,
       to: visibleProducts.length,
     }
-  }, [debouncedSearch, manualHeaderToggle, meta, perPage, status, visibleProducts.length])
+  }, [debouncedSearch, manualHeaderToggle, meta, perPage, showZqSupplierInline, status, visibleProducts.length, zqCachedData?.meta])
 
   /* Low-stock count from current page */
   const lowStockCount = useMemo(
@@ -849,6 +954,12 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
     setSelectedIds([])
   }, [manualHeaderToggle])
 
+  useEffect(() => {
+    if (showZqSupplierInline) {
+      setSelectedIds([])
+    }
+  }, [showZqSupplierInline])
+
   const handleToggleManualCheckoutMode = async () => {
     const nextValue = !manualHeaderToggle
     const payload = new FormData()
@@ -863,38 +974,132 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
     }
   }
 
-  const handleFetchZqPreview = async () => {
+  const handleGetZqProducts = async () => {
+    setPage(1)
+    setShowZqSupplierInline(true)
+    setShowZqSyncModal(true)
+    setHasStartedZqImport(false)
+    setIsDiscoveringZqTotal(false)
+    setZqTotalToImport(0)
+    setZqSyncProgress({ batches: 0, requested: 0, synced: 0, failed: 0 })
+  }
+
+  const handleCancelZqImport = () => {
+    if (isSyncingAllZq || isDiscoveringZqTotal) {
+      zqImportCancelRef.current = true
+      showSuccessToast('ZQ import will stop after the current item finishes.')
+      return
+    }
+
+    setShowZqSyncModal(false)
+    setHasStartedZqImport(false)
+    setIsDiscoveringZqTotal(false)
+  }
+
+  const discoverZqTotal = async () => {
+    setIsDiscoveringZqTotal(true)
+    let cursor: string | null = null
+    let total = 0
+
     try {
-      const response = await fetchZqImportPreview({ size: 20 }).unwrap()
-      const extracted = extractZqImportProducts(response.zq)
-      setZqPreviewProducts(extracted.products)
-      setZqHasMore(extracted.hasMore)
-      setZqNextCursor(extracted.nextCursor)
-      setShowZqPreviewModal(true)
-      showSuccessToast(response.message || 'ZQ product list fetched successfully.')
-    } catch (error) {
-      const apiError = error as { data?: { message?: string } }
-      showErrorToast(apiError?.data?.message || 'Failed to fetch ZQ product list preview.')
+      do {
+        if (zqImportCancelRef.current) {
+          break
+        }
+
+        const result = await fetchZqImportPreview({
+          cursor: cursor ?? undefined,
+          size: 100,
+        }).unwrap()
+
+        const zqPayload = (result.zq && typeof result.zq === 'object') ? result.zq : {}
+        const meta = parseZqPreviewMeta(zqPayload)
+        total += meta.count
+        setZqTotalToImport(total)
+
+        cursor = meta.nextCursor
+
+        if (!meta.hasMore) {
+          break
+        }
+      } while (cursor)
+
+      return total
+    } finally {
+      setIsDiscoveringZqTotal(false)
     }
   }
 
-  const handleLoadMoreZqProducts = async () => {
-    if (!zqHasMore || !zqNextCursor) return
+  const syncAllZqProducts = async () => {
+    if (isSyncingAllZq) return
+
+    zqImportCancelRef.current = false
+    const total = await discoverZqTotal()
+    if (zqImportCancelRef.current || total <= 0) {
+      setShowZqSyncModal(false)
+      setHasStartedZqImport(false)
+      return
+    }
+
+    setHasStartedZqImport(true)
+    setIsSyncingAllZq(true)
+    setShowZqSyncModal(true)
+    setShowZqSupplierInline(true)
+    setPage(1)
+    setZqTotalToImport(total)
+    let cursor: string | null = null
+    let batchCounter = 0
 
     try {
-      const response = await fetchZqImportPreview({ size: 20, cursor: zqNextCursor }).unwrap()
-      const extracted = extractZqImportProducts(response.zq)
-      setZqPreviewProducts((current) => {
-        const merged = new Map<string, ZqImportListItem>()
-        current.forEach((product) => merged.set(product.id, product))
-        extracted.products.forEach((product) => merged.set(product.id, product))
-        return Array.from(merged.values())
-      })
-      setZqHasMore(extracted.hasMore)
-      setZqNextCursor(extracted.nextCursor)
+      do {
+        if (zqImportCancelRef.current) {
+          showSuccessToast('ZQ import cancelled.')
+          break
+        }
+
+        const result = await syncZqProducts({
+          cursor: cursor ?? undefined,
+          size: 1,
+        }).unwrap()
+        batchCounter += 1
+
+        setZqSyncProgress((current) => ({
+          batches: current.batches + 1,
+          requested: current.requested + (result.summary?.requested ?? 0),
+          synced: current.synced + (result.summary?.synced ?? 0),
+          failed: current.failed + (result.summary?.failed ?? 0),
+        }))
+
+        if (batchCounter === 1 || batchCounter % 5 === 0) {
+          void refetchZqCachedProducts()
+        }
+        if (batchCounter === 1 || batchCounter % 20 === 0) {
+          void refetchZqSummary()
+        }
+
+        cursor = result.nextCursor ?? null
+
+        if (!result.hasMore) {
+          break
+        }
+      } while (cursor)
+
+      if (!zqImportCancelRef.current) {
+        setShowZqSupplierInline(true)
+        setPage(1)
+        await refetchZqSummary()
+        await refetchZqCachedProducts()
+        setShowZqSyncModal(false)
+        showSuccessToast('All ZQ products imported to tbl_zqproducts successfully.')
+      }
     } catch (error) {
       const apiError = error as { data?: { message?: string } }
-      showErrorToast(apiError?.data?.message || 'Failed to load more ZQ products.')
+      showErrorToast(apiError?.data?.message || 'Failed to sync all ZQ products.')
+    } finally {
+      setIsSyncingAllZq(false)
+      setShowZqSyncModal(false)
+      setHasStartedZqImport(false)
+      zqImportCancelRef.current = false
     }
   }
 
@@ -1134,18 +1339,28 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
               </span>
               <span className="sm:hidden">Manual</span>
             </button>
-          <button
-            type="button"
-            onClick={handleFetchZqPreview}
-            disabled={isFetchingZqPreview}
-            className="flex items-center gap-2 px-4 py-2.5 bg-sky-50 hover:bg-sky-100 text-sky-700 rounded-xl text-sm font-semibold transition-colors border border-sky-200 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4h16v4H4zm0 8h16v8H4zm4 4h.01M12 16h4" />
-            </svg>
-            <span className="hidden sm:inline">{isFetchingZqPreview ? 'Loading ZQ Products...' : 'ZQ Product List'}</span>
-            <span className="sm:hidden">ZQ List</span>
-          </button>
+          {canShowZqSupplierSide ? (
+            <button
+              type="button"
+              onClick={() => {
+                void handleGetZqProducts()
+              }}
+              disabled={isSyncingAllZq}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors border ${
+                showZqSupplierInline
+                  ? 'border-sky-300 bg-sky-100 text-sky-800'
+                  : 'border-sky-200 bg-sky-50 hover:bg-sky-100 text-sky-700'
+              }`}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4h16v4H4zm0 8h16v8H4zm4 4h.01M12 16h4" />
+              </svg>
+              <span className="hidden sm:inline">
+                {isSyncingAllZq ? 'Fetching ZQ Products...' : (showZqSupplierInline ? 'ZQ Products Loaded' : 'Get ZQ Product')}
+              </span>
+              <span className="sm:hidden">{isSyncingAllZq ? 'Fetching...' : (showZqSupplierInline ? 'Loaded' : 'Get ZQ')}</span>
+            </button>
+          ) : null}
           <button
             onClick={() => setShowActivityLogs(true)}
             className="flex items-center gap-2 px-4 py-2.5 bg-white hover:bg-slate-50 text-slate-700 rounded-xl text-sm font-semibold transition-colors border border-slate-200"
@@ -1174,7 +1389,7 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
       >
         <StatCard
           label="Total Products"
-          value={isLoading ? '—' : (meta?.total ?? products.length).toLocaleString()}
+          value={showZqSupplierInline ? (zqSummaryData?.total ?? visibleMeta?.total ?? 0).toLocaleString() : (isLoading ? '—' : (meta?.total ?? products.length).toLocaleString())}
           colorClass="bg-teal-100"
           icon={
             <svg className="w-5 h-5 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1184,7 +1399,7 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
         />
         <StatCard
           label="Active"
-          value={activeCountData ? (activeCountData.meta?.total ?? 0).toLocaleString() : '—'}
+          value={showZqSupplierInline ? (zqSummaryData?.active ?? 0).toLocaleString() : (activeCountData ? (activeCountData.meta?.total ?? 0).toLocaleString() : '—')}
           colorClass="bg-emerald-100"
           icon={
             <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1194,7 +1409,7 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
         />
         <StatCard
           label="Inactive"
-          value={inactiveCountData ? (inactiveCountData.meta?.total ?? 0).toLocaleString() : '—'}
+          value={showZqSupplierInline ? (zqSummaryData?.inactive ?? 0).toLocaleString() : (inactiveCountData ? (inactiveCountData.meta?.total ?? 0).toLocaleString() : '—')}
           colorClass="bg-slate-100"
           icon={
             <svg className="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1204,7 +1419,7 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
         />
         <StatCard
           label="Low Stock"
-          value={isLoading ? '—' : lowStockCount}
+          value={showZqSupplierInline ? (zqSummaryData?.low_stock ?? lowStockCount) : (isLoading ? '—' : lowStockCount)}
           sub="on this page (qty ≤ 5)"
           colorClass={lowStockCount > 0 ? 'bg-orange-100' : 'bg-slate-100'}
           icon={
@@ -1236,14 +1451,27 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
       </motion.div>
 
       {/* ── Content ── */}
-      {isError ? (
+      <ZqSyncProgressModal
+        isOpen={showZqSyncModal}
+        progress={zqSyncProgress}
+        isImporting={isSyncingAllZq}
+        hasStarted={hasStartedZqImport}
+        totalToImport={zqTotalToImport}
+        isDiscoveringTotal={isDiscoveringZqTotal}
+        onStartImport={() => {
+          void syncAllZqProducts()
+        }}
+        onCancel={handleCancelZqImport}
+      />
+
+      {!showZqSupplierInline && isError ? (
         <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{loadErrorMessage}</div>
-      ) : isLoading && !data && !initialData ? (
+      ) : !showZqSupplierInline && isLoading && !data && !initialData ? (
         <SkeletonTable />
       ) : (
         <div className="space-y-2">
           {/* Fetching indicator */}
-          {isFetching && (
+          {(isFetching || (showZqSupplierInline && isFetchingZqCached)) && (
             <div className="google-loading-bar" />
           )}
 
@@ -1290,7 +1518,10 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
             </div>
           )}
 
-          <DataTableShell>
+          <DataTableShell
+            title={showZqSupplierInline ? 'ZQ Product Table' : undefined}
+            subtitle={showZqSupplierInline ? 'Fetched ZQ products are now displayed in the same products table area.' : undefined}
+          >
             <ProductsTable
               rows={visibleProducts}
               currentPage={visibleMeta?.current_page ?? 1}
@@ -1305,7 +1536,17 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
               selectedIds={selectedIds}
               onToggleSelect={handleToggleSelect}
               onToggleSelectAll={handleToggleSelectAll}
-              onViewManualCheckout={(product) => openManualSelectionModal([product])}
+              onViewManualCheckout={(product) => {
+                if (showZqSupplierInline) {
+                  const previewBasePath = isSupplierPortal ? '/supplier/products/zq-preview' : '/admin/products/zq-preview'
+                  router.push(`${previewBasePath}/${product.sku}`)
+                  return
+                }
+                openManualSelectionModal([product])
+              }}
+              readOnly={showZqSupplierInline}
+              isLoading={showZqSupplierInline && (isLoadingZqCached || isFetchingZqCached)}
+              tableMode={showZqSupplierInline ? 'zq' : 'local'}
             />
           </DataTableShell>
         </div>
@@ -1342,16 +1583,6 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
           mode={manualSelectionMode}
         />
       ) : null}
-      {showZqPreviewModal ? (
-        <ZqProductListModal
-          products={zqPreviewProducts}
-          hasMore={zqHasMore}
-          nextCursor={zqNextCursor}
-          isLoadingMore={isFetchingZqPreview}
-          onLoadMore={handleLoadMoreZqProducts}
-          onClose={() => setShowZqPreviewModal(false)}
-        />
-      ) : null}
     </div>
   )
 }
@@ -1370,3 +1601,6 @@ function SkeletonTable() {
     </div>
   )
 }
+
+
+

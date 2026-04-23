@@ -107,7 +107,7 @@ export default function BulkEditProductsModal({ products, onClose, onSaved }: Pr
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.96, y: 8 }}
                 transition={{ duration: 0.18, ease: 'easeOut' }}
-                onClick={(e) => e.stopPropagation()}
+                onClick={(e: React.MouseEvent<HTMLDivElement>) => e.stopPropagation()}
                 className="w-full max-w-2xl rounded-2xl bg-white shadow-2xl"
               >
                 <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 px-6 py-5">

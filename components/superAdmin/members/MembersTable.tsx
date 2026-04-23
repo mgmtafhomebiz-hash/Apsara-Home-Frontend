@@ -1,6 +1,8 @@
 'use client'
 
-import { Button, Card, Chip } from '@heroui/react'
+import { Button } from '@heroui/react/button'
+import { Card } from '@heroui/react/card'
+import { Chip } from '@heroui/react/chip'
 import { Member } from "@/types/members/types"
 import { motion, AnimatePresence } from "framer-motion"
 import MembersStatusBadge from "./MembersStatusBadge"

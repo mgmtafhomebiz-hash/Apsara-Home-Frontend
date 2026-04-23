@@ -16,7 +16,11 @@ import BulkProductImportPanel from '@/components/superAdmin/products/BulkProduct
 import { colorNameToHex, hexToColorName } from '@/libs/colorUtils'
 import { mergeVariantOptionLabelsMeta } from '@/libs/productVariantOptions'
 import { ROOM_OPTIONS, inferRoomTypeFromCategory } from '@/libs/roomConfig'
-import { Button, Card, ListBox, ListBoxItem, Select } from '@heroui/react'
+import { Button } from '@heroui/react/button'
+import { Card } from '@heroui/react/card'
+import { ListBox } from '@heroui/react/list-box'
+import { ListBoxItem } from '@heroui/react/list-box-item'
+import { Select } from '@heroui/react/select'
 
 /* â”€â”€â”€ types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 

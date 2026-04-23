@@ -1,7 +1,14 @@
 'use client'
 
 import { useMemo } from 'react'
-import { Button, Card, Chip, Label, ListBox, ListBoxItem, SearchField, Select } from '@heroui/react'
+import { Button } from '@heroui/react/button'
+import { Card } from '@heroui/react/card'
+import { Chip } from '@heroui/react/chip'
+import { Label } from '@heroui/react/label'
+import { ListBox } from '@heroui/react/list-box'
+import { ListBoxItem } from '@heroui/react/list-box-item'
+import { SearchField } from '@heroui/react/search-field'
+import { Select } from '@heroui/react/select'
 import { useGetCategoriesQuery } from '@/store/api/categoriesApi'
 import { useGetProductBrandsQuery } from '@/store/api/productBrandsApi'
 
