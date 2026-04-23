@@ -30,6 +30,7 @@ interface ProductsTableProps {
   onViewManualCheckout: (product: Product) => void
   readOnly?: boolean
   isLoading?: boolean
+  tableMode?: 'local' | 'zq'
 }
 
 type SortableProductColumn =
@@ -266,6 +267,7 @@ export default function ProductsTable({
   onViewManualCheckout,
   readOnly = false,
   isLoading = false,
+  tableMode = 'local',
 }: ProductsTableProps) {
   const [confirmId, setConfirmId] = useState<number | null>(null)
   const [sortDescriptor, setSortDescriptor] = useState<SortDescriptor>({
@@ -275,6 +277,8 @@ export default function ProductsTable({
 
   const isDeleting = (id: number) => isDeletingIds.includes(id)
   const paginationPages = useMemo(() => getPaginationPages(currentPage, totalPages), [currentPage, totalPages])
+  const isZqMode = tableMode === 'zq'
+  const columnCount = isZqMode ? 10 : 13
 
   const sortedRows = useMemo(() => {
     const column = (sortDescriptor.column as SortableProductColumn | undefined) ?? 'name'
@@ -328,7 +332,7 @@ export default function ProductsTable({
         <Table.ScrollContainer>
           <Table.Content
             aria-label="Admin products table"
-            className="min-w-[1260px]"
+            className={isZqMode ? 'min-w-[1080px]' : 'min-w-[1260px]'}
             sortDescriptor={sortDescriptor}
             onSortChange={setSortDescriptor}
             {...(!readOnly ? {
@@ -363,21 +367,27 @@ export default function ProductsTable({
                 {({ sortDirection }) => <SortableColumnHeader sortDirection={sortDirection}>Supplier</SortableColumnHeader>}
               </Table.Column>
               <Table.Column allowsSorting id="uploader" className="min-w-[180px] text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
-                {({ sortDirection }) => <SortableColumnHeader sortDirection={sortDirection}>Uploader</SortableColumnHeader>}
+                {({ sortDirection }) => <SortableColumnHeader sortDirection={sortDirection}>{isZqMode ? 'Source' : 'Uploader'}</SortableColumnHeader>}
               </Table.Column>
               <Table.Column allowsSorting id="priceSrp" className="text-end text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
-                {({ sortDirection }) => <SortableColumnHeader sortDirection={sortDirection}>SRP</SortableColumnHeader>}
+                {({ sortDirection }) => <SortableColumnHeader sortDirection={sortDirection}>Price</SortableColumnHeader>}
               </Table.Column>
-              <Table.Column allowsSorting id="priceDp" className="text-end text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
-                {({ sortDirection }) => <SortableColumnHeader sortDirection={sortDirection}>Dealer</SortableColumnHeader>}
-              </Table.Column>
-              <Table.Column allowsSorting id="priceMember" className="text-end text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
-                {({ sortDirection }) => <SortableColumnHeader sortDirection={sortDirection}>Member</SortableColumnHeader>}
-              </Table.Column>
+              {!isZqMode ? (
+                <Table.Column allowsSorting id="priceDp" className="text-end text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                  {({ sortDirection }) => <SortableColumnHeader sortDirection={sortDirection}>Dealer</SortableColumnHeader>}
+                </Table.Column>
+              ) : null}
+              {!isZqMode ? (
+                <Table.Column allowsSorting id="priceMember" className="text-end text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                  {({ sortDirection }) => <SortableColumnHeader sortDirection={sortDirection}>Member</SortableColumnHeader>}
+                </Table.Column>
+              ) : null}
               <Table.Column allowsSorting id="stock" className="text-end text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
                 {({ sortDirection }) => <SortableColumnHeader sortDirection={sortDirection}>Stock</SortableColumnHeader>}
               </Table.Column>
-              <Table.Column className="min-w-[130px] text-center text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">Badges</Table.Column>
+              <Table.Column className="min-w-[130px] text-center text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                {isZqMode ? 'Import Status' : 'Badges'}
+              </Table.Column>
               <Table.Column allowsSorting id="status" className="text-center text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
                 {({ sortDirection }) => <SortableColumnHeader sortDirection={sortDirection}>Status</SortableColumnHeader>}
               </Table.Column>
@@ -387,13 +397,13 @@ export default function ProductsTable({
             <Table.Body>
               {isLoading ? (
                 <Table.Row key="loading">
-                  <Table.Cell colSpan={13}>
+                  <Table.Cell colSpan={columnCount}>
                     <LoadingProductsState />
                   </Table.Cell>
                 </Table.Row>
               ) : sortedRows.length === 0 ? (
                 <Table.Row key="empty">
-                  <Table.Cell colSpan={13}>
+                  <Table.Cell colSpan={columnCount}>
                     <EmptyProductsState />
                   </Table.Cell>
                 </Table.Row>
@@ -447,7 +457,11 @@ export default function ProductsTable({
                           <p className="line-clamp-1 font-medium leading-snug text-slate-800 dark:text-slate-100">{product.name || 'N/A'}</p>
                           <div className="mt-1 flex flex-wrap items-center gap-2">
                             <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500">#{product.id}</span>
-                            {variantCount > 0 && (
+                            {isZqMode ? (
+                              <span className="rounded-md bg-sky-50 px-1.5 py-0.5 text-[10px] font-medium text-sky-700">
+                                {product.specifications?.trim() || 'ZQ Product'}
+                              </span>
+                            ) : variantCount > 0 && (
                               <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-500 dark:bg-slate-800 dark:text-slate-400">
                                 {variantCount} variant{variantCount !== 1 ? 's' : ''}
                               </span>
@@ -465,9 +479,13 @@ export default function ProductsTable({
                       <Table.Cell>
                         <div className="min-w-[150px]">
                           <p className="line-clamp-1 text-sm font-medium text-slate-700 dark:text-slate-200">
-                            {product.supplierName?.trim() || product.brand?.trim() || 'No supplier'}
+                            {isZqMode ? (product.brand?.trim() || 'ZQ Supplier') : (product.supplierName?.trim() || product.brand?.trim() || 'No supplier')}
                           </p>
-                          {product.supplierId ? (
+                          {isZqMode ? (
+                            <p className="line-clamp-1 text-[11px] text-slate-400 dark:text-slate-500">
+                              {product.supplierName?.trim() || 'Supplier source unavailable'}
+                            </p>
+                          ) : product.supplierId ? (
                             <p className="line-clamp-1 text-[11px] text-slate-400 dark:text-slate-500">Supplier #{product.supplierId}</p>
                           ) : product.brand ? (
                             <p className="line-clamp-1 text-[11px] text-slate-400 dark:text-slate-500">Brand</p>
@@ -478,9 +496,13 @@ export default function ProductsTable({
                       <Table.Cell>
                         <div className="min-w-[150px]">
                           <p className="line-clamp-1 text-sm font-medium text-slate-700 dark:text-slate-200">
-                            {product.uploaderName?.trim() || 'Unknown user'}
+                            {isZqMode ? 'ZQ API' : (product.uploaderName?.trim() || 'Unknown user')}
                           </p>
-                          {product.uploaderRole ? (
+                          {isZqMode ? (
+                            <p className="line-clamp-1 text-[11px] text-slate-400 dark:text-slate-500">
+                              {product.updatedAt ? `Updated ${new Date(product.updatedAt).toLocaleDateString()}` : 'Imported from database'}
+                            </p>
+                          ) : product.uploaderRole ? (
                             <p className="line-clamp-1 text-[10px] uppercase tracking-[0.12em] text-slate-400 dark:text-slate-500">
                               {product.uploaderRole.replace(/_/g, ' ')}
                             </p>
@@ -493,38 +515,50 @@ export default function ProductsTable({
                       <Table.Cell className="text-end font-semibold text-slate-700 dark:text-slate-200">
                         {formatPrice(product.priceSrp)}
                       </Table.Cell>
-                      <Table.Cell className="text-end text-slate-500 dark:text-slate-400">
-                        {formatPrice(product.priceDp)}
-                      </Table.Cell>
-                      <Table.Cell className="text-end text-slate-500 dark:text-slate-400">
-                        {formatPrice(product.priceMember ?? 0)}
-                      </Table.Cell>
+                      {!isZqMode ? (
+                        <Table.Cell className="text-end text-slate-500 dark:text-slate-400">
+                          {formatPrice(product.priceDp)}
+                        </Table.Cell>
+                      ) : null}
+                      {!isZqMode ? (
+                        <Table.Cell className="text-end text-slate-500 dark:text-slate-400">
+                          {formatPrice(product.priceMember ?? 0)}
+                        </Table.Cell>
+                      ) : null}
 
                       <Table.Cell className="text-end">
                         <StockCell qty={effectiveStockQty} />
                       </Table.Cell>
 
                       <Table.Cell>
-                        <div className="flex flex-col items-center gap-1">
-                          {isNewProduct(product) && (
-                            <Chip color="accent" size="sm" variant="soft">
-                              New
+                        {isZqMode ? (
+                          <div className="flex justify-center">
+                            <Chip size="sm" variant="soft" className="bg-sky-50 text-sky-700">
+                              {product.description?.replace('ZQ import status: ', '').trim() || 'Imported'}
                             </Chip>
-                          )}
-                          {product.musthave && (
-                            <Chip color="warning" size="sm" variant="soft">
-                              Must Have
-                            </Chip>
-                          )}
-                          {product.bestseller && (
-                            <Chip size="sm" variant="soft" className="bg-fuchsia-50 text-fuchsia-700">
-                              Bestseller
-                            </Chip>
-                          )}
-                          {!isNewProduct(product) && !product.musthave && !product.bestseller && (
-                            <span className="text-xs text-slate-300">N/A</span>
-                          )}
-                        </div>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col items-center gap-1">
+                            {isNewProduct(product) && (
+                              <Chip color="accent" size="sm" variant="soft">
+                                New
+                              </Chip>
+                            )}
+                            {product.musthave && (
+                              <Chip color="warning" size="sm" variant="soft">
+                                Must Have
+                              </Chip>
+                            )}
+                            {product.bestseller && (
+                              <Chip size="sm" variant="soft" className="bg-fuchsia-50 text-fuchsia-700">
+                                Bestseller
+                              </Chip>
+                            )}
+                            {!isNewProduct(product) && !product.musthave && !product.bestseller && (
+                              <span className="text-xs text-slate-300">N/A</span>
+                            )}
+                          </div>
+                        )}
                       </Table.Cell>
 
                       <Table.Cell className="text-center">

@@ -1,6 +1,6 @@
 'use client'
 
-import { Button } from '@heroui/react'
+import { Button } from '@heroui/react/button'
 import { motion } from "framer-motion"
 import MembersToolbar from "./MembersToolbar"
 import MembersStats from "./MembersStats"

@@ -1,5 +1,5 @@
 import { Fragment } from 'react'
-import { Pagination } from '@heroui/react'
+import { Pagination } from '@heroui/react/pagination'
 
 interface AdminPaginationProps {
   currentPage: number

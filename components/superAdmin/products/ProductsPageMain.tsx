@@ -976,6 +976,7 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
 
   const handleGetZqProducts = async () => {
     setPage(1)
+    setShowZqSupplierInline(true)
     setShowZqSyncModal(true)
     setHasStartedZqImport(false)
     setIsDiscoveringZqTotal(false)
@@ -1043,8 +1044,11 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
     setHasStartedZqImport(true)
     setIsSyncingAllZq(true)
     setShowZqSyncModal(true)
+    setShowZqSupplierInline(true)
+    setPage(1)
     setZqTotalToImport(total)
     let cursor: string | null = null
+    let batchCounter = 0
 
     try {
       do {
@@ -1057,6 +1061,7 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
           cursor: cursor ?? undefined,
           size: 1,
         }).unwrap()
+        batchCounter += 1
 
         setZqSyncProgress((current) => ({
           batches: current.batches + 1,
@@ -1064,6 +1069,13 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
           synced: current.synced + (result.summary?.synced ?? 0),
           failed: current.failed + (result.summary?.failed ?? 0),
         }))
+
+        if (batchCounter === 1 || batchCounter % 5 === 0) {
+          void refetchZqCachedProducts()
+        }
+        if (batchCounter === 1 || batchCounter % 20 === 0) {
+          void refetchZqSummary()
+        }
 
         cursor = result.nextCursor ?? null
 
@@ -1534,6 +1546,7 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
               }}
               readOnly={showZqSupplierInline}
               isLoading={showZqSupplierInline && (isLoadingZqCached || isFetchingZqCached)}
+              tableMode={showZqSupplierInline ? 'zq' : 'local'}
             />
           </DataTableShell>
         </div>
