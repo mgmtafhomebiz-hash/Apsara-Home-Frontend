@@ -15,7 +15,11 @@ import ImagePositionEditorModal from '@/components/superAdmin/products/ImagePosi
 import { colorNameToHex, hexToColorName } from '@/libs/colorUtils'
 import { extractVariantOptionLabels, mergeVariantOptionLabelsMeta } from '@/libs/productVariantOptions'
 import { ROOM_OPTIONS, inferRoomTypeFromCategory } from '@/libs/roomConfig'
-import { Button, Card, ListBox, ListBoxItem, Select } from '@heroui/react'
+import { Button } from '@heroui/react/button'
+import { Card } from '@heroui/react/card'
+import { ListBox } from '@heroui/react/list-box'
+import { ListBoxItem } from '@heroui/react/list-box-item'
+import { Select } from '@heroui/react/select'
 
 /* ─── types ──────────────────────────────────────────────── */
 
