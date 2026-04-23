@@ -328,6 +328,81 @@ export interface ZqImportPreviewResponse {
   zq: Record<string, unknown>
 }
 
+export interface ZqImportDetailResponse {
+  message: string
+  zq: Record<string, unknown>
+}
+
+export interface ZqCachedProduct {
+  id: number
+  externalId: string
+  offerId?: string | null
+  brandType?: number | null
+  subject: string
+  subjectCn?: string | null
+  categoryName?: string | null
+  primaryImage?: string | null
+  images?: string[]
+  sourceType?: string | null
+  status?: string | null
+  importStatus?: string | null
+  productUrl?: string | null
+  targetCurrency?: string | null
+  shippingTo?: string | null
+  priceMinCents?: number | null
+  priceMaxCents?: number | null
+  costMinCents?: number | null
+  costMaxCents?: number | null
+  totalStock: number
+  variantCount: number
+  publishedAt?: string | null
+  sourceCreatedAt?: string | null
+  sourceUpdatedAt?: string | null
+  syncedAt?: string | null
+}
+
+export interface ZqCachedProductsResponse {
+  products: ZqCachedProduct[]
+  meta: ProductsMeta
+}
+
+export interface ZqSyncProductsPayload {
+  cursor?: string | number | null
+  size?: number
+  keyword?: string
+  status?: string
+  sourceType?: string[]
+  ids?: number[]
+}
+
+export interface ZqSyncProductsResponse {
+  message: string
+  summary: {
+    requested: number
+    synced: number
+    failed: number
+  }
+  hasMore: boolean
+  nextCursor?: string | null
+}
+
+export interface ZqProductsSummaryResponse {
+  total: number
+  active: number
+  inactive: number
+  low_stock: number
+}
+
+export interface ImportZqToLocalResponse {
+  message: string
+  product: {
+    id: number
+    name: string
+    status: number
+    sku: string
+  }
+}
+
 export interface PublicProductResponse {
   product: Product
 }
@@ -401,6 +476,16 @@ interface ProductActivityLogsQueryParams {
   perPage?: number
   search?: string
   scope?: 'my' | 'all'
+}
+
+interface ZqCachedProductsQueryParams {
+  page?: number
+  perPage?: number
+  search?: string
+  brandType?: number
+  sourceType?: string
+  status?: string
+  importStatus?: string
 }
 
 const cleanParams = (params: Record<string, unknown>) =>
@@ -803,6 +888,52 @@ export const productsApi = baseApi.injectEndpoints({
         body: body ?? {},
       }),
     }),
+    fetchZqImportDetail: builder.mutation<ZqImportDetailResponse, string | number>({
+      query: (id) => ({
+        url: `/api/admin/products/zq/detail/${id}`,
+        method: 'GET',
+      }),
+    }),
+    getZqCachedProducts: builder.query<ZqCachedProductsResponse, ZqCachedProductsQueryParams | void>({
+      query: (params) => ({
+        url: '/api/admin/products/zq/cached',
+        method: 'GET',
+        cache: 'no-store',
+        params: cleanParams({
+          page: params?.page ?? 1,
+          per_page: params?.perPage ?? 20,
+          search: params?.search,
+          brand_type: params?.brandType,
+          source_type: params?.sourceType,
+          status: params?.status,
+          import_status: params?.importStatus,
+        }),
+      }),
+      providesTags: ['Products'],
+    }),
+    getZqProductsSummary: builder.query<ZqProductsSummaryResponse, void>({
+      query: () => ({
+        url: '/api/admin/products/zq/summary',
+        method: 'GET',
+        cache: 'no-store',
+      }),
+      providesTags: ['Products'],
+    }),
+    syncZqProducts: builder.mutation<ZqSyncProductsResponse, ZqSyncProductsPayload | void>({
+      query: (body) => ({
+        url: '/api/admin/products/zq/sync',
+        method: 'POST',
+        body: body ?? {},
+      }),
+      invalidatesTags: ['Products'],
+    }),
+    importZqToLocal: builder.mutation<ImportZqToLocalResponse, string>({
+      query: (externalId) => ({
+        url: `/api/admin/products/zq/import-to-local/${externalId}`,
+        method: 'POST',
+      }),
+      invalidatesTags: ['Products'],
+    }),
     updateProduct: builder.mutation<{ message: string; product?: Product }, { id: number; data: Partial<CreateProductPayload> }>({
       query: ({ id, data }) => ({
         url: `/api/admin/products/${id}`,
@@ -841,6 +972,11 @@ export const {
   useBulkUpdateApplyMutation,
   useManualCheckoutApplyMutation,
   useFetchZqImportPreviewMutation,
+  useFetchZqImportDetailMutation,
+  useGetZqCachedProductsQuery,
+  useGetZqProductsSummaryQuery,
+  useSyncZqProductsMutation,
+  useImportZqToLocalMutation,
   useUpdateProductMutation,
   useDeleteProductMutation,
 } = productsApi

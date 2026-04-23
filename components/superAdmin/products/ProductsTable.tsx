@@ -2,7 +2,12 @@
 
 import type { Selection, SortDescriptor } from 'react-aria-components'
 
-import { Button, Checkbox, Chip, Pagination, Table, cn } from '@heroui/react'
+import { Button } from '@heroui/react/button'
+import { Checkbox } from '@heroui/react/checkbox'
+import { Chip } from '@heroui/react/chip'
+import { Pagination } from '@heroui/react/pagination'
+import { Table } from '@heroui/react/table'
+import { cn } from 'tailwind-variants'
 import { Eye, Pencil, Trash2, TriangleAlert } from 'lucide-react'
 import Image from 'next/image'
 import { Fragment, useMemo, useState } from 'react'
@@ -23,6 +28,8 @@ interface ProductsTableProps {
   onToggleSelect: (id: number) => void
   onToggleSelectAll: () => void
   onViewManualCheckout: (product: Product) => void
+  readOnly?: boolean
+  isLoading?: boolean
 }
 
 type SortableProductColumn =
@@ -232,6 +239,16 @@ function EmptyProductsState() {
   )
 }
 
+function LoadingProductsState() {
+  return (
+    <div className="space-y-3 px-4 py-8">
+      {Array.from({ length: 5 }).map((_, index) => (
+        <div key={index} className="h-14 animate-pulse rounded-2xl bg-slate-100 dark:bg-slate-800" />
+      ))}
+    </div>
+  )
+}
+
 export default function ProductsTable({
   rows,
   currentPage,
@@ -247,6 +264,8 @@ export default function ProductsTable({
   onToggleSelect,
   onToggleSelectAll,
   onViewManualCheckout,
+  readOnly = false,
+  isLoading = false,
 }: ProductsTableProps) {
   const [confirmId, setConfirmId] = useState<number | null>(null)
   const [sortDescriptor, setSortDescriptor] = useState<SortDescriptor>({
@@ -310,24 +329,28 @@ export default function ProductsTable({
           <Table.Content
             aria-label="Admin products table"
             className="min-w-[1260px]"
-            selectedKeys={selectedKeys}
-            selectionMode="multiple"
             sortDescriptor={sortDescriptor}
-            onSelectionChange={handleSelectionChange}
             onSortChange={setSortDescriptor}
+            {...(!readOnly ? {
+              selectedKeys: selectedKeys,
+              selectionMode: 'multiple' as const,
+              onSelectionChange: handleSelectionChange,
+            } : {})}
           >
             <Table.Header>
               <Table.Column className="w-12 pr-0">
-                <Checkbox
-                  aria-label="Select all products in current page"
-                  slot="selection"
-                  variant="secondary"
-                  className="justify-center"
-                >
-                  <Checkbox.Control>
-                    <Checkbox.Indicator />
-                  </Checkbox.Control>
-                </Checkbox>
+                {!readOnly ? (
+                  <Checkbox
+                    aria-label="Select all products in current page"
+                    slot="selection"
+                    variant="secondary"
+                    className="justify-center"
+                  >
+                    <Checkbox.Control>
+                      <Checkbox.Indicator />
+                    </Checkbox.Control>
+                  </Checkbox>
+                ) : null}
               </Table.Column>
               <Table.Column className="w-20 text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">Image</Table.Column>
               <Table.Column allowsSorting isRowHeader id="name" className="min-w-[240px] text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
@@ -362,7 +385,13 @@ export default function ProductsTable({
             </Table.Header>
 
             <Table.Body>
-              {sortedRows.length === 0 ? (
+              {isLoading ? (
+                <Table.Row key="loading">
+                  <Table.Cell colSpan={13}>
+                    <LoadingProductsState />
+                  </Table.Cell>
+                </Table.Row>
+              ) : sortedRows.length === 0 ? (
                 <Table.Row key="empty">
                   <Table.Cell colSpan={13}>
                     <EmptyProductsState />
@@ -385,16 +414,18 @@ export default function ProductsTable({
                       )}
                     >
                       <Table.Cell className="pr-0">
-                        <Checkbox
-                          aria-label={`Select product ${product.name}`}
-                          slot="selection"
-                          variant="secondary"
-                          className="justify-center"
-                        >
-                          <Checkbox.Control>
-                            <Checkbox.Indicator />
-                          </Checkbox.Control>
-                        </Checkbox>
+                        {!readOnly ? (
+                          <Checkbox
+                            aria-label={`Select product ${product.name}`}
+                            slot="selection"
+                            variant="secondary"
+                            className="justify-center"
+                          >
+                            <Checkbox.Control>
+                              <Checkbox.Indicator />
+                            </Checkbox.Control>
+                          </Checkbox>
+                        ) : null}
                       </Table.Cell>
 
                       <Table.Cell>
@@ -516,39 +547,43 @@ export default function ProductsTable({
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
-                          <Button
-                            isIconOnly
-                            size="sm"
-                            variant="tertiary"
-                            aria-label={`Edit ${product.name}`}
-                            onPress={() => {
-                              setConfirmId(null)
-                              onEdit(product)
-                            }}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          {confirmId === product.id ? (
-                            <Button
-                              size="sm"
-                              variant="danger"
-                              isDisabled={isDeleting(product.id)}
-                              aria-label={`Confirm delete ${product.name}`}
-                              onPress={() => handleDeleteClick(product.id)}
-                            >
-                              {isDeleting(product.id) ? 'Deleting...' : 'Confirm'}
-                            </Button>
-                          ) : (
-                            <Button
-                              isIconOnly
-                              size="sm"
-                              variant="danger-soft"
-                              aria-label={`Delete ${product.name}`}
-                              onPress={() => handleDeleteClick(product.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          )}
+                          {!readOnly ? (
+                            <>
+                              <Button
+                                isIconOnly
+                                size="sm"
+                                variant="tertiary"
+                                aria-label={`Edit ${product.name}`}
+                                onPress={() => {
+                                  setConfirmId(null)
+                                  onEdit(product)
+                                }}
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              {confirmId === product.id ? (
+                                <Button
+                                  size="sm"
+                                  variant="danger"
+                                  isDisabled={isDeleting(product.id)}
+                                  aria-label={`Confirm delete ${product.name}`}
+                                  onPress={() => handleDeleteClick(product.id)}
+                                >
+                                  {isDeleting(product.id) ? 'Deleting...' : 'Confirm'}
+                                </Button>
+                              ) : (
+                                <Button
+                                  isIconOnly
+                                  size="sm"
+                                  variant="danger-soft"
+                                  aria-label={`Delete ${product.name}`}
+                                  onPress={() => handleDeleteClick(product.id)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              )}
+                            </>
+                          ) : null}
                         </div>
                       </Table.Cell>
                     </Table.Row>
@@ -560,8 +595,8 @@ export default function ProductsTable({
           </Table.Content>
         </Table.ScrollContainer>
 
-        {totalPages > 1 && (
-          <Table.Footer>
+        <Table.Footer>
+          {totalPages > 1 ? (
             <Pagination size="sm" className="w-full justify-between gap-3 px-4 py-3">
               <Pagination.Summary>
                 {(from ?? 0).toLocaleString()} to {(to ?? 0).toLocaleString()} of {totalRecords.toLocaleString()} results
@@ -608,8 +643,14 @@ export default function ProductsTable({
                 </Pagination.Item>
               </Pagination.Content>
             </Pagination>
-          </Table.Footer>
-        )}
+          ) : (
+            <div className="flex w-full items-center justify-between px-4 py-3 text-sm text-slate-500">
+              <span>
+                {(from ?? 0).toLocaleString()} to {(to ?? 0).toLocaleString()} of {totalRecords.toLocaleString()} results
+              </span>
+            </div>
+          )}
+        </Table.Footer>
       </Table>
     </div>
   )
