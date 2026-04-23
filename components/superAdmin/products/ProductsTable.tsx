@@ -278,7 +278,7 @@ export default function ProductsTable({
   const isDeleting = (id: number) => isDeletingIds.includes(id)
   const paginationPages = useMemo(() => getPaginationPages(currentPage, totalPages), [currentPage, totalPages])
   const isZqMode = tableMode === 'zq'
-  const columnCount = isZqMode ? 10 : 13
+  const columnCount = isZqMode ? 11 : 13
 
   const sortedRows = useMemo(() => {
     const column = (sortDescriptor.column as SortableProductColumn | undefined) ?? 'name'
