@@ -4,19 +4,11 @@ import { useEffect, useMemo, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { AiSupport } from './AiSupport'
 import { getPartnerStorefrontConfig } from '@/libs/partnerStorefront'
+import { extractPartnerSlugFromPath } from '@/libs/storefrontRouting'
 import type { WebPageItem } from '@/store/api/webPagesApi'
 
 type PublicWebPageItemsResponse = {
   items?: WebPageItem[]
-}
-
-const extractPartnerSlug = (pathname: string) => {
-  const match = pathname.match(/^\/shop\/([^/?#]+)/)
-  if (!match) return null
-
-  const candidate = decodeURIComponent(match[1] ?? '').trim().toLowerCase()
-  if (!candidate || candidate === 'category') return null
-  return candidate
 }
 
 export default function ShopAiSupportGate() {
@@ -26,7 +18,7 @@ export default function ShopAiSupportGate() {
     pathname.startsWith('/partner') ||
     pathname.startsWith('/ranking') ||
     pathname.endsWith('-setup')
-  const partnerSlug = useMemo(() => extractPartnerSlug(pathname), [pathname])
+  const partnerSlug = useMemo(() => extractPartnerSlugFromPath(pathname), [pathname])
   const [partnerAiVisible, setPartnerAiVisible] = useState(false)
 
   useEffect(() => {
@@ -77,6 +69,7 @@ export default function ShopAiSupportGate() {
   if (shouldHide) {
     return null
   }
+  if (partnerSlug === 'synergy-shop') return null
   if (!partnerSlug) return <AiSupport />
   if (!partnerAiVisible) return null
   return <AiSupport />

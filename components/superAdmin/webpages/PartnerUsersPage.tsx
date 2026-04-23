@@ -30,7 +30,6 @@ const emptyForm: FormState = {
 
 export default function PartnerUsersPage() {
   const [search, setSearch] = useState('')
-  const [storefrontFilterId, setStorefrontFilterId] = useState<number | 'all'>('all')
   const [selected, setSelected] = useState<PartnerUserItem | null>(null)
   const [form, setForm] = useState<FormState>(emptyForm)
   const [showPassword, setShowPassword] = useState(false)
@@ -65,7 +64,6 @@ export default function PartnerUsersPage() {
   } = useGetPartnerUsersQuery(
     {
       search,
-      storefrontId: storefrontFilterId === 'all' ? undefined : storefrontFilterId,
     },
     // This page is often visited right after a backend deploy; ensure we don't
     // get stuck showing a cached error response.
@@ -76,10 +74,7 @@ export default function PartnerUsersPage() {
   const [deleteUser, { isLoading: isDeleting }] = useDeletePartnerUserMutation()
 
   const users = useMemo(() => data?.users ?? [], [data?.users])
-  const visibleUsers = useMemo(() => {
-    if (storefrontFilterId === 'all') return users
-    return users.filter((user) => (user.storefront_ids ?? []).includes(storefrontFilterId))
-  }, [users, storefrontFilterId])
+  const visibleUsers = users
   const busy = isCreating || isUpdating || isDeleting
 
   const resetForm = () => {
@@ -324,21 +319,6 @@ export default function PartnerUsersPage() {
               placeholder="Search name, username, email..."
               className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-cyan-300 focus:bg-white md:w-80"
             />
-            <select
-              value={storefrontFilterId === 'all' ? 'all' : String(storefrontFilterId)}
-              onChange={(event) => {
-                const value = event.target.value
-                setStorefrontFilterId(value === 'all' ? 'all' : Number(value))
-              }}
-              className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-cyan-300 focus:bg-white"
-            >
-              <option value="all">All storefronts</option>
-              {storefronts.map((store) => (
-                <option key={store.id} value={store.id}>
-                  {store.name}
-                </option>
-              ))}
-            </select>
             <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
               {visibleUsers.length} users
             </span>

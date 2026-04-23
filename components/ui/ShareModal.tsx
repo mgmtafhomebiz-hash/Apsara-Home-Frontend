@@ -26,6 +26,7 @@ interface ShareModalProps {
   product: Product
   brandName?: string
   shareUrl?: string
+  forceRealPrice?: boolean
 }
 
 type ShareOptionWithIconSrc = {
@@ -46,7 +47,7 @@ type ShareOptionWithIcon = {
 
 type ShareOption = ShareOptionWithIconSrc | ShareOptionWithIcon
 
-export default function ShareModal({ isOpen, onClose, product, brandName, shareUrl }: ShareModalProps) {
+export default function ShareModal({ isOpen, onClose, product, brandName, shareUrl, forceRealPrice = false }: ShareModalProps) {
   const [shareCopied, setShareCopied] = useState(false)
 
   const toSlug = (value: string) =>
@@ -64,7 +65,8 @@ export default function ShareModal({ isOpen, onClose, product, brandName, shareU
   const srpPrice = (product.priceSrp ? Number(product.priceSrp) : undefined) ?? baseSrp
   const memberPrice = (product.priceMember ? Number(product.priceMember) : undefined) ?? (product.priceDp ? Number(product.priceDp) : undefined) ?? 0
   const hasMemberPrice = memberPrice > 0 && memberPrice < srpPrice
-  const displayPrice = hasMemberPrice ? memberPrice : srpPrice
+  const showMemberPrice = hasMemberPrice && !forceRealPrice
+  const displayPrice = showMemberPrice ? memberPrice : srpPrice
   const displayPv = product.prodpv ? Number(product.prodpv) : 0
   const displaySku = product.sku || ''
 
@@ -187,7 +189,7 @@ export default function ShareModal({ isOpen, onClose, product, brandName, shareU
                       <span className="text-lg font-bold text-sky-500 dark:text-sky-400">
                         {'\u20b1'}{displayPrice.toLocaleString()}
                       </span>
-                      {hasMemberPrice && (
+                      {showMemberPrice && (
                         <span className="text-sm text-gray-400 dark:text-gray-500 line-through">
                           {'\u20b1'}{srpPrice.toLocaleString()}
                         </span>

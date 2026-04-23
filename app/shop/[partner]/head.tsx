@@ -4,7 +4,8 @@ export default function Head({ params }: { params: { partner: string } }) {
 
   return (
     <>
-      <link rel="icon" href="/Images/synergy.png" />
+      <link rel="icon" href="/Images/synergy.png" type="image/png" sizes="any" />
+      <link rel="shortcut icon" href="/Images/synergy.png" type="image/png" />
       <link rel="apple-touch-icon" href="/Images/synergy.png" />
     </>
   )

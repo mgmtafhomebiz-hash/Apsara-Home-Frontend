@@ -21,6 +21,7 @@ import OutlineButton from "@/components/ui/buttons/OutlineButton";
 import PrimaryButton from "@/components/ui/buttons/PrimaryButton";
 import { Package, Truck, CheckCircle } from "lucide-react";
 import { usePathname } from 'next/navigation';
+import toast from 'react-hot-toast';
 
 
 const CartIcon = () => (
@@ -66,6 +67,8 @@ interface ProductInfoProps {
     onReviewsClick?: () => void;
     onVariantChange?: (variant?: VariantOption) => void;
     reviewSummary?: ProductReviewSummary;
+    forceRealPrice?: boolean;
+    allowGuestWishlist?: boolean;
 }
 
 type VariantOption = NonNullable<CategoryProduct['variants']>[number];
@@ -75,6 +78,24 @@ type SizeChoice = {
     meta: string;
     variant?: VariantOption;
     groupVariants?: VariantOption[];
+};
+
+const GUEST_WISHLIST_STORAGE_KEY = 'synergy_guest_wishlist_product_ids';
+const GUEST_WISHLIST_ITEMS_STORAGE_KEY = 'synergy_guest_wishlist_items';
+
+type GuestWishlistItem = {
+    productId: number;
+    name: string;
+    price: number;
+    priceMember?: number;
+    priceDp?: number;
+    priceSrp?: number;
+    originalPrice?: number;
+    sku?: string;
+    prodpv?: number;
+    image: string;
+    slug: string;
+    brand?: string | null;
 };
 
 const buildVariantGroupKey = (variant: VariantOption, index: number) => {
@@ -142,6 +163,48 @@ const toPositiveNumber = (value: unknown): number | undefined => {
     return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
 };
 
+const toSlug = (value: string) =>
+    value
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+
+const readGuestWishlistItems = (): GuestWishlistItem[] => {
+    if (typeof window === 'undefined') return [];
+
+    try {
+        const raw = window.localStorage.getItem(GUEST_WISHLIST_ITEMS_STORAGE_KEY);
+        const parsed = raw ? JSON.parse(raw) : [];
+        if (!Array.isArray(parsed)) return [];
+
+        return parsed
+            .map((entry): GuestWishlistItem | null => {
+                if (!entry || typeof entry !== 'object') return null;
+                const row = entry as Record<string, unknown>;
+                const productId = Number(row.productId ?? 0);
+                if (!Number.isInteger(productId) || productId <= 0) return null;
+                return {
+                    productId,
+                    name: typeof row.name === 'string' ? row.name : `Product ${productId}`,
+                    price: Number(row.price ?? 0),
+                    priceMember: Number(row.priceMember ?? 0) || undefined,
+                    priceDp: Number(row.priceDp ?? 0) || undefined,
+                    priceSrp: Number(row.priceSrp ?? 0) || undefined,
+                    originalPrice: Number(row.originalPrice ?? 0) || undefined,
+                    sku: typeof row.sku === 'string' ? row.sku : undefined,
+                    prodpv: Number(row.prodpv ?? 0) || undefined,
+                    image: typeof row.image === 'string' && row.image.trim().length > 0 ? row.image : '/Images/af_home_logo.png',
+                    slug: typeof row.slug === 'string' && row.slug.trim().length > 0 ? row.slug : toSlug(typeof row.name === 'string' ? row.name : `product-${productId}`),
+                    brand: typeof row.brand === 'string' ? row.brand : null,
+                } satisfies GuestWishlistItem;
+            })
+            .filter((item): item is GuestWishlistItem => Boolean(item));
+    } catch {
+        return [];
+    }
+};
+
 const getEffectiveVariantStock = (variants?: CategoryProduct['variants']) => {
     const activeVariants = (variants ?? []).filter((variant) => (variant?.status ?? 1) === 1);
 
@@ -168,13 +231,23 @@ const buildVariantTitleParts = (variant?: NonNullable<CategoryProduct['variants'
     });
 };
 
-const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, reviewSummary }: ProductInfoProps) => {
+const ProductInfo = ({
+    product,
+    categoryLabel,
+    onReviewsClick,
+    onVariantChange,
+    reviewSummary,
+    forceRealPrice = false,
+    allowGuestWishlist = false,
+}: ProductInfoProps) => {
     const { addToCart } = useCart();
     const pathname = usePathname();
     const { data: session, status, update: updateSession } = useSession();
-    const isLoggedIn = Boolean(session?.user);
+    const role = String(session?.user?.role ?? '').toLowerCase();
+    const isLoggedIn = status === 'authenticated' && (role === 'customer' || role === '');
+    const useAccountWishlist = isLoggedIn && !allowGuestWishlist;
     const { data: me } = useMeQuery(undefined, { skip: !isLoggedIn });
-    const { data: wishlist = [] } = useGetWishlistQuery(undefined, { skip: !isLoggedIn });
+    const { data: wishlist = [] } = useGetWishlistQuery(undefined, { skip: !useAccountWishlist });
     const [addWishlist] = useAddWishlistMutation();
     const [removeWishlist] = useRemoveWishlistMutation();
     const { data: publicSettingsData } = useGetPublicGeneralSettingsQuery();
@@ -198,17 +271,70 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, 
     const [isWishlistLoading, setIsWishlistLoading] = useState(false);
     const [buyOptionsOpen, setBuyOptionsOpen] = useState(false);
     const [isShareOpen, setIsShareOpen] = useState(false);
+    const [guestWishlistItems, setGuestWishlistItems] = useState<GuestWishlistItem[]>(() => readGuestWishlistItems());
     const optionLabels = useMemo(() => extractVariantOptionLabels(product.specifications), [product.specifications]);
 
     // Check if product is in wishlist and update wishlisted state
     useEffect(() => {
-        const isInWishlist = wishlist.some((item: WishlistItem) => item.productId === product.id);
+        const isInWishlist = useAccountWishlist
+            ? wishlist.some((item: WishlistItem) => item.productId === product.id)
+            : guestWishlistItems.some((item) => item.productId === product.id);
         setWishlisted(isInWishlist);
-    }, [wishlist, product.id]);
+    }, [guestWishlistItems, useAccountWishlist, wishlist, product.id]);
+
+    useEffect(() => {
+        if (useAccountWishlist || !allowGuestWishlist || typeof window === 'undefined') return;
+
+        const syncGuestWishlist = () => setGuestWishlistItems(readGuestWishlistItems());
+        syncGuestWishlist();
+
+        window.addEventListener('synergy:guest-wishlist-updated', syncGuestWishlist);
+        window.addEventListener('storage', syncGuestWishlist);
+        return () => {
+            window.removeEventListener('synergy:guest-wishlist-updated', syncGuestWishlist);
+            window.removeEventListener('storage', syncGuestWishlist);
+        };
+    }, [allowGuestWishlist, useAccountWishlist]);
 
     // Handle wishlist add/remove
     const handleWishlistToggle = async () => {
-        if (!isLoggedIn) {
+        if (!useAccountWishlist) {
+            if (allowGuestWishlist && typeof window !== 'undefined' && product.id) {
+                const currentItems = readGuestWishlistItems();
+                const currentlyInWishlist = currentItems.some((item) => item.productId === product.id);
+                const nextItems = currentlyInWishlist
+                    ? currentItems.filter((item) => item.productId !== product.id)
+                    : [
+                        ...currentItems,
+                        {
+                            productId: product.id,
+                            name: product.name,
+                            price: Number(product.price ?? 0),
+                            priceMember: product.priceMember ? Number(product.priceMember) : undefined,
+                            priceDp: product.priceDp ? Number(product.priceDp) : undefined,
+                            priceSrp: product.priceSrp ? Number(product.priceSrp) : undefined,
+                            originalPrice: product.originalPrice ? Number(product.originalPrice) : undefined,
+                            sku: product.sku ?? undefined,
+                            prodpv: product.prodpv ? Number(product.prodpv) : undefined,
+                            image: product.image ?? '/Images/af_home_logo.png',
+                            slug: toSlug(product.name),
+                            brand: product.brand ?? null,
+                        },
+                    ];
+                const deduped = Array.from(
+                    nextItems.reduce((map, item) => {
+                        map.set(item.productId, item);
+                        return map;
+                    }, new Map<number, GuestWishlistItem>()).values(),
+                );
+                setGuestWishlistItems(deduped);
+                window.localStorage.setItem(GUEST_WISHLIST_ITEMS_STORAGE_KEY, JSON.stringify(deduped));
+                window.localStorage.setItem(GUEST_WISHLIST_STORAGE_KEY, JSON.stringify(deduped.map((item) => item.productId)));
+                window.dispatchEvent(new CustomEvent('synergy:guest-wishlist-updated'));
+                toast.success(currentlyInWishlist ? 'Removed from wishlist' : 'Added to wishlist');
+                return;
+            }
+
             // Redirect to login if not logged in
             const callbackPath = pathname || '/shop';
             window.location.href = `/login?callback=${encodeURIComponent(callbackPath)}`;
@@ -500,10 +626,11 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, 
     const variantSrp = toPositiveNumber(selectedVariant?.priceSrp) ?? baseSrp;
     const variantMember = toPositiveNumber(selectedVariant?.priceMember) ?? toPositiveNumber(product.priceMember) ?? 0;
     const hasMemberPrice = variantMember > 0 && variantMember < variantSrp;
-
-    // Always display member price if available, regardless of login status
-    const displayPrice = hasMemberPrice ? variantMember : variantSrp;
-    const displayOriginalPrice = hasMemberPrice ? variantSrp : (product.originalPrice && product.originalPrice > variantSrp ? product.originalPrice : undefined);
+    const shouldUseMemberPrice = hasMemberPrice && canUseMemberPrice && !forceRealPrice;
+    const displayPrice = shouldUseMemberPrice ? variantMember : variantSrp;
+    const displayOriginalPrice = shouldUseMemberPrice
+        ? variantSrp
+        : (!forceRealPrice && product.originalPrice && product.originalPrice > variantSrp ? product.originalPrice : undefined);
     const totalVariantStock = getEffectiveVariantStock(variantOptions);
     const displayStock = typeof selectedVariant?.qty === 'number'
         ? selectedVariant.qty
@@ -686,12 +813,12 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, 
                     )}
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
-                    {canUseMemberPrice && hasMemberPrice && (
+                    {!forceRealPrice && canUseMemberPrice && hasMemberPrice && (
                         <span className="inline-flex items-center rounded-full border border-emerald-200 px-3 py-1 text-[11px] font-semibold text-emerald-700">
                             Member Price Applied
                         </span>
                     )}
-                    {!canUseMemberPrice && hasMemberPrice && (
+                    {!forceRealPrice && !canUseMemberPrice && hasMemberPrice && (
                         <span className="inline-flex items-center rounded-full border border-sky-200 dark:border-sky-900/50 bg-sky-50 dark:bg-sky-900/20 px-3 py-1 text-[11px] font-semibold text-sky-700 dark:text-sky-400">
                             Sign in or Register to claim {Math.round(((variantSrp - variantMember) / variantSrp) * 100)}% savings!
                         </span>
@@ -702,7 +829,7 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, 
                         </span>
                     )}
                 </div>
-                {hasMemberPrice && (
+                {!forceRealPrice && hasMemberPrice && (
                     <div className="mt-2 p-3 bg-sky-50 dark:bg-sky-900/20 border border-sky-200 dark:border-sky-900/50 rounded-lg">
                         <p className="text-xs text-sky-800 dark:text-sky-700">
                             <span className="font-semibold">Note:</span> The price shown above is our member discount price. {!canUseMemberPrice ? 'Sign in or create an account to enjoy this price at checkout.' : 'You\'re enjoying this exclusive member price!'}
@@ -992,6 +1119,7 @@ const ProductInfo = ({ product, categoryLabel, onReviewsClick, onVariantChange, 
                 }}
                 brandName={product.brand}
                 shareUrl={typeof window !== 'undefined' ? window.location.href : ''}
+                forceRealPrice={forceRealPrice}
             />
 
         </motion.div>

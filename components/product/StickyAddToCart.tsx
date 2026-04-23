@@ -14,6 +14,7 @@ import { useGetPublicGeneralSettingsQuery } from '@/store/api/adminSettingsApi';
 interface StickyAddToCartProps {
   product: CategoryProduct;
   selectedVariant?: NonNullable<CategoryProduct['variants']>[number];
+  forceRealPrice?: boolean;
 }
 
 const toPositiveNumber = (value: unknown): number | undefined => {
@@ -31,7 +32,7 @@ const getEffectiveVariantStock = (variants?: CategoryProduct['variants']) => {
   return activeVariants.reduce((total, variant) => total + Number(variant?.qty ?? 0), 0);
 };
 
-const StickyAddToCart = ({ product, selectedVariant }: StickyAddToCartProps) => {
+const StickyAddToCart = ({ product, selectedVariant, forceRealPrice = false }: StickyAddToCartProps) => {
   const [visible, setVisible] = useState(false);
   const { addToCart } = useCart();
   const { data: session } = useSession();
@@ -63,7 +64,7 @@ const StickyAddToCart = ({ product, selectedVariant }: StickyAddToCartProps) => 
     : product.name;
   const displayImage = selectedVariant?.images?.find((image) => typeof image === 'string' && image.trim().length > 0) || product.image;
   const hasMemberPrice = member > 0 && member < srp;
-  const displayPrice = canUseMemberPrice && hasMemberPrice ? member : srp;
+  const displayPrice = !forceRealPrice && canUseMemberPrice && hasMemberPrice ? member : srp;
   const totalVariantStock = getEffectiveVariantStock(product.variants);
   const stock = typeof selectedVariant?.qty === 'number'
     ? selectedVariant.qty
@@ -112,7 +113,7 @@ const StickyAddToCart = ({ product, selectedVariant }: StickyAddToCartProps) => 
       id: cartItemId,
       name: variantLabel ? `${product.name} (${variantLabel})` : product.name,
       price: displayPrice,
-      originalPrice: hasMemberPrice ? srp : null,
+      originalPrice: !forceRealPrice && hasMemberPrice ? srp : null,
       image: displayImage,
       prodpv: displayPv,
       brand: product.brand ?? null,

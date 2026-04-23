@@ -40,6 +40,9 @@ const cartSlice = createSlice({
       } else {
         state.items.push({ ...item, quantity: 1 });
       }
+      if (!state.selectedIds.includes(item.id)) {
+        state.selectedIds.push(item.id);
+      }
       state.isOpen = true;
     },
     removeFromCart: (state, action: PayloadAction<string>) => {

@@ -107,11 +107,37 @@ const mapProductToDisplay = (product: Product, apiUrl?: string): CategoryProduct
 
 export async function generateMetadata({ params }: PageProps) {
   const resolved = await params
-  return buildPageMetadata({
+  const normalizedPartner = resolved.partner.trim().toLowerCase()
+  const plainTitle = `${resolved.partner} Products`
+  const metadata = buildPageMetadata({
     title: `${resolved.partner} Products`,
     description: `Browse all products for ${resolved.partner}.`,
     path: `/shop/${resolved.partner}/product`,
   })
+  const partnerIcon = normalizedPartner === 'synergy-shop' ? '/Images/synergy.png' : undefined
+
+  return {
+    ...metadata,
+    title: plainTitle,
+    icons: partnerIcon
+      ? {
+        icon: [{ url: partnerIcon, type: 'image/png' }],
+        apple: partnerIcon,
+      }
+      : metadata.icons,
+    openGraph: metadata.openGraph
+      ? {
+        ...metadata.openGraph,
+        title: plainTitle,
+      }
+      : undefined,
+    twitter: metadata.twitter
+      ? {
+        ...metadata.twitter,
+        title: plainTitle,
+      }
+      : undefined,
+  }
 }
 
 async function fetchProductsByCategory(apiUrl: string, categoryId: number): Promise<Product[]> {

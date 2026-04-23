@@ -38,7 +38,9 @@ export function resolveCheckoutSource(pathname?: string | null): CheckoutSourceM
 
   const host = normalizeHost(window.location.hostname)
   const currentPath = normalizePath(pathname ?? window.location.pathname ?? '/')
-  const storefrontMatch = currentPath.match(/^\/shop\/([^/?#]+)/i)
+  const storefrontMatch =
+    currentPath.match(/^\/shop\/([^/?#]+)/i) ||
+    currentPath.match(/^\/([^/?#]+)\/(product|category)(?=\/|$)/i)
   const storefrontSlug = storefrontMatch?.[1]?.trim().toLowerCase() || null
   const currentUrl = window.location.href || null
 

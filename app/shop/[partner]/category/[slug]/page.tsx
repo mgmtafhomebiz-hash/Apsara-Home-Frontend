@@ -82,13 +82,48 @@ const mapProductToDisplay = (product: Product, apiUrl?: string): DisplayProduct 
   stock: Number(product.qty ?? 0),
 })
 
+const toCategoryTitle = (slug: string) =>
+  decodeURIComponent(slug)
+    .replace(/[-_]+/g, ' ')
+    .trim()
+    .replace(/\b\w/g, (char) => char.toUpperCase())
+
 export async function generateMetadata({ params }: PageProps) {
   const resolved = await params
-  return buildPageMetadata({
+  const normalizedPartner = resolved.partner.trim().toLowerCase()
+  const categoryTitle = toCategoryTitle(resolved.slug)
+  const metadata = buildPageMetadata({
     title: `${resolved.slug} Category`,
     description: `Browse ${resolved.slug} products for ${resolved.partner}.`,
     path: `/shop/${resolved.partner}/category/${resolved.slug}`,
   })
+
+  if (normalizedPartner !== 'synergy-shop') {
+    return metadata
+  }
+
+  const plainTitle = `${categoryTitle} | synergy-shop`
+
+  return {
+    ...metadata,
+    title: plainTitle,
+    icons: {
+      icon: [{ url: '/Images/synergy.png', type: 'image/png' }],
+      apple: '/Images/synergy.png',
+    },
+    openGraph: metadata.openGraph
+      ? {
+        ...metadata.openGraph,
+        title: plainTitle,
+      }
+      : undefined,
+    twitter: metadata.twitter
+      ? {
+        ...metadata.twitter,
+        title: plainTitle,
+      }
+      : undefined,
+  }
 }
 
 async function getPartnerCategoryPageData(partnerSlug: string, categorySlug: string) {

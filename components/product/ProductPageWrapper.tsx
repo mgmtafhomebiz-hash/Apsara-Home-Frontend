@@ -9,11 +9,27 @@ import type { Category } from '@/store/api/categoriesApi'
 interface ProductPageWrapperProps {
   children: React.ReactNode
   initialCategories?: Category[]
+  hideTopBar?: boolean
+  logoSrc?: string
+  logoAlt?: string
+  logoHref?: string
+  hideSignIn?: boolean
+  hideNavLinks?: boolean
+  stickToTop?: boolean
+  showGuestCartWishlist?: boolean
 }
 
 export default function ProductPageWrapper({
   children,
   initialCategories = [],
+  hideTopBar = false,
+  logoSrc = '/Images/af_home_logo.png',
+  logoAlt = 'AF Home',
+  logoHref = '/shop',
+  hideSignIn = false,
+  hideNavLinks = false,
+  stickToTop = false,
+  showGuestCartWishlist = false,
 }: ProductPageWrapperProps) {
   const [showBars, setShowBars] = useState(true)
   const [isAtTop, setIsAtTop] = useState(true)
@@ -69,8 +85,17 @@ export default function ProductPageWrapper({
             transition={{ duration: 0.3, ease: 'easeInOut' }}
             className="relative z-[55]"
           >
-            <TopBar />
-            <Navbar initialCategories={initialCategories} />
+            {!hideTopBar && <TopBar />}
+            <Navbar
+              initialCategories={initialCategories}
+              logoSrc={logoSrc}
+              logoAlt={logoAlt}
+              logoHref={logoHref}
+              hideSignIn={hideSignIn}
+              hideNavLinks={hideNavLinks}
+              stickToTop={stickToTop}
+              showGuestCartWishlist={showGuestCartWishlist}
+            />
           </motion.div>
         )}
       </AnimatePresence>

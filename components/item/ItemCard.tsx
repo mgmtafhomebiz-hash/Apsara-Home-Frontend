@@ -2,14 +2,16 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
+import { usePathname } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAddToCartMutation, useGetCartQuery } from '@/store/api/cartApi'
 import { useGetWishlistQuery, useAddWishlistMutation, useRemoveWishlistMutation } from '@/store/api/wishlistApi'
 import { useCart } from '@/context/CartContext'
 import toast from 'react-hot-toast'
 import ShareModal from '@/components/ui/ShareModal'
+import { buildStorefrontProductPath } from '@/libs/storefrontRouting'
 
 const toSlug = (value: string) =>
   value
@@ -19,6 +21,75 @@ const toSlug = (value: string) =>
     .replace(/^-+|-+$/g, '')
 
 const formatPeso = (value: number) => `\u20b1${Number(value || 0).toLocaleString('en-PH', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`
+const GUEST_WISHLIST_STORAGE_KEY = 'synergy_guest_wishlist_product_ids'
+const GUEST_WISHLIST_ITEMS_STORAGE_KEY = 'synergy_guest_wishlist_items'
+
+type GuestWishlistItem = {
+  productId: number
+  name: string
+  price: number
+  priceMember?: number
+  priceDp?: number
+  priceSrp?: number
+  originalPrice?: number
+  sku?: string
+  prodpv?: number
+  image: string
+  slug: string
+  brand?: string | null
+}
+
+const readGuestWishlistItems = (): GuestWishlistItem[] => {
+  if (typeof window === 'undefined') return []
+
+  try {
+    const raw = window.localStorage.getItem(GUEST_WISHLIST_ITEMS_STORAGE_KEY)
+    const parsed = raw ? JSON.parse(raw) : []
+    if (!Array.isArray(parsed)) return []
+
+    const normalized = parsed
+      .map((entry): GuestWishlistItem | null => {
+        if (!entry || typeof entry !== 'object') return null
+        const row = entry as Record<string, unknown>
+        const productId = Number(row.productId ?? 0)
+        if (!Number.isInteger(productId) || productId <= 0) return null
+        return {
+          productId,
+          name: typeof row.name === 'string' ? row.name : `Product ${productId}`,
+          price: Number(row.price ?? 0),
+          priceMember: Number(row.priceMember ?? 0) || undefined,
+          priceDp: Number(row.priceDp ?? 0) || undefined,
+          priceSrp: Number(row.priceSrp ?? 0) || undefined,
+          originalPrice: Number(row.originalPrice ?? 0) || undefined,
+          sku: typeof row.sku === 'string' ? row.sku : undefined,
+          prodpv: Number(row.prodpv ?? 0) || undefined,
+          image: typeof row.image === 'string' && row.image.trim().length > 0 ? row.image : '/Images/af_home_logo.png',
+          slug: typeof row.slug === 'string' && row.slug.trim().length > 0 ? row.slug : toSlug(typeof row.name === 'string' ? row.name : `product-${productId}`),
+          brand: typeof row.brand === 'string' ? row.brand : null,
+        } satisfies GuestWishlistItem
+      })
+      .filter((item): item is GuestWishlistItem => Boolean(item))
+
+    // Backward compatibility: if old ID-only storage exists, keep heart state.
+    if (normalized.length > 0) return normalized
+    const oldRaw = window.localStorage.getItem(GUEST_WISHLIST_STORAGE_KEY)
+    const oldParsed = oldRaw ? JSON.parse(oldRaw) : []
+    if (!Array.isArray(oldParsed)) return []
+    return oldParsed
+      .map((entry) => Number(entry))
+      .filter((entry) => Number.isInteger(entry) && entry > 0)
+      .map((productId) => ({
+        productId,
+        name: `Product ${productId}`,
+        price: 0,
+        image: '/Images/af_home_logo.png',
+        slug: `product-${productId}`,
+        brand: null,
+      }))
+  } catch {
+    return []
+  }
+}
 
 interface Product {
   id: number
@@ -40,31 +111,82 @@ interface ItemCardProps {
   product: Product
   brandName: string
   hideDiscountBadge?: boolean
+  forceRealPrice?: boolean
+  allowGuestAddToCart?: boolean
+  allowGuestWishlist?: boolean
 }
 
-export default function ItemCard({ product, brandName, hideDiscountBadge = false }: ItemCardProps) {
+export default function ItemCard({
+  product,
+  brandName,
+  hideDiscountBadge = false,
+  forceRealPrice = false,
+  allowGuestAddToCart = false,
+  allowGuestWishlist = false,
+}: ItemCardProps) {
   const slug = toSlug(product.name)
-  const href = `/product/${slug}-i${product.id}`
+  const pathname = usePathname()
+  const href = buildStorefrontProductPath(product.name, product.id, pathname)
   const [imageError, setImageError] = useState(false)
-  const { data: session } = useSession()
-  const isLoggedIn = Boolean(session?.user)
-  const [addToCart, { isLoading: isAddingToCart }] = useAddToCartMutation()
-  const { setIsOpen } = useCart()
-  const { refetch: refetchCart } = useGetCartQuery(undefined, { skip: !isLoggedIn })
+  const { data: session, status } = useSession()
+  const role = String(session?.user?.role ?? '').toLowerCase()
+  const isLoggedIn = status === 'authenticated' && (role === 'customer' || role === '')
+  const useAccountCart = isLoggedIn && !allowGuestAddToCart
+  const useAccountWishlist = isLoggedIn && !allowGuestWishlist
+  const [addToCartApi, { isLoading: isAddingToCart }] = useAddToCartMutation()
+  const { setIsOpen, addToCart: addToLocalCart } = useCart()
+  const { refetch: refetchCart } = useGetCartQuery(undefined, { skip: !useAccountCart })
   const [shareModalOpen, setShareModalOpen] = useState(false)
   
   // Wishlist functionality
-  const { data: wishlist = [] } = useGetWishlistQuery(undefined, { skip: !isLoggedIn })
+  const { data: wishlist = [] } = useGetWishlistQuery(undefined, { skip: !useAccountWishlist })
   const [addWishlist, { isLoading: isAddingToWishlist }] = useAddWishlistMutation()
   const [removeWishlist, { isLoading: isRemovingFromWishlist }] = useRemoveWishlistMutation()
-  
-  const isInWishlist = wishlist.some(item => item.productId === product.id)
+  const [guestWishlistItems, setGuestWishlistItems] = useState<GuestWishlistItem[]>(() => readGuestWishlistItems())
+
+  useEffect(() => {
+    if (useAccountWishlist || !allowGuestWishlist || typeof window === 'undefined') return
+
+    const syncGuestWishlist = () => {
+      setGuestWishlistItems(readGuestWishlistItems())
+    }
+
+    window.addEventListener('synergy:guest-wishlist-updated', syncGuestWishlist)
+    window.addEventListener('storage', syncGuestWishlist)
+    return () => {
+      window.removeEventListener('synergy:guest-wishlist-updated', syncGuestWishlist)
+      window.removeEventListener('storage', syncGuestWishlist)
+    }
+  }, [allowGuestWishlist, useAccountWishlist])
+
+  const isInWishlist = useAccountWishlist
+    ? wishlist.some(item => item.productId === product.id)
+    : guestWishlistItems.some((item) => item.productId === product.id)
 
   const handleAddToCart = async (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
 
-    if (!isLoggedIn) {
+    if (!useAccountCart) {
+      if (allowGuestAddToCart) {
+        addToLocalCart({
+          id: String(product.id),
+          name: product.name,
+          price: displayPrice,
+          originalPrice: strikePrice > displayPrice ? strikePrice : null,
+          image: product.image ?? '',
+          prodpv: displayPv > 0 ? displayPv : null,
+          brand: brandName || null,
+          selectedColor: null,
+          selectedStyle: null,
+          selectedSize: null,
+          selectedType: null,
+          selectedSku: null,
+        })
+        toast.success('Item added to cart successfully')
+        setIsOpen(true)
+        return
+      }
       toast.error('Please sign in to add items to cart')
       return
     }
@@ -72,7 +194,7 @@ export default function ItemCard({ product, brandName, hideDiscountBadge = false
     console.log('Adding to cart:', { product_id: product.id, quantity: 1 })
 
     try {
-      const result = await addToCart({
+      const result = await addToCartApi({
         product_id: product.id,
         quantity: 1,
       }).unwrap()
@@ -104,7 +226,42 @@ export default function ItemCard({ product, brandName, hideDiscountBadge = false
     e.preventDefault()
     e.stopPropagation()
 
-    if (!isLoggedIn) {
+    if (!useAccountWishlist) {
+      if (allowGuestWishlist && typeof window !== 'undefined') {
+        const currentItems = readGuestWishlistItems()
+        const currentlyInWishlist = currentItems.some((item) => item.productId === product.id)
+        const nextItems = currentlyInWishlist
+          ? currentItems.filter((item) => item.productId !== product.id)
+          : [
+              ...currentItems,
+              {
+                productId: product.id,
+                name: product.name,
+                price: Number(product.price ?? 0),
+                priceMember: product.priceMember ? Number(product.priceMember) : undefined,
+                priceDp: product.priceDp ? Number(product.priceDp) : undefined,
+                priceSrp: product.priceSrp ? Number(product.priceSrp) : undefined,
+                originalPrice: product.originalPrice ? Number(product.originalPrice) : undefined,
+                sku: product.sku ?? undefined,
+                prodpv: product.prodpv ? Number(product.prodpv) : undefined,
+                image: product.image ?? '/Images/af_home_logo.png',
+                slug,
+                brand: brandName || null,
+              },
+            ]
+        const deduped = Array.from(
+          nextItems.reduce((map, item) => {
+            map.set(item.productId, item)
+            return map
+          }, new Map<number, GuestWishlistItem>()).values(),
+        )
+        setGuestWishlistItems(deduped)
+        window.localStorage.setItem(GUEST_WISHLIST_ITEMS_STORAGE_KEY, JSON.stringify(deduped))
+        window.localStorage.setItem(GUEST_WISHLIST_STORAGE_KEY, JSON.stringify(deduped.map((item) => item.productId)))
+        window.dispatchEvent(new CustomEvent('synergy:guest-wishlist-updated'))
+        toast.success(currentlyInWishlist ? 'Removed from wishlist' : 'Added to wishlist')
+        return
+      }
       toast.error('Please sign in to add items to wishlist')
       return
     }
@@ -131,8 +288,9 @@ export default function ItemCard({ product, brandName, hideDiscountBadge = false
   const srpPrice = (product.priceSrp ? Number(product.priceSrp) : undefined) ?? baseSrp
   const memberPrice = (product.priceMember ? Number(product.priceMember) : undefined) ?? (product.priceDp ? Number(product.priceDp) : undefined) ?? 0
   const hasMemberPrice = memberPrice > 0 && memberPrice < srpPrice
-  const displayPrice = hasMemberPrice ? memberPrice : srpPrice
-  const strikePrice = hasMemberPrice ? srpPrice : (product.originalPrice && product.originalPrice > srpPrice ? product.originalPrice : 0)
+  const showMemberPrice = hasMemberPrice && !forceRealPrice
+  const displayPrice = showMemberPrice ? memberPrice : srpPrice
+  const strikePrice = showMemberPrice ? srpPrice : (product.originalPrice && product.originalPrice > srpPrice ? product.originalPrice : 0)
   const displayPv = Number(product.prodpv ?? 0)
   const averageRating = Math.max(0, Math.min(5, Number(product.avgRating ?? 0)))
   const hasRating = averageRating > 0
@@ -210,14 +368,14 @@ export default function ItemCard({ product, brandName, hideDiscountBadge = false
         )}
 
         {/* Discount Badge */}
-        {hasMemberPrice && !hideDiscountBadge ? (
+        {showMemberPrice && !hideDiscountBadge ? (
           <div className="absolute top-0 left-0 bg-sky-500 text-white text-xs font-bold px-2 py-1">
             {isLoggedIn ? `Enjoy ${Math.round(((srpPrice - memberPrice) / srpPrice) * 100)}% off` : `Register to get ${Math.round(((srpPrice - memberPrice) / srpPrice) * 100)}% discount`}
           </div>
         ) : null}
 
         {/* Bestseller Badge */}
-        {product.bestseller && !hasMemberPrice && (
+        {product.bestseller && !showMemberPrice && (
           <div className="absolute top-0 left-0 bg-purple-500 text-white text-xs font-bold px-2 py-1">
             Bestseller
           </div>
@@ -313,6 +471,7 @@ export default function ItemCard({ product, brandName, hideDiscountBadge = false
       onClose={() => setShareModalOpen(false)}
       product={product}
       brandName={brandName}
+      forceRealPrice={forceRealPrice}
     />
   </>
   )

@@ -4,21 +4,98 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { usePathname, useRouter } from 'next/navigation'
 import { useGetWishlistQuery } from '@/store/api/wishlistApi'
 import { useSession } from 'next-auth/react'
+import { useEffect, useMemo, useState } from 'react'
 import PrimaryButton from '@/components/ui/buttons/PrimaryButton'
 import { useWishlist } from '@/context/WishlistContext'
 import ItemCard from '@/components/item/ItemCard'
+import { extractPartnerSlugFromPath } from '@/libs/storefrontRouting'
+
+const GUEST_WISHLIST_ITEMS_STORAGE_KEY = 'synergy_guest_wishlist_items'
+
+type GuestWishlistItem = {
+  productId: number
+  name: string
+  price: number
+  priceMember?: number
+  priceDp?: number
+  priceSrp?: number
+  originalPrice?: number
+  sku?: string
+  prodpv?: number
+  image: string
+  slug: string
+  brand?: string | null
+}
+
+const readGuestWishlistItems = (): GuestWishlistItem[] => {
+  if (typeof window === 'undefined') return []
+
+  try {
+    const raw = window.localStorage.getItem(GUEST_WISHLIST_ITEMS_STORAGE_KEY)
+    const parsed = raw ? JSON.parse(raw) : []
+    if (!Array.isArray(parsed)) return []
+
+    return parsed
+      .map((entry): GuestWishlistItem | null => {
+        if (!entry || typeof entry !== 'object') return null
+        const row = entry as Record<string, unknown>
+        const productId = Number(row.productId ?? 0)
+        if (!Number.isInteger(productId) || productId <= 0) return null
+        return {
+          productId,
+          name: typeof row.name === 'string' ? row.name : `Product ${productId}`,
+          price: Number(row.price ?? 0),
+          priceMember: Number(row.priceMember ?? 0) || undefined,
+          priceDp: Number(row.priceDp ?? 0) || undefined,
+          priceSrp: Number(row.priceSrp ?? 0) || undefined,
+          originalPrice: Number(row.originalPrice ?? 0) || undefined,
+          sku: typeof row.sku === 'string' ? row.sku : undefined,
+          prodpv: Number(row.prodpv ?? 0) || undefined,
+          image: typeof row.image === 'string' && row.image.trim().length > 0 ? row.image : '/Images/af_home_logo.png',
+          slug: typeof row.slug === 'string' ? row.slug : `product-${productId}`,
+          brand: typeof row.brand === 'string' ? row.brand : null,
+        } satisfies GuestWishlistItem
+      })
+      .filter((item): item is GuestWishlistItem => Boolean(item))
+  } catch {
+    return []
+  }
+}
 
 export default function WishlistDrawer() {
   const router = useRouter()
   const pathname = usePathname()
   const { isOpen, setIsOpen } = useWishlist()
-  const { data: session } = useSession()
-  const isLoggedIn = Boolean(session?.user)
+  const { data: session, status } = useSession()
+  const role = String(session?.user?.role ?? '').toLowerCase()
+  const isLoggedIn = status === 'authenticated' && (role === 'customer' || role === '')
   const loginHref = `/login?callback=${encodeURIComponent(pathname || '/wishlist')}`
+  const partnerSlug = extractPartnerSlugFromPath(pathname)
+  const isSynergyRoute = partnerSlug === 'synergy-shop'
+  const useGuestWishlistMode = isSynergyRoute
+  const useApiWishlistMode = isLoggedIn && !useGuestWishlistMode
+  const [guestWishlist, setGuestWishlist] = useState<GuestWishlistItem[]>([])
   
   const { data: wishlist = [], isLoading, error } = useGetWishlistQuery(undefined, {
-    skip: !isLoggedIn,
+    skip: !useApiWishlistMode,
   })
+
+  useEffect(() => {
+    if (!isOpen || !useGuestWishlistMode) return
+
+    const syncGuestWishlist = () => {
+      setGuestWishlist(readGuestWishlistItems())
+    }
+
+    syncGuestWishlist()
+    window.addEventListener('synergy:guest-wishlist-updated', syncGuestWishlist)
+    return () => window.removeEventListener('synergy:guest-wishlist-updated', syncGuestWishlist)
+  }, [isOpen, useGuestWishlistMode])
+
+  const visibleWishlist = useMemo(
+    () => (useGuestWishlistMode ? guestWishlist : (useApiWishlistMode ? wishlist : [])),
+    [guestWishlist, useApiWishlistMode, useGuestWishlistMode, wishlist],
+  )
 
   return (
     <AnimatePresence>
@@ -42,9 +119,9 @@ export default function WishlistDrawer() {
             <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-700 p-5">
               <div className="flex items-center gap-3">
                 <h2 className="text-lg font-bold text-slate-900 dark:text-white">My Wishlist</h2>
-                {wishlist.length > 0 && (
+                {visibleWishlist.length > 0 && (
                   <span className="rounded-full bg-sky-500 px-2 py-0.5 text-xs font-bold text-white">
-                    {wishlist.length}
+                    {visibleWishlist.length}
                   </span>
                 )}
               </div>
@@ -60,7 +137,7 @@ export default function WishlistDrawer() {
             </div>
 
             <div className="flex-1 overflow-y-auto p-5">
-              {!isLoggedIn ? (
+              {!useApiWishlistMode && !useGuestWishlistMode ? (
                 <div className="flex h-full flex-col items-center justify-center gap-4 text-center">
                   <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700">
                     <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-gray-400 dark:text-gray-500">
@@ -75,11 +152,11 @@ export default function WishlistDrawer() {
                     Sign In
                   </PrimaryButton>
                 </div>
-              ) : isLoading ? (
+              ) : useApiWishlistMode && isLoading ? (
                 <div className="flex h-full items-center justify-center">
                   <div className="h-8 w-8 animate-spin rounded-full border-2 border-sky-200 border-t-sky-500" />
                 </div>
-              ) : error ? (
+              ) : useApiWishlistMode && error ? (
                 <div className="flex h-full flex-col items-center justify-center gap-4 text-center">
                   <div className="flex h-20 w-20 items-center justify-center rounded-full bg-red-50 dark:bg-red-900/20">
                     <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="1.5">
@@ -93,7 +170,7 @@ export default function WishlistDrawer() {
                     <p className="mt-1 text-sm text-gray-400 dark:text-gray-500">Please try again later</p>
                   </div>
                 </div>
-              ) : wishlist.length === 0 ? (
+              ) : visibleWishlist.length === 0 ? (
                 <div className="flex h-full flex-col items-center justify-center gap-4 text-center">
                   <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gray-100">
                     <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-gray-400">
@@ -104,17 +181,11 @@ export default function WishlistDrawer() {
                     <p className="font-semibold text-gray-800 dark:text-gray-200">Your wishlist is empty</p>
                     <p className="mt-1 text-sm text-gray-400 dark:text-gray-500">Start adding items you love</p>
                   </div>
-                  <PrimaryButton onClick={() => {
-                    setIsOpen(false)
-                    router.push('/wishlist')
-                  }} className="!px-6 !py-2.5 !text-sm">
-                    View All
-                  </PrimaryButton>
                 </div>
               ) : (
                 <div className="grid grid-cols-2 gap-3">
                   <AnimatePresence>
-                    {wishlist.map((item) => (
+                    {visibleWishlist.map((item) => (
                       <motion.div
                         key={item.productId}
                         layout
@@ -137,6 +208,10 @@ export default function WishlistDrawer() {
                             image: item.image,
                           }}
                           brandName={item.brand ?? ''}
+                          hideDiscountBadge={isSynergyRoute}
+                          forceRealPrice={isSynergyRoute}
+                          allowGuestAddToCart={isSynergyRoute}
+                          allowGuestWishlist={isSynergyRoute}
                         />
                       </motion.div>
                     ))}
@@ -144,20 +219,6 @@ export default function WishlistDrawer() {
                 </div>
               )}
             </div>
-
-            {wishlist.length > 0 && (
-              <div className="border-t border-gray-100 dark:border-gray-700 p-5">
-                <PrimaryButton
-                  onClick={() => {
-                    setIsOpen(false)
-                    router.push('/wishlist')
-                  }}
-                  className="w-full !px-6 !py-2.5 !text-sm"
-                >
-                  View All
-                </PrimaryButton>
-              </div>
-            )}
           </motion.div>
         </>
       )}
