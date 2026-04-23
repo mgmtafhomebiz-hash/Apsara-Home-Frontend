@@ -148,11 +148,32 @@ export interface BulkImportProductsRow {
   pd_images?: string[] | string
   pd_type?: number | string
   pd_status?: number | string
+  pd_pricing_tier?: string
+  pd_reversed_pv_multiplier?: number | string
   pd_musthave?: boolean | number | string
   pd_bestseller?: boolean | number | string
   pd_salespromo?: boolean | number | string
   pd_verified?: boolean | number | string
   pd_assembly_required?: boolean | number | string
+  pd_manual_checkout_enabled?: boolean | number | string
+  // variant fields (used during CSV parsing; grouped into pd_variants before sending)
+  pv_sku?: string
+  pv_name?: string
+  pv_color?: string
+  pv_color_hex?: string
+  pv_size?: string
+  pv_style?: string
+  pv_width?: number | string
+  pv_dimension?: number | string
+  pv_height?: number | string
+  pv_price_srp?: number | string
+  pv_price_dp?: number | string
+  pv_price_member?: number | string
+  pv_prodpv?: number | string
+  pv_qty?: number | string
+  pv_status?: number | string
+  pv_images?: string[] | string
+  pd_variants?: CreateProductVariantPayload[]
 }
 
 export interface BulkImportProductsPayload {
@@ -326,6 +347,22 @@ export interface ZqImportPreviewResponse {
   message: string
   request?: Record<string, unknown>
   zq: Record<string, unknown>
+}
+
+export interface ZqImportProductsResponse {
+  message: string
+  summary: {
+    total: number
+    created: number
+    failed: number
+  }
+  results: Array<{
+    id: string
+    status: 'created' | 'failed'
+    product_id?: number | null
+    name?: string | null
+    message: string
+  }>
 }
 
 export interface PublicProductResponse {
@@ -758,6 +795,14 @@ export const productsApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['Products'],
     }),
+    bulkImportProductsWithVariants: builder.mutation<BulkImportProductsResponse, BulkImportProductsPayload>({
+      query: (body) => ({
+        url: '/api/admin/products/import-with-variants',
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: ['Products'],
+    }),
     bulkPricePreview: builder.mutation<BulkPricePreviewResponse, { rows: BulkPriceRow[] }>({
       query: (body) => ({
         url: '/api/admin/products/bulk-price/preview',
@@ -803,6 +848,14 @@ export const productsApi = baseApi.injectEndpoints({
         body: body ?? {},
       }),
     }),
+    importZqProducts: builder.mutation<ZqImportProductsResponse, { ids: string[] }>({
+      query: (body) => ({
+        url: '/api/admin/products/zq/import',
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: ['Products'],
+    }),
     updateProduct: builder.mutation<{ message: string; product?: Product }, { id: number; data: Partial<CreateProductPayload> }>({
       query: ({ id, data }) => ({
         url: `/api/admin/products/${id}`,
@@ -835,12 +888,14 @@ export const {
   useGetProductActivityLogsQuery,
   useCreateProductMutation,
   useBulkImportProductsMutation,
+  useBulkImportProductsWithVariantsMutation,
   useBulkPricePreviewMutation,
   useBulkPriceApplyMutation,
   useBulkUpdatePreviewMutation,
   useBulkUpdateApplyMutation,
   useManualCheckoutApplyMutation,
   useFetchZqImportPreviewMutation,
+  useImportZqProductsMutation,
   useUpdateProductMutation,
   useDeleteProductMutation,
 } = productsApi
