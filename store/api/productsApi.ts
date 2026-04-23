@@ -349,7 +349,6 @@ export interface ZqImportPreviewResponse {
   zq: Record<string, unknown>
 }
 
-<<<<<<< HEAD
 export interface ZqImportProductsResponse {
   message: string
   summary: {
@@ -364,7 +363,8 @@ export interface ZqImportProductsResponse {
     name?: string | null
     message: string
   }>
-=======
+}
+
 export interface ZqImportDetailResponse {
   message: string
   zq: Record<string, unknown>
@@ -438,7 +438,6 @@ export interface ImportZqToLocalResponse {
     status: number
     sku: string
   }
->>>>>>> 0ad1d75cc141b3d9f5a62924ee5189ae4c7930fa
 }
 
 export interface PublicProductResponse {
@@ -934,13 +933,14 @@ export const productsApi = baseApi.injectEndpoints({
         body: body ?? {},
       }),
     }),
-<<<<<<< HEAD
     importZqProducts: builder.mutation<ZqImportProductsResponse, { ids: string[] }>({
       query: (body) => ({
         url: '/api/admin/products/zq/import',
         method: 'POST',
         body,
-=======
+      }),
+      invalidatesTags: ['Products'],
+    }),
     fetchZqImportDetail: builder.mutation<ZqImportDetailResponse, string | number>({
       query: (id) => ({
         url: `/api/admin/products/zq/detail/${id}`,
@@ -984,7 +984,6 @@ export const productsApi = baseApi.injectEndpoints({
       query: (externalId) => ({
         url: `/api/admin/products/zq/import-to-local/${externalId}`,
         method: 'POST',
->>>>>>> 0ad1d75cc141b3d9f5a62924ee5189ae4c7930fa
       }),
       invalidatesTags: ['Products'],
     }),
@@ -1027,15 +1026,12 @@ export const {
   useBulkUpdateApplyMutation,
   useManualCheckoutApplyMutation,
   useFetchZqImportPreviewMutation,
-<<<<<<< HEAD
   useImportZqProductsMutation,
-=======
   useFetchZqImportDetailMutation,
   useGetZqCachedProductsQuery,
   useGetZqProductsSummaryQuery,
   useSyncZqProductsMutation,
   useImportZqToLocalMutation,
->>>>>>> 0ad1d75cc141b3d9f5a62924ee5189ae4c7930fa
   useUpdateProductMutation,
   useDeleteProductMutation,
 } = productsApi
