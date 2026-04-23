@@ -1,5 +1,5 @@
 // Product CSV Import Template Generator
-// Provides comprehensive CSV templates with field descriptions and sample data
+// Generates the single CSV template used by the product import flow.
 
 export interface FieldDefinition {
   name: string
@@ -25,7 +25,7 @@ export const PRODUCT_CSV_FIELDS: FieldDefinition[] = [
     label: 'Category ID',
     type: 'number',
     required: true,
-    description: 'Numeric ID of the product category. View all categories in Admin > Products > Categories',
+    description: 'Category name or numeric ID of the product category. View all categories in Admin > Products > Categories.',
     example: '12',
   },
   {
@@ -65,7 +65,7 @@ export const PRODUCT_CSV_FIELDS: FieldDefinition[] = [
     label: 'Room Type',
     type: 'choice',
     required: false,
-    description: 'Room type: 1=Living Room, 2=Bedroom, 3=Kitchen, 4=Dining, 5=Office, 6=Bathroom, 7=Other',
+    description: 'Room type label or numeric ID.',
     example: '1',
     choices: ['1', '2', '3', '4', '5', '6', '7'],
   },
@@ -90,8 +90,25 @@ export const PRODUCT_CSV_FIELDS: FieldDefinition[] = [
     label: 'Product PV (Point Value)',
     type: 'number',
     required: false,
-    description: 'Points earned when product is purchased',
+    description: 'Points earned when product is purchased. Leave blank to auto-compute from PV multiplier.',
     example: '100',
+  },
+  {
+    name: 'pd_pricing_tier',
+    label: 'PV Pricing Tier',
+    type: 'choice',
+    required: false,
+    description: 'Pricing tier used for PV computation: low_end or high_end',
+    example: 'low_end',
+    choices: ['low_end', 'high_end'],
+  },
+  {
+    name: 'pd_reversed_pv_multiplier',
+    label: 'PV Multiplier (Reversed)',
+    type: 'number',
+    required: false,
+    description: 'Used to auto-compute PV from DP price. Leave blank if providing pd_prodpv directly.',
+    example: '0.25',
   },
   {
     name: 'pd_qty',
@@ -170,24 +187,16 @@ export const PRODUCT_CSV_FIELDS: FieldDefinition[] = [
     label: 'Warranty',
     type: 'text',
     required: false,
-    description: 'Warranty information',
+    description: 'Warranty label or custom text',
     example: '2 Years Manufacturing Defect',
   },
   {
-    name: 'pd_image',
-    label: 'Primary Image URL',
-    type: 'url',
-    required: false,
-    description: 'Full URL to the main product image',
-    example: 'https://example.com/images/chair-001.jpg',
-  },
-  {
     name: 'pd_images',
-    label: 'Additional Images (Multiple URLs)',
+    label: 'Product Images (Multiple URLs)',
     type: 'url',
     required: false,
     description: 'Multiple image URLs separated by pipe character (|)',
-    example: 'https://example.com/chair-002.jpg|https://example.com/chair-003.jpg',
+    example: 'https://example.com/chair-001.jpg|https://example.com/chair-002.jpg|https://example.com/chair-003.jpg',
   },
   {
     name: 'pd_type',
@@ -203,16 +212,16 @@ export const PRODUCT_CSV_FIELDS: FieldDefinition[] = [
     label: 'Status',
     type: 'choice',
     required: false,
-    description: '1=Active/Published, 0=Inactive/Draft',
-    example: '1',
-    choices: ['0', '1'],
+    description: 'Active or Inactive',
+    example: 'Active',
+    choices: ['Active', 'Inactive'],
   },
   {
     name: 'pd_musthave',
     label: 'Must Have',
     type: 'boolean',
     required: false,
-    description: 'Mark as essential/must-have product (1=yes, 0=no)',
+    description: 'Active or Inactive-style flag column. Use 1 for active and 0 for inactive.',
     example: '0',
   },
   {
@@ -245,6 +254,14 @@ export const PRODUCT_CSV_FIELDS: FieldDefinition[] = [
     type: 'boolean',
     required: false,
     description: 'Product verified status (1=yes, 0=no)',
+    example: '0',
+  },
+  {
+    name: 'pd_manual_checkout_enabled',
+    label: 'Manual Checkout Enabled',
+    type: 'boolean',
+    required: false,
+    description: 'Allow product to go through manual checkout flow (1=yes, 0=no)',
     example: '0',
   },
 ]
@@ -330,7 +347,7 @@ export function buildTemplateWithInstructions(): string {
   lines.push('#')
   lines.push('# 2. OPTIONAL FIELDS: Leave blank if not applicable')
   lines.push('#    - SKU is important for "Create or Update" mode (matches existing products)')
-  lines.push('#    - For multiple images, separate URLs with pipe character: url1|url2|url3')
+  lines.push('#    - For multiple images, store them in pd_images separated by pipe character: url1|url2|url3')
   lines.push('#    - Prices and quantities should be numeric only (no commas, no currency symbols)')
   lines.push('#    - Boolean fields use 1=yes, 0=no')
   lines.push('#')
@@ -369,23 +386,8 @@ export function buildTemplateWithInstructions(): string {
   lines.push('## SAMPLE DATA (uncomment or modify to use):')
   lines.push('')
 
-  // Header row
-  const headerCols = [
-    'pd_name',
-    'pd_parent_sku',
-    'pd_catid',
-    'pd_price_srp',
-    'pd_price_dp',
-    'pd_price_member',
-    'pd_prodpv',
-    'pd_qty',
-    'pd_weight',
-    'pd_material',
-    'pd_warranty',
-    'pd_status',
-    'pd_bestseller',
-    'pd_assembly_required',
-  ]
+  // Header row — all fields
+  const headerCols = PRODUCT_CSV_FIELDS.map(f => f.name)
   lines.push(headerCols.join(','))
 
   // Sample rows
