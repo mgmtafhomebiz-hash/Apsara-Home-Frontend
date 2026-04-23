@@ -9,6 +9,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { useGetPublicGeneralSettingsQuery } from '@/store/api/adminSettingsApi';
 import { resolveCheckoutSource } from '@/libs/checkoutSource';
+import { extractPartnerSlugFromPath } from '@/libs/storefrontRouting';
 import PrimaryButton from '@/components/ui/buttons/PrimaryButton';
 import SecondaryButton from '@/components/ui/buttons/SecondaryButton';
 import OutlineButton from '@/components/ui/buttons/OutlineButton';
@@ -51,6 +52,8 @@ const BuyNowOptionsModal = ({
   const loading = false;
   const router = useRouter();
   const pathname = usePathname();
+  const partnerSlug = extractPartnerSlugFromPath(pathname);
+  const checkoutTarget = partnerSlug ? `/${partnerSlug}/checkout/customer` : '/checkout/customer';
 
   const variantOptions = useMemo(
     () =>
@@ -156,7 +159,7 @@ const BuyNowOptionsModal = ({
 
     persistCheckoutDraft();
     handleClose();
-    router.push('/checkout/customer');
+    router.push(checkoutTarget);
   };
 
   const handleCustomerCheckout = () => {
@@ -168,7 +171,7 @@ const BuyNowOptionsModal = ({
 
     persistCheckoutDraft();
     handleClose();
-    router.push('/checkout/customer');
+    router.push(checkoutTarget);
   };
 
   return (

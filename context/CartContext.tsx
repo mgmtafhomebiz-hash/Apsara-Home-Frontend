@@ -56,8 +56,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
 export function useCart(): CartContextType {
   const dispatch = useAppDispatch()
-  const { data: session } = useSession()
-  const isLoggedIn = Boolean(session?.user)
+  const { data: session, status } = useSession()
+  const role = String(session?.user?.role ?? '').toLowerCase()
+  const isLoggedIn = status === 'authenticated' && (role === 'customer' || role === '')
   const { items, isOpen, selectedIds } = useAppSelector((state) => state.cart)
   const { data: cartData, isLoading: isCartLoading } = useGetCartQuery(undefined, {
     skip: !isLoggedIn,

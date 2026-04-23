@@ -6,7 +6,7 @@ import { useSession } from 'next-auth/react'
 import { showErrorToast, showSuccessToast } from '@/libs/toast'
 import { getPartnerStorefrontConfig, parseIdList } from '@/libs/partnerStorefront'
 import { useGetCategoriesQuery } from '@/store/api/categoriesApi'
-import { type Product, useLazyGetProductsQuery } from '@/store/api/productsApi'
+import { type Product, useLazyGetProductsQuery, useLazyGetPublicProductQuery } from '@/store/api/productsApi'
 import {
   useCreateAdminWebPageItemMutation,
   useGetAdminWebPageItemsQuery,
@@ -87,6 +87,7 @@ export default function PartnerStorefrontStudio() {
   const [helperProductById, setHelperProductById] = useState<Record<number, Product>>({})
   const [isLoadingHelperProducts, setIsLoadingHelperProducts] = useState(false)
   const [logoVersion, setLogoVersion] = useState(0)
+  const missingSelectedProductRequestIdsRef = useRef<Set<number>>(new Set())
   const { data: session } = useSession()
   const sessionRole = String(session?.user?.role ?? '').toLowerCase()
   const sessionUserLevelId = Number((session?.user as { userLevelId?: number } | undefined)?.userLevelId ?? 0)
@@ -113,6 +114,7 @@ export default function PartnerStorefrontStudio() {
   const logoInputRef = useRef<HTMLInputElement | null>(null)
   const { data: categoriesData } = useGetCategoriesQuery({ per_page: 200 })
   const [fetchProducts] = useLazyGetProductsQuery()
+  const [fetchPublicProduct] = useLazyGetPublicProductQuery()
   const [createItem, { isLoading: isCreating }] = useCreateAdminWebPageItemMutation()
   const [updateItem, { isLoading: isUpdating }] = useUpdateAdminWebPageItemMutation()
 
@@ -446,6 +448,42 @@ export default function PartnerStorefrontStudio() {
     }
   }
 
+  const handleRemoveReferralLink = async () => {
+    const previousReferral = draft.referralLink
+    if (!previousReferral.trim()) return
+
+    const nextDraft = { ...draft, referralLink: '' }
+    setDraft(nextDraft)
+
+    if (!nextDraft.id) {
+      showSuccessToast('Referral link removed. Click "Save Storefront" to apply it.')
+      return
+    }
+
+    if (isPartnerScoped && !allowedStorefrontIds.includes(nextDraft.id)) {
+      setDraft((current) => ({ ...current, referralLink: previousReferral }))
+      showErrorToast('You do not have access to edit this storefront.')
+      return
+    }
+
+    const slug = toSlug(nextDraft.slug || nextDraft.displayName)
+    if (!slug) {
+      setDraft((current) => ({ ...current, referralLink: previousReferral }))
+      showErrorToast('Add a slug or display name first.')
+      return
+    }
+
+    try {
+      await updateItem({ type: 'partner-storefront', id: nextDraft.id, data: buildStorefrontPayload(nextDraft) }).unwrap()
+      showSuccessToast('Referral link removed.')
+      refetch()
+    } catch (error) {
+      setDraft((current) => ({ ...current, referralLink: previousReferral }))
+      const apiErr = error as { data?: { message?: string } }
+      showErrorToast(apiErr?.data?.message || 'Failed to remove referral link.')
+    }
+  }
+
   useEffect(() => {
     if (!isPartnerScoped) return
 
@@ -484,6 +522,54 @@ export default function PartnerStorefrontStudio() {
       setSelectedProductsCategoryFilter('all')
     }
   }, [selectedProductsCategoryFilter, selectedProductCategoryOptions])
+
+  useEffect(() => {
+    let isCancelled = false
+
+    const missingIds = draft.featuredProductIds.filter(
+      (id) => !helperProductById[id] && !missingSelectedProductRequestIdsRef.current.has(id),
+    )
+    if (missingIds.length === 0) {
+      return
+    }
+
+    missingIds.forEach((id) => missingSelectedProductRequestIdsRef.current.add(id))
+
+    const loadMissingSelectedProducts = async () => {
+      try {
+        const results = await Promise.allSettled(
+          missingIds.map(async (id) => {
+            const product = await fetchPublicProduct(id).unwrap()
+            return { id, product }
+          }),
+        )
+
+        if (isCancelled) return
+
+        const resolvedProducts = results
+          .filter((result): result is PromiseFulfilledResult<{ id: number; product: Product }> => result.status === 'fulfilled')
+          .map((result) => result.value.product)
+
+        if (resolvedProducts.length > 0) {
+          setHelperProductById((current) => {
+            const next = { ...current }
+            resolvedProducts.forEach((product) => {
+              next[product.id] = product
+            })
+            return next
+          })
+        }
+      } finally {
+        missingIds.forEach((id) => missingSelectedProductRequestIdsRef.current.delete(id))
+      }
+    }
+
+    void loadMissingSelectedProducts()
+
+    return () => {
+      isCancelled = true
+    }
+  }, [draft.featuredProductIds, fetchPublicProduct, helperProductById])
 
   useEffect(() => {
     let isCancelled = false
@@ -716,12 +802,24 @@ export default function PartnerStorefrontStudio() {
                   <p className="text-sm font-semibold text-slate-800">Upload referral link</p>
                   <p className="mt-1 text-xs text-slate-500">Paste your referral URL for this storefront.</p>
                 </div>
-                <input
-                  value={draft.referralLink}
-                  onChange={(event) => setDraft((current) => ({ ...current, referralLink: event.target.value }))}
-                  placeholder="https://www.afhome.ph/signup?ref=yourcode"
-                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-emerald-300"
-                />
+                <div className="flex items-center gap-2">
+                  <input
+                    value={draft.referralLink}
+                    onChange={(event) => setDraft((current) => ({ ...current, referralLink: event.target.value }))}
+                    placeholder="https://www.afhome.ph/signup?ref=yourcode"
+                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-emerald-300"
+                  />
+                  {draft.referralLink.trim() ? (
+                    <button
+                      type="button"
+                      onClick={() => void handleRemoveReferralLink()}
+                      disabled={saving}
+                      className="shrink-0 rounded-2xl border border-red-200 bg-white px-4 py-3 text-sm font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      Remove
+                    </button>
+                  ) : null}
+                </div>
                 <p className="text-[11px] text-slate-500">Saved when you click <span className="font-semibold">Save Storefront</span>.</p>
               </div>
             </Field>

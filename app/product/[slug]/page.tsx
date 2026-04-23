@@ -15,6 +15,7 @@ import type { Category } from '@/store/api/categoriesApi';
 import type { Product } from '@/store/api/productsApi';
 import { buildPageMetadata } from '@/app/seo';
 import { getNavbarCategories } from '@/libs/serverStorefront';
+import { buildCanonicalProductSlug, getProductPageData } from '@/libs/productPageData';
 export const dynamic = 'force-dynamic';
 
 type LooseRecord = Record<string, unknown>;
@@ -28,27 +29,6 @@ interface ApiCategoriesResponse {
 interface ApiProductsResponse {
   products?: Product[];
   data?: Product[];
-}
-
-interface ProductPageData {
-  product: CategoryProduct;
-  categorySlug: string;
-  categoryId: number;
-  categoryLabel: string;
-  relatedProducts: CategoryProduct[];
-  reviewSummary?: {
-    average: number;
-    count: number;
-    breakdown: Record<number, number>;
-  };
-  reviews?: Array<{
-    id: number;
-    rating: number;
-    review: string;
-    customer_name: string;
-    customer_avatar?: string | null;
-    created_at?: string | null;
-  }>;
 }
 
 const ChevronRight = () => (
@@ -72,12 +52,6 @@ const parseSlugAndId = (raw: string) => {
     slugOnly: (match[1] || '').trim(),
     id: Number.isFinite(id) ? id : null,
   };
-};
-
-const buildCanonicalProductSlug = (name: string, id?: number) => {
-  const base = slugify(name);
-  if (typeof id === 'number' && id > 0) return `${base}-i${id}`;
-  return base;
 };
 
 export async function generateMetadata(
@@ -316,91 +290,6 @@ const getCategorySlugFromProduct = (row: LooseRecord, categories: Category[]) =>
   if (categoryName) return slugify(categoryName);
   return '';
 };
-
-async function getProductPageData(slug: string): Promise<ProductPageData | null> {
-  const apiUrl = process.env.LARAVEL_API_URL ?? process.env.NEXT_PUBLIC_LARAVEL_API_URL;
-  if (!apiUrl) return null;
-  const { slugOnly, id } = parseSlugAndId(slug);
-
-  try {
-    const [categoriesRes, productRes, productsRes] = await Promise.all([
-      fetch(`${apiUrl}/api/categories?page=1&per_page=100`, {
-        method: 'GET',
-        headers: { Accept: 'application/json' },
-        cache: 'no-store',
-      }),
-      fetch(id ? `${apiUrl}/api/products/${id}` : `${apiUrl}/api/products/slug/${encodeURIComponent(slugOnly)}`, {
-        method: 'GET',
-        headers: { Accept: 'application/json' },
-        cache: 'no-store',
-      }),
-      fetch(`${apiUrl}/api/products?page=1&per_page=100&status=1`, {
-        method: 'GET',
-        headers: { Accept: 'application/json' },
-        cache: 'no-store',
-      }),
-    ]);
-
-    if (!categoriesRes.ok || !productRes.ok || !productsRes.ok) return null;
-
-    const categories = extractCategories(await categoriesRes.json());
-    const productJson = (await productRes.json()) as { product?: Product };
-    const target = productJson.product ? toLooseRecord(productJson.product) : null;
-    if (!target) return null;
-
-    const products = extractProducts(await productsRes.json()).map((p) => toLooseRecord(p));
-
-    const categorySlug = getCategorySlugFromProduct(target, categories);
-    const matchedCategory = categories.find((c) => normalizeCategorySlug(c.url, c.name) === categorySlug);
-    const categoryId = matchedCategory?.id ?? 0;
-    const categoryLabel = matchedCategory?.name ?? categoryMeta[categorySlug]?.label ?? 'Category';
-
-    const relatedProducts = products
-      .filter((row) => {
-        const rowId = toNumber(row.id ?? row.pd_id ?? 0);
-        if (id && rowId === id) return false;
-        const rowSlug = slugify(String(row.name ?? row.pd_name ?? ''));
-        if (rowSlug === slugOnly) return false;
-        const rowCategorySlug = getCategorySlugFromProduct(row, categories);
-        return rowCategorySlug === categorySlug;
-      })
-      .slice(0, 4)
-      .map((row) => toCategoryProduct(row, apiUrl));
-
-    const resolvedProduct = toCategoryProduct(target, apiUrl);
-    const reviewId = resolvedProduct.id ?? id ?? 0;
-    let reviewSummary: ProductPageData['reviewSummary'];
-    let reviews: ProductPageData['reviews'];
-    if (reviewId > 0) {
-      try {
-        const reviewsRes = await fetch(`${apiUrl}/api/products/${reviewId}/reviews`, {
-          method: 'GET',
-          headers: { Accept: 'application/json' },
-          cache: 'no-store',
-        });
-        if (reviewsRes.ok) {
-          const reviewsJson = (await reviewsRes.json()) as { summary?: ProductPageData['reviewSummary']; reviews?: ProductPageData['reviews'] };
-          reviewSummary = reviewsJson.summary;
-          reviews = reviewsJson.reviews;
-        }
-      } catch {
-        // Keep fallback empty if review endpoint fails.
-      }
-    }
-
-    return {
-      product: resolvedProduct,
-      categorySlug,
-      categoryId,
-      categoryLabel,
-      relatedProducts,
-      reviewSummary,
-      reviews,
-    };
-  } catch {
-    return null;
-  }
-}
 
 export default async function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;

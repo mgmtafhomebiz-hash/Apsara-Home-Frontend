@@ -11,7 +11,11 @@ import {
 const createLocalStorageMock = () => {
   const store = new Map<string, string>()
 
-  return {
+  const localStorage: Storage = {
+    get length() {
+      return store.size
+    },
+    key: (index: number) => Array.from(store.keys())[index] ?? null,
     getItem: (key: string) => store.get(key) ?? null,
     setItem: (key: string, value: string) => {
       store.set(key, value)
@@ -23,13 +27,13 @@ const createLocalStorageMock = () => {
       store.clear()
     },
   }
+
+  return localStorage
 }
 
 beforeEach(() => {
   const localStorage = createLocalStorageMock()
-  ;(globalThis as typeof globalThis & { window: { localStorage: typeof localStorage } }).window = {
-    localStorage,
-  }
+  ;(globalThis as any).window = { localStorage }
 })
 
 describe('normalizeReferralCode', () => {

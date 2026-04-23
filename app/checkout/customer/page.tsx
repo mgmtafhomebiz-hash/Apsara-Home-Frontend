@@ -1,14 +1,10 @@
 import { buildPageMetadata } from '@/app/seo';
-import CustomerCheckoutMain from "@/components/checkout/customer/CustomerCheckoutMain";
-import { getNavbarCategories } from '@/libs/serverStorefront';
+import { redirect } from 'next/navigation';
 
 export const metadata = buildPageMetadata({ title: 'Checkout Customer', description: 'Browse the Checkout Customer page on AF Home.', path: '/checkout/customer', noIndex: true });
 
-const CustomerPage = async () => {
-  const navbarCategories = await getNavbarCategories();
-  return (
-    <CustomerCheckoutMain initialCategories={navbarCategories} />
-  )
+const CustomerPage = () => {
+  redirect('/synergy-shop/checkout/customer');
 }
 
 export default CustomerPage;

@@ -8,8 +8,10 @@ export function buildPageMetadata(input: {
   description: string;
   path?: string;
   noIndex?: boolean;
+  siteName?: string;
 }): Metadata {
-  const fullTitle = `${input.title} | AF Home`;
+  const siteName = (input.siteName ?? 'AF Home').trim() || 'AF Home';
+  const fullTitle = siteName ? `${input.title} | ${siteName}` : input.title;
   const canonicalPath = input.path || '/';
   const canonicalUrl = canonicalPath.startsWith('http')
     ? canonicalPath
@@ -23,7 +25,7 @@ export function buildPageMetadata(input: {
       title: fullTitle,
       description: input.description,
       url: canonicalUrl,
-      siteName: 'AF Home',
+      siteName,
       type: 'website',
     },
     twitter: {

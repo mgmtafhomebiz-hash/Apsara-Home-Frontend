@@ -18,6 +18,8 @@ interface ProductPageClientProps {
     product: CategoryProduct;
     categoryLabel: string;
     reviewSummary?: ProductReviewSummary | null;
+    forceRealPrice?: boolean;
+    allowGuestWishlist?: boolean;
 }
 
 type VariantOption = NonNullable<CategoryProduct['variants']>[number];
@@ -207,7 +209,13 @@ const BrandCardComponent = ({ productId, toSlugBrand }: { productId?: number; to
     );
 };
 
-const ProductPageClient = ({ product, categoryLabel, reviewSummary }: ProductPageClientProps) => {
+const ProductPageClient = ({
+    product,
+    categoryLabel,
+    reviewSummary,
+    forceRealPrice = false,
+    allowGuestWishlist = false,
+}: ProductPageClientProps) => {
     const [selectedVariant, setSelectedVariant] = useState<VariantOption | undefined>(undefined);
     const galleryKey = selectedVariant?.images?.join('|') || product.images?.join('|') || product.image;
     const router = useRouter();
@@ -296,9 +304,11 @@ const ProductPageClient = ({ product, categoryLabel, reviewSummary }: ProductPag
                     categoryLabel={categoryLabel}
                     onVariantChange={handleVariantChange}
                     reviewSummary={reviewSummary ?? undefined}
+                    forceRealPrice={forceRealPrice}
+                    allowGuestWishlist={allowGuestWishlist}
                 />
             </div>
-            <StickyAddToCart product={product} selectedVariant={selectedVariant} />
+            <StickyAddToCart product={product} selectedVariant={selectedVariant} forceRealPrice={forceRealPrice} />
         </>
     );
 };

@@ -4,9 +4,7 @@ import Image from 'next/image';
 import { CustomerCheckoutData } from '@/types/CustomerCheckout/types';
 import { CategoryProduct } from '@/libs/CategoryData';
 import Loading from '@/components/Loading';
-import Link from 'next/link';
-import { useState, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import OutlineButton from '@/components/ui/buttons/OutlineButton';
 
@@ -14,16 +12,16 @@ interface Props {
   checkoutData: CustomerCheckoutData | null;
   loading: boolean;
   onSubmit: () => void;
-  isLoggedIn?: boolean;
   voucher?: { code: string; discount: number } | null;
   computedTotal?: number;
   fullProduct?: CategoryProduct | null;
 }
 
-export default function CustomerCheckoutOrderSummary({ checkoutData, loading, onSubmit, isLoggedIn = false, voucher, computedTotal, fullProduct }: Props) {
-  const router = useRouter();
+export default function CustomerCheckoutOrderSummary({ checkoutData, loading, onSubmit, voucher, computedTotal, fullProduct }: Props) {
   const [variantPickerOpen, setVariantPickerOpen] = useState(false);
-  const [selectedVariantSku, setSelectedVariantSku] = useState(checkoutData?.selectedSku || '');
+  const variantOptions = (fullProduct?.variants ?? []).filter((v) =>
+    Boolean(v.color || v.style || v.size || v.name || v.sku),
+  );
 
   if (!checkoutData) {
     return (
@@ -80,33 +78,8 @@ export default function CustomerCheckoutOrderSummary({ checkoutData, loading, on
     window.dispatchEvent(new CustomEvent('checkout-variant-changed'));
   };
 
-  const variantOptions = useMemo(() => {
-    if (!fullProduct?.variants) return [];
-    return fullProduct.variants.filter(v =>
-      Boolean(v.color || v.style || v.size || v.name || v.sku)
-    );
-  }, [fullProduct?.variants]);
-
   return (
     <div className="space-y-4">
-      {!isLoggedIn ? (
-        <div className="bg-orange-50 dark:bg-orange-900/20 rounded-2xl border border-orange-200 dark:border-orange-800 p-4 flex items-start gap-3">
-          <div className="h-9 w-9 rounded-xl bg-orange-100 flex items-center justify-center shrink-0">
-            <svg className="w-4 h-4 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-            </svg>
-          </div>
-          <div className="flex-1">
-            <p className="text-xs font-bold text-orange-700">Sign in to your account</p>
-            <p className="text-[10px] text-orange-500 mt-0.5">Track your order and earn PV points on every purchase.</p>
-            <Link href="/login?callback=%2Fcheckout%2Fcustomer" className="mt-2 inline-flex items-center gap-1 text-[11px] text-orange-600 font-bold hover:underline">
-              Sign in to your account
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" /></svg>
-            </Link>
-          </div>
-        </div>
-      ) : null}
-
       <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 p-5">
         <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-4">Order Summary</p>
 

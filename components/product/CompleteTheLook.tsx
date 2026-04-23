@@ -6,7 +6,9 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { useCart } from '@/context/CartContext';
 import { useGetPublicProductsQuery } from '@/store/api/productsApi';
+import { usePathname } from 'next/navigation';
 import PrimaryButton from '@/components/ui/buttons/PrimaryButton';
+import { buildStorefrontProductPath } from '@/libs/storefrontRouting';
 
 interface CompleteTheLookProps {
   currentCategory: string;
@@ -31,18 +33,6 @@ const formatMoney = (value: number) =>
     currency: 'PHP',
     maximumFractionDigits: 0,
   }).format(value || 0);
-
-const slugify = (value: string) =>
-  (value || '')
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-
-const buildProductPath = (name: string, id?: number) => {
-  const base = slugify(name || 'product');
-  return typeof id === 'number' && id > 0 ? `/product/${base}-i${id}` : `/product/${base}`;
-};
 
 const resolveBundleCopy = (categoryLabel?: string, categorySlug?: string) => {
   const label = (categoryLabel || categorySlug || '').toLowerCase();
@@ -81,6 +71,7 @@ type BundleItem = {
 
 const CompleteTheLook = ({ currentCategory, currentCategoryId, currentCategoryLabel, currentProductId }: CompleteTheLookProps) => {
   const { addToCart } = useCart();
+  const pathname = usePathname();
   const { title, subtitle } = useMemo(
     () => resolveBundleCopy(currentCategoryLabel, currentCategory),
     [currentCategoryLabel, currentCategory],
@@ -186,7 +177,7 @@ const CompleteTheLook = ({ currentCategory, currentCategoryId, currentCategoryLa
         <div className="divide-y divide-gray-100 dark:divide-gray-700">
           {bundleItems.map((item, index) => {
             const isSelected = selected.has(item.id);
-            const productPath = buildProductPath(item.name, item.id);
+            const productPath = buildStorefrontProductPath(item.name, item.id, pathname);
 
             return (
               <motion.div

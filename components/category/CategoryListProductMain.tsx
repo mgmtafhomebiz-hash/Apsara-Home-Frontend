@@ -14,6 +14,7 @@ import TopFilter from '@/components/item/TopFilter';
 import ProductFilter, { FilterState } from '@/components/item/ProductFilter';
 import ShareModal from '@/components/ui/ShareModal';
 import { CategoryProduct, categoryMeta, categoryProducts, CATEGORY_BRANDS } from '@/libs/CategoryData';
+import { buildStorefrontProductPath } from '@/libs/storefrontRouting';
 import type { Category } from '@/store/api/categoriesApi';
 
 const containerVariants = {
@@ -150,7 +151,7 @@ export default function CategoryListProductMain({
     hasError = false,
 }: CategoryListProductMainProps) {
     const pathname = usePathname();
-    const isSynergyProductRoute = pathname?.startsWith('/shop/synergy-shop/product') || slug === 'synergy-shop-products';
+    const isSynergyProductRoute = pathname?.startsWith('/shop/synergy-shop') || pathname?.startsWith('/synergy-shop') || slug === 'synergy-shop-products';
     const meta = categoryMeta[slug];
     const staticProducts = categoryProducts[slug];
     const hasDynamicProducts = Array.isArray(initialProducts) && initialProducts.length > 0;
@@ -195,7 +196,7 @@ export default function CategoryListProductMain({
                         initialCategories={initialCategories}
                         logoSrc={isSynergyProductRoute ? '/Images/synergy.png' : '/Images/af_home_logo.png'}
                         logoAlt={isSynergyProductRoute ? 'Synergy Shop' : 'AF Home'}
-                        logoHref={isSynergyProductRoute ? '/shop/synergy-shop/product' : '/shop'}
+                        logoHref={isSynergyProductRoute ? '/synergy-shop/product' : '/shop'}
                         hideSignIn={isSynergyProductRoute}
                         hideNavLinks={isSynergyProductRoute}
                         stickToTop={isSynergyProductRoute}
@@ -252,7 +253,7 @@ export default function CategoryListProductMain({
                         initialCategories={initialCategories}
                         logoSrc={isSynergyProductRoute ? '/Images/synergy.png' : '/Images/af_home_logo.png'}
                         logoAlt={isSynergyProductRoute ? 'Synergy Shop' : 'AF Home'}
-                        logoHref={isSynergyProductRoute ? '/shop/synergy-shop/product' : '/shop'}
+                        logoHref={isSynergyProductRoute ? '/synergy-shop/product' : '/shop'}
                         hideSignIn={isSynergyProductRoute}
                         hideNavLinks={isSynergyProductRoute}
                         stickToTop={isSynergyProductRoute}
@@ -478,7 +479,7 @@ export default function CategoryListProductMain({
                 initialCategories={initialCategories}
                 logoSrc={isSynergyProductRoute ? '/Images/synergy.png' : '/Images/af_home_logo.png'}
                 logoAlt={isSynergyProductRoute ? 'Synergy Shop' : 'AF Home'}
-                logoHref={isSynergyProductRoute ? '/shop/synergy-shop/product' : '/shop'}
+                logoHref={isSynergyProductRoute ? '/synergy-shop/product' : '/shop'}
                 hideSignIn={isSynergyProductRoute}
                 hideNavLinks={isSynergyProductRoute}
                 stickToTop={isSynergyProductRoute}
@@ -491,7 +492,7 @@ export default function CategoryListProductMain({
                     <div className="container mx-auto px-4 py-3 flex items-center justify-between">
                         <h1 className="text-base font-bold text-slate-800 dark:text-white">{categoryLabel}</h1>
                         <nav className="flex items-center gap-1.5 text-xs text-gray-400 dark:text-gray-500">
-                            <Link href={isSynergyProductRoute ? '/shop/synergy-shop' : '/'} className="hover:text-sky-500 dark:hover:text-sky-400 transition-colors font-medium">Home</Link>
+                            <Link href={isSynergyProductRoute ? '/synergy-shop/product' : '/'} className="hover:text-sky-500 dark:hover:text-sky-400 transition-colors font-medium">Home</Link>
                             <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6" /></svg>
                             <span className="text-slate-600 dark:text-gray-300 font-semibold">{categoryLabel}</span>
                         </nav>
@@ -583,9 +584,23 @@ export default function CategoryListProductMain({
                                             transition={{ duration: 0.22, delay: i * 0.02, ease: 'easeOut' }}
                                         >
                                             {viewMode === 'grid' ? (
-                                                <ItemCard key={product.id} product={product} brandName={product.brand || ''} hideDiscountBadge={isSynergyProductRoute} />
+                                                <ItemCard
+                                                    key={product.id}
+                                                    product={product}
+                                                    brandName={product.brand || ''}
+                                                    hideDiscountBadge={isSynergyProductRoute}
+                                                    forceRealPrice={isSynergyProductRoute}
+                                                    allowGuestAddToCart={isSynergyProductRoute}
+                                                    allowGuestWishlist={isSynergyProductRoute}
+                                                />
                                             ) : (
-                                                <ListViewProduct key={product.id} product={product} onShareClick={(p) => { setShareProduct(p); setShareModalOpen(true); }} hideDiscountBadge={isSynergyProductRoute} />
+                                                <ListViewProduct
+                                                    key={product.id}
+                                                    product={product}
+                                                    onShareClick={(p) => { setShareProduct(p); setShareModalOpen(true); }}
+                                                    hideDiscountBadge={isSynergyProductRoute}
+                                                    forceRealPrice={isSynergyProductRoute}
+                                                />
                                             )}
                                         </motion.div>
                                     ))}
@@ -660,7 +675,8 @@ export default function CategoryListProductMain({
                     brand: shareProduct.brand,
                 }}
                 brandName={shareProduct.brand || ''}
-                shareUrl={`https://apsara-home.com/product/${shareProduct.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-i${shareProduct.id}`}
+                shareUrl={`${typeof window !== 'undefined' ? window.location.origin : ''}${buildStorefrontProductPath(shareProduct.name, shareProduct.id, pathname)}`}
+                forceRealPrice={isSynergyProductRoute}
             />
         )}
         </>
@@ -671,14 +687,17 @@ interface ListViewProductProps {
     product: CategoryProduct;
     onShareClick: (product: CategoryProduct) => void;
     hideDiscountBadge?: boolean;
+    forceRealPrice?: boolean;
 }
 
-function ListViewProduct({ product, onShareClick, hideDiscountBadge = false }: ListViewProductProps) {
+function ListViewProduct({ product, onShareClick, hideDiscountBadge = false, forceRealPrice = false }: ListViewProductProps) {
+    const pathname = usePathname()
     const srpPrice = (product.priceSrp ? Number(product.priceSrp) : undefined) ?? (product.price ? Number(product.price) : undefined) ?? 0
     const memberPrice = (product.priceMember ? Number(product.priceMember) : undefined) ?? (product.priceDp ? Number(product.priceDp) : undefined) ?? 0
     const hasMemberPrice = memberPrice > 0 && memberPrice < srpPrice
-    const displayPrice = hasMemberPrice ? memberPrice : srpPrice
-    const strikePrice = hasMemberPrice ? srpPrice : Number(product.originalPrice ?? 0)
+    const showMemberPrice = hasMemberPrice && !forceRealPrice
+    const displayPrice = showMemberPrice ? memberPrice : srpPrice
+    const strikePrice = showMemberPrice ? srpPrice : Number(product.originalPrice ?? 0)
     const displayPv = Number(product.prodpv ?? 0)
     const productWithStats = product as CategoryProduct & { soldCount?: number; avgRating?: number }
     const averageRating = Math.max(0, Math.min(5, Number(productWithStats.avgRating ?? product.rating ?? 0)))
@@ -690,12 +709,12 @@ function ListViewProduct({ product, onShareClick, hideDiscountBadge = false }: L
 
     return (
         <Link
-            href={`/product/${product.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-i${product.id}`}
+            href={buildStorefrontProductPath(product.name, product.id, pathname)}
             className="flex gap-2 sm:gap-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden hover:border-sky-500 dark:hover:border-sky-400 transition-colors group relative"
         >
             <div className="relative aspect-square w-20 sm:w-32 bg-gray-100 dark:bg-gray-700 overflow-hidden shrink-0 flex-shrink-0">
                 {/* Discount Badge */}
-                {hasMemberPrice && !hideDiscountBadge && (
+                {showMemberPrice && !hideDiscountBadge && (
                     <div className="absolute top-2 left-2 bg-sky-500 text-white text-[10px] sm:text-xs font-bold px-2 py-1 z-10 max-w-[calc(100%-16px)]">
                         {isLoggedIn ? `Enjoy ${Math.round(((srpPrice - memberPrice) / srpPrice) * 100)}% off` : `Register to get ${Math.round(((srpPrice - memberPrice) / srpPrice) * 100)}% discount`}
                     </div>

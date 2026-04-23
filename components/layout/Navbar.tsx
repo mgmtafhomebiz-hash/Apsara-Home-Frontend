@@ -15,6 +15,7 @@ import { baseApi, clearAccessTokenCache } from '@/store/api/baseApi'
 import type { Category } from '@/store/api/categoriesApi'
 import { useGetPublicProductsQuery } from '@/store/api/productsApi'
 import { useSaveSearchHistoryMutation, useGetSearchHistoryQuery, useClearSearchHistoryMutation, useDeleteSearchHistoryItemMutation } from '@/store/api/searchApi'
+import { useGetPublicWebPageItemsQuery } from '@/store/api/webPagesApi'
 import formatPrice from '@/helpers/FormatPrice'
 import { useMeQuery } from '@/store/api/userApi'
 import { useGetCustomerNotificationsQuery } from '@/store/api/customerNotificationsApi'
@@ -24,6 +25,8 @@ import { useRouter, usePathname } from 'next/navigation'
 import { useAppDispatch } from '@/store/hooks'
 import { ROOM_OPTIONS } from '@/libs/roomConfig'
 import { useGetPublicProductBrandsQuery } from '@/store/api/productBrandsApi'
+import { getPartnerStorefrontConfig } from '@/libs/partnerStorefront'
+import { buildStorefrontProductPath, extractPartnerSlugFromPath } from '@/libs/storefrontRouting'
 import PrimaryButton from '@/components/ui/buttons/PrimaryButton'
 import OutlineButton from '@/components/ui/buttons/OutlineButton'
 import ThemeToggle from '@/components/ui/buttons/ThemeToggle'
@@ -177,7 +180,7 @@ function NavbarInner({
   const {
     data: wishlist = [],
   } = useGetWishlistQuery(undefined, {
-    skip: !isLoggedIn,
+    skip: !isLoggedIn || hideSignIn,
   })
   const [readCustomerNotificationKeys, setReadCustomerNotificationKeys] = useState<string[]>([])
 
@@ -223,6 +226,8 @@ function NavbarInner({
   const activeSearchQuery = searchModalQuery.trim()
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(activeSearchQuery)
   const [isSubmittingSearch, setIsSubmittingSearch] = useState(false)
+  const partnerSlug = useMemo(() => extractPartnerSlugFromPath(pathname), [pathname])
+  const isPartnerSearchScoped = showGuestCartWishlist && Boolean(partnerSlug)
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -241,6 +246,17 @@ function NavbarInner({
       skip: debouncedSearchQuery.length < 2,
     },
   )
+  const { data: partnerStorefrontData } = useGetPublicWebPageItemsQuery('partner-storefront', {
+    skip: !isPartnerSearchScoped,
+  })
+  const partnerSelectedProductIdSet = useMemo(() => {
+    if (!isPartnerSearchScoped) return null
+    const storefrontItems = partnerStorefrontData?.items ?? []
+    const matched = storefrontItems.find((item) => getPartnerStorefrontConfig(item)?.slug === partnerSlug)
+    const config = getPartnerStorefrontConfig(matched)
+    if (!config) return new Set<number>()
+    return new Set(config.featuredProductIds)
+  }, [isPartnerSearchScoped, partnerStorefrontData?.items, partnerSlug])
 
   // Search history hooks - only fetch if user is authenticated
   const [saveSearchHistory] = useSaveSearchHistoryMutation()
@@ -267,6 +283,10 @@ function NavbarInner({
         const image = product.image || imageFromArray || null
         const slug = toSlug(name)
         const id = typeof product.id === 'number' ? product.id : null
+        if (isPartnerSearchScoped) {
+          if (!partnerSelectedProductIdSet || partnerSelectedProductIdSet.size === 0) return null
+          if (!id || !partnerSelectedProductIdSet.has(id)) return null
+        }
         const priceMember = typeof product.priceMember === 'number' ? product.priceMember : null
         const priceDp = typeof product.priceDp === 'number' ? product.priceDp : null
         const priceSrp = typeof product.priceSrp === 'number' ? product.priceSrp : null
@@ -275,7 +295,7 @@ function NavbarInner({
           id: id ?? slug,
           name,
           image,
-          path: id ? `/product/${slug}-i${id}` : `/product/${slug}`,
+          path: buildStorefrontProductPath(name, id ?? undefined, pathname),
           priceMember,
           priceDp,
           priceSrp,
@@ -296,7 +316,7 @@ function NavbarInner({
           prodpv: number | null
         } => Boolean(product),
       )
-  }, [searchedProductsData?.products, debouncedSearchQuery])
+  }, [searchedProductsData?.products, debouncedSearchQuery, isPartnerSearchScoped, partnerSelectedProductIdSet, pathname])
 
   const showSearchNotFound =
     searchModalOpen &&
@@ -697,7 +717,7 @@ function NavbarInner({
           {/* Icons */}
           <div className="flex items-center gap-1">
             {/* Auth actions */}
-            {isLoggedIn ? (
+            {isLoggedIn && !hideSignIn ? (
               <>
                 <button
                     onClick={() => setWishlistOpen(true)}
@@ -1355,7 +1375,7 @@ function NavbarInner({
             className="md:hidden border-t border-gray-100 dark:border-gray-800 !bg-white dark:!bg-gray-900 max-h-[70vh] overflow-y-auto"
           >
             <nav className="container mx-auto px-4 py-3 flex flex-col gap-0.5">
-              {isLoggedIn ? (
+              {isLoggedIn && !hideSignIn ? (
                 <div className="mb-3 rounded-2xl border border-sky-100 dark:border-sky-900/50 overflow-hidden shadow-sm dark:shadow-none">
                   {/* Profile header */}
                   {(() => {
@@ -1976,36 +1996,45 @@ function NavbarInner({
                                   <p className="mt-0.5 text-[10px] sm:text-xs text-slate-500 dark:text-gray-400">Match for &quot;{searchModalQuery.trim()}&quot;</p>
                                   {(product.priceMember !== null || product.priceSrp !== null || product.prodpv !== null) && (
                                     <div className="mt-1 sm:mt-2 space-y-1 sm:space-y-1.5">
-                                      {product.priceMember !== null && product.priceMember > 0 && product.priceSrp !== null && product.priceMember < product.priceSrp ? (
-                                        <>
-                                          <div className="flex flex-wrap items-center gap-1 sm:gap-2">
-                                            <span className="text-xs sm:text-sm font-bold text-sky-600 dark:text-sky-400">
-                                              {formatPrice(product.priceMember)}
-                                            </span>
-                                            {product.priceSrp && product.priceSrp > product.priceMember && (
-                                              <>
+                                      {(() => {
+                                        const srpPrice = product.priceSrp ?? 0
+                                        const memberPrice = product.priceMember ?? product.priceDp ?? 0
+                                        const hasDiscountPrice = memberPrice > 0 && srpPrice > 0 && memberPrice < srpPrice
+                                        const displayPrice = isPartnerSearchScoped
+                                          ? (srpPrice > 0 ? srpPrice : memberPrice)
+                                          : (hasDiscountPrice ? memberPrice : (memberPrice > 0 ? memberPrice : srpPrice))
+
+                                        if (hasDiscountPrice && !isPartnerSearchScoped) {
+                                          return (
+                                            <>
+                                              <div className="flex flex-wrap items-center gap-1 sm:gap-2">
+                                                <span className="text-xs sm:text-sm font-bold text-sky-600 dark:text-sky-400">
+                                                  {formatPrice(displayPrice)}
+                                                </span>
                                                 <span className="text-[10px] sm:text-xs text-slate-400 line-through dark:text-gray-500">
-                                                  {formatPrice(product.priceSrp)}
+                                                  {formatPrice(srpPrice)}
                                                 </span>
                                                 <span className="inline-flex items-center rounded-full border border-green-200 bg-green-50 px-1.5 sm:px-2 py-0.5 text-[8px] sm:text-[10px] font-semibold text-green-700 dark:border-green-900/50 dark:bg-green-900/30 dark:text-green-300">
-                                                  Save {formatPrice(product.priceSrp - product.priceMember)}
+                                                  Save {formatPrice(srpPrice - memberPrice)}
                                                 </span>
-                                              </>
-                                            )}
-                                          </div>
-                                          {!isLoggedIn && (
-                                            <span className="inline-flex items-center rounded-full border border-sky-200 bg-sky-50 px-2.5 py-1 text-[11px] font-semibold text-sky-700 dark:border-sky-900/50 dark:bg-sky-900/30 dark:text-sky-300">
-                                              Sign in or Register to claim {Math.round(((product.priceSrp - product.priceMember) / product.priceSrp) * 100)}% savings!
+                                              </div>
+                                              {!isLoggedIn && (
+                                                <span className="inline-flex items-center rounded-full border border-sky-200 bg-sky-50 px-2.5 py-1 text-[11px] font-semibold text-sky-700 dark:border-sky-900/50 dark:bg-sky-900/30 dark:text-sky-300">
+                                                  Sign in or Register to claim {Math.round(((srpPrice - memberPrice) / srpPrice) * 100)}% savings!
+                                                </span>
+                                              )}
+                                            </>
+                                          )
+                                        }
+
+                                        return (
+                                          <div className="flex flex-wrap items-center gap-2">
+                                            <span className="text-sm font-bold text-sky-600 dark:text-sky-400">
+                                              {formatPrice(displayPrice)}
                                             </span>
-                                          )}
-                                        </>
-                                      ) : (
-                                        <div className="flex flex-wrap items-center gap-2">
-                                          <span className="text-sm font-bold text-sky-600 dark:text-sky-400">
-                                            {formatPrice(product.priceMember ?? product.priceSrp ?? 0)}
-                                          </span>
-                                        </div>
-                                      )}
+                                          </div>
+                                        )
+                                      })()}
                                       {product.prodpv !== null && product.prodpv > 0 && (
                                         <span className="inline-flex items-center rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-[11px] font-semibold text-blue-700 dark:border-blue-900/50 dark:bg-blue-900/30 dark:text-blue-300">
                                           PV {product.prodpv.toLocaleString('en-PH', { maximumFractionDigits: 2 })}

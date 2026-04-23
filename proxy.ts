@@ -86,7 +86,14 @@ const getAdminRedirectPath = (role: string): string => {
 
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
-  const token = await getToken({
+  const memberToken = await getToken({
+    req,
+    secret: process.env.NEXTAUTH_SECRET,
+    cookieName: process.env.NODE_ENV === 'production'
+      ? '__Secure-member-next-auth.session-token'
+      : 'member-next-auth.session-token',
+  });
+  const token = memberToken ?? await getToken({
     req,
     secret: process.env.NEXTAUTH_SECRET,
   });

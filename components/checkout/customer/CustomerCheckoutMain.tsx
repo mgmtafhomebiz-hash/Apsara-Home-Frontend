@@ -1,9 +1,8 @@
 'use client';
 
-import Loading from "@/app/loading";
+import LoadingScreen from "@/components/ui/LoadingScreen";
 import Footer from "@/components/layout/Footer";
-import Navbar from "@/components/layout/Navbar";
-import TopBar from "@/components/layout/TopBar";
+import ProductPageWrapper from "@/components/product/ProductPageWrapper";
 import { GuestForm, FormErrors, CustomerCheckoutData, PaymentMethod, PaymentMode } from "@/types/CustomerCheckout/types";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -16,6 +15,7 @@ import CustomerCheckoutOrderSummary from "./CustomerCheckoutOrderSummary";
 import { CheckoutOnlineBankingProvider, useCreateCheckoutSessionMutation, useValidateVoucherMutation } from "@/store/api/paymentApi";
 import { useGetPublicGeneralSettingsQuery } from "@/store/api/adminSettingsApi";
 import { getStoredReferralCode } from "@/libs/referral";
+import { normalizeReferralCode } from "@/libs/referral";
 import { useMeQuery } from "@/store/api/userApi";
 import { useLazyGetPublicProductQuery } from "@/store/api/productsApi";
 import type { Category } from '@/store/api/categoriesApi';
@@ -47,6 +47,16 @@ const REQUIRED_FIELD_ORDER: Array<keyof GuestForm> = [
 ];
 
 const LOCAL_PAYMENT_MODE_HOSTS = new Set(['localhost', '127.0.0.1']);
+
+function PartnerOrderFooter({ partnerName }: { partnerName: string }) {
+    return (
+        <footer className="border-t border-slate-200 bg-white">
+            <div className="mx-auto max-w-7xl px-4 py-6 text-center text-sm text-slate-500 sm:px-6 lg:px-8">
+                Orders from <span className="font-semibold text-slate-800">{partnerName}</span> are still processed through AF Home.
+            </div>
+        </footer>
+    );
+}
 
 type DraftCheckoutItem = NonNullable<CustomerCheckoutData['items']>[number];
 
@@ -90,7 +100,15 @@ function readStoredReferral(): string {
     return getStoredReferralCode() || '';
 }
 
-const CustomerCheckoutMain = ({ initialCategories = [] }: { initialCategories?: Category[] }) => {
+const CustomerCheckoutMain = ({
+    initialCategories = [],
+    storefrontPartner,
+    storefrontReferralCode,
+}: {
+    initialCategories?: Category[];
+    storefrontPartner?: string;
+    storefrontReferralCode?: string;
+}) => {
     const router = useRouter();
     const { data: session, status } = useSession();
     const role = String(session?.user?.role ?? '').toLowerCase();
@@ -100,11 +118,17 @@ const CustomerCheckoutMain = ({ initialCategories = [] }: { initialCategories?: 
     const { data: publicSettingsData } = useGetPublicGeneralSettingsQuery();
     const [fetchProduct, { data: fullProductData }] = useLazyGetPublicProductQuery();
     const [checkoutRefreshTrigger, setCheckoutRefreshTrigger] = useState(0);
+    const normalizedPartner = (storefrontPartner ?? '').trim().toLowerCase();
+    const isSynergyStorefront = normalizedPartner === 'synergy-shop';
+    const shouldShowReferralField = isSynergyStorefront || !isLoggedIn;
+    const backToShopHref = isSynergyStorefront ? '/synergy-shop/product' : '/shop';
+    const checkoutHeaderLabel = isSynergyStorefront ? 'Synergy Shop Secure Checkout' : 'AF Home Secure Checkout';
 
     const checkoutData = useMemo(() => readCheckoutDraft(), [checkoutRefreshTrigger]);
     const storedReferral = useMemo(() => readStoredReferral(), []);
+    const storefrontReferral = useMemo(() => normalizeReferralCode(storefrontReferralCode ?? ''), [storefrontReferralCode]);
     const memberReferral = (meData?.referrer_username ?? '').trim();
-    const effectiveReferral = isLoggedIn ? memberReferral : storedReferral;
+    const effectiveReferral = memberReferral || storedReferral || storefrontReferral;
     const hasLockedReferral = effectiveReferral.trim() !== '';
     const shouldRequireReferral = !isLoggedIn && !hasLockedReferral;
 
@@ -353,17 +377,17 @@ const CustomerCheckoutMain = ({ initialCategories = [] }: { initialCategories?: 
 
     if (!checkoutData) {
         return (
-            <div className="min-h-screen flex items-center justify-center">
-                <Loading />
-            </div>
+            <LoadingScreen
+                logoSrc={isSynergyStorefront ? '/Images/synergy.png' : '/Images/af_home_logo.png'}
+                logoAlt={isSynergyStorefront ? 'Synergy Shop Logo' : 'AF Home Logo'}
+                brandText={isSynergyStorefront ? 'SYNERGY SHOP' : 'AF HOME'}
+                tagline={isSynergyStorefront ? 'Partner Storefront' : 'Your Trusted Home Partner'}
+            />
         );
     }
 
-    return (
-        <div className="min-h-screen bg-white dark:bg-slate-900 flex flex-col">
-            <TopBar />
-            <Navbar initialCategories={initialCategories} />
-            <main className="flex-1">
+    const checkoutContent = (
+        <main className="flex-1">
                 <div className="bg-white dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800">
                     <div className="container mx-auto px-4 py-4 flex items-center justify-between">
                         <div className="flex items-center gap-3">
@@ -371,13 +395,13 @@ const CustomerCheckoutMain = ({ initialCategories = [] }: { initialCategories?: 
                                 <User className="w-5 h-5 text-slate-700 dark:text-slate-300" />
                             </div>
                             <div>
-                                <p className="text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-widest">AF Home Secure Checkout</p>
+                                <p className="text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-widest">{checkoutHeaderLabel}</p>
                                 <h1 className="text-slate-900 dark:text-white font-bold text-lg leading-tight">
                                     {isLoggedIn ? 'Checkout Details' : 'Guest Checkout'}
                                 </h1>
                             </div>
                         </div>
-                        <Link href="/shop" className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white text-xs font-semibold transition-colors bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700">
+                        <Link href={backToShopHref} className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white text-xs font-semibold transition-colors bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700">
                             <ArrowLeft className="w-3.5 h-3.5" />
                             Back to shop
                         </Link>
@@ -391,7 +415,7 @@ const CustomerCheckoutMain = ({ initialCategories = [] }: { initialCategories?: 
                                 form={form}
                                 errors={errors}
                                 setField={setField}
-                                showReferral={!isLoggedIn}
+                                showReferral={shouldShowReferralField}
                                 lockReferralField={hasLockedReferral}
                                 referralSourceCode={hasLockedReferral ? effectiveReferral : ''}
                                 voucherStatus={{
@@ -429,17 +453,31 @@ const CustomerCheckoutMain = ({ initialCategories = [] }: { initialCategories?: 
                                 checkoutData={checkoutData}
                                 loading={loading}
                                 onSubmit={handleSubmit}
-                                isLoggedIn={isLoggedIn}
                                 voucher={voucherInfo ? { code: voucherInfo.code, discount: voucherInfo.discount } : null}
                                 computedTotal={Math.max(0, checkoutData.subtotal - (voucherInfo?.discount ?? 0)) + checkoutData.handlingFee}
                             />
                         </div>
                     </div>
                 </div>
-            </main>
-            <Footer />
-        </div>
-    )
+        </main>
+    );
+
+    return (
+        <ProductPageWrapper
+            initialCategories={initialCategories}
+            hideTopBar={isSynergyStorefront}
+            logoSrc={isSynergyStorefront ? '/Images/synergy.png' : '/Images/af_home_logo.png'}
+            logoAlt={isSynergyStorefront ? 'Synergy Shop' : 'AF Home'}
+            logoHref={isSynergyStorefront ? '/synergy-shop/product' : '/shop'}
+            hideSignIn={isSynergyStorefront}
+            hideNavLinks={isSynergyStorefront}
+            stickToTop={isSynergyStorefront}
+            showGuestCartWishlist={isSynergyStorefront}
+        >
+            {checkoutContent}
+            {isSynergyStorefront ? <PartnerOrderFooter partnerName="Synergy Shop" /> : <Footer />}
+        </ProductPageWrapper>
+    );
 }
 
 export default CustomerCheckoutMain

@@ -1,7 +1,24 @@
 import type { NextConfig } from "next";
 import withSerwist from "@serwist/next";
 
+const skipBuildChecks = process.env.SKIP_BUILD_CHECKS === "1";
+const buildCpusRaw = Number(process.env.NEXT_BUILD_CPUS ?? "");
+const buildCpus = Number.isFinite(buildCpusRaw) && buildCpusRaw > 0 ? buildCpusRaw : undefined;
+const useWorkerThreads = process.env.NEXT_WORKER_THREADS === "1";
+
 const nextConfig: NextConfig = {
+  // Workaround for Windows file locking issues on `.next` (EPERM unlink build-manifest.json).
+  // Using a separate build directory avoids touching a locked `.next` folder.
+  distDir: process.env.NEXT_DIST_DIR || ".next_build",
+  typescript: {
+    ignoreBuildErrors: skipBuildChecks,
+  },
+  experimental: {
+    // Controls worker count used during "Collecting page data...". Set `NEXT_BUILD_CPUS=1` to avoid spawn EPERM on Windows.
+    cpus: buildCpus,
+    // Prefer worker_threads over child_process workers (avoids spawn EPERM on some Windows setups).
+    workerThreads: useWorkerThreads,
+  },
   images: {
     remotePatterns: [
       {
@@ -30,10 +47,18 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  webpack: (config, { dev }) => {
+    // Windows often blocks atomic renames inside webpack's persistent cache packs (EPERM).
+    // Disabling the persistent cache for production builds avoids intermittent build failures.
+    if (!dev) {
+      config.cache = false;
+    }
+    return config;
+  },
 };
 
 export default withSerwist({
   swSrc: "sw.ts",
   swDest: "public/sw.js",
-  disable: process.env.NODE_ENV !== "production",
+  disable: process.env.DISABLE_SW === "1" || process.env.NODE_ENV !== "production",
 })(nextConfig);
