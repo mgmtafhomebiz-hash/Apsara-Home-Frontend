@@ -636,12 +636,13 @@ const ProductInfo = ({
         ? selectedVariant.qty
         : (typeof totalVariantStock === 'number' ? totalVariantStock : product.stock);
     const productType = Number(product.type ?? 0);
-    const isVariantProduct = productType === 1;
-    const hasRealVariants = isVariantProduct && variantOptions.length > 0;
+    const hasRealVariants = variantOptions.length > 0;
     const variantPv = hasRealVariants
         ? (toPositiveNumber(selectedVariant?.prodpv) ?? 0)
         : basePv;
-    const productTypeLabel = PRODUCT_TYPE_LABELS[productType] ?? 'Regular';
+    const productTypeLabel = hasRealVariants
+        ? 'Variant'
+        : (PRODUCT_TYPE_LABELS[productType] ?? 'Regular');
     const displaySku = (selectedVariant?.sku && selectedVariant.sku.trim().length > 0)
         ? selectedVariant.sku
         : (product.sku && product.sku.trim().length > 0 ? product.sku : '');
