@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { BulkImportProductsPayload, BulkImportProductsResponse, BulkImportProductsRow, CreateProductVariantPayload, useBulkImportProductsMutation, useLazyGetProductsQuery } from '@/store/api/productsApi'
 import { useGetCategoriesQuery } from '@/store/api/categoriesApi'
 import { useGetProductBrandsQuery } from '@/store/api/productBrandsApi'
@@ -684,6 +684,8 @@ export default function BulkProductImportPanel({ onClose, onImported }: BulkProd
   const { data: brandData } = useGetProductBrandsQuery({ search: '' })
   const [importProducts, { isLoading }] = useBulkImportProductsMutation()
   const [fetchProducts, { data: existingProductsData }] = useLazyGetProductsQuery()
+  const [editedCells, setEditedCells] = useState<Record<number, Record<string, string>>>({})
+  const [selectedRowIndices, setSelectedRowIndices] = useState<Set<number>>(new Set())
 
   const categoryLookup = useMemo(() => categoryData?.categories ?? [], [categoryData])
   const brandLookup = useMemo(() => brandData?.brands ?? [], [brandData])
@@ -835,6 +837,119 @@ export default function BulkProductImportPanel({ onClose, onImported }: BulkProd
     }
   }, [parsed])
 
+  // Reset selection and edits whenever the CSV source changes
+  useEffect(() => {
+    setEditedCells({})
+    if (!parsed) {
+      setSelectedRowIndices(new Set())
+      return
+    }
+    const count = parsed.rawRows?.length ?? parsed.rows.length
+    setSelectedRowIndices(new Set(Array.from({ length: count }, (_, i) => i)))
+  }, [parsed])
+
+  const rawTableRowCount = parsed ? (parsed.rawRows?.length ?? parsed.rows.length) : 0
+  const isAllSelected = rawTableRowCount > 0 && selectedRowIndices.size === rawTableRowCount
+  const isIndeterminate = selectedRowIndices.size > 0 && selectedRowIndices.size < rawTableRowCount
+
+  const toggleSelectAll = () => {
+    if (isAllSelected) {
+      setSelectedRowIndices(new Set())
+    } else {
+      setSelectedRowIndices(new Set(Array.from({ length: rawTableRowCount }, (_, i) => i)))
+    }
+  }
+
+  const toggleRowSelection = (index: number) => {
+    setSelectedRowIndices((prev) => {
+      const next = new Set(prev)
+      if (next.has(index)) next.delete(index)
+      else next.add(index)
+      return next
+    })
+  }
+
+  const handleCellEdit = (rowIndex: number, col: string, value: string) => {
+    setEditedCells((prev) => ({
+      ...prev,
+      [rowIndex]: { ...(prev[rowIndex] ?? {}), [col]: value },
+    }))
+  }
+
+  const renderPreviewCell = (rowIndex: number, col: string, row: Record<string, unknown>) => {
+    const originalValue = String(row[col] ?? '').trim()
+    const cellValue = editedCells[rowIndex]?.[col] ?? originalValue
+    const isEdited = editedCells[rowIndex]?.[col] !== undefined
+
+    const selectCls = `w-full min-w-[140px] rounded px-2 py-1.5 text-[11px] border transition focus:outline-none focus:ring-1 focus:ring-teal-300 focus:border-teal-300 cursor-pointer ${
+      isEdited ? 'bg-amber-50 border-amber-300 text-amber-900' : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300'
+    }`
+    const inputCls = `w-full min-w-[80px] rounded px-2 py-1.5 text-[11px] text-slate-700 border transition focus:outline-none focus:ring-1 focus:ring-teal-300 focus:border-teal-300 ${
+      isEdited ? 'bg-amber-50 border-amber-300 text-amber-900' : 'bg-transparent border-transparent hover:border-slate-200 hover:bg-white focus:bg-white'
+    }`
+
+    if (col === 'pd_catid') {
+      // rawRows may still hold the category name (not yet resolved to ID), so resolve it here for display
+      const resolvedCatId = normalizeLookupValue(cellValue, categoryLookup)
+      return (
+        <select value={resolvedCatId} onChange={(e) => handleCellEdit(rowIndex, col, e.target.value)} className={selectCls}>
+          <option value="">—</option>
+          {categoryLookup.map((cat) => (
+            <option key={cat.id} value={String(cat.id)}>{cat.name}</option>
+          ))}
+        </select>
+      )
+    }
+    if (col === 'pd_room_type') {
+      return (
+        <select value={cellValue} onChange={(e) => handleCellEdit(rowIndex, col, e.target.value)} className={selectCls}>
+          <option value="">—</option>
+          {ROOM_OPTIONS.map((room) => (
+            <option key={room.id} value={String(room.id)}>{room.label}</option>
+          ))}
+        </select>
+      )
+    }
+    if (col === 'pd_brand_type') {
+      // rawRows may still hold the brand name (not yet resolved to ID), so resolve it here for display
+      const resolvedBrandId = normalizeLookupValue(cellValue, brandLookup)
+      return (
+        <select value={resolvedBrandId} onChange={(e) => handleCellEdit(rowIndex, col, e.target.value)} className={selectCls}>
+          <option value="">—</option>
+          {brandLookup.map((brand) => (
+            <option key={brand.id} value={String(brand.id)}>{brand.name}</option>
+          ))}
+        </select>
+      )
+    }
+    if (col === 'pd_status' || col === 'pv_status') {
+      return (
+        <select value={cellValue} onChange={(e) => handleCellEdit(rowIndex, col, e.target.value)} className={selectCls}>
+          <option value="">—</option>
+          <option value="1">Active</option>
+          <option value="0">Inactive</option>
+        </select>
+      )
+    }
+    if (BOOLEAN_COLUMNS.has(col)) {
+      return (
+        <select value={cellValue} onChange={(e) => handleCellEdit(rowIndex, col, e.target.value)} className={selectCls}>
+          <option value="">—</option>
+          <option value="1">Yes</option>
+          <option value="0">No</option>
+        </select>
+      )
+    }
+    return (
+      <input
+        type="text"
+        value={cellValue}
+        onChange={(e) => handleCellEdit(rowIndex, col, e.target.value)}
+        className={inputCls}
+      />
+    )
+  }
+
   const handleClear = () => {
     setFileName('')
     setCsvText('')
@@ -894,7 +1009,47 @@ export default function BulkProductImportPanel({ onClose, onImported }: BulkProd
     }
 
     setImportResults(null)
-    const rows = normalizedRows ?? parsed.rows
+
+    // Build import rows: apply edits, filter by selection, re-group, normalize
+    const rawRowsSource = parsed.rawRows ?? []
+    const filteredEditedRaw = rawRowsSource
+      .map((row, i) => ({ ...row, ...(editedCells[i] ?? {}) }))
+      .filter((_, i) => selectedRowIndices.has(i))
+
+    if (filteredEditedRaw.length === 0) {
+      showErrorToast('No rows selected. Please select at least one row to import.')
+      return
+    }
+
+    const groupedForImport = groupVariantRows(filteredEditedRaw)
+
+    const numericImportFields = [
+      'pd_catid', 'pd_room_type', 'pd_brand_type', 'pd_catsubid',
+      'pd_price_srp', 'pd_price_dp', 'pd_price_member', 'pd_prodpv',
+      'pd_qty', 'pd_weight', 'pd_psweight', 'pd_pswidth', 'pd_pslenght', 'pd_psheight',
+      'pd_type', 'pd_status', 'pd_musthave', 'pd_bestseller', 'pd_salespromo',
+      'pd_assembly_required', 'pd_verified', 'pd_manual_checkout_enabled',
+    ]
+
+    const rows: BulkImportProductsRow[] = groupedForImport.map((row) => {
+      const normalizedCatid = normalizeLookupValue(String(row.pd_catid ?? ''), categoryLookup)
+      const normalizedBrand = normalizeLookupValue(String(row.pd_brand_type ?? ''), brandLookup)
+      const normalizedRow: Record<string, unknown> = {
+        ...row,
+        pd_catid: normalizedCatid,
+        pd_brand_type: normalizedBrand,
+        pd_room_type: normalizeRoomType(String(row.pd_room_type ?? '')),
+        pd_images: parseImageList(row.pd_images),
+      }
+      numericImportFields.forEach((field) => {
+        const value = normalizedRow[field]
+        if (typeof value === 'string' && value.trim() !== '' && !isNaN(Number(value))) {
+          normalizedRow[field] = Number(value)
+        }
+      })
+      return normalizedRow as BulkImportProductsRow
+    })
+
     const payload: BulkImportProductsPayload = { mode: importMode, rows }
 
     // Detailed pre-import validation
@@ -1432,58 +1587,104 @@ export default function BulkProductImportPanel({ onClose, onImported }: BulkProd
             </div>
 
             <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
-              <div className="border-b border-slate-100 px-4 py-3">
-                <p className="text-sm font-semibold text-slate-800">Raw Preview</p>
-                <p className="text-xs text-slate-500">Full table view of the uploaded CSV fields.</p>
+              <div className="border-b border-slate-100 px-4 py-3 flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold text-slate-800">Raw Preview</p>
+                  <p className="text-xs text-slate-500">Full table view of the uploaded CSV fields.</p>
+                </div>
+                <div className="flex flex-wrap gap-1.5 text-[11px] shrink-0">
+                  <span className="inline-flex items-center rounded-full bg-teal-50 border border-teal-100 px-2 py-0.5 font-semibold text-teal-700">
+                    {selectedRowIndices.size} / {rawTableRowCount} selected
+                  </span>
+                  {Object.keys(editedCells).length > 0 && (
+                    <span className="inline-flex items-center rounded-full bg-amber-50 border border-amber-200 px-2 py-0.5 font-semibold text-amber-700">
+                      {Object.keys(editedCells).length} row{Object.keys(editedCells).length !== 1 ? 's' : ''} edited
+                    </span>
+                  )}
+                </div>
               </div>
+
+              {/* Editable note */}
+              <div className="flex items-start gap-2 border-b border-amber-100 bg-amber-50 px-4 py-2.5">
+                <svg className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-500" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z" clipRule="evenodd" />
+                </svg>
+                <p className="text-xs text-amber-800">
+                  <span className="font-semibold">You can edit cells directly before importing.</span>{' '}
+                  Click any cell to modify its value. Edited cells are highlighted in amber.
+                  Use the checkboxes to select which rows to include — only checked rows will be imported.
+                </p>
+              </div>
+
               <div className="max-h-96 overflow-auto">
-                <table className="min-w-[2200px] divide-y divide-slate-100 text-left text-[11px]">
+                <table className="min-w-[2400px] divide-y divide-slate-100 text-left text-[11px]">
                   <thead className="bg-slate-50">
                     <tr>
-                      <th className="sticky left-0 z-10 bg-slate-50 px-4 py-3 font-semibold text-slate-600">Row</th>
+                      <th className="sticky left-0 z-10 bg-slate-50 px-3 py-3 w-14">
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={isAllSelected}
+                            ref={(el) => { if (el) el.indeterminate = isIndeterminate }}
+                            onChange={toggleSelectAll}
+                            className="h-3.5 w-3.5 cursor-pointer rounded border-slate-300 text-teal-600 accent-teal-600"
+                          />
+                          <span className="font-semibold text-slate-600">Row</span>
+                        </div>
+                      </th>
                       {(parsed.isVariantSheet ? VARIANT_PREVIEW_COLUMNS : PREVIEW_COLUMNS).map((header) => (
-                        <th key={header} className="px-4 py-3 font-semibold text-slate-600 whitespace-nowrap">{header}</th>
+                        <th key={header} className="px-3 py-3 font-semibold text-slate-600 whitespace-nowrap">{header}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {parsed.isVariantSheet
-                      ? (parsed.rawRows ?? []).map((row: BulkImportProductsRow, index: number) => (
-                          <tr key={index} className="bg-white align-top">
-                            <td className="sticky left-0 z-10 bg-white px-4 py-3 font-semibold text-slate-500">
-                              {index + 1}
-                            </td>
-                            {VARIANT_PREVIEW_COLUMNS.map((header) => {
-                              const value = String((row as Record<string, unknown>)[header] ?? '').trim()
-                              return (
-                                <td
-                                  key={`${index}-${header}`}
-                                  className="px-4 py-3 text-slate-600 whitespace-normal break-words max-w-[220px]"
-                                >
-                                  {value || '—'}
+                      ? (parsed.rawRows ?? []).map((row: BulkImportProductsRow, index: number) => {
+                          const isSelected = selectedRowIndices.has(index)
+                          return (
+                            <tr key={index} className={`align-top transition-opacity ${isSelected ? 'bg-white' : 'bg-slate-50 opacity-50'}`}>
+                              <td className="sticky left-0 z-10 bg-inherit px-3 py-2">
+                                <div className="flex items-center gap-2">
+                                  <input
+                                    type="checkbox"
+                                    checked={isSelected}
+                                    onChange={() => toggleRowSelection(index)}
+                                    className="h-3.5 w-3.5 cursor-pointer rounded border-slate-300 text-teal-600 accent-teal-600"
+                                  />
+                                  <span className="font-semibold text-slate-500">{index + 1}</span>
+                                </div>
+                              </td>
+                              {VARIANT_PREVIEW_COLUMNS.map((header) => (
+                                <td key={`${index}-${header}`} className="px-1 py-1 max-w-[200px]">
+                                  {renderPreviewCell(index, header, row as Record<string, unknown>)}
                                 </td>
-                              )
-                            })}
-                          </tr>
-                        ))
-                      : previewRows.map((preview: (typeof previewRows)[number]) => (
-                          <tr key={preview.index} className="bg-white align-top">
-                            <td className="sticky left-0 z-10 bg-white px-4 py-3 font-semibold text-slate-500">
-                              {preview.index}
-                            </td>
-                            {PREVIEW_COLUMNS.map((header) => {
-                              const value = String((preview.row as Record<string, unknown>)[header] ?? '').trim()
-                              return (
-                                <td
-                                  key={`${preview.index}-${header}`}
-                                  className="px-4 py-3 text-slate-600 whitespace-normal break-words max-w-[220px]"
-                                >
-                                  {value || '—'}
+                              ))}
+                            </tr>
+                          )
+                        })
+                      : previewRows.map((preview: (typeof previewRows)[number], i: number) => {
+                          const isSelected = selectedRowIndices.has(i)
+                          return (
+                            <tr key={preview.index} className={`align-top transition-opacity ${isSelected ? 'bg-white' : 'bg-slate-50 opacity-50'}`}>
+                              <td className="sticky left-0 z-10 bg-inherit px-3 py-2">
+                                <div className="flex items-center gap-2">
+                                  <input
+                                    type="checkbox"
+                                    checked={isSelected}
+                                    onChange={() => toggleRowSelection(i)}
+                                    className="h-3.5 w-3.5 cursor-pointer rounded border-slate-300 text-teal-600 accent-teal-600"
+                                  />
+                                  <span className="font-semibold text-slate-500">{preview.index}</span>
+                                </div>
+                              </td>
+                              {PREVIEW_COLUMNS.map((header) => (
+                                <td key={`${preview.index}-${header}`} className="px-1 py-1 max-w-[200px]">
+                                  {renderPreviewCell(i, header, preview.row as Record<string, unknown>)}
                                 </td>
-                              )
-                            })}
-                          </tr>
-                        ))}
+                              ))}
+                            </tr>
+                          )
+                        })}
                   </tbody>
                 </table>
               </div>
@@ -1505,10 +1706,15 @@ export default function BulkProductImportPanel({ onClose, onImported }: BulkProd
         <button
           type="button"
           onClick={handleImport}
-          disabled={isLoading || !parsed || parsed.rows.length === 0}
+          disabled={isLoading || !parsed || parsed.rows.length === 0 || selectedRowIndices.size === 0}
           className="rounded-xl bg-teal-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm shadow-teal-500/30 transition hover:bg-teal-700 disabled:opacity-60"
         >
-          {isLoading ? 'Importing...' : 'Import Products'}
+          {isLoading
+            ? 'Importing...'
+            : selectedRowIndices.size > 0 && selectedRowIndices.size < rawTableRowCount
+              ? `Import ${selectedRowIndices.size} Row${selectedRowIndices.size !== 1 ? 's' : ''}`
+              : 'Import Products'
+          }
         </button>
       </div>
     </div>
