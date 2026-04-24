@@ -432,27 +432,28 @@ export default function ProductsTable({
               </th>
               <th className="min-w-[130px] border-b border-slate-200 px-4 py-4 text-center text-xs font-semibold uppercase tracking-wide text-slate-500 dark:border-slate-800 dark:text-slate-400">
                 {isZqMode ? 'Import Status' : 'Badges'}
-              </Table.Column>
-              <Table.Column allowsSorting id="status" className="text-center text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
-                {({ sortDirection }) => <SortableColumnHeader sortDirection={sortDirection}>Status</SortableColumnHeader>}
-              </Table.Column>
-              <Table.Column className="text-end text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">Actions</Table.Column>
-            </Table.Header>
+              </th>
+              <th className="border-b border-slate-200 px-4 py-4 text-center text-xs font-semibold uppercase tracking-wide text-slate-500 dark:border-slate-800 dark:text-slate-400">
+                {renderSortableHeader('Status', 'status', 'center')}
+              </th>
+              <th className="border-b border-slate-200 px-4 py-4 text-right text-xs font-semibold uppercase tracking-wide text-slate-500 dark:border-slate-800 dark:text-slate-400">Actions</th>
+            </tr>
+          </thead>
 
-            <Table.Body>
-              {isLoading ? (
-                <Table.Row key="loading">
-                  <Table.Cell colSpan={columnCount}>
-                    <LoadingProductsState />
-                  </Table.Cell>
-                </Table.Row>
-              ) : sortedRows.length === 0 ? (
-                <Table.Row key="empty">
-                  <Table.Cell colSpan={columnCount}>
-                    <EmptyProductsState />
-                  </Table.Cell>
-                </Table.Row>
-              ) : (
+          <tbody>
+            {isLoading ? (
+              <tr key="loading">
+                <td colSpan={columnCount} className="px-4 py-10">
+                  <LoadingProductsState />
+                </td>
+              </tr>
+            ) : sortedRows.length === 0 ? (
+              <tr key="empty">
+                <td colSpan={columnCount} className="px-4 py-10">
+                  <EmptyProductsState />
+                </td>
+              </tr>
+            ) : (
                 sortedRows.map((product) => {
                   const effectiveStockQty = getEffectiveStockQty(product)
                   const isSelected = selectedIds.includes(product.id)
@@ -460,30 +461,26 @@ export default function ProductsTable({
                   const statusLabel = isActiveStatus(product.status) ? 'Active' : 'Inactive'
 
                   return (
-                    <Table.Row
+                    <tr
                       key={product.id}
-                      id={product.id}
                       className={cn(
                         'border-b border-slate-200 transition-colors hover:bg-white dark:border-slate-700 dark:hover:bg-slate-900',
                         isSelected ? 'bg-teal-50/40 dark:bg-teal-500/10' : '',
                       )}
                     >
-                      <Table.Cell className="pr-0">
+                      <td className="w-12 border-b border-slate-100 px-4 py-4 pr-0 dark:border-slate-800/70">
                         {!readOnly ? (
-                          <Checkbox
+                          <input
+                            type="checkbox"
                             aria-label={`Select product ${product.name}`}
-                            slot="selection"
-                            variant="secondary"
-                            className="justify-center"
-                          >
-                            <Checkbox.Control>
-                              <Checkbox.Indicator />
-                            </Checkbox.Control>
-                          </Checkbox>
+                            checked={isSelected}
+                            onChange={() => onToggleSelect(product.id)}
+                            className="h-4 w-4 rounded border-slate-300 bg-white text-sky-600 focus:ring-sky-500 dark:border-slate-600 dark:bg-slate-900"
+                          />
                         ) : null}
-                      </Table.Cell>
+                      </td>
 
-                      <Table.Cell>
+                      <td className="border-b border-slate-100 px-4 py-4 dark:border-slate-800/70">
                         <div className="relative h-11 w-11 overflow-hidden rounded-xl border border-slate-200 bg-slate-100 dark:border-slate-700 dark:bg-slate-800">
                           {product.image ? (
                             <Image src={product.image} alt={product.name} fill className="object-cover" unoptimized />
@@ -495,26 +492,7 @@ export default function ProductsTable({
                             </div>
                           )}
                         </div>
-                      </Table.Cell>
-
-                      <Table.Cell>
-                        <div className="min-w-0">
-                          <p className="line-clamp-1 font-medium leading-snug text-slate-800 dark:text-slate-100">{product.name || 'N/A'}</p>
-                          <div className="mt-1 flex flex-wrap items-center gap-2">
-                            <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500">#{product.id}</span>
-                            {isZqMode ? (
-                              <span className="rounded-md bg-sky-50 px-1.5 py-0.5 text-[10px] font-medium text-sky-700">
-                                {product.specifications?.trim() || 'ZQ Product'}
-                              </span>
-                            ) : variantCount > 0 && (
-                              <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-500 dark:bg-slate-800 dark:text-slate-400">
-                                {variantCount} variant{variantCount !== 1 ? 's' : ''}
-                              </span>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    </td>
+                      </td>
 
                     <td className="border-b border-slate-100 px-4 py-4 dark:border-slate-800/70">
                       <div className="min-w-0">

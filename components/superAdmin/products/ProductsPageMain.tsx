@@ -717,6 +717,7 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
   const searchPerPage = 500
   const perPage = debouncedSearch ? searchPerPage : userPerPage
   const canShowZqSupplierSide = !isSupplierPortal || isZqSupplierAccount
+  const zqInlineActive = canShowZqSupplierSide && showZqSupplierInline
   const { data: adminGeneralSettingsData } = useGetAdminGeneralSettingsQuery()
   const manualHeaderToggle = Boolean(adminGeneralSettingsData?.settings?.enable_manual_checkout_mode)
 
