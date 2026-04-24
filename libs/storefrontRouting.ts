@@ -12,7 +12,7 @@ export const extractPartnerSlugFromPath = (pathname?: string | null): string | n
   const shopMatch = path.match(/^\/shop\/([^/?#]+)/i)
   if (shopMatch?.[1]) return shopMatch[1].trim().toLowerCase()
 
-  const directMatch = path.match(/^\/([^/?#]+)\/(product|category|checkout)(?=\/|$)/i)
+  const directMatch = path.match(/^\/([^/?#]+)\/(product|category|checkout|track-order)(?=\/|$)/i)
   if (directMatch?.[1]) return directMatch[1].trim().toLowerCase()
 
   return null

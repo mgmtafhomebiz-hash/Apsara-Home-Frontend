@@ -10,7 +10,6 @@ import Loading from '@/components/Loading'
 import { showErrorToast, showInfoToast, showSuccessToast } from '@/libs/toast'
 import { clearAccessTokenCache } from "@/store/api/baseApi";
 import PrimaryButton from '@/components/ui/buttons/PrimaryButton';
-import SecondaryButton from '@/components/ui/buttons/SecondaryButton';
 
 const REMEMBER_USER_EMAIL_KEY = 'afhome_user_login'
 const BLOCKED_KEYWORDS = ['banned', 'blocked', 'contact support']
@@ -47,6 +46,19 @@ function resolveCallbackPath(value: string | null | undefined): string {
 function getRememberedUserEmail() {
     if (typeof window === 'undefined') return ''
     return window.localStorage.getItem(REMEMBER_USER_EMAIL_KEY) ?? ''
+}
+
+async function waitForAuthenticatedSession(maxAttempts = 12, delayMs = 150): Promise<boolean> {
+    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+        const session = await getSession()
+        if (session?.user?.accessToken) {
+            return true
+        }
+
+        await new Promise((resolve) => window.setTimeout(resolve, delayMs))
+    }
+
+    return false
 }
 
 const EyeIcon = ({ open }: { open: boolean }) => open
@@ -97,7 +109,7 @@ interface LoginFormProps {
 const LoginForm = ({ onSwitchToSignUp, onRequirePasswordChange }: LoginFormProps) => {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const { data: session, update: updateSession } = useSession();
+    const { update: updateSession } = useSession();
     const [showPass, setShowPass] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
@@ -172,8 +184,17 @@ const LoginForm = ({ onSwitchToSignUp, onRequirePasswordChange }: LoginFormProps
             }
 
             showSuccessToast(source === 'auto' ? 'Login approved. Welcome back!' : 'Login successful. Welcome back!')
-            router.replace(callbackPath);
-            router.refresh();
+            const sessionReady = await waitForAuthenticatedSession()
+            const targetPath = callbackPath.startsWith('/') ? callbackPath : '/shop'
+
+            router.replace(targetPath)
+            router.refresh()
+
+            if (!sessionReady && typeof window !== 'undefined') {
+                window.setTimeout(() => {
+                    window.location.replace(targetPath)
+                }, 250)
+            }
         } else {
             const rawError = String(result?.error ?? '').trim()
             const mfaApproval = parseMfaApprovalError(rawError)

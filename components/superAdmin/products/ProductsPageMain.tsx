@@ -21,6 +21,7 @@ import ProductActivityLogsModal from './ProductActivityLogsModal'
 import PrimaryButton from '@/components/ui/buttons/PrimaryButton'
 import { showErrorToast, showSuccessToast } from '@/libs/toast'
 import { revalidateStorefront } from '@/libs/revalidateStorefront'
+import { buildStorefrontProductPath } from '@/libs/storefrontRouting'
 
 interface ProductsPageMainProps {
   initialData?: ProductsResponse | null
@@ -28,6 +29,7 @@ interface ProductsPageMainProps {
 }
 
 const NEW_BADGE_DAYS = 7
+const getZqInlineStorageKey = (pathname: string) => `afhome:zq-inline:${pathname}`
 
 const exportToCSV = (products: Product[]) => {
   if (products.length === 0) {
@@ -391,7 +393,11 @@ function ZqSyncProgressModal({
   hasStarted,
   totalToImport,
   isDiscoveringTotal,
+  hasSavedCursor,
+  hasImportedProducts,
+  importMode,
   onStartImport,
+  onStartRescan,
   onCancel,
 }: {
   isOpen: boolean
@@ -399,23 +405,33 @@ function ZqSyncProgressModal({
     batches: number
     requested: number
     synced: number
+    skipped: number
     failed: number
   }
   isImporting: boolean
   hasStarted: boolean
   totalToImport: number
   isDiscoveringTotal: boolean
+  hasSavedCursor: boolean
+  hasImportedProducts: boolean
+  importMode: 'resume' | 'rescan'
   onStartImport: () => void
+  onStartRescan: () => void
   onCancel: () => void
 }) {
   if (!isOpen) return null
 
-  const totalProcessed = progress.synced + progress.failed
+  const canResumeImport = hasSavedCursor || hasImportedProducts
+
+  const totalProcessed = progress.synced + progress.skipped + progress.failed
+  const isResumeMode = importMode === 'resume'
   const progressPercent = !hasStarted
     ? 0
     : totalToImport > 0
       ? Math.min(100, Math.round((totalProcessed / totalToImport) * 100))
-      : 0
+      : isImporting
+        ? 15
+        : 0
 
   return (
     <AnimatePresence>
@@ -460,7 +476,9 @@ function ZqSyncProgressModal({
                   ? 'We are counting all available ZQ products first so the progress bar can use the real total.'
                 : hasStarted
                   ? 'The import is wrapping up now. Please wait a moment while we refresh the table.'
-                  : 'Click Start Import to begin fetching and saving ZQ products one by one into tbl_zqproducts before displaying them in the table.'}
+                  : canResumeImport
+                    ? 'Start Import will resume from the last saved ZQ cursor. Use Rescan from Start only if you want to restart from the beginning.'
+                    : 'Click Start Import to begin fetching and saving ZQ products one by one into tbl_zqproducts before displaying them in the table.'}
             </p>
             {isDiscoveringTotal ? (
               <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-sky-100 bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-700">
@@ -476,13 +494,24 @@ function ZqSyncProgressModal({
                 <span>Discovering total products before import starts</span>
               </div>
             ) : null}
+            {!isDiscoveringTotal && isResumeMode && canResumeImport ? (
+              <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+                <span>Resuming from saved checkpoint</span>
+              </div>
+            ) : null}
           </div>
 
           <div className="space-y-5 px-6 py-6">
             <div className="space-y-2">
               <div className="flex items-center justify-between text-sm font-medium text-slate-600">
                 <span>Progress</span>
-                <span>{hasStarted ? `${progressPercent}%` : (isDiscoveringTotal ? 'Counting...' : 'Ready')}</span>
+                <span>
+                  {hasStarted
+                    ? totalToImport > 0
+                      ? `${progressPercent}%`
+                      : (isResumeMode ? 'Resuming...' : `${progressPercent}%`)
+                    : (isDiscoveringTotal ? 'Counting...' : 'Ready')}
+                </span>
               </div>
               <div className="h-3 overflow-hidden rounded-full bg-slate-100">
                 <motion.div
@@ -501,7 +530,7 @@ function ZqSyncProgressModal({
                 hidden: {},
                 visible: { transition: { staggerChildren: 0.05 } },
               }}
-              className="grid grid-cols-2 gap-3 sm:grid-cols-4"
+              className="grid grid-cols-2 gap-3 sm:grid-cols-5"
             >
               <motion.div
                 variants={{ hidden: { opacity: 0, y: 6 }, visible: { opacity: 1, y: 0 } }}
@@ -526,6 +555,13 @@ function ZqSyncProgressModal({
               </motion.div>
               <motion.div
                 variants={{ hidden: { opacity: 0, y: 6 }, visible: { opacity: 1, y: 0 } }}
+                className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3"
+              >
+                <p className="text-xs font-semibold uppercase tracking-wide text-amber-600">Skipped</p>
+                <p className="mt-1 text-xl font-bold text-amber-700">{progress.skipped.toLocaleString()}</p>
+              </motion.div>
+              <motion.div
+                variants={{ hidden: { opacity: 0, y: 6 }, visible: { opacity: 1, y: 0 } }}
                 className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3"
               >
                 <p className="text-xs font-semibold uppercase tracking-wide text-rose-500">Failed</p>
@@ -538,8 +574,12 @@ function ZqSyncProgressModal({
                 {isDiscoveringTotal
                   ? 'We are scanning every available ZQ page first to get the exact total that will be imported.'
                   : hasStarted
-                  ? 'This modal keeps a running count while we fetch all available ZQ products. After the import finishes, the full list will be shown in the table with the correct total and pagination.'
-                  : 'The counter will start moving as soon as you click Start Import.'}
+                  ? (isResumeMode
+                      ? 'Resume mode jumps straight to the saved cursor. Existing products are still skipped if they are encountered again.'
+                      : 'This modal keeps a running count while we fetch all available ZQ products. Existing products already in tbl_zqproducts are skipped automatically.')
+                  : canResumeImport
+                    ? 'The counter will start from the saved checkpoint instead of repeating the earliest imported pages.'
+                    : 'The counter will start moving as soon as you click Start Import.'}
               </p>
               <div className="rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3">
                 <p className="text-xs font-semibold uppercase tracking-wide text-emerald-500">Imported So Far</p>
@@ -556,6 +596,11 @@ function ZqSyncProgressModal({
                     ? `${progress.synced.toLocaleString()} product${progress.synced === 1 ? '' : 's'} imported`
                     : 'Import has not started yet'}
                 </motion.p>
+                {hasStarted && progress.skipped > 0 ? (
+                  <p className="mt-1 text-sm font-medium text-amber-700">
+                    {progress.skipped.toLocaleString()} existing product{progress.skipped === 1 ? '' : 's'} skipped
+                  </p>
+                ) : null}
               </div>
             </div>
 
@@ -577,8 +622,17 @@ function ZqSyncProgressModal({
                 disabled={isImporting || hasStarted || isDiscoveringTotal}
                 className="rounded-xl bg-teal-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-teal-700 disabled:cursor-not-allowed disabled:bg-teal-300"
               >
-                {isDiscoveringTotal ? 'Counting Total...' : isImporting ? 'Importing...' : hasStarted ? 'Import Started' : 'Start Import'}
+                {isDiscoveringTotal ? 'Counting Total...' : isImporting ? 'Importing...' : hasStarted ? 'Import Started' : (canResumeImport ? 'Resume Import' : 'Start Import')}
               </button>
+              {!isImporting && !hasStarted && !isDiscoveringTotal ? (
+                <button
+                  type="button"
+                  onClick={onStartRescan}
+                  className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700 transition hover:bg-amber-100"
+                >
+                  Rescan from Start
+                </button>
+              ) : null}
             </div>
           </div>
         </motion.div>
@@ -592,11 +646,13 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
-  const { data: session } = useSession()
+  const { data: session, status: sessionStatus } = useSession()
   const supplierName = String((session?.user as { supplierName?: string | null; name?: string | null } | undefined)?.supplierName
     ?? (session?.user as { name?: string | null } | undefined)?.name
     ?? '')
   const sessionAccessToken = String((session?.user as { accessToken?: string } | undefined)?.accessToken ?? '')
+  const isSessionLoading = sessionStatus === 'loading'
+  const zqInlineStorageKey = useMemo(() => getZqInlineStorageKey(pathname || '/products'), [pathname])
   const isAdminRoute = pathname.startsWith('/admin')
   const adminIdentityKey = sessionAccessToken
     ? `${String((session?.user as { id?: string } | undefined)?.id ?? 'unknown')}:${sessionAccessToken}`
@@ -623,17 +679,27 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
   const [manualSelectionMode, setManualSelectionMode] = useState<'review' | 'view'>('review')
   const [editProduct,     setEditProduct]     = useState<Product | null>(null)
   const [showBulkEdit,    setShowBulkEdit]    = useState(false)
-  const [showZqSupplierInline, setShowZqSupplierInline] = useState(false)
+  const [showZqSupplierInline, setShowZqSupplierInline] = useState(() => {
+    if (typeof window === 'undefined') return false
+
+    try {
+      return window.localStorage.getItem(getZqInlineStorageKey(window.location.pathname || '/products')) === '1'
+    } catch {
+      return false
+    }
+  })
   const [showZqSyncModal, setShowZqSyncModal] = useState(false)
   const [isSyncingAllZq, setIsSyncingAllZq] = useState(false)
   const [hasStartedZqImport, setHasStartedZqImport] = useState(false)
   const [isDiscoveringZqTotal, setIsDiscoveringZqTotal] = useState(false)
   const [zqTotalToImport, setZqTotalToImport] = useState(0)
+  const [zqImportMode, setZqImportMode] = useState<'resume' | 'rescan'>('resume')
   const zqImportCancelRef = useRef(false)
   const [zqSyncProgress, setZqSyncProgress] = useState({
     batches: 0,
     requested: 0,
     synced: 0,
+    skipped: 0,
     failed: 0,
   })
   const [deletingIds,     setDeletingIds]     = useState<number[]>([])
@@ -833,7 +899,7 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
   const {
     data: zqSummaryData,
     refetch: refetchZqSummary,
-  } = useGetZqProductsSummaryQuery(undefined, { skip: !showZqSupplierInline })
+  } = useGetZqProductsSummaryQuery(undefined, { skip: !zqInlineActive })
   const {
     data: zqCachedData,
     isLoading: isLoadingZqCached,
@@ -843,8 +909,8 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
     page: debouncedSearch ? 1 : page,
     perPage,
     search: debouncedSearch || undefined,
-    brandType: isSupplierPortal ? brandType : undefined,
-  }, { skip: !showZqSupplierInline, refetchOnMountOrArgChange: true })
+    brandType: isSupplierPortal && !isZqSupplierAccount ? brandType : undefined,
+  }, { skip: !zqInlineActive, refetchOnMountOrArgChange: true })
 
   const [deleteProduct] = useDeleteProductMutation()
 
@@ -853,6 +919,31 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
       setUseInitialData(false)
     }
   }, [data])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    try {
+      if (isSupplierPortal && isSessionLoading) {
+        return
+      }
+
+      if (!canShowZqSupplierSide) {
+        window.localStorage.removeItem(zqInlineStorageKey)
+        return
+      }
+
+      window.localStorage.setItem(zqInlineStorageKey, showZqSupplierInline ? '1' : '0')
+    } catch {
+      // Ignore localStorage failures.
+    }
+  }, [canShowZqSupplierSide, isSessionLoading, isSupplierPortal, showZqSupplierInline, zqInlineStorageKey])
+
+  useEffect(() => {
+    if (isSupplierPortal && !isSessionLoading && !canShowZqSupplierSide && showZqSupplierInline) {
+      setShowZqSupplierInline(false)
+    }
+  }, [canShowZqSupplierSide, isSessionLoading, isSupplierPortal, showZqSupplierInline])
 
   const handleProductsSaved = (updatedProduct?: Product) => {
     setUseInitialData(false)
@@ -913,7 +1004,7 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
   )
 
   const visibleProducts = useMemo(() => {
-    if (showZqSupplierInline) {
+    if (zqInlineActive) {
       return zqRows
     }
 
@@ -948,7 +1039,7 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
 
       return terms.every((term) => haystacks.some((value) => value.includes(term)))
     })
-  }, [catId, debouncedSearch, products, showZqSupplierInline, status, zqRows])
+  }, [catId, debouncedSearch, products, status, zqInlineActive, zqRows])
 
   const selectableProducts = useMemo(() => {
     const selectionSource = selectionData?.products
@@ -998,7 +1089,7 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
   }, [data?.meta, initialData?.meta, useInitialData])
 
   const visibleMeta = useMemo(() => {
-    if (showZqSupplierInline) {
+    if (zqInlineActive) {
       return zqCachedData?.meta ?? {
         current_page: 1,
         last_page: 1,
@@ -1021,7 +1112,7 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
       from: visibleProducts.length > 0 ? 1 : 0,
       to: visibleProducts.length,
     }
-  }, [debouncedSearch, manualHeaderToggle, meta, perPage, showZqSupplierInline, status, visibleProducts.length, zqCachedData?.meta])
+  }, [debouncedSearch, manualHeaderToggle, meta, perPage, status, visibleProducts.length, zqCachedData?.meta, zqInlineActive])
 
   /* Low-stock count from current page */
   const lowStockCount = useMemo(
@@ -1055,10 +1146,10 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
   }, [manualHeaderToggle])
 
   useEffect(() => {
-    if (showZqSupplierInline) {
+    if (zqInlineActive) {
       setSelectedIds([])
     }
-  }, [showZqSupplierInline])
+  }, [zqInlineActive])
 
   const handleToggleManualCheckoutMode = async () => {
     const nextValue = !manualHeaderToggle
@@ -1078,10 +1169,11 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
     setPage(1)
     setShowZqSupplierInline(true)
     setShowZqSyncModal(true)
+    setZqImportMode(zqSummaryData?.has_saved_cursor ? 'resume' : 'rescan')
     setHasStartedZqImport(false)
     setIsDiscoveringZqTotal(false)
     setZqTotalToImport(0)
-    setZqSyncProgress({ batches: 0, requested: 0, synced: 0, failed: 0 })
+    setZqSyncProgress({ batches: 0, requested: 0, synced: 0, skipped: 0, failed: 0 })
   }
 
   const handleCancelZqImport = () => {
@@ -1096,7 +1188,7 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
     setIsDiscoveringZqTotal(false)
   }
 
-  const discoverZqTotal = async () => {
+  const discoverZqTotal = async (mode: 'resume' | 'rescan') => {
     setIsDiscoveringZqTotal(true)
     let cursor: string | null = null
     let total = 0
@@ -1110,6 +1202,8 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
         const result = await fetchZqImportPreview({
           cursor: cursor ?? undefined,
           size: 100,
+          resumeFromSaved: cursor === null && mode === 'resume',
+          resetCursor: cursor === null && mode === 'rescan',
         }).unwrap()
 
         const zqPayload = (result.zq && typeof result.zq === 'object') ? result.zq : {}
@@ -1130,15 +1224,22 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
     }
   }
 
-  const syncAllZqProducts = async () => {
+  const syncAllZqProducts = async (mode: 'resume' | 'rescan') => {
     if (isSyncingAllZq) return
 
     zqImportCancelRef.current = false
-    const total = await discoverZqTotal()
-    if (zqImportCancelRef.current || total <= 0) {
-      setShowZqSyncModal(false)
-      setHasStartedZqImport(false)
-      return
+    setZqImportMode(mode)
+    let total = 0
+
+    if (mode === 'rescan') {
+      total = await discoverZqTotal(mode)
+      if (zqImportCancelRef.current || total <= 0) {
+        setShowZqSyncModal(false)
+        setHasStartedZqImport(false)
+        return
+      }
+    } else {
+      setZqTotalToImport(0)
     }
 
     setHasStartedZqImport(true)
@@ -1159,7 +1260,9 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
 
         const result = await syncZqProducts({
           cursor: cursor ?? undefined,
-          size: 1,
+          size: mode === 'resume' ? 100 : 1,
+          resumeFromSaved: cursor === null && mode === 'resume',
+          resetCursor: cursor === null && mode === 'rescan',
         }).unwrap()
         batchCounter += 1
 
@@ -1167,6 +1270,7 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
           batches: current.batches + 1,
           requested: current.requested + (result.summary?.requested ?? 0),
           synced: current.synced + (result.summary?.synced ?? 0),
+          skipped: current.skipped + (result.summary?.skipped ?? 0),
           failed: current.failed + (result.summary?.failed ?? 0),
         }))
 
@@ -1199,6 +1303,7 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
       setIsSyncingAllZq(false)
       setShowZqSyncModal(false)
       setHasStartedZqImport(false)
+      setZqImportMode('resume')
       zqImportCancelRef.current = false
     }
   }
@@ -1447,7 +1552,7 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
               }}
               disabled={isSyncingAllZq}
               className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors border ${
-                showZqSupplierInline
+                zqInlineActive
                   ? 'border-sky-300 bg-sky-100 text-sky-800'
                   : 'border-sky-200 bg-sky-50 hover:bg-sky-100 text-sky-700'
               }`}
@@ -1456,9 +1561,9 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4h16v4H4zm0 8h16v8H4zm4 4h.01M12 16h4" />
               </svg>
               <span className="hidden sm:inline">
-                {isSyncingAllZq ? 'Fetching ZQ Products...' : (showZqSupplierInline ? 'ZQ Products Loaded' : 'Get ZQ Product')}
+                {isSyncingAllZq ? 'Fetching ZQ Products...' : (zqInlineActive ? 'ZQ Products Loaded' : 'Get ZQ Product')}
               </span>
-              <span className="sm:hidden">{isSyncingAllZq ? 'Fetching...' : (showZqSupplierInline ? 'Loaded' : 'Get ZQ')}</span>
+              <span className="sm:hidden">{isSyncingAllZq ? 'Fetching...' : (zqInlineActive ? 'Loaded' : 'Get ZQ')}</span>
             </button>
           ) : null}
           <button
@@ -1489,7 +1594,7 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
       >
         <StatCard
           label="Total Products"
-          value={showZqSupplierInline ? (zqSummaryData?.total ?? visibleMeta?.total ?? 0).toLocaleString() : (isLoading ? '—' : (meta?.total ?? products.length).toLocaleString())}
+          value={zqInlineActive ? (zqSummaryData?.total ?? visibleMeta?.total ?? 0).toLocaleString() : (isLoading ? '—' : (meta?.total ?? products.length).toLocaleString())}
           colorClass="bg-teal-100"
           icon={
             <svg className="w-5 h-5 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1499,7 +1604,7 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
         />
         <StatCard
           label="Active"
-          value={showZqSupplierInline ? (zqSummaryData?.active ?? 0).toLocaleString() : (activeCountData ? (activeCountData.meta?.total ?? 0).toLocaleString() : '—')}
+          value={zqInlineActive ? (zqSummaryData?.active ?? 0).toLocaleString() : (activeCountData ? (activeCountData.meta?.total ?? 0).toLocaleString() : '—')}
           colorClass="bg-emerald-100"
           icon={
             <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1509,7 +1614,7 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
         />
         <StatCard
           label="Inactive"
-          value={showZqSupplierInline ? (zqSummaryData?.inactive ?? 0).toLocaleString() : (inactiveCountData ? (inactiveCountData.meta?.total ?? 0).toLocaleString() : '—')}
+          value={zqInlineActive ? (zqSummaryData?.inactive ?? 0).toLocaleString() : (inactiveCountData ? (inactiveCountData.meta?.total ?? 0).toLocaleString() : '—')}
           colorClass="bg-slate-100"
           icon={
             <svg className="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1519,7 +1624,7 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
         />
         <StatCard
           label="Low Stock"
-          value={showZqSupplierInline ? (zqSummaryData?.low_stock ?? lowStockCount) : (isLoading ? '—' : lowStockCount)}
+          value={zqInlineActive ? (zqSummaryData?.low_stock ?? lowStockCount) : (isLoading ? '—' : lowStockCount)}
           sub="on this page (qty ≤ 5)"
           colorClass={lowStockCount > 0 ? 'bg-orange-100' : 'bg-slate-100'}
           icon={
@@ -1558,20 +1663,26 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
         hasStarted={hasStartedZqImport}
         totalToImport={zqTotalToImport}
         isDiscoveringTotal={isDiscoveringZqTotal}
+        hasSavedCursor={Boolean(zqSummaryData?.has_saved_cursor)}
+        hasImportedProducts={Number(zqSummaryData?.total ?? 0) > 0}
+        importMode={zqImportMode}
         onStartImport={() => {
-          void syncAllZqProducts()
+          void syncAllZqProducts('resume')
+        }}
+        onStartRescan={() => {
+          void syncAllZqProducts('rescan')
         }}
         onCancel={handleCancelZqImport}
       />
 
-      {!showZqSupplierInline && isError ? (
+      {!zqInlineActive && isError ? (
         <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{loadErrorMessage}</div>
-      ) : !showZqSupplierInline && isLoading && !data && !initialData ? (
+      ) : !zqInlineActive && isLoading && !data && !initialData ? (
         <SkeletonTable />
       ) : (
         <div className="space-y-2">
           {/* Fetching indicator */}
-          {(isFetching || (showZqSupplierInline && isFetchingZqCached)) && (
+          {(isFetching || (zqInlineActive && isFetchingZqCached)) && (
             <div className="google-loading-bar" />
           )}
 
@@ -1662,8 +1773,8 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
           </div>
 
           <DataTableShell
-            title={showZqSupplierInline ? 'ZQ Product Table' : undefined}
-            subtitle={showZqSupplierInline ? 'Fetched ZQ products are now displayed in the same products table area.' : undefined}
+            title={zqInlineActive ? 'ZQ Product Table' : undefined}
+            subtitle={zqInlineActive ? 'Fetched ZQ products are now displayed in the same products table area.' : undefined}
           >
             <ProductsTable
               rows={visibleProducts}
@@ -1679,17 +1790,19 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
               selectedIds={selectedIds}
               onToggleSelect={handleToggleSelect}
               onToggleSelectAll={handleToggleSelectAll}
-              onViewManualCheckout={(product) => {
-                if (showZqSupplierInline) {
+              onViewProduct={(product) => {
+                if (zqInlineActive) {
                   const previewBasePath = isSupplierPortal ? '/supplier/products/zq-preview' : '/admin/products/zq-preview'
-                  router.push(`${previewBasePath}/${product.sku}`)
+                  window.open(`${previewBasePath}/${product.sku}`, '_blank', 'noopener,noreferrer')
                   return
                 }
-                openManualSelectionModal([product])
+
+                const productPath = buildStorefrontProductPath(product.name, product.id)
+                window.open(productPath, '_blank', 'noopener,noreferrer')
               }}
-              readOnly={showZqSupplierInline}
-              isLoading={showZqSupplierInline && (isLoadingZqCached || isFetchingZqCached)}
-              tableMode={showZqSupplierInline ? 'zq' : 'local'}
+              readOnly={zqInlineActive}
+              isLoading={zqInlineActive && (isLoadingZqCached || isFetchingZqCached)}
+              tableMode={zqInlineActive ? 'zq' : 'local'}
             />
           </DataTableShell>
         </div>
@@ -1732,13 +1845,17 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
 
 function SkeletonTable() {
   return (
-    <div className="bg-white rounded-2xl border border-slate-100 p-4 animate-pulse space-y-3">
+    <div className="space-y-3 rounded-2xl border border-slate-100 bg-white p-4 animate-pulse dark:border-slate-800 dark:bg-slate-950">
       <div className="grid grid-cols-9 gap-3 mb-3">
-        {Array.from({ length: 9 }).map((_, i) => <div key={i} className="h-3 rounded bg-slate-200"/>)}
+        {Array.from({ length: 9 }).map((_, i) => (
+          <div key={i} className="h-3 rounded bg-slate-200 dark:bg-slate-800" />
+        ))}
       </div>
       {Array.from({ length: 8 }).map((_, ri) => (
         <div key={ri} className="grid grid-cols-9 gap-3">
-          {Array.from({ length: 9 }).map((_, ci) => <div key={ci} className="h-8 rounded bg-slate-100"/>)}
+          {Array.from({ length: 9 }).map((_, ci) => (
+            <div key={ci} className="h-8 rounded bg-slate-100 dark:bg-slate-900" />
+          ))}
         </div>
       ))}
     </div>

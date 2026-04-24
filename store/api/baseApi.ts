@@ -83,6 +83,7 @@ const baseQuery = fetchBaseQuery({
 })
 
 let banSignOutInFlight = false
+let adminSessionRecoveryInFlight = false
 
 const baseQueryWithBanCheck: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQueryError> = async (
     args,
@@ -90,6 +91,7 @@ const baseQueryWithBanCheck: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQ
     extraOptions,
 ) => {
     const result = await baseQuery(args, api, extraOptions)
+    const requestUrl = typeof args === 'string' ? args : String(args.url ?? '')
 
     if (
         result.error?.status === 401 &&
@@ -123,12 +125,33 @@ const baseQueryWithBanCheck: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQ
         window.location.replace(loginPath)
     }
 
+    if (
+        result.error?.status === 401 &&
+        typeof window !== 'undefined' &&
+        !adminSessionRecoveryInFlight
+    ) {
+        const pathname = window.location.pathname || ''
+        const isAdminRoute = pathname.startsWith('/admin')
+        const isAdminIdentityRequest = requestUrl.includes('/api/admin/auth/me')
+
+        if (isAdminRoute && isAdminIdentityRequest) {
+            adminSessionRecoveryInFlight = true
+            const { signOut } = await import('next-auth/react')
+            const { clearAdminSession } = await import('@/libs/adminSession')
+
+            await signOut({ redirect: false })
+            clearAccessTokenCache()
+            await clearAdminSession('/admin/login?session=expired')
+            window.location.replace('/admin/login?session=expired')
+        }
+    }
+
     return result
 }
 
 export const baseApi = createApi({
     reducerPath: 'api',
     baseQuery: baseQueryWithBanCheck,
-    tagTypes: ['User', 'Members', 'Products', 'Categories', 'Brands', 'Orders', 'Encashment', 'AdminUsers', 'AdminNotifications', 'CustomerNotifications', 'Wishlist', 'WebPages', 'Suppliers', 'InteriorRequests', 'AdminSettings', 'ExpenseCategories', 'Expenses', 'Cart', 'SearchHistory', 'ActivityLogs'],
+    tagTypes: ['User', 'Members', 'Products', 'Categories', 'Brands', 'Orders', 'Encashment', 'AdminUsers', 'AdminNotifications', 'CustomerNotifications', 'SupplierNotifications', 'Wishlist', 'WebPages', 'Suppliers', 'InteriorRequests', 'AdminSettings', 'ExpenseCategories', 'Expenses', 'Cart', 'SearchHistory', 'ActivityLogs'],
     endpoints: () => ({}),
 })

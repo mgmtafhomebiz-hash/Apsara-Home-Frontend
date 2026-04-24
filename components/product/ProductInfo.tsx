@@ -20,8 +20,10 @@ import { useGetWishlistQuery, useAddWishlistMutation, useRemoveWishlistMutation,
 import OutlineButton from "@/components/ui/buttons/OutlineButton";
 import PrimaryButton from "@/components/ui/buttons/PrimaryButton";
 import { Package, Truck, CheckCircle } from "lucide-react";
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
+import { resolveCheckoutSource } from '@/libs/checkoutSource';
+import { extractPartnerSlugFromPath } from '@/libs/storefrontRouting';
 
 
 const CartIcon = () => (
@@ -241,7 +243,10 @@ const ProductInfo = ({
     allowGuestWishlist = false,
 }: ProductInfoProps) => {
     const { addToCart } = useCart();
+    const router = useRouter();
     const pathname = usePathname();
+    const partnerSlug = extractPartnerSlugFromPath(pathname);
+    const checkoutTarget = partnerSlug ? `/${partnerSlug}/checkout/customer` : '/checkout/customer';
     const { data: session, status, update: updateSession } = useSession();
     const role = String(session?.user?.role ?? '').toLowerCase();
     const isLoggedIn = status === 'authenticated' && (role === 'customer' || role === '');
@@ -626,9 +631,9 @@ const ProductInfo = ({
     const variantSrp = toPositiveNumber(selectedVariant?.priceSrp) ?? baseSrp;
     const variantMember = toPositiveNumber(selectedVariant?.priceMember) ?? toPositiveNumber(product.priceMember) ?? 0;
     const hasMemberPrice = variantMember > 0 && variantMember < variantSrp;
-    const shouldUseMemberPrice = hasMemberPrice && canUseMemberPrice && !forceRealPrice;
-    const displayPrice = shouldUseMemberPrice ? variantMember : variantSrp;
-    const displayOriginalPrice = shouldUseMemberPrice
+    const shouldDisplayMemberPrice = hasMemberPrice && !forceRealPrice;
+    const displayPrice = shouldDisplayMemberPrice ? variantMember : variantSrp;
+    const displayOriginalPrice = shouldDisplayMemberPrice
         ? variantSrp
         : (!forceRealPrice && product.originalPrice && product.originalPrice > variantSrp ? product.originalPrice : undefined);
     const totalVariantStock = getEffectiveVariantStock(variantOptions);
@@ -636,12 +641,13 @@ const ProductInfo = ({
         ? selectedVariant.qty
         : (typeof totalVariantStock === 'number' ? totalVariantStock : product.stock);
     const productType = Number(product.type ?? 0);
-    const isVariantProduct = productType === 1;
-    const hasRealVariants = isVariantProduct && variantOptions.length > 0;
+    const hasRealVariants = variantOptions.length > 0;
     const variantPv = hasRealVariants
         ? (toPositiveNumber(selectedVariant?.prodpv) ?? 0)
         : basePv;
-    const productTypeLabel = PRODUCT_TYPE_LABELS[productType] ?? 'Regular';
+    const productTypeLabel = hasRealVariants
+        ? 'Variant'
+        : (PRODUCT_TYPE_LABELS[productType] ?? 'Regular');
     const displaySku = (selectedVariant?.sku && selectedVariant.sku.trim().length > 0)
         ? selectedVariant.sku
         : (product.sku && product.sku.trim().length > 0 ? product.sku : '');
@@ -697,6 +703,39 @@ const ProductInfo = ({
         setAdded(true);
         setTimeout(() => setAdded(false), 2000);
 
+    };
+
+    const handleDirectBuyNow = () => {
+        if (!isInStock || !isCheckoutAvailable) return;
+
+        const checkoutSource = resolveCheckoutSource(pathname);
+        const subtotal = variantSrp * quantity;
+        const handlingFee = 0;
+
+        localStorage.setItem('guest_checkout', JSON.stringify({
+            product: {
+                ...product,
+                image: selectedVariantImage || product.image,
+                sku: selectedVariant?.sku ?? product.sku,
+                price: variantSrp,
+                prodpv: variantPv,
+            },
+            quantity,
+            selectedColor: selectedVariant?.color ?? null,
+            selectedStyle: selectedVariant?.style ?? null,
+            selectedSize: selectedVariant?.size ?? null,
+            selectedType: selectedVariant?.name ?? null,
+            selectedSku: selectedVariant?.sku ?? null,
+            subtotal,
+            handlingFee,
+            total: subtotal + handlingFee,
+            sourceLabel: checkoutSource.sourceLabel ?? null,
+            sourceSlug: checkoutSource.sourceSlug ?? null,
+            sourceHost: checkoutSource.sourceHost ?? null,
+            sourceUrl: checkoutSource.sourceUrl ?? null,
+        }));
+
+        router.push(checkoutTarget);
     };
 
     const referralCode = (me?.username ?? '').trim();
@@ -1073,6 +1112,10 @@ const ProductInfo = ({
                     <PrimaryButton
                         onClick={() => {
                             if (!isInStock || !isCheckoutAvailable) return;
+                            if (partnerSlug) {
+                                handleDirectBuyNow();
+                                return;
+                            }
                             setBuyOptionsOpen(true);
                         }}
                         disabled={!isInStock || !isCheckoutAvailable}

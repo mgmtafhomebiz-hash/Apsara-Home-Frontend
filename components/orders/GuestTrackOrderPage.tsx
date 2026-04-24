@@ -9,6 +9,7 @@ import { motion } from 'framer-motion';
 import TopBar from '@/components/layout/TopBar';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/landing-page/Footer';
+import ProductPageWrapper from '@/components/product/ProductPageWrapper';
 import PrimaryButton from '@/components/ui/buttons/PrimaryButton';
 import { TRACK_STEPS } from '@/types/Data';
 import formatDate from '@/helpers/FormatDate';
@@ -62,7 +63,29 @@ const getErrorMessage = (error: unknown) => {
   return 'We could not find a matching order. Double-check your order number and email or mobile number.';
 };
 
-export default function GuestTrackOrderPage({ initialCategories = [] }: { initialCategories?: Category[] }) {
+type PartnerShellConfig = {
+  partnerSlug: string;
+  displayName: string;
+  logoUrl?: string | null;
+  logoVersion?: string | null;
+};
+
+function PartnerTrackOrderFooter({ partnerName }: { partnerName: string }) {
+  return (
+    <footer className="border-t border-slate-200 bg-white">
+      <div className="mx-auto max-w-7xl px-4 py-6 text-center text-sm text-slate-500 sm:px-6 lg:px-8">
+        Orders from <span className="font-semibold text-slate-800">{partnerName}</span> are still processed through AF Home.
+      </div>
+    </footer>
+  );
+}
+
+type GuestTrackOrderPageProps = {
+  initialCategories?: Category[];
+  partnerShell?: PartnerShellConfig;
+};
+
+export default function GuestTrackOrderPage({ initialCategories = [], partnerShell }: GuestTrackOrderPageProps) {
   const searchParams = useSearchParams();
   const [lookupOrder, { data, isFetching }] = useLazyTrackGuestOrderQuery();
   const initialOrderNumber = searchParams.get('order') || (typeof window !== 'undefined' ? window.localStorage.getItem('last_checkout_id') || '' : '');
@@ -74,6 +97,19 @@ export default function GuestTrackOrderPage({ initialCategories = [] }: { initia
 
   const order = data?.order;
   const statusConfig = useMemo(() => getStatusConfig(order?.status ?? 'pending'), [order?.status]);
+  const isPartnerShell = Boolean(partnerShell);
+  const partnerLogoSrc = partnerShell?.logoUrl
+    ? `${partnerShell.logoUrl}${partnerShell.logoUrl.includes('?') ? '&' : '?'}v=${partnerShell.logoVersion || '1'}`
+    : partnerShell?.partnerSlug === 'synergy-shop'
+      ? '/Images/synergy.png'
+      : '/Images/af_home_logo.png';
+  const heroBadgeLabel = isPartnerShell ? 'Partner Storefront Order Tracking' : 'Guest Order Tracking';
+  const heroTitle = isPartnerShell
+    ? `Track your ${partnerShell?.displayName || 'partner storefront'} order without logging in.`
+    : 'Track your AF Home order even without logging in.';
+  const heroDescription = isPartnerShell
+    ? 'Enter your order number plus the email address or mobile number used during checkout. This partner storefront tracking page still uses AF Home order processing in the background.'
+    : 'Enter your order number plus the email address or mobile number you used during checkout. This page is for guest customers and non-member buyers who still want real-time order visibility.';
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -103,7 +139,7 @@ export default function GuestTrackOrderPage({ initialCategories = [] }: { initia
     }
   };
 
-  return (
+  const content = (
     <>
       <div 
         className="fixed inset-0 -z-50 track-order-background"
@@ -121,22 +157,19 @@ export default function GuestTrackOrderPage({ initialCategories = [] }: { initia
         `
       }} />
       <div className="relative min-h-screen text-slate-900 dark:text-white">
-      <TopBar />
-      <Navbar initialCategories={initialCategories} />
-
       <main>
         <section className="relative overflow-hidden border-b border-gray-200 dark:border-gray-700">
           <div className="container mx-auto px-4 py-12 md:py-16">
             <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
               <div>
                 <span className="inline-flex rounded-full border border-orange-200 bg-white/90 dark:bg-white/10 dark:border-orange-500/30 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.2em] text-orange-600 dark:text-orange-400">
-                  Guest Order Tracking
+                  {heroBadgeLabel}
                 </span>
                 <h1 className="mt-4 max-w-2xl text-4xl font-black tracking-tight text-slate-900 dark:text-white md:text-5xl">
-                  Track your AF Home order even without logging in.
+                  {heroTitle}
                 </h1>
                 <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-600 dark:text-gray-300 md:text-base">
-                  Enter your order number plus the email address or mobile number you used during checkout. This page is for guest customers and non-member buyers who still want real-time order visibility.
+                  {heroDescription}
                 </p>
 
                 <div className="mt-6 grid gap-3 sm:grid-cols-3">
@@ -410,8 +443,35 @@ export default function GuestTrackOrderPage({ initialCategories = [] }: { initia
         </section>
       </main>
 
-      <Footer />
     </div>
+    </>
+  );
+
+  if (isPartnerShell && partnerShell) {
+    return (
+      <ProductPageWrapper
+        initialCategories={initialCategories}
+        hideTopBar
+        logoSrc={partnerLogoSrc}
+        logoAlt={partnerShell.displayName}
+        logoHref={`/${partnerShell.partnerSlug}/product`}
+        hideSignIn
+        hideNavLinks
+        stickToTop
+        showGuestCartWishlist
+      >
+        {content}
+        <PartnerTrackOrderFooter partnerName={partnerShell.displayName} />
+      </ProductPageWrapper>
+    );
+  }
+
+  return (
+    <>
+      <TopBar />
+      <Navbar initialCategories={initialCategories} />
+      {content}
+      <Footer />
     </>
   );
 }

@@ -1,16 +1,9 @@
 'use client'
 
-import type { Selection, SortDescriptor } from 'react-aria-components'
-
-import { Button } from '@heroui/react/button'
-import { Checkbox } from '@heroui/react/checkbox'
-import { Chip } from '@heroui/react/chip'
-import { Pagination } from '@heroui/react/pagination'
-import { Table } from '@heroui/react/table'
 import { cn } from 'tailwind-variants'
 import { Eye, Pencil, Trash2, TriangleAlert } from 'lucide-react'
 import Image from 'next/image'
-import { Fragment, useMemo, useState } from 'react'
+import { Fragment, useMemo, useState, type ReactNode } from 'react'
 import { Product } from '@/store/api/productsApi'
 
 interface ProductsTableProps {
@@ -27,7 +20,7 @@ interface ProductsTableProps {
   selectedIds: number[]
   onToggleSelect: (id: number) => void
   onToggleSelectAll: () => void
-  onViewManualCheckout: (product: Product) => void
+  onViewProduct: (product: Product) => void
   readOnly?: boolean
   isLoading?: boolean
   tableMode?: 'local' | 'zq'
@@ -43,6 +36,13 @@ type SortableProductColumn =
   | 'priceMember'
   | 'stock'
   | 'status'
+
+type SortDirection = 'ascending' | 'descending'
+
+type SortDescriptor = {
+  column: SortableProductColumn
+  direction: SortDirection
+}
 
 const isActiveStatus = (status: number) => status === 1 || status === 2
 
@@ -166,11 +166,6 @@ const compareValues = (first: string | number, second: string | number) => {
   return String(first).localeCompare(String(second), undefined, { numeric: true, sensitivity: 'base' })
 }
 
-const statusColorMap: Record<'Active' | 'Inactive', 'success' | 'default'> = {
-  Active: 'success',
-  Inactive: 'default',
-}
-
 const getPaginationPages = (currentPage: number, totalPages: number) => {
   if (totalPages <= 7) {
     return Array.from({ length: totalPages }, (_, index) => index + 1)
@@ -186,8 +181,8 @@ function SortableColumnHeader({
   children,
   sortDirection,
 }: {
-  children: React.ReactNode
-  sortDirection?: 'ascending' | 'descending'
+  children: ReactNode
+  sortDirection?: SortDirection
 }) {
   return (
     <span className="flex items-center justify-between gap-2">
@@ -195,7 +190,7 @@ function SortableColumnHeader({
       {!!sortDirection && (
         <svg
           className={cn(
-            'h-3 w-3 shrink-0 transform text-slate-400 transition-transform duration-100 ease-out',
+            'h-3 w-3 shrink-0 transform text-slate-400 transition-transform duration-100 ease-out dark:text-slate-500',
             sortDirection === 'descending' ? 'rotate-180' : '',
           )}
           fill="none"
@@ -205,6 +200,20 @@ function SortableColumnHeader({
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.25} d="m6 15 6-6 6 6" />
         </svg>
       )}
+    </span>
+  )
+}
+
+function TableChip({
+  children,
+  className,
+}: {
+  children: ReactNode
+  className: string
+}) {
+  return (
+    <span className={cn('inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold', className)}>
+      {children}
     </span>
   )
 }
@@ -223,7 +232,7 @@ function StockCell({ qty }: { qty: number }) {
     )
   }
 
-  return <span className="text-slate-600">{qty.toLocaleString()}</span>
+  return <span className="text-slate-600 dark:text-slate-300">{qty.toLocaleString()}</span>
 }
 
 function EmptyProductsState() {
@@ -250,6 +259,37 @@ function LoadingProductsState() {
   )
 }
 
+function ActionButton({
+  children,
+  ariaLabel,
+  onClick,
+  variant = 'default',
+  disabled = false,
+}: {
+  children: ReactNode
+  ariaLabel: string
+  onClick: () => void
+  variant?: 'default' | 'danger'
+  disabled?: boolean
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={ariaLabel}
+      onClick={onClick}
+      disabled={disabled}
+      className={cn(
+        'inline-flex h-9 w-9 items-center justify-center rounded-xl border transition disabled:cursor-not-allowed disabled:opacity-50',
+        variant === 'danger'
+          ? 'border-red-200 bg-red-50 text-red-600 hover:bg-red-100 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-300 dark:hover:bg-red-500/15'
+          : 'border-slate-200 bg-white text-slate-600 hover:border-sky-200 hover:bg-sky-50 hover:text-sky-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-sky-500/40 dark:hover:bg-sky-500/10 dark:hover:text-sky-200',
+      )}
+    >
+      {children}
+    </button>
+  )
+}
+
 export default function ProductsTable({
   rows,
   currentPage,
@@ -264,7 +304,7 @@ export default function ProductsTable({
   selectedIds,
   onToggleSelect,
   onToggleSelectAll,
-  onViewManualCheckout,
+  onViewProduct,
   readOnly = false,
   isLoading = false,
   tableMode = 'local',
@@ -279,9 +319,10 @@ export default function ProductsTable({
   const paginationPages = useMemo(() => getPaginationPages(currentPage, totalPages), [currentPage, totalPages])
   const isZqMode = tableMode === 'zq'
   const columnCount = isZqMode ? 11 : 13
+  const allVisibleSelected = rows.length > 0 && rows.every((row) => selectedIds.includes(row.id))
 
   const sortedRows = useMemo(() => {
-    const column = (sortDescriptor.column as SortableProductColumn | undefined) ?? 'name'
+    const column = sortDescriptor.column ?? 'name'
     const direction = sortDescriptor.direction === 'descending' ? -1 : 1
 
     return [...rows].sort((first, second) => {
@@ -304,88 +345,92 @@ export default function ProductsTable({
     setConfirmId(id)
   }
 
-  const selectedKeys = useMemo(() => {
-    return new Set(rows.filter((row) => selectedIds.includes(row.id)).map((row) => row.id))
-  }, [rows, selectedIds])
+  const handleSortChange = (column: SortableProductColumn) => {
+    setSortDescriptor((current) => {
+      if (current.column === column) {
+        return {
+          column,
+          direction: current.direction === 'ascending' ? 'descending' : 'ascending',
+        }
+      }
 
-  const handleSelectionChange = (keys: Selection) => {
-    if (keys === 'all') {
-      onToggleSelectAll()
-      return
-    }
-
-    const nextIds = new Set(Array.from(keys).map((key) => Number(key)))
-
-    rows.forEach((row) => {
-      const isSelected = selectedIds.includes(row.id)
-      const shouldBeSelected = nextIds.has(row.id)
-
-      if (isSelected !== shouldBeSelected) {
-        onToggleSelect(row.id)
+      return {
+        column,
+        direction: 'ascending',
       }
     })
   }
 
+  const renderSortableHeader = (
+    label: string,
+    column: SortableProductColumn,
+    align: 'left' | 'center' | 'right' = 'left',
+  ) => {
+    const isActive = sortDescriptor.column === column
+    const direction = isActive ? sortDescriptor.direction : undefined
+
+    return (
+      <button
+        type="button"
+        onClick={() => handleSortChange(column)}
+        className={cn(
+          'flex w-full items-center gap-2 text-left transition hover:text-sky-600 dark:hover:text-sky-300',
+          align === 'center' ? 'justify-center' : '',
+          align === 'right' ? 'justify-end' : '',
+        )}
+      >
+        <SortableColumnHeader sortDirection={direction}>{label}</SortableColumnHeader>
+      </button>
+    )
+  }
+
   return (
-    <div className="w-full">
-      <Table className="w-full">
-        <Table.ScrollContainer>
-          <Table.Content
-            aria-label="Admin products table"
-            className={isZqMode ? 'min-w-[1080px]' : 'min-w-[1260px]'}
-            sortDescriptor={sortDescriptor}
-            onSortChange={setSortDescriptor}
-            {...(!readOnly ? {
-              selectedKeys: selectedKeys,
-              selectionMode: 'multiple' as const,
-              onSelectionChange: handleSelectionChange,
-            } : {})}
-          >
-            <Table.Header>
-              <Table.Column className="w-12 pr-0">
+    <div className="w-full overflow-hidden rounded-[1.35rem] border border-slate-200 bg-white shadow-[0_18px_50px_-28px_rgba(15,23,42,0.28)] dark:border-slate-800 dark:bg-slate-950 dark:shadow-[0_24px_70px_-34px_rgba(2,132,199,0.18)]">
+      <div className="overflow-x-auto">
+        <table className={cn('w-full border-separate border-spacing-0 text-sm text-slate-700 dark:text-slate-200', isZqMode ? 'min-w-[1080px]' : 'min-w-[1260px]')}>
+          <thead className="bg-slate-50/95 dark:bg-slate-900">
+            <tr>
+              <th className="w-12 border-b border-slate-200 px-4 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:border-slate-800 dark:text-slate-400">
                 {!readOnly ? (
-                  <Checkbox
+                  <input
+                    type="checkbox"
                     aria-label="Select all products in current page"
-                    slot="selection"
-                    variant="secondary"
-                    className="justify-center"
-                  >
-                    <Checkbox.Control>
-                      <Checkbox.Indicator />
-                    </Checkbox.Control>
-                  </Checkbox>
+                    checked={allVisibleSelected}
+                    onChange={onToggleSelectAll}
+                    className="h-4 w-4 rounded border-slate-300 bg-white text-sky-600 focus:ring-sky-500 dark:border-slate-600 dark:bg-slate-900"
+                  />
                 ) : null}
-              </Table.Column>
-              <Table.Column className="w-20 text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">Image</Table.Column>
-              <Table.Column allowsSorting isRowHeader id="name" className="min-w-[240px] text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
-                {({ sortDirection }) => <SortableColumnHeader sortDirection={sortDirection}>Product</SortableColumnHeader>}
-              </Table.Column>
-              <Table.Column allowsSorting id="sku" className="min-w-[140px] text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
-                {({ sortDirection }) => <SortableColumnHeader sortDirection={sortDirection}>SKU</SortableColumnHeader>}
-              </Table.Column>
-              <Table.Column allowsSorting id="supplier" className="min-w-[180px] text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
-                {({ sortDirection }) => <SortableColumnHeader sortDirection={sortDirection}>Supplier</SortableColumnHeader>}
-              </Table.Column>
-              <Table.Column allowsSorting id="uploader" className="min-w-[180px] text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
-                {({ sortDirection }) => <SortableColumnHeader sortDirection={sortDirection}>{isZqMode ? 'Source' : 'Uploader'}</SortableColumnHeader>}
-              </Table.Column>
-              <Table.Column allowsSorting id="priceSrp" className="text-end text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
-                {({ sortDirection }) => <SortableColumnHeader sortDirection={sortDirection}>Price</SortableColumnHeader>}
-              </Table.Column>
+              </th>
+              <th className="border-b border-slate-200 px-4 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:border-slate-800 dark:text-slate-400">Image</th>
+              <th className="min-w-[240px] border-b border-slate-200 px-4 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:border-slate-800 dark:text-slate-400">
+                {renderSortableHeader('Product', 'name')}
+              </th>
+              <th className="min-w-[140px] border-b border-slate-200 px-4 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:border-slate-800 dark:text-slate-400">
+                {renderSortableHeader('SKU', 'sku')}
+              </th>
+              <th className="min-w-[180px] border-b border-slate-200 px-4 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:border-slate-800 dark:text-slate-400">
+                {renderSortableHeader('Supplier', 'supplier')}
+              </th>
+              <th className="min-w-[180px] border-b border-slate-200 px-4 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:border-slate-800 dark:text-slate-400">
+                {renderSortableHeader(isZqMode ? 'Source' : 'Uploader', 'uploader')}
+              </th>
+              <th className="border-b border-slate-200 px-4 py-4 text-right text-xs font-semibold uppercase tracking-wide text-slate-500 dark:border-slate-800 dark:text-slate-400">
+                {renderSortableHeader('Price', 'priceSrp', 'right')}
+              </th>
               {!isZqMode ? (
-                <Table.Column allowsSorting id="priceDp" className="text-end text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
-                  {({ sortDirection }) => <SortableColumnHeader sortDirection={sortDirection}>Dealer</SortableColumnHeader>}
-                </Table.Column>
+                <th className="border-b border-slate-200 px-4 py-4 text-right text-xs font-semibold uppercase tracking-wide text-slate-500 dark:border-slate-800 dark:text-slate-400">
+                  {renderSortableHeader('Dealer', 'priceDp', 'right')}
+                </th>
               ) : null}
               {!isZqMode ? (
-                <Table.Column allowsSorting id="priceMember" className="text-end text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
-                  {({ sortDirection }) => <SortableColumnHeader sortDirection={sortDirection}>Member</SortableColumnHeader>}
-                </Table.Column>
+                <th className="border-b border-slate-200 px-4 py-4 text-right text-xs font-semibold uppercase tracking-wide text-slate-500 dark:border-slate-800 dark:text-slate-400">
+                  {renderSortableHeader('Member', 'priceMember', 'right')}
+                </th>
               ) : null}
-              <Table.Column allowsSorting id="stock" className="text-end text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
-                {({ sortDirection }) => <SortableColumnHeader sortDirection={sortDirection}>Stock</SortableColumnHeader>}
-              </Table.Column>
-              <Table.Column className="min-w-[130px] text-center text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+              <th className="border-b border-slate-200 px-4 py-4 text-right text-xs font-semibold uppercase tracking-wide text-slate-500 dark:border-slate-800 dark:text-slate-400">
+                {renderSortableHeader('Stock', 'stock', 'right')}
+              </th>
+              <th className="min-w-[130px] border-b border-slate-200 px-4 py-4 text-center text-xs font-semibold uppercase tracking-wide text-slate-500 dark:border-slate-800 dark:text-slate-400">
                 {isZqMode ? 'Import Status' : 'Badges'}
               </Table.Column>
               <Table.Column allowsSorting id="status" className="text-center text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
@@ -467,225 +512,238 @@ export default function ProductsTable({
                               </span>
                             )}
                           </div>
-                        </div>
-                      </Table.Cell>
-
-                      <Table.Cell>
-                        <span className="inline-flex rounded-lg border border-slate-100 bg-slate-50 px-2 py-1 font-mono text-xs text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">
-                          {product.sku || 'N/A'}
-                        </span>
-                      </Table.Cell>
-
-                      <Table.Cell>
-                        <div className="min-w-[150px]">
-                          <p className="line-clamp-1 text-sm font-medium text-slate-700 dark:text-slate-200">
-                            {isZqMode ? (product.brand?.trim() || 'ZQ Supplier') : (product.supplierName?.trim() || product.brand?.trim() || 'No supplier')}
-                          </p>
-                          {isZqMode ? (
-                            <p className="line-clamp-1 text-[11px] text-slate-400 dark:text-slate-500">
-                              {product.supplierName?.trim() || 'Supplier source unavailable'}
-                            </p>
-                          ) : product.supplierId ? (
-                            <p className="line-clamp-1 text-[11px] text-slate-400 dark:text-slate-500">Supplier #{product.supplierId}</p>
-                          ) : product.brand ? (
-                            <p className="line-clamp-1 text-[11px] text-slate-400 dark:text-slate-500">Brand</p>
-                          ) : null}
-                        </div>
-                      </Table.Cell>
-
-                      <Table.Cell>
-                        <div className="min-w-[150px]">
-                          <p className="line-clamp-1 text-sm font-medium text-slate-700 dark:text-slate-200">
-                            {isZqMode ? 'ZQ API' : (product.uploaderName?.trim() || 'Unknown user')}
-                          </p>
-                          {isZqMode ? (
-                            <p className="line-clamp-1 text-[11px] text-slate-400 dark:text-slate-500">
-                              {product.updatedAt ? `Updated ${new Date(product.updatedAt).toLocaleDateString()}` : 'Imported from database'}
-                            </p>
-                          ) : product.uploaderRole ? (
-                            <p className="line-clamp-1 text-[10px] uppercase tracking-[0.12em] text-slate-400 dark:text-slate-500">
-                              {product.uploaderRole.replace(/_/g, ' ')}
-                            </p>
-                          ) : product.uploaderEmail ? (
-                            <p className="line-clamp-1 text-[11px] text-slate-400 dark:text-slate-500">{product.uploaderEmail}</p>
-                          ) : null}
-                        </div>
-                      </Table.Cell>
-
-                      <Table.Cell className="text-end font-semibold text-slate-700 dark:text-slate-200">
-                        {formatPrice(product.priceSrp)}
-                      </Table.Cell>
-                      {!isZqMode ? (
-                        <Table.Cell className="text-end text-slate-500 dark:text-slate-400">
-                          {formatPrice(product.priceDp)}
-                        </Table.Cell>
-                      ) : null}
-                      {!isZqMode ? (
-                        <Table.Cell className="text-end text-slate-500 dark:text-slate-400">
-                          {formatPrice(product.priceMember ?? 0)}
-                        </Table.Cell>
-                      ) : null}
-
-                      <Table.Cell className="text-end">
-                        <StockCell qty={effectiveStockQty} />
-                      </Table.Cell>
-
-                      <Table.Cell>
-                        {isZqMode ? (
-                          <div className="flex justify-center">
-                            <Chip size="sm" variant="soft" className="bg-sky-50 text-sky-700">
-                              {product.description?.replace('ZQ import status: ', '').trim() || 'Imported'}
-                            </Chip>
-                          </div>
-                        ) : (
-                          <div className="flex flex-col items-center gap-1">
-                            {isNewProduct(product) && (
-                              <Chip color="accent" size="sm" variant="soft">
-                                New
-                              </Chip>
-                            )}
-                            {product.musthave && (
-                              <Chip color="warning" size="sm" variant="soft">
-                                Must Have
-                              </Chip>
-                            )}
-                            {product.bestseller && (
-                              <Chip size="sm" variant="soft" className="bg-fuchsia-50 text-fuchsia-700">
-                                Bestseller
-                              </Chip>
-                            )}
-                            {!isNewProduct(product) && !product.musthave && !product.bestseller && (
-                              <span className="text-xs text-slate-300">N/A</span>
-                            )}
-                          </div>
                         )}
-                      </Table.Cell>
+                      </div>
+                    </td>
 
-                      <Table.Cell className="text-center">
-                        <Chip color={statusColorMap[statusLabel]} size="sm" variant="soft">
-                          {statusLabel}
-                        </Chip>
-                      </Table.Cell>
-
-                      <Table.Cell>
-                        <div className="flex items-center justify-end gap-1">
-                          <Button
-                            isIconOnly
-                            size="sm"
-                            variant="tertiary"
-                            aria-label={`View ${product.name} for manual checkout`}
-                            onPress={() => {
-                              setConfirmId(null)
-                              onViewManualCheckout(product)
-                            }}
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          {!readOnly ? (
-                            <>
-                              <Button
-                                isIconOnly
-                                size="sm"
-                                variant="tertiary"
-                                aria-label={`Edit ${product.name}`}
-                                onPress={() => {
-                                  setConfirmId(null)
-                                  onEdit(product)
-                                }}
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                              {confirmId === product.id ? (
-                                <Button
-                                  size="sm"
-                                  variant="danger"
-                                  isDisabled={isDeleting(product.id)}
-                                  aria-label={`Confirm delete ${product.name}`}
-                                  onPress={() => handleDeleteClick(product.id)}
-                                >
-                                  {isDeleting(product.id) ? 'Deleting...' : 'Confirm'}
-                                </Button>
-                              ) : (
-                                <Button
-                                  isIconOnly
-                                  size="sm"
-                                  variant="danger-soft"
-                                  aria-label={`Delete ${product.name}`}
-                                  onPress={() => handleDeleteClick(product.id)}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              )}
-                            </>
+                    <td className="border-b border-slate-100 px-4 py-4 dark:border-slate-800/70">
+                      <div className="min-w-0">
+                        <p className="line-clamp-1 font-medium leading-snug text-slate-800 dark:text-slate-100">{product.name || 'N/A'}</p>
+                        <div className="mt-1 flex flex-wrap items-center gap-2">
+                          <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500">#{product.id}</span>
+                          {isZqMode ? (
+                            <span className="rounded-md bg-sky-50 px-1.5 py-0.5 text-[10px] font-medium text-sky-700 dark:bg-sky-500/12 dark:text-sky-200">
+                              {product.specifications?.trim() || 'ZQ Product'}
+                            </span>
+                          ) : variantCount > 0 ? (
+                            <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                              {variantCount} variant{variantCount !== 1 ? 's' : ''}
+                            </span>
                           ) : null}
                         </div>
-                      </Table.Cell>
-                    </Table.Row>
-                  )
-                })
-              )}
-            </Table.Body>
+                      </div>
+                    </td>
 
-          </Table.Content>
-        </Table.ScrollContainer>
+                    <td className="border-b border-slate-100 px-4 py-4 dark:border-slate-800/70">
+                      <span className="inline-flex rounded-lg border border-slate-100 bg-slate-50 px-2 py-1 font-mono text-xs text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">
+                        {product.sku || 'N/A'}
+                      </span>
+                    </td>
 
-        <Table.Footer>
-          {totalPages > 1 ? (
-            <Pagination size="sm" className="w-full justify-between gap-3 px-4 py-3">
-              <Pagination.Summary>
-                {(from ?? 0).toLocaleString()} to {(to ?? 0).toLocaleString()} of {totalRecords.toLocaleString()} results
-              </Pagination.Summary>
-              <Pagination.Content>
-                <Pagination.Item>
-                  <Pagination.Previous
-                    isDisabled={currentPage === 1}
-                    onPress={() => onPageChange(Math.max(1, currentPage - 1))}
-                  >
-                    <Pagination.PreviousIcon />
-                    Prev
-                  </Pagination.Previous>
-                </Pagination.Item>
+                    <td className="border-b border-slate-100 px-4 py-4 dark:border-slate-800/70">
+                      <div className="min-w-[150px]">
+                        <p className="line-clamp-1 text-sm font-medium text-slate-700 dark:text-slate-200">
+                          {isZqMode ? (product.brand?.trim() || 'ZQ Supplier') : (product.supplierName?.trim() || product.brand?.trim() || 'No supplier')}
+                        </p>
+                        {isZqMode ? (
+                          <p className="line-clamp-1 text-[11px] text-slate-400 dark:text-slate-500">
+                            {product.supplierName?.trim() || 'Supplier source unavailable'}
+                          </p>
+                        ) : product.supplierId ? (
+                          <p className="line-clamp-1 text-[11px] text-slate-400 dark:text-slate-500">Supplier #{product.supplierId}</p>
+                        ) : product.brand ? (
+                          <p className="line-clamp-1 text-[11px] text-slate-400 dark:text-slate-500">Brand</p>
+                        ) : null}
+                      </div>
+                    </td>
 
-                {paginationPages.map((page, index) => {
-                  const previousPage = paginationPages[index - 1]
-                  const shouldShowEllipsis = typeof previousPage === 'number' && page - previousPage > 1
+                    <td className="border-b border-slate-100 px-4 py-4 dark:border-slate-800/70">
+                      <div className="min-w-[150px]">
+                        <p className="line-clamp-1 text-sm font-medium text-slate-700 dark:text-slate-200">
+                          {isZqMode ? 'ZQ API' : (product.uploaderName?.trim() || 'Unknown user')}
+                        </p>
+                        {isZqMode ? (
+                          <p className="line-clamp-1 text-[11px] text-slate-400 dark:text-slate-500">
+                            {product.updatedAt ? `Updated ${new Date(product.updatedAt).toLocaleDateString()}` : 'Imported from database'}
+                          </p>
+                        ) : product.uploaderRole ? (
+                          <p className="line-clamp-1 text-[10px] uppercase tracking-[0.12em] text-slate-400 dark:text-slate-500">
+                            {product.uploaderRole.replace(/_/g, ' ')}
+                          </p>
+                        ) : product.uploaderEmail ? (
+                          <p className="line-clamp-1 text-[11px] text-slate-400 dark:text-slate-500">{product.uploaderEmail}</p>
+                        ) : null}
+                      </div>
+                    </td>
 
-                  return (
-                    <Fragment key={`fragment-${page}`}>
-                      {shouldShowEllipsis && (
-                        <Pagination.Item>
-                          <Pagination.Ellipsis />
-                        </Pagination.Item>
+                    <td className="border-b border-slate-100 px-4 py-4 text-right font-semibold text-slate-700 dark:border-slate-800/70 dark:text-slate-200">
+                      {formatPrice(product.priceSrp)}
+                    </td>
+                    {!isZqMode ? (
+                      <td className="border-b border-slate-100 px-4 py-4 text-right text-slate-500 dark:border-slate-800/70 dark:text-slate-400">
+                        {formatPrice(product.priceDp)}
+                      </td>
+                    ) : null}
+                    {!isZqMode ? (
+                      <td className="border-b border-slate-100 px-4 py-4 text-right text-slate-500 dark:border-slate-800/70 dark:text-slate-400">
+                        {formatPrice(product.priceMember ?? 0)}
+                      </td>
+                    ) : null}
+
+                    <td className="border-b border-slate-100 px-4 py-4 text-right dark:border-slate-800/70">
+                      <StockCell qty={effectiveStockQty} />
+                    </td>
+
+                    <td className="border-b border-slate-100 px-4 py-4 dark:border-slate-800/70">
+                      {isZqMode ? (
+                        <div className="flex justify-center">
+                          <TableChip className="bg-sky-50 text-sky-700 dark:bg-sky-500/12 dark:text-sky-200">
+                            {product.description?.replace('ZQ import status: ', '').trim() || 'Imported'}
+                          </TableChip>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center gap-1">
+                          {isNewProduct(product) ? (
+                            <TableChip className="bg-violet-50 text-violet-700 dark:bg-violet-500/12 dark:text-violet-200">New</TableChip>
+                          ) : null}
+                          {product.musthave ? (
+                            <TableChip className="bg-amber-50 text-amber-700 dark:bg-amber-500/12 dark:text-amber-200">Must Have</TableChip>
+                          ) : null}
+                          {product.bestseller ? (
+                            <TableChip className="bg-fuchsia-50 text-fuchsia-700 dark:bg-fuchsia-500/12 dark:text-fuchsia-200">Bestseller</TableChip>
+                          ) : null}
+                          {!isNewProduct(product) && !product.musthave && !product.bestseller ? (
+                            <span className="text-xs text-slate-300 dark:text-slate-600">N/A</span>
+                          ) : null}
+                        </div>
                       )}
-                      <Pagination.Item>
-                        <Pagination.Link isActive={page === currentPage} onPress={() => onPageChange(page)}>
-                          {page}
-                        </Pagination.Link>
-                      </Pagination.Item>
-                    </Fragment>
-                  )
-                })}
+                    </td>
 
-                <Pagination.Item>
-                  <Pagination.Next
-                    isDisabled={currentPage === totalPages}
-                    onPress={() => onPageChange(Math.min(totalPages, currentPage + 1))}
-                  >
-                    Next
-                    <Pagination.NextIcon />
-                  </Pagination.Next>
-                </Pagination.Item>
-              </Pagination.Content>
-            </Pagination>
-          ) : (
-            <div className="flex w-full items-center justify-between px-4 py-3 text-sm text-slate-500">
-              <span>
-                {(from ?? 0).toLocaleString()} to {(to ?? 0).toLocaleString()} of {totalRecords.toLocaleString()} results
-              </span>
+                    <td className="border-b border-slate-100 px-4 py-4 text-center dark:border-slate-800/70">
+                      <TableChip
+                        className={
+                          statusLabel === 'Active'
+                            ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/12 dark:text-emerald-200'
+                            : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'
+                        }
+                      >
+                        {statusLabel}
+                      </TableChip>
+                    </td>
+
+                    <td className="border-b border-slate-100 px-4 py-4 dark:border-slate-800/70">
+                      <div className="flex items-center justify-end gap-1">
+                        <ActionButton
+                          ariaLabel={`View ${product.name}`}
+                          onClick={() => {
+                            setConfirmId(null)
+                            onViewProduct(product)
+                          }}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </ActionButton>
+                        {!readOnly ? (
+                          <>
+                            <ActionButton
+                              ariaLabel={`Edit ${product.name}`}
+                              onClick={() => {
+                                setConfirmId(null)
+                                onEdit(product)
+                              }}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </ActionButton>
+                            {confirmId === product.id ? (
+                              <button
+                                type="button"
+                                aria-label={`Confirm delete ${product.name}`}
+                                disabled={isDeleting(product.id)}
+                                onClick={() => handleDeleteClick(product.id)}
+                                className="inline-flex h-9 items-center justify-center rounded-xl bg-red-600 px-3 text-sm font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:bg-red-400"
+                              >
+                                {isDeleting(product.id) ? 'Deleting...' : 'Confirm'}
+                              </button>
+                            ) : (
+                              <ActionButton
+                                ariaLabel={`Delete ${product.name}`}
+                                variant="danger"
+                                onClick={() => handleDeleteClick(product.id)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </ActionButton>
+                            )}
+                          </>
+                        ) : null}
+                      </div>
+                    </td>
+                  </tr>
+                )
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="border-t border-slate-200 bg-slate-50/90 px-4 py-3 dark:border-slate-800 dark:bg-slate-900/80">
+        {totalPages > 1 ? (
+          <div className="flex w-full flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
+              {(from ?? 0).toLocaleString()} to {(to ?? 0).toLocaleString()} of {totalRecords.toLocaleString()} results
+            </p>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                disabled={currentPage === 1}
+                onClick={() => onPageChange(Math.max(1, currentPage - 1))}
+                className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 transition hover:border-sky-200 hover:bg-sky-50 hover:text-sky-700 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-sky-500/40 dark:hover:bg-sky-500/10 dark:hover:text-sky-200"
+              >
+                Prev
+              </button>
+
+              {paginationPages.map((page, index) => {
+                const previousPage = paginationPages[index - 1]
+                const shouldShowEllipsis = typeof previousPage === 'number' && page - previousPage > 1
+
+                return (
+                  <Fragment key={`fragment-${page}`}>
+                    {shouldShowEllipsis ? (
+                      <span className="px-1 text-slate-400 dark:text-slate-600">...</span>
+                    ) : null}
+                    <button
+                      type="button"
+                      onClick={() => onPageChange(page)}
+                      className={cn(
+                        'min-w-9 rounded-xl border px-3 py-2 text-sm font-semibold transition',
+                        page === currentPage
+                          ? 'border-sky-500 bg-sky-500 text-white shadow-sm shadow-sky-500/25 dark:border-sky-400 dark:bg-sky-500 dark:text-slate-950'
+                          : 'border-slate-200 bg-white text-slate-600 hover:border-sky-200 hover:bg-sky-50 hover:text-sky-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-sky-500/40 dark:hover:bg-sky-500/10 dark:hover:text-sky-200',
+                      )}
+                    >
+                      {page}
+                    </button>
+                  </Fragment>
+                )
+              })}
+
+              <button
+                type="button"
+                disabled={currentPage === totalPages}
+                onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
+                className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 transition hover:border-sky-200 hover:bg-sky-50 hover:text-sky-700 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-sky-500/40 dark:hover:bg-sky-500/10 dark:hover:text-sky-200"
+              >
+                Next
+              </button>
             </div>
-          )}
-        </Table.Footer>
-      </Table>
+          </div>
+        ) : (
+          <div className="flex w-full items-center justify-between text-sm text-slate-500 dark:text-slate-400">
+            <span>
+              {(from ?? 0).toLocaleString()} to {(to ?? 0).toLocaleString()} of {totalRecords.toLocaleString()} results
+            </span>
+          </div>
+        )}
+      </div>
     </div>
   )
 }

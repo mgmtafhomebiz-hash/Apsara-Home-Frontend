@@ -263,17 +263,28 @@ const ReferralShareCard = ({
 const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfilePageProps) => {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { data: session, update: updateSession } = useSession();
-  const { data } = useMeQuery();
+  const { data: session, status, update: updateSession } = useSession();
+  const role = String(session?.user?.role ?? '').toLowerCase();
+  const isCustomerSession = status === 'authenticated' && (role === 'customer' || role === '');
+  const { data } = useMeQuery(undefined, {
+    skip: !isCustomerSession,
+  });
   const { data: referralTree, isLoading: isReferralTreeLoading } = useReferralTreeQuery(data?.id, {
+    skip: !isCustomerSession || !data?.id,
     refetchOnMountOrArgChange: true,
     refetchOnFocus: true,
     refetchOnReconnect: true,
     pollingInterval: 15000,
   });
-  const { data: usernameChangeLatest, refetch: refetchUsernameChangeLatest } = useUsernameChangeLatestQuery();
-  const { data: activityData, isLoading: isActivityLoading } = useMemberActivityQuery();
-  const { data: sessionsData, isLoading: isSessionsLoading } = useMemberSessionsQuery();
+  const { data: usernameChangeLatest, refetch: refetchUsernameChangeLatest } = useUsernameChangeLatestQuery(undefined, {
+    skip: !isCustomerSession,
+  });
+  const { data: activityData, isLoading: isActivityLoading } = useMemberActivityQuery(undefined, {
+    skip: !isCustomerSession,
+  });
+  const { data: sessionsData, isLoading: isSessionsLoading } = useMemberSessionsQuery(undefined, {
+    skip: !isCustomerSession,
+  });
   const [updateProfile, { isLoading: isSaving }] = useUpdateProfileMutation();
   const [changePassword, { isLoading: isChangingPassword }] = useChangePasswordMutation();
   const [sendUsernameChangeOtp, { isLoading: isSendingUsernameOtp }] = useSendUsernameChangeOtpMutation();
@@ -521,6 +532,22 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
       : ''),
     [shoppingReferralLink],
   );
+  const profileActionStatus = isUploadingAvatar
+    ? 'Uploading profile photo...'
+    : isSaving
+      ? 'Saving profile changes...'
+      : isChangingPassword
+        ? 'Updating password...'
+        : isUpdatingTwoFactor
+          ? 'Updating security settings...'
+          : isSendingUsernameOtp
+            ? 'Sending username OTP...'
+            : isSubmittingUsernameChange
+              ? 'Submitting username request...'
+              : isRevokingSession
+                ? 'Signing out session...'
+                : null;
+  const isProfileActionPending = Boolean(profileActionStatus);
   const verificationBadgeClass = (status?: string) => {
     if (status === 'verified') return 'bg-emerald-100 text-emerald-700';
     if (status === 'pending_review') return 'bg-sky-100 text-sky-700';
@@ -1317,6 +1344,31 @@ const ProfilePage = ({ initialProfile = null, initialCategories = [] }: ProfileP
           <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white tracking-tight">My Profile</h1>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Manage your personal information, security, and preferences.</p>
         </div>
+
+        <AnimatePresence initial={false}>
+          {isProfileActionPending && (
+            <motion.div
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.2 }}
+              className="sticky top-16 z-30 -mx-4 mb-4 border-b border-sky-100 bg-white/95 px-4 py-2 backdrop-blur-sm dark:border-sky-900/40 dark:bg-gray-800/95"
+            >
+              <div className="mx-auto flex max-w-[1400px] items-center gap-3">
+                <div className="relative h-1.5 flex-1 overflow-hidden rounded-full bg-sky-100 dark:bg-sky-900/40">
+                  <motion.div
+                    className="absolute inset-y-0 left-0 w-1/3 rounded-full bg-gradient-to-r from-sky-400 via-cyan-400 to-sky-500"
+                    animate={{ x: ['-120%', '320%'] }}
+                    transition={{ duration: 1.1, repeat: Infinity, ease: 'easeInOut' }}
+                  />
+                </div>
+                <span className="shrink-0 text-xs font-semibold text-sky-600 dark:text-sky-400">
+                  {profileActionStatus}
+                </span>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Tab navigation bar - mobile: 4x2 grid, desktop: horizontal bar */}
         <div className="sticky top-16 z-20 -mx-4 mb-6 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm border-b border-gray-100 dark:border-gray-700">

@@ -15,6 +15,7 @@
 
 # next.js
 /.next/
+/.next_build/
 /out/
 
 # production
@@ -45,3 +46,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 .gitnexus
+
+
+.next
+.next_build
+.next_build*
+node_modules

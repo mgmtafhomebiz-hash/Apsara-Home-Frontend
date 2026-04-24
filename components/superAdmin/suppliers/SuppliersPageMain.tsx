@@ -367,7 +367,7 @@ export default function SuppliersPageMain() {
 
   if (isLoading) {
     return (
-      <div className="rounded-2xl border border-slate-200 bg-white p-6 text-sm text-slate-500">
+      <div className="rounded-2xl border border-slate-200 bg-white p-6 text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-400">
         Loading supplier data...
       </div>
     )
@@ -375,7 +375,7 @@ export default function SuppliersPageMain() {
 
   if (isError) {
     return (
-      <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-sm text-red-700">
+      <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-sm text-red-700 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-200">
         Failed to load supplier data.
       </div>
     )
@@ -383,9 +383,9 @@ export default function SuppliersPageMain() {
 
   if (sortedSuppliers.length === 0 && isSupplierAdmin) {
     return (
-      <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6">
-        <h1 className="text-lg font-bold text-amber-900">No Supplier Linked</h1>
-        <p className="mt-2 text-sm text-amber-700">
+      <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6 dark:border-amber-500/20 dark:bg-amber-500/10">
+        <h1 className="text-lg font-bold text-amber-900 dark:text-amber-100">No Supplier Linked</h1>
+        <p className="mt-2 text-sm text-amber-700 dark:text-amber-200">
           This supplier account is not yet linked to a supplier company.
         </p>
       </div>
@@ -397,14 +397,14 @@ export default function SuppliersPageMain() {
 
     return (
       <div className="space-y-6">
-        <div className="rounded-3xl border border-cyan-100 bg-[linear-gradient(135deg,_#ecfeff,_#ffffff_55%,_#f0fdfa)] p-6 shadow-sm">
+        <div className="rounded-3xl border border-cyan-100 bg-[linear-gradient(135deg,_#ecfeff,_#ffffff_55%,_#f0fdfa)] p-6 shadow-sm dark:border-cyan-500/20 dark:bg-[linear-gradient(135deg,rgba(8,47,73,0.92),rgba(2,6,23,0.98)_55%,rgba(6,78,59,0.55))]">
           <p className="text-xs font-bold uppercase tracking-[0.24em] text-cyan-700">
             Supplier Company
           </p>
-          <h1 className="mt-3 text-3xl font-bold tracking-tight text-slate-900">
+          <h1 className="mt-3 text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
             {supplier.company || supplier.name}
           </h1>
-          <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-400">
             Your supplier account is scoped to this company only. Products and dashboard
             data stay limited to this profile.
           </p>
@@ -422,12 +422,12 @@ export default function SuppliersPageMain() {
           />
         </div>
 
-        <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950">
           <p className="text-xs font-bold uppercase tracking-[0.24em] text-slate-400">
             Allowed Categories
           </p>
-          <h2 className="mt-2 text-lg font-bold text-slate-900">Assigned Product Categories</h2>
-          <p className="mt-1 text-sm text-slate-500">
+          <h2 className="mt-2 text-lg font-bold text-slate-900 dark:text-slate-100">Assigned Product Categories</h2>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
             These are the only categories this supplier portal can use when creating or editing products.
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
@@ -435,28 +435,28 @@ export default function SuppliersPageMain() {
               supplier.assigned_categories?.map((category) => (
                 <span
                   key={category.id}
-                  className="inline-flex rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1.5 text-xs font-semibold text-cyan-700"
+                  className="inline-flex rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1.5 text-xs font-semibold text-cyan-700 dark:border-cyan-500/20 dark:bg-cyan-500/10 dark:text-cyan-200"
                 >
                   {category.name}
                 </span>
               ))
             ) : (
-              <span className="rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
+              <span className="rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-200">
                 No categories assigned yet. Ask admin to assign your allowed product categories.
               </span>
             )}
           </div>
         </section>
 
-        <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950">
           <div className="mb-5">
             <p className="text-xs font-bold uppercase tracking-[0.24em] text-slate-400">
               Supplier Access
             </p>
-            <h2 className="mt-2 text-lg font-bold text-slate-900">
+            <h2 className="mt-2 text-lg font-bold text-slate-900 dark:text-slate-100">
               {isMainSupplier ? 'Invite Sub-Supplier User' : 'Supplier Access'}
             </h2>
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
               {isMainSupplier
                 ? 'Give your staff their own supplier portal login. Email is optional, and you can copy the setup link manually after creating the invite.'
                 : 'This account is a sub-supplier account. Only the main supplier owner can invite additional supplier users.'}
@@ -514,7 +514,7 @@ export default function SuppliersPageMain() {
               </button>
             </form>
           ) : (
-            <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+            <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-200">
               Main supplier owner only ang puwedeng mag-invite ng sub-supplier users.
             </div>
           )}
@@ -1366,7 +1366,7 @@ function SupplierUsersTree({ supplierId }: { supplierId: number }) {
 function FormField({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block">
-      <span className="mb-2 block text-sm font-semibold text-slate-700">{label}</span>
+      <span className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-200">{label}</span>
       {children}
     </label>
   )
@@ -1377,8 +1377,8 @@ function FeedbackBanner({ type, message }: { type: 'success' | 'error'; message:
     <div
       className={`rounded-2xl border px-4 py-3 text-sm ${
         type === 'success'
-          ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-          : 'border-red-200 bg-red-50 text-red-700'
+          ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-200'
+          : 'border-red-200 bg-red-50 text-red-700 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-200'
       }`}
     >
       {message}
@@ -1406,22 +1406,22 @@ function SetupLinkCard({
   }
 
   return (
-    <div className="rounded-2xl border border-cyan-200 bg-cyan-50 p-4">
+    <div className="rounded-2xl border border-cyan-200 bg-cyan-50 p-4 dark:border-cyan-500/20 dark:bg-cyan-500/10">
       <p className="text-xs font-bold uppercase tracking-[0.18em] text-cyan-700">
         Setup Link Ready
       </p>
-      <p className="mt-2 text-sm text-slate-600">
+      <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
         {delivery === 'email_and_link'
           ? 'An email was sent, and you can also copy the setup link below.'
           : 'No email was sent. Copy this setup link and send it manually to your supplier user.'}
       </p>
-      <div className="mt-3 rounded-2xl border border-cyan-100 bg-white px-4 py-3 text-sm text-slate-700 break-all">
+      <div className="mt-3 break-all rounded-2xl border border-cyan-100 bg-white px-4 py-3 text-sm text-slate-700 dark:border-cyan-500/20 dark:bg-slate-950 dark:text-slate-200">
         {setupUrl}
       </div>
       <button
         type="button"
         onClick={() => void handleCopy()}
-        className="mt-3 rounded-xl border border-cyan-200 bg-white px-3 py-2 text-xs font-semibold text-cyan-700 transition hover:bg-cyan-100"
+        className="mt-3 rounded-xl border border-cyan-200 bg-white px-3 py-2 text-xs font-semibold text-cyan-700 transition hover:bg-cyan-100 dark:border-cyan-500/20 dark:bg-slate-950 dark:text-cyan-200 dark:hover:bg-cyan-500/10"
       >
         {copied ? 'Copied' : 'Copy Link'}
       </button>
@@ -1431,9 +1431,9 @@ function SetupLinkCard({
 
 function InfoCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{label}</p>
-      <p className="mt-3 text-sm font-medium leading-6 text-slate-700">{value}</p>
+    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-950">
+      <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">{label}</p>
+      <p className="mt-3 text-sm font-medium leading-6 text-slate-700 dark:text-slate-200">{value}</p>
     </div>
   )
 }
@@ -1453,7 +1453,7 @@ function ModalShell({
         onClick={onClose}
         className="absolute inset-0 cursor-default"
       />
-      <div className="relative z-10 w-full max-w-2xl rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-[0_30px_100px_rgba(15,23,42,0.18)]">
+      <div className="relative z-10 w-full max-w-2xl rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-[0_30px_100px_rgba(15,23,42,0.18)] dark:border-slate-800 dark:bg-slate-950">
         {children}
       </div>
     </div>
@@ -1461,7 +1461,7 @@ function ModalShell({
 }
 
 const inputClassName =
-  'w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100'
+  'w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:focus:ring-cyan-500/20'
 
 const textareaClassName =
-  'w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100'
+  'w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:focus:ring-cyan-500/20'

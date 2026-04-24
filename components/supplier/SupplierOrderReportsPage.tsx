@@ -158,35 +158,35 @@ export default function SupplierOrderReportsPage({
 
   return (
     <div className="space-y-6">
-      <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+      <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <h1 className="text-lg font-semibold text-slate-900">{title}</h1>
-            <p className="text-sm text-slate-500">Generate reports for your supplier orders.</p>
+            <h1 className="text-lg font-semibold text-slate-900 dark:text-slate-100">{title}</h1>
+            <p className="text-sm text-slate-500 dark:text-slate-400">Generate reports for your supplier orders.</p>
           </div>
         </div>
 
         <div className="mt-5 grid gap-3 md:grid-cols-3">
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Date From</p>
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-900">
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">Date From</p>
             <input
               type="date"
               value={dateFrom}
               onChange={(event) => setDateFrom(event.target.value)}
-              className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700"
+              className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200"
             />
           </div>
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Date To</p>
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-900">
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">Date To</p>
             <input
               type="date"
               value={dateTo}
               onChange={(event) => setDateTo(event.target.value)}
-              className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700"
+              className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200"
             />
           </div>
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Export</p>
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-900">
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">Export</p>
             <button
               type="button"
               className={`mt-2 w-full rounded-xl border border-cyan-200 bg-cyan-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-cyan-200/50 transition ${
@@ -201,30 +201,30 @@ export default function SupplierOrderReportsPage({
         </div>
       </section>
 
-      <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+      <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950">
         <div className="grid gap-4 md:grid-cols-3">
-          <div className="rounded-2xl border border-slate-200 bg-white p-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Total Orders</p>
-            <p className="mt-2 text-2xl font-bold text-slate-900">{totals.totalOrders}</p>
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">Total Orders</p>
+            <p className="mt-2 text-2xl font-bold text-slate-900 dark:text-slate-100">{totals.totalOrders}</p>
           </div>
-          <div className="rounded-2xl border border-slate-200 bg-white p-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Total Amount</p>
-            <p className="mt-2 text-2xl font-bold text-slate-900">PHP {totals.totalAmount.toLocaleString()}</p>
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">Total Amount</p>
+            <p className="mt-2 text-2xl font-bold text-slate-900 dark:text-slate-100">PHP {totals.totalAmount.toLocaleString()}</p>
           </div>
-          <div className="rounded-2xl border border-slate-200 bg-white p-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Total Net Sales</p>
-            <p className="mt-2 text-2xl font-bold text-slate-900">PHP {totals.totalNetSales.toLocaleString()}</p>
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">Total Net Sales</p>
+            <p className="mt-2 text-2xl font-bold text-slate-900 dark:text-slate-100">PHP {totals.totalNetSales.toLocaleString()}</p>
           </div>
         </div>
       </section>
 
-      <section className="rounded-3xl border border-slate-200 bg-white p-0 shadow-sm">
-        <div className="border-b border-slate-100 px-6 py-4">
-          <h2 className="text-base font-semibold text-slate-900">Order Report</h2>
+      <section className="rounded-3xl border border-slate-200 bg-white p-0 shadow-sm dark:border-slate-800 dark:bg-slate-950">
+        <div className="border-b border-slate-100 px-6 py-4 dark:border-slate-800">
+          <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">Order Report</h2>
         </div>
         <div className="overflow-x-auto">
           <table className="min-w-[900px] w-full text-left text-sm">
-            <thead className="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-400">
+            <thead className="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-400 dark:bg-slate-900 dark:text-slate-500">
               <tr>
                 <th className="px-6 py-3">Customer Name</th>
                 <th className="px-6 py-3">Product</th>
@@ -238,7 +238,7 @@ export default function SupplierOrderReportsPage({
             <tbody>
               {isLoading ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-10 text-center text-sm text-slate-500">
+                  <td colSpan={7} className="px-6 py-10 text-center text-sm text-slate-500 dark:text-slate-400">
                     Loading report...
                   </td>
                 </tr>
@@ -250,29 +250,29 @@ export default function SupplierOrderReportsPage({
                 </tr>
               ) : filteredRows.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-10 text-center text-sm text-slate-500">
+                  <td colSpan={7} className="px-6 py-10 text-center text-sm text-slate-500 dark:text-slate-400">
                     No orders found for the selected range.
                   </td>
                 </tr>
               ) : (
                 filteredRows.map((row) => (
-                  <tr key={row.id} className="border-t border-slate-100">
-                    <td className="px-6 py-4 font-semibold text-slate-900">{row.customer}</td>
-                    <td className="px-6 py-4 text-slate-600">
-                      <div className="font-semibold text-slate-700">{row.product}</div>
-                      <div className="mt-0.5 text-xs text-slate-400">
+                  <tr key={row.id} className="border-t border-slate-100 dark:border-slate-800">
+                    <td className="px-6 py-4 font-semibold text-slate-900 dark:text-slate-100">{row.customer}</td>
+                    <td className="px-6 py-4 text-slate-600 dark:text-slate-300">
+                      <div className="font-semibold text-slate-700 dark:text-slate-200">{row.product}</div>
+                      <div className="mt-0.5 text-xs text-slate-400 dark:text-slate-500">
                         Qty: {row.quantity || 1}
                         {row.selectedColor ? ` • Color: ${row.selectedColor}` : ''}
                         {row.selectedSize ? ` • Size: ${row.selectedSize}` : ''}
                         {row.selectedType ? ` • Type: ${row.selectedType}` : ''}
                       </div>
                     </td>
-                    <td className="px-6 py-4 font-semibold text-slate-900">PHP {row.amount.toLocaleString()}</td>
-                    <td className="px-6 py-4 text-slate-600">{row.date}</td>
-                    <td className="px-6 py-4 text-slate-600">{row.id}</td>
-                    <td className="px-6 py-4 text-slate-600">{row.trackingNo}</td>
+                    <td className="px-6 py-4 font-semibold text-slate-900 dark:text-slate-100">PHP {row.amount.toLocaleString()}</td>
+                    <td className="px-6 py-4 text-slate-600 dark:text-slate-300">{row.date}</td>
+                    <td className="px-6 py-4 text-slate-600 dark:text-slate-300">{row.id}</td>
+                    <td className="px-6 py-4 text-slate-600 dark:text-slate-300">{row.trackingNo}</td>
                     <td className="px-6 py-4">
-                      <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+                      <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-200">
                         {row.status}
                       </span>
                     </td>

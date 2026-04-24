@@ -135,7 +135,7 @@ const Header = ({ onMenuClick }: HeaderProps) => {
     const adminIdentityKey = sessionAccessToken
         ? `${String((session?.user as { id?: string } | undefined)?.id ?? 'unknown')}:${sessionAccessToken}`
         : undefined;
-    const { data: adminMe } = useGetAdminMeQuery(adminIdentityKey, { skip: !sessionAccessToken });
+    const { data: adminMe, isLoading: isAdminMeLoading, isFetching: isAdminMeFetching } = useGetAdminMeQuery(adminIdentityKey, { skip: !sessionAccessToken });
     const router = useRouter();
     const pathname = usePathname();
     const searchParams = useSearchParams();
@@ -155,7 +155,8 @@ const Header = ({ onMenuClick }: HeaderProps) => {
     });
     const [markNotificationRead] = useMarkAdminNotificationReadMutation();
     const [markAllNotificationsRead] = useMarkAllAdminNotificationsReadMutation();
-    const displayName = String(adminMe?.name ?? session?.user?.name ?? '').trim() || 'Admin';
+    const isRefreshingAdminIdentity = Boolean(sessionAccessToken) && !adminMe && (isAdminMeLoading || isAdminMeFetching);
+    const displayName = String(adminMe?.name ?? session?.user?.name ?? '').trim() || (isRefreshingAdminIdentity ? 'Refreshing admin...' : 'Admin');
     const displayRole = formatRole(adminMe?.role ?? session?.user?.role);
     const displayInitials = getInitials(displayName);
     const avatarSrc = adminMe?.avatar_url || session?.user?.image;
