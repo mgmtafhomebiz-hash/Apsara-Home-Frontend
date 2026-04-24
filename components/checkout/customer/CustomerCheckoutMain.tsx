@@ -20,6 +20,7 @@ import { useMeQuery } from "@/store/api/userApi";
 import { useLazyGetPublicProductQuery } from "@/store/api/productsApi";
 import type { Category } from '@/store/api/categoriesApi';
 import { User, ArrowLeft } from 'lucide-react';
+import { resolveShippingFee } from "@/libs/shippingRates";
 
 const defaultForm: GuestForm = {
     name: '',
@@ -195,6 +196,17 @@ const CustomerCheckoutMain = ({
         referred_by: formOverrides.referred_by || effectiveReferral,
     }), [effectiveReferral, formOverrides, isLoggedIn, meData]);
 
+    const shippingFee = useMemo(() => {
+        if (!form.province.trim() || !form.city.trim()) return 0;
+        return resolveShippingFee(form.province, form.city);
+    }, [form.city, form.province]);
+
+    const voucherDiscount = useMemo(() => Math.max(0, Number(voucherInfo?.discount ?? 0)), [voucherInfo?.discount]);
+    const computedTotal = useMemo(() => {
+        if (!checkoutData) return 0;
+        return Math.max(0, checkoutData.subtotal - voucherDiscount) + shippingFee;
+    }, [checkoutData, shippingFee, voucherDiscount]);
+
     useEffect(() => {
         if (checkoutData) return;
         router.replace('/');
@@ -298,8 +310,6 @@ const CustomerCheckoutMain = ({
         }
 
         try {
-            const voucherDiscount = voucherInfo?.discount ?? 0;
-            const computedTotal = Math.max(0, checkoutData.subtotal - voucherDiscount) + checkoutData.handlingFee;
             const normalizedProductId = Number(checkoutData.product.id);
             const data = await createCheckoutSession({
                 amount: computedTotal,
@@ -334,7 +344,7 @@ const CustomerCheckoutMain = ({
                     selected_size: checkoutData.selectedSize ?? null,
                     selected_type: checkoutData.selectedType ?? null,
                     subtotal: checkoutData.subtotal,
-                    handling_fee: checkoutData.handlingFee,
+                    handling_fee: shippingFee,
                 },
             }).unwrap();
 
@@ -459,7 +469,9 @@ const CustomerCheckoutMain = ({
                                 loading={loading}
                                 onSubmit={handleSubmit}
                                 voucher={voucherInfo ? { code: voucherInfo.code, discount: voucherInfo.discount } : null}
-                                computedTotal={Math.max(0, checkoutData.subtotal - (voucherInfo?.discount ?? 0)) + checkoutData.handlingFee}
+                                computedTotal={computedTotal}
+                                shippingFee={shippingFee}
+                                fullProduct={fullProductData ?? null}
                             />
                         </div>
                     </div>
