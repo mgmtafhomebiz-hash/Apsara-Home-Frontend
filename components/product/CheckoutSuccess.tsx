@@ -10,12 +10,23 @@ const LOCAL_PAYMENT_MODE_HOSTS = new Set(['localhost', '127.0.0.1']);
 function CheckoutSuccessPage() {
   const [verifyCheckoutSession] = useLazyVerifyCheckoutSessionQuery();
   const [loading, setLoading] = useState(true);
+  const [checkoutSourceSlug, setCheckoutSourceSlug] = useState('');
+  const [trackOrderBaseHref, setTrackOrderBaseHref] = useState('/track-order');
+  const [homeHref, setHomeHref] = useState('/');
   const [result, setResult] = useState<{
     checkout_id: string;
     status: string | null;
     payment_intent_id: string | null;
   } | null>(null);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    const sourceSlug = typeof window !== 'undefined' ? window.localStorage.getItem('last_checkout_source_slug') || '' : '';
+    const normalizedSourceSlug = sourceSlug.trim().toLowerCase();
+    setCheckoutSourceSlug(normalizedSourceSlug);
+    setTrackOrderBaseHref(normalizedSourceSlug ? `/${normalizedSourceSlug}/track-order` : '/track-order');
+    setHomeHref(normalizedSourceSlug ? `/shop/${normalizedSourceSlug}` : '/');
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -95,6 +106,7 @@ function CheckoutSuccessPage() {
   const normalizedStatus = result?.status?.toLowerCase() ?? '';
   const isPaid = normalizedStatus === 'paid' || normalizedStatus === 'succeeded' || normalizedStatus === 'success';
   const isPending = !isPaid && (normalizedStatus === 'unpaid' || normalizedStatus === 'active' || normalizedStatus === 'pending');
+  const isPartnerStorefrontCheckout = checkoutSourceSlug !== '';
 
   // -- LOADING --------------------------------------------------
   if (loading) {
@@ -161,7 +173,7 @@ function CheckoutSuccessPage() {
             <p className="text-slate-400 text-sm mt-2 leading-relaxed">{error}</p>
 
             <div className="mt-7 flex flex-col gap-2.5">
-              <Link href="/"
+              <Link href={homeHref}
                 className="w-full py-3 rounded-xl bg-gradient-to-r from-sky-500 to-sky-600 hover:from-sky-600 hover:to-sky-700 text-white font-semibold text-sm text-center transition-all shadow-md shadow-sky-100 flex items-center justify-center gap-2"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -291,7 +303,7 @@ function CheckoutSuccessPage() {
 
             {/* Buttons */}
             <div className="flex flex-col gap-2.5 pt-1">
-              <Link href={`/track-order?order=${encodeURIComponent(result?.checkout_id ?? '')}`}
+              <Link href={`${trackOrderBaseHref}?order=${encodeURIComponent(result?.checkout_id ?? '')}`}
                 className="w-full py-3 rounded-xl bg-sky-50 border border-sky-200 hover:bg-sky-100 text-sky-800 font-semibold text-sm text-center transition-all flex items-center justify-center gap-2"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -299,7 +311,7 @@ function CheckoutSuccessPage() {
                 </svg>
                 Track This Order
               </Link>
-              <Link href="/"
+              <Link href={homeHref}
                 className="w-full py-3 rounded-xl bg-gradient-to-r from-sky-500 to-sky-600 hover:from-sky-600 hover:to-sky-700 text-white font-semibold text-sm text-center transition-all shadow-md shadow-sky-100 flex items-center justify-center gap-2"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -307,14 +319,16 @@ function CheckoutSuccessPage() {
                 </svg>
                 Back to Home
               </Link>
-              <Link href="/orders"
-                className="w-full py-3 rounded-xl border-2 border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 text-slate-600 font-semibold text-sm text-center transition-all flex items-center justify-center gap-2"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
-                </svg>
-                View My Orders
-              </Link>
+              {!isPartnerStorefrontCheckout && (
+                <Link href="/orders"
+                  className="w-full py-3 rounded-xl border-2 border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 text-slate-600 font-semibold text-sm text-center transition-all flex items-center justify-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                  </svg>
+                  View My Orders
+                </Link>
+              )}
             </div>
 
             {/* Footer */}

@@ -227,6 +227,7 @@ function NavbarInner({
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(activeSearchQuery)
   const [isSubmittingSearch, setIsSubmittingSearch] = useState(false)
   const partnerSlug = useMemo(() => extractPartnerSlugFromPath(pathname), [pathname])
+  const trackOrderHref = partnerSlug ? `/${partnerSlug}/track-order` : '/track-order'
   const isPartnerSearchScoped = showGuestCartWishlist && Boolean(partnerSlug)
 
   useEffect(() => {
@@ -875,7 +876,7 @@ function NavbarInner({
                 </button>
 
                 <div className="hidden lg:flex">
-                  <OutlineButton href="/track-order" className="!px-4 !py-2 !text-sm h-10">
+                  <OutlineButton href={trackOrderHref} className="!px-4 !py-2 !text-sm h-10">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <path d="M10 17h4V5H2v12h3" />
                       <path d="M14 8h4l4 4v5h-4" />
@@ -1111,7 +1112,7 @@ function NavbarInner({
                   </>
                 )}
                 <div className="hidden md:flex">
-                  <OutlineButton href="/track-order" className="!px-4 !py-2 !text-sm h-10">
+                  <OutlineButton href={trackOrderHref} className="!px-4 !py-2 !text-sm h-10">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <path d="M10 17h4V5H2v12h3" />
                       <path d="M14 8h4l4 4v5h-4" />
@@ -1436,7 +1437,7 @@ function NavbarInner({
                         { href: '/profile', label: 'My Profile', sub: 'View & edit info', icon: <><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></> },
                         { href: '/orders', label: 'My Orders', sub: 'Track purchases', icon: <><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></> },
                         { href: '/wishlist', label: 'Wishlist', sub: 'Saved items', icon: <path d="m12 21-1.45-1.32C5.4 15.36 2 12.28 2 8.5A4.5 4.5 0 0 1 6.5 4 5 5 0 0 1 12 6.09 5 5 0 0 1 17.5 4 4.5 4.5 0 0 1 22 8.5c0 3.78-3.4 6.86-8.55 11.18z"/> },
-                        { href: '/track-order', label: 'Track Order', sub: 'Order status', icon: <><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></> },
+                        { href: trackOrderHref, label: 'Track Order', sub: 'Order status', icon: <><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></> },
                       ].map((item) => (
                         <Link
                           key={item.href}
@@ -1510,7 +1511,7 @@ function NavbarInner({
                       </motion.div>
                     )}
                     <Link
-                      href="/track-order"
+                      href={trackOrderHref}
                       onClick={() => setMobileOpen(false)}
                       className={`${hideSignIn ? 'w-full' : 'flex-1'} flex items-center justify-center gap-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 px-4 py-2.5 text-sm font-semibold text-gray-700 dark:text-gray-300 transition-colors`}
                     >

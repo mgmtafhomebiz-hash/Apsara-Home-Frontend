@@ -547,6 +547,8 @@ function FeaturedCollectionSection({
                       <ItemCard
                         product={product}
                         brandName={product.brand || ''}
+                        hideDiscountBadge
+                        forceRealPrice
                       />
                     </motion.div>
                   ))}
