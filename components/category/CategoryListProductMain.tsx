@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { Skeleton } from '@heroui/react';
+import { Skeleton } from '@heroui/react/skeleton';
 import Footer from '@/components/landing-page/Footer';
 import TopBar from '@/components/layout/TopBar';
 import Navbar from '@/components/layout/Navbar';

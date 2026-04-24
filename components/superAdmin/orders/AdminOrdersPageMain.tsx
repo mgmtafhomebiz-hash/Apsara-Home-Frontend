@@ -2,7 +2,15 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
-import { Button, Card, Chip, Label, ListBox, ListBoxItem, Pagination, SearchField, Select } from '@heroui/react'
+import { Button } from '@heroui/react/button'
+import { Card } from '@heroui/react/card'
+import { Chip } from '@heroui/react/chip'
+import { Label } from '@heroui/react/label'
+import { ListBox } from '@heroui/react/list-box'
+import { ListBoxItem } from '@heroui/react/list-box-item'
+import { Pagination } from '@heroui/react/pagination'
+import { SearchField } from '@heroui/react/search-field'
+import { Select } from '@heroui/react/select'
 import { useSession } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import {

@@ -2,7 +2,12 @@
 
 import type { Selection, SortDescriptor } from 'react-aria-components'
 
-import { Button, Checkbox, Chip, Pagination, Table, cn } from '@heroui/react'
+import { Button } from '@heroui/react/button'
+import { Checkbox } from '@heroui/react/checkbox'
+import { Chip } from '@heroui/react/chip'
+import { Pagination } from '@heroui/react/pagination'
+import { Table } from '@heroui/react/table'
+import { cn } from 'tailwind-variants'
 import { Eye, Pencil, Trash2, TriangleAlert } from 'lucide-react'
 import Image from 'next/image'
 import { Fragment, useMemo, useState } from 'react'
@@ -23,6 +28,9 @@ interface ProductsTableProps {
   onToggleSelect: (id: number) => void
   onToggleSelectAll: () => void
   onViewManualCheckout: (product: Product) => void
+  readOnly?: boolean
+  isLoading?: boolean
+  tableMode?: 'local' | 'zq'
 }
 
 type SortableProductColumn =
@@ -232,6 +240,16 @@ function EmptyProductsState() {
   )
 }
 
+function LoadingProductsState() {
+  return (
+    <div className="space-y-3 px-4 py-8">
+      {Array.from({ length: 5 }).map((_, index) => (
+        <div key={index} className="h-14 animate-pulse rounded-2xl bg-slate-100 dark:bg-slate-800" />
+      ))}
+    </div>
+  )
+}
+
 export default function ProductsTable({
   rows,
   currentPage,
@@ -247,6 +265,9 @@ export default function ProductsTable({
   onToggleSelect,
   onToggleSelectAll,
   onViewManualCheckout,
+  readOnly = false,
+  isLoading = false,
+  tableMode = 'local',
 }: ProductsTableProps) {
   const [confirmId, setConfirmId] = useState<number | null>(null)
   const [sortDescriptor, setSortDescriptor] = useState<SortDescriptor>({
@@ -256,6 +277,8 @@ export default function ProductsTable({
 
   const isDeleting = (id: number) => isDeletingIds.includes(id)
   const paginationPages = useMemo(() => getPaginationPages(currentPage, totalPages), [currentPage, totalPages])
+  const isZqMode = tableMode === 'zq'
+  const columnCount = isZqMode ? 11 : 13
 
   const sortedRows = useMemo(() => {
     const column = (sortDescriptor.column as SortableProductColumn | undefined) ?? 'name'
@@ -309,25 +332,29 @@ export default function ProductsTable({
         <Table.ScrollContainer>
           <Table.Content
             aria-label="Admin products table"
-            className="min-w-[1260px]"
-            selectedKeys={selectedKeys}
-            selectionMode="multiple"
+            className={isZqMode ? 'min-w-[1080px]' : 'min-w-[1260px]'}
             sortDescriptor={sortDescriptor}
-            onSelectionChange={handleSelectionChange}
             onSortChange={setSortDescriptor}
+            {...(!readOnly ? {
+              selectedKeys: selectedKeys,
+              selectionMode: 'multiple' as const,
+              onSelectionChange: handleSelectionChange,
+            } : {})}
           >
             <Table.Header>
               <Table.Column className="w-12 pr-0">
-                <Checkbox
-                  aria-label="Select all products in current page"
-                  slot="selection"
-                  variant="secondary"
-                  className="justify-center"
-                >
-                  <Checkbox.Control>
-                    <Checkbox.Indicator />
-                  </Checkbox.Control>
-                </Checkbox>
+                {!readOnly ? (
+                  <Checkbox
+                    aria-label="Select all products in current page"
+                    slot="selection"
+                    variant="secondary"
+                    className="justify-center"
+                  >
+                    <Checkbox.Control>
+                      <Checkbox.Indicator />
+                    </Checkbox.Control>
+                  </Checkbox>
+                ) : null}
               </Table.Column>
               <Table.Column className="w-20 text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">Image</Table.Column>
               <Table.Column allowsSorting isRowHeader id="name" className="min-w-[240px] text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
@@ -340,21 +367,27 @@ export default function ProductsTable({
                 {({ sortDirection }) => <SortableColumnHeader sortDirection={sortDirection}>Supplier</SortableColumnHeader>}
               </Table.Column>
               <Table.Column allowsSorting id="uploader" className="min-w-[180px] text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
-                {({ sortDirection }) => <SortableColumnHeader sortDirection={sortDirection}>Uploader</SortableColumnHeader>}
+                {({ sortDirection }) => <SortableColumnHeader sortDirection={sortDirection}>{isZqMode ? 'Source' : 'Uploader'}</SortableColumnHeader>}
               </Table.Column>
               <Table.Column allowsSorting id="priceSrp" className="text-end text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
-                {({ sortDirection }) => <SortableColumnHeader sortDirection={sortDirection}>SRP</SortableColumnHeader>}
+                {({ sortDirection }) => <SortableColumnHeader sortDirection={sortDirection}>Price</SortableColumnHeader>}
               </Table.Column>
-              <Table.Column allowsSorting id="priceDp" className="text-end text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
-                {({ sortDirection }) => <SortableColumnHeader sortDirection={sortDirection}>Dealer</SortableColumnHeader>}
-              </Table.Column>
-              <Table.Column allowsSorting id="priceMember" className="text-end text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
-                {({ sortDirection }) => <SortableColumnHeader sortDirection={sortDirection}>Member</SortableColumnHeader>}
-              </Table.Column>
+              {!isZqMode ? (
+                <Table.Column allowsSorting id="priceDp" className="text-end text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                  {({ sortDirection }) => <SortableColumnHeader sortDirection={sortDirection}>Dealer</SortableColumnHeader>}
+                </Table.Column>
+              ) : null}
+              {!isZqMode ? (
+                <Table.Column allowsSorting id="priceMember" className="text-end text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                  {({ sortDirection }) => <SortableColumnHeader sortDirection={sortDirection}>Member</SortableColumnHeader>}
+                </Table.Column>
+              ) : null}
               <Table.Column allowsSorting id="stock" className="text-end text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
                 {({ sortDirection }) => <SortableColumnHeader sortDirection={sortDirection}>Stock</SortableColumnHeader>}
               </Table.Column>
-              <Table.Column className="min-w-[130px] text-center text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">Badges</Table.Column>
+              <Table.Column className="min-w-[130px] text-center text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                {isZqMode ? 'Import Status' : 'Badges'}
+              </Table.Column>
               <Table.Column allowsSorting id="status" className="text-center text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
                 {({ sortDirection }) => <SortableColumnHeader sortDirection={sortDirection}>Status</SortableColumnHeader>}
               </Table.Column>
@@ -362,9 +395,15 @@ export default function ProductsTable({
             </Table.Header>
 
             <Table.Body>
-              {sortedRows.length === 0 ? (
+              {isLoading ? (
+                <Table.Row key="loading">
+                  <Table.Cell colSpan={columnCount}>
+                    <LoadingProductsState />
+                  </Table.Cell>
+                </Table.Row>
+              ) : sortedRows.length === 0 ? (
                 <Table.Row key="empty">
-                  <Table.Cell colSpan={13}>
+                  <Table.Cell colSpan={columnCount}>
                     <EmptyProductsState />
                   </Table.Cell>
                 </Table.Row>
@@ -385,16 +424,18 @@ export default function ProductsTable({
                       )}
                     >
                       <Table.Cell className="pr-0">
-                        <Checkbox
-                          aria-label={`Select product ${product.name}`}
-                          slot="selection"
-                          variant="secondary"
-                          className="justify-center"
-                        >
-                          <Checkbox.Control>
-                            <Checkbox.Indicator />
-                          </Checkbox.Control>
-                        </Checkbox>
+                        {!readOnly ? (
+                          <Checkbox
+                            aria-label={`Select product ${product.name}`}
+                            slot="selection"
+                            variant="secondary"
+                            className="justify-center"
+                          >
+                            <Checkbox.Control>
+                              <Checkbox.Indicator />
+                            </Checkbox.Control>
+                          </Checkbox>
+                        ) : null}
                       </Table.Cell>
 
                       <Table.Cell>
@@ -416,7 +457,11 @@ export default function ProductsTable({
                           <p className="line-clamp-1 font-medium leading-snug text-slate-800 dark:text-slate-100">{product.name || 'N/A'}</p>
                           <div className="mt-1 flex flex-wrap items-center gap-2">
                             <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500">#{product.id}</span>
-                            {variantCount > 0 && (
+                            {isZqMode ? (
+                              <span className="rounded-md bg-sky-50 px-1.5 py-0.5 text-[10px] font-medium text-sky-700">
+                                {product.specifications?.trim() || 'ZQ Product'}
+                              </span>
+                            ) : variantCount > 0 && (
                               <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-500 dark:bg-slate-800 dark:text-slate-400">
                                 {variantCount} variant{variantCount !== 1 ? 's' : ''}
                               </span>
@@ -434,9 +479,13 @@ export default function ProductsTable({
                       <Table.Cell>
                         <div className="min-w-[150px]">
                           <p className="line-clamp-1 text-sm font-medium text-slate-700 dark:text-slate-200">
-                            {product.supplierName?.trim() || product.brand?.trim() || 'No supplier'}
+                            {isZqMode ? (product.brand?.trim() || 'ZQ Supplier') : (product.supplierName?.trim() || product.brand?.trim() || 'No supplier')}
                           </p>
-                          {product.supplierId ? (
+                          {isZqMode ? (
+                            <p className="line-clamp-1 text-[11px] text-slate-400 dark:text-slate-500">
+                              {product.supplierName?.trim() || 'Supplier source unavailable'}
+                            </p>
+                          ) : product.supplierId ? (
                             <p className="line-clamp-1 text-[11px] text-slate-400 dark:text-slate-500">Supplier #{product.supplierId}</p>
                           ) : product.brand ? (
                             <p className="line-clamp-1 text-[11px] text-slate-400 dark:text-slate-500">Brand</p>
@@ -447,9 +496,13 @@ export default function ProductsTable({
                       <Table.Cell>
                         <div className="min-w-[150px]">
                           <p className="line-clamp-1 text-sm font-medium text-slate-700 dark:text-slate-200">
-                            {product.uploaderName?.trim() || 'Unknown user'}
+                            {isZqMode ? 'ZQ API' : (product.uploaderName?.trim() || 'Unknown user')}
                           </p>
-                          {product.uploaderRole ? (
+                          {isZqMode ? (
+                            <p className="line-clamp-1 text-[11px] text-slate-400 dark:text-slate-500">
+                              {product.updatedAt ? `Updated ${new Date(product.updatedAt).toLocaleDateString()}` : 'Imported from database'}
+                            </p>
+                          ) : product.uploaderRole ? (
                             <p className="line-clamp-1 text-[10px] uppercase tracking-[0.12em] text-slate-400 dark:text-slate-500">
                               {product.uploaderRole.replace(/_/g, ' ')}
                             </p>
@@ -462,38 +515,50 @@ export default function ProductsTable({
                       <Table.Cell className="text-end font-semibold text-slate-700 dark:text-slate-200">
                         {formatPrice(product.priceSrp)}
                       </Table.Cell>
-                      <Table.Cell className="text-end text-slate-500 dark:text-slate-400">
-                        {formatPrice(product.priceDp)}
-                      </Table.Cell>
-                      <Table.Cell className="text-end text-slate-500 dark:text-slate-400">
-                        {formatPrice(product.priceMember ?? 0)}
-                      </Table.Cell>
+                      {!isZqMode ? (
+                        <Table.Cell className="text-end text-slate-500 dark:text-slate-400">
+                          {formatPrice(product.priceDp)}
+                        </Table.Cell>
+                      ) : null}
+                      {!isZqMode ? (
+                        <Table.Cell className="text-end text-slate-500 dark:text-slate-400">
+                          {formatPrice(product.priceMember ?? 0)}
+                        </Table.Cell>
+                      ) : null}
 
                       <Table.Cell className="text-end">
                         <StockCell qty={effectiveStockQty} />
                       </Table.Cell>
 
                       <Table.Cell>
-                        <div className="flex flex-col items-center gap-1">
-                          {isNewProduct(product) && (
-                            <Chip color="accent" size="sm" variant="soft">
-                              New
+                        {isZqMode ? (
+                          <div className="flex justify-center">
+                            <Chip size="sm" variant="soft" className="bg-sky-50 text-sky-700">
+                              {product.description?.replace('ZQ import status: ', '').trim() || 'Imported'}
                             </Chip>
-                          )}
-                          {product.musthave && (
-                            <Chip color="warning" size="sm" variant="soft">
-                              Must Have
-                            </Chip>
-                          )}
-                          {product.bestseller && (
-                            <Chip size="sm" variant="soft" className="bg-fuchsia-50 text-fuchsia-700">
-                              Bestseller
-                            </Chip>
-                          )}
-                          {!isNewProduct(product) && !product.musthave && !product.bestseller && (
-                            <span className="text-xs text-slate-300">N/A</span>
-                          )}
-                        </div>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col items-center gap-1">
+                            {isNewProduct(product) && (
+                              <Chip color="accent" size="sm" variant="soft">
+                                New
+                              </Chip>
+                            )}
+                            {product.musthave && (
+                              <Chip color="warning" size="sm" variant="soft">
+                                Must Have
+                              </Chip>
+                            )}
+                            {product.bestseller && (
+                              <Chip size="sm" variant="soft" className="bg-fuchsia-50 text-fuchsia-700">
+                                Bestseller
+                              </Chip>
+                            )}
+                            {!isNewProduct(product) && !product.musthave && !product.bestseller && (
+                              <span className="text-xs text-slate-300">N/A</span>
+                            )}
+                          </div>
+                        )}
                       </Table.Cell>
 
                       <Table.Cell className="text-center">
@@ -516,39 +581,43 @@ export default function ProductsTable({
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
-                          <Button
-                            isIconOnly
-                            size="sm"
-                            variant="tertiary"
-                            aria-label={`Edit ${product.name}`}
-                            onPress={() => {
-                              setConfirmId(null)
-                              onEdit(product)
-                            }}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          {confirmId === product.id ? (
-                            <Button
-                              size="sm"
-                              variant="danger"
-                              isDisabled={isDeleting(product.id)}
-                              aria-label={`Confirm delete ${product.name}`}
-                              onPress={() => handleDeleteClick(product.id)}
-                            >
-                              {isDeleting(product.id) ? 'Deleting...' : 'Confirm'}
-                            </Button>
-                          ) : (
-                            <Button
-                              isIconOnly
-                              size="sm"
-                              variant="danger-soft"
-                              aria-label={`Delete ${product.name}`}
-                              onPress={() => handleDeleteClick(product.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          )}
+                          {!readOnly ? (
+                            <>
+                              <Button
+                                isIconOnly
+                                size="sm"
+                                variant="tertiary"
+                                aria-label={`Edit ${product.name}`}
+                                onPress={() => {
+                                  setConfirmId(null)
+                                  onEdit(product)
+                                }}
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              {confirmId === product.id ? (
+                                <Button
+                                  size="sm"
+                                  variant="danger"
+                                  isDisabled={isDeleting(product.id)}
+                                  aria-label={`Confirm delete ${product.name}`}
+                                  onPress={() => handleDeleteClick(product.id)}
+                                >
+                                  {isDeleting(product.id) ? 'Deleting...' : 'Confirm'}
+                                </Button>
+                              ) : (
+                                <Button
+                                  isIconOnly
+                                  size="sm"
+                                  variant="danger-soft"
+                                  aria-label={`Delete ${product.name}`}
+                                  onPress={() => handleDeleteClick(product.id)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              )}
+                            </>
+                          ) : null}
                         </div>
                       </Table.Cell>
                     </Table.Row>
@@ -560,8 +629,8 @@ export default function ProductsTable({
           </Table.Content>
         </Table.ScrollContainer>
 
-        {totalPages > 1 && (
-          <Table.Footer>
+        <Table.Footer>
+          {totalPages > 1 ? (
             <Pagination size="sm" className="w-full justify-between gap-3 px-4 py-3">
               <Pagination.Summary>
                 {(from ?? 0).toLocaleString()} to {(to ?? 0).toLocaleString()} of {totalRecords.toLocaleString()} results
@@ -608,8 +677,14 @@ export default function ProductsTable({
                 </Pagination.Item>
               </Pagination.Content>
             </Pagination>
-          </Table.Footer>
-        )}
+          ) : (
+            <div className="flex w-full items-center justify-between px-4 py-3 text-sm text-slate-500">
+              <span>
+                {(from ?? 0).toLocaleString()} to {(to ?? 0).toLocaleString()} of {totalRecords.toLocaleString()} results
+              </span>
+            </div>
+          )}
+        </Table.Footer>
       </Table>
     </div>
   )

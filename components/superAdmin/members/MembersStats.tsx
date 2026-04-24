@@ -1,6 +1,6 @@
 'use client'
 
-import { Card } from '@heroui/react'
+import { Card } from '@heroui/react/card'
 import { MembersStatsResponse } from '@/store/api/membersApi'
 import { motion } from 'framer-motion'
 

@@ -3,7 +3,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Skeleton } from '@heroui/react'
+import { Skeleton } from '@heroui/react/skeleton'
 import HeroSection from './HeroSection'
 import FeaturedSections from './FeaturedSections'
 import PromoBenners from './PromoBenners'
