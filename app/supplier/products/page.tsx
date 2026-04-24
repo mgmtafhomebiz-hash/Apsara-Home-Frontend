@@ -1,6 +1,6 @@
 import { buildPageMetadata } from '@/app/seo'
 import ProductsPageMain from '@/components/superAdmin/products/ProductsPageMain'
-import { authOptions } from '@/libs/auth'
+import { supplierAuthOptions } from '@/libs/supplierAuth'
 import { normalizeProductsResponse, ProductsResponse } from '@/store/api/productsApi'
 import { getServerSession } from 'next-auth'
 
@@ -95,7 +95,7 @@ async function resolveSupplierBrandType(apiUrl: string, accessToken: string, sup
 }
 
 async function getInitialProducts(): Promise<{ data: ProductsResponse | null; brandType: number }> {
-  const session = await getServerSession(authOptions)
+  const session = await getServerSession(supplierAuthOptions)
   const accessToken = (session?.user as { accessToken?: string } | undefined)?.accessToken
   const supplierId = Number((session?.user as { supplierId?: number | null } | undefined)?.supplierId ?? 0)
   const supplierName = (session?.user as { supplierName?: string | null } | undefined)?.supplierName ?? null

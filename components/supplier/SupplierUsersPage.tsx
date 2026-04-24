@@ -31,12 +31,12 @@ type EditForm = {
 }
 
 export default function SupplierUsersPage() {
-  const { data: session } = useSession()
+  const { data: session, status } = useSession()
   const supplierId = Number(session?.user?.supplierId ?? 0)
   const isMainSupplier = Boolean(session?.user?.isMainSupplier)
   const currentSupplierUserId = Number((session?.user as { id?: string | number } | undefined)?.id ?? 0)
   const { data, isLoading, isError, error, refetch } = useGetSupplierUsersQuery(supplierId || undefined, {
-    skip: supplierId <= 0,
+    skip: status !== 'authenticated' || supplierId <= 0,
     refetchOnMountOrArgChange: true,
   })
   const [inviteSupplierUser, { isLoading: isInviting }] = useInviteSupplierUserMutation()
@@ -212,6 +212,14 @@ export default function SupplierUsersPage() {
         message: getErrorMessage(error, 'Unable to remove supplier user.'),
       })
     }
+  }
+
+  if (status === 'loading') {
+    return (
+      <div className="rounded-3xl border border-slate-200 bg-white p-6 text-sm text-slate-500 shadow-sm dark:border-slate-800 dark:bg-slate-950 dark:text-slate-400">
+        Loading supplier session...
+      </div>
+    )
   }
 
   if (supplierId <= 0) {

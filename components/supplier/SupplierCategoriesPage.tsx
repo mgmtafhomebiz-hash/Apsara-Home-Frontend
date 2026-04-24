@@ -5,13 +5,21 @@ import { useSession } from 'next-auth/react'
 import { useGetSupplierCategoriesQuery } from '@/store/api/suppliersApi'
 
 export default function SupplierCategoriesPage() {
-  const { data: session } = useSession()
+  const { data: session, status } = useSession()
   const supplierId = Number(session?.user?.supplierId ?? 0)
   const { data, isLoading, isError } = useGetSupplierCategoriesQuery(supplierId, {
-    skip: supplierId <= 0,
+    skip: status !== 'authenticated' || supplierId <= 0,
   })
 
   const categories = useMemo(() => data?.categories ?? [], [data?.categories])
+
+  if (status === 'loading') {
+    return (
+      <div className="rounded-3xl border border-slate-200 bg-white p-6 text-sm text-slate-500 shadow-sm dark:border-slate-800 dark:bg-slate-950 dark:text-slate-400">
+        Loading supplier session...
+      </div>
+    )
+  }
 
   if (supplierId <= 0) {
     return (
