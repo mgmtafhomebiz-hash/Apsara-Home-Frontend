@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useRef, useState } from 'react'
-import { BulkImportProductsResponse, BulkImportProductsRow, CreateProductVariantPayload, useBulkImportProductsMutation, useBulkImportProductsWithVariantsMutation } from '@/store/api/productsApi'
+import { BulkImportProductsPayload, BulkImportProductsResponse, BulkImportProductsRow, CreateProductVariantPayload, useBulkImportProductsMutation } from '@/store/api/productsApi'
 import { useGetCategoriesQuery } from '@/store/api/categoriesApi'
 import { useGetProductBrandsQuery } from '@/store/api/productBrandsApi'
 import { showErrorToast, showSuccessToast } from '@/libs/toast'
@@ -70,10 +70,12 @@ const HEADER_ALIASES: Record<string, string> = {
   'price member': 'pd_price_member',
   'member price': 'pd_price_member',
   'product pv': 'pd_prodpv',
+  'product pv (auto)': 'pd_prodpv',
   'pv pricing tier': 'pd_pricing_tier',
   'pricing tier': 'pd_pricing_tier',
   'pv multiplier': 'pd_reversed_pv_multiplier',
   'reversed pv multiplier': 'pd_reversed_pv_multiplier',
+  'reversed pv multiplier (auto)': 'pd_reversed_pv_multiplier',
   'quantity': 'pd_qty',
   'weight': 'pd_weight',
   'package weight': 'pd_psweight',
@@ -109,6 +111,7 @@ const HEADER_ALIASES: Record<string, string> = {
   'variant price dp': 'pv_price_dp',
   'variant price member': 'pv_price_member',
   'variant pv': 'pv_prodpv',
+  'variant pv (auto)': 'pv_prodpv',
   'variant qty': 'pv_qty',
   'variant status': 'pv_status',
   'variant images': 'pv_images',
@@ -192,6 +195,8 @@ const VARIANT_PREVIEW_COLUMNS = [
   'pv_status',
   'pv_images',
 ]
+
+const REQUIRED_IMPORT_FIELDS = ['pd_name', 'pd_catid', 'pd_price_srp', 'pd_parent_sku', 'pd_type']
 
 const PRICE_COLUMNS = new Set([
   'pd_price_srp', 'pd_price_dp', 'pd_price_member',
@@ -285,10 +290,17 @@ const normalizeStatus = (val: string): string => {
   return val
 }
 
+const normalizeVariantStatus = (val: string): string => {
+  const lower = normalizeWord(val)
+  if (['active', 'published', 'live', '1'].includes(lower)) return '1'
+  if (['inactive', 'draft', 'unpublished', '0'].includes(lower)) return '0'
+  return val
+}
+
 const normalizeProductType = (val: string): string => {
   const lower = normalizeWord(val)
   if (['simple', '0'].includes(lower)) return '0'
-  if (['variable', 'variant', 'variants', '1'].includes(lower)) return '1'
+  if (['variable', 'variant', 'variants', 'has variant', 'has variants', '1'].includes(lower)) return '1'
   return val
 }
 
@@ -316,10 +328,16 @@ const normalizeLookupValue = (
   const trimmed = val.trim()
   if (!trimmed || /^\d+$/.test(trimmed)) return trimmed
 
-  const normalized = normalizeWord(trimmed)
-  const exactMatch = lookup.find((item) => normalizeWord(item.name) === normalized)
-  if (exactMatch) return String(exactMatch.id)
+  // Try exact case-sensitive match first
+  const exactCaseMatch = lookup.find((item) => item.name === trimmed)
+  if (exactCaseMatch) return String(exactCaseMatch.id)
 
+  // Fall back to normalized (case-insensitive) match
+  const normalized = normalizeWord(trimmed)
+  const normalizedMatch = lookup.find((item) => normalizeWord(item.name) === normalized)
+  if (normalizedMatch) return String(normalizedMatch.id)
+
+  // Try partial match as last resort
   const partialMatch = lookup.find((item) => {
     const name = normalizeWord(item.name)
     return name.includes(normalized) || normalized.includes(name)
@@ -338,6 +356,8 @@ const normalizeRow = (row: Record<string, string>): Record<string, string> => {
       val = normalizeBoolean(val)
     } else if (key === 'pd_status') {
       val = normalizeStatus(val)
+    } else if (key === 'pv_status') {
+      val = normalizeVariantStatus(val)
     } else if (key === 'pd_type') {
       val = normalizeProductType(val)
     } else if (key === 'pd_room_type') {
@@ -348,6 +368,93 @@ const normalizeRow = (row: Record<string, string>): Record<string, string> => {
     result[key] = val
   }
   return result
+}
+
+const getFieldSummary = (row: Record<string, unknown>, fields: string[]) =>
+  fields.map((field) => ({
+    field,
+    value: row[field],
+    present: row[field] !== undefined && row[field] !== null && String(row[field]).trim() !== '',
+  }))
+
+const parseImageList = (value: unknown): string[] => {
+  if (Array.isArray(value)) {
+    return value.filter((url): url is string => typeof url === 'string' && url.trim().length > 0).map((url) => url.trim())
+  }
+
+  if (typeof value === 'string' && value.trim().length > 0) {
+    return value.split('|').map((url) => url.trim()).filter(Boolean)
+  }
+
+  return []
+}
+
+const isNumericLike = (value: unknown) => {
+  if (typeof value === 'number') return Number.isFinite(value)
+  if (typeof value !== 'string') return false
+  return value.trim() !== '' && Number.isFinite(Number(value))
+}
+
+const getValueType = (value: unknown) => {
+  if (Array.isArray(value)) return 'array'
+  if (value === null) return 'null'
+  return typeof value
+}
+
+const buildPayloadChecklist = (payload: BulkImportProductsPayload) => {
+  const rows = payload.rows ?? []
+  const firstRow = rows[0] as Record<string, unknown> | undefined
+  const firstVariant = Array.isArray(firstRow?.pd_variants) ? (firstRow?.pd_variants[0] as Record<string, unknown> | undefined) : undefined
+
+  return [
+    {
+      label: 'Rows included',
+      ok: rows.length > 0,
+      detail: `${rows.length} row(s)`,
+    },
+    {
+      label: 'Parent SKU present',
+      ok: Boolean(String(firstRow?.pd_parent_sku ?? '').trim()),
+      detail: String(firstRow?.pd_parent_sku ?? 'missing'),
+    },
+    {
+      label: 'Product type numeric',
+      ok: isNumericLike(firstRow?.pd_type),
+      detail: String(firstRow?.pd_type ?? 'missing'),
+    },
+    {
+      label: 'Category numeric',
+      ok: isNumericLike(firstRow?.pd_catid),
+      detail: String(firstRow?.pd_catid ?? 'missing'),
+    },
+    {
+      label: 'Price numeric',
+      ok: isNumericLike(firstRow?.pd_price_srp),
+      detail: String(firstRow?.pd_price_srp ?? 'missing'),
+    },
+    {
+      label: 'Product images array',
+      ok: Array.isArray(firstRow?.pd_images),
+      detail: Array.isArray(firstRow?.pd_images)
+        ? `${(firstRow?.pd_images as unknown[]).length} image(s)`
+        : String(firstRow?.pd_images ?? 'missing'),
+    },
+    {
+      label: 'Variants nested',
+      ok: Array.isArray(firstRow?.pd_variants) && (firstRow?.pd_variants as unknown[]).length > 0,
+      detail: Array.isArray(firstRow?.pd_variants) ? `${(firstRow?.pd_variants as unknown[]).length} variant(s)` : 'missing',
+    },
+    {
+      label: 'Variant SKU present',
+      ok: Boolean(String(firstVariant?.pv_sku ?? '').trim()),
+      detail: String(firstVariant?.pv_sku ?? 'missing'),
+    },
+    {
+      label: 'Variant status numeric',
+      ok: isNumericLike(firstVariant?.pv_status),
+      detail: String(firstVariant?.pv_status ?? 'missing'),
+    },
+  ]
 }
 
 const detectDelimiter = (line: string) => {
@@ -474,15 +581,8 @@ const parseCsvText = (text: string): ParsedCsv => {
   return { headers: headers.filter((header) => IMPORT_COLUMNS.includes(header)), rows, isVariantSheet }
 }
 
-const VARIANT_COLUMNS = [
-  'pv_sku', 'pv_name', 'pv_color', 'pv_color_hex', 'pv_size', 'pv_style',
-  'pv_width', 'pv_dimension', 'pv_height',
-  'pv_price_srp', 'pv_price_dp', 'pv_price_member', 'pv_prodpv',
-  'pv_qty', 'pv_status', 'pv_images',
-] as const
-
 const rowHasVariantData = (row: Record<string, string>) =>
-  VARIANT_COLUMNS.some((col) => (row[col] ?? '').trim() !== '')
+  (row.pv_sku ?? '').trim() !== ''
 
 const extractVariant = (row: Record<string, string>): CreateProductVariantPayload => ({
   pv_sku: row.pv_sku?.trim() || undefined,
@@ -490,16 +590,16 @@ const extractVariant = (row: Record<string, string>): CreateProductVariantPayloa
   pv_color: row.pv_color?.trim() || undefined,
   pv_color_hex: row.pv_color_hex?.trim() || undefined,
   pv_size: row.pv_size?.trim() || undefined,
-  pv_style: row.pv_style?.trim() || undefined,
-  pv_width: row.pv_width?.trim() ? Number(row.pv_width) : undefined,
-  pv_dimension: row.pv_dimension?.trim() ? Number(row.pv_dimension) : undefined,
-  pv_height: row.pv_height?.trim() ? Number(row.pv_height) : undefined,
+  pv_style: row.pv_style?.trim() || '',
+  pv_width: row.pv_width?.trim() ? Number(row.pv_width) : 0,
+  pv_dimension: row.pv_dimension?.trim() ? Number(row.pv_dimension) : 0,
+  pv_height: row.pv_height?.trim() ? Number(row.pv_height) : 0,
   pv_price_srp: row.pv_price_srp?.trim() ? Number(row.pv_price_srp) : undefined,
   pv_price_dp: row.pv_price_dp?.trim() ? Number(row.pv_price_dp) : undefined,
   pv_price_member: row.pv_price_member?.trim() ? Number(row.pv_price_member) : undefined,
   pv_prodpv: row.pv_prodpv?.trim() ? Number(row.pv_prodpv) : undefined,
   pv_qty: row.pv_qty?.trim() ? Number(row.pv_qty) : undefined,
-  pv_status: row.pv_status?.trim() ? Number(row.pv_status) : undefined,
+  pv_status: row.pv_status?.trim() ? Number(normalizeVariantStatus(row.pv_status)) : undefined,
   pv_images: row.pv_images?.trim() ? row.pv_images.split('|').map((u) => u.trim()).filter(Boolean) : undefined,
 })
 
@@ -507,6 +607,12 @@ const groupVariantRows = (rows: BulkImportProductsRow[]): BulkImportProductsRow[
   const skuMap = new Map<string, BulkImportProductsRow>()
   const noSkuRows: BulkImportProductsRow[] = []
   const ordered: string[] = []
+
+  const variantFlatFields = [
+    'pv_sku', 'pv_name', 'pv_color', 'pv_color_hex', 'pv_size', 'pv_style',
+    'pv_width', 'pv_dimension', 'pv_height', 'pv_price_srp', 'pv_price_dp',
+    'pv_price_member', 'pv_prodpv', 'pv_qty', 'pv_status', 'pv_images'
+  ]
 
   for (const row of rows) {
     const rawRow = row as Record<string, string>
@@ -542,26 +648,41 @@ const groupVariantRows = (rows: BulkImportProductsRow[]): BulkImportProductsRow[
         row.pd_price_srp = String(Math.min(...variantPrices))
       }
     }
+    
+    // Remove flat variant fields after grouping to avoid confusing the backend
+    if (row.pd_variants && row.pd_variants.length > 0) {
+      variantFlatFields.forEach((field) => {
+        delete (row as Record<string, unknown>)[field]
+      })
+    }
+    
     return row
   })
   return [...grouped, ...noSkuRows]
 }
 
-const VIEW_TEMPLATE_NO_VARIANT_URL = 'https://docs.google.com/spreadsheets/d/1bt9hMYtxIBvsNcdJ-Q7V7BKdcToa5_9FP942K0XzjCg/edit?usp=sharing'
-const VIEW_TEMPLATE_VARIANT_URL = 'https://docs.google.com/spreadsheets/d/1bt9hMYtxIBvsNcdJ-Q7V7BKdcToa5_9FP942K0XzjCg/edit?gid=1844511908#gid=1844511908'
+const VIEW_TEMPLATE_LOW_END_URL = 'https://docs.google.com/spreadsheets/d/1bt9hMYtxIBvsNcdJ-Q7V7BKdcToa5_9FP942K0XzjCg/edit?gid=1772224111#gid=1772224111'
+const VIEW_TEMPLATE_HIGH_END_URL: string | null = null
 
 export default function BulkProductImportPanel({ onClose, onImported }: BulkProductImportPanelProps) {
   const inputRef = useRef<HTMLInputElement | null>(null)
+  const [importSource, setImportSource] = useState<'file' | 'link'>('file')
+  const [sheetUrl, setSheetUrl] = useState('')
+  const [isFetchingSheet, setIsFetchingSheet] = useState(false)
   const [fileName, setFileName] = useState('')
   const [csvText, setCsvText] = useState('')
   const [importMode, setImportMode] = useState<'create_only' | 'create_or_update'>('create_or_update')
   const [fileError, setFileError] = useState('')
   const [importResults, setImportResults] = useState<BulkImportProductsResponse['results'] | null>(null)
+  const [importErrorModal, setImportErrorModal] = useState<{
+    title: string
+    details: string
+    payload?: BulkImportProductsPayload
+    checklist?: Array<{ label: string; ok: boolean; detail: string }>
+  } | null>(null)
   const { data: categoryData } = useGetCategoriesQuery({ per_page: 500 })
   const { data: brandData } = useGetProductBrandsQuery({ search: '' })
-  const [importProducts, { isLoading: isLoadingRegular }] = useBulkImportProductsMutation()
-  const [importProductsWithVariants, { isLoading: isLoadingVariants }] = useBulkImportProductsWithVariantsMutation()
-  const isLoading = isLoadingRegular || isLoadingVariants
+  const [importProducts, { isLoading }] = useBulkImportProductsMutation()
 
   const categoryLookup = useMemo(() => categoryData?.categories ?? [], [categoryData])
   const brandLookup = useMemo(() => brandData?.brands ?? [], [brandData])
@@ -588,12 +709,45 @@ export default function BulkProductImportPanel({ onClose, onImported }: BulkProd
   const normalizedRows = useMemo(() => {
     if (!parsed) return null
 
-    return parsed.rows.map((row) => ({
-      ...row,
-      pd_catid: normalizeLookupValue(String(row.pd_catid ?? ''), categoryLookup),
-      pd_brand_type: normalizeLookupValue(String(row.pd_brand_type ?? ''), brandLookup),
-      pd_room_type: normalizeRoomType(String(row.pd_room_type ?? '')),
-    }))
+    console.log('[DEBUG] Category lookup data:', categoryLookup.map(c => ({ id: c.id, name: c.name })))
+    console.log('[DEBUG] Brand lookup data:', brandLookup.map(b => ({ id: b.id, name: b.name })))
+
+    const numericFields = [
+      'pd_catid', 'pd_room_type', 'pd_brand_type', 'pd_catsubid',
+      'pd_price_srp', 'pd_price_dp', 'pd_price_member', 'pd_prodpv',
+      'pd_qty', 'pd_weight', 'pd_psweight', 'pd_pswidth', 'pd_pslenght', 'pd_psheight',
+      'pd_type', 'pd_status', 'pd_musthave', 'pd_bestseller', 'pd_salespromo',
+      'pd_assembly_required', 'pd_verified', 'pd_manual_checkout_enabled'
+    ]
+
+    return parsed.rows.map((row) => {
+      const originalCatid = String(row.pd_catid ?? '')
+      const originalBrand = String(row.pd_brand_type ?? '')
+      
+      const normalizedCatid = normalizeLookupValue(originalCatid, categoryLookup)
+      const normalizedBrand = normalizeLookupValue(originalBrand, brandLookup)
+      
+      console.log('[DEBUG] Row category conversion:', { original: originalCatid, normalized: normalizedCatid })
+      console.log('[DEBUG] Row brand conversion:', { original: originalBrand, normalized: normalizedBrand })
+      
+      const normalizedRow: Record<string, unknown> = {
+        ...row,
+        pd_catid: normalizedCatid,
+        pd_brand_type: normalizedBrand,
+        pd_room_type: normalizeRoomType(String(row.pd_room_type ?? '')),
+        pd_images: parseImageList(row.pd_images),
+      }
+      
+      // Convert numeric string fields to numbers
+      numericFields.forEach((field) => {
+        const value = normalizedRow[field]
+        if (typeof value === 'string' && value.trim() !== '' && !isNaN(Number(value))) {
+          normalizedRow[field] = Number(value)
+        }
+      })
+      
+      return normalizedRow as BulkImportProductsRow
+    })
   }, [brandLookup, categoryLookup, parsed])
 
   const previewRows = useMemo(
@@ -621,11 +775,26 @@ export default function BulkProductImportPanel({ onClose, onImported }: BulkProd
     [parsed],
   )
 
+  const importStats = useMemo(() => {
+    if (!parsed) return null
+    const rows = parsed.rows
+    const productsWithVariants = rows.filter((r) => (r.pd_variants?.length ?? 0) > 0)
+    const totalVariants = rows.reduce((sum, r) => sum + (r.pd_variants?.length ?? 0), 0)
+    return {
+      total: rows.length,
+      withVariants: productsWithVariants.length,
+      simple: rows.length - productsWithVariants.length,
+      totalVariants,
+    }
+  }, [parsed])
+
   const handleClear = () => {
     setFileName('')
     setCsvText('')
     setFileError('')
     setImportResults(null)
+    setImportErrorModal(null)
+    setSheetUrl('')
     if (inputRef.current) inputRef.current.value = ''
   }
 
@@ -642,85 +811,341 @@ export default function BulkProductImportPanel({ onClose, onImported }: BulkProd
     setCsvText(text)
   }
 
+  const handleFetchSheet = async () => {
+    if (!sheetUrl.trim()) return
+
+    setFileError('')
+    setIsFetchingSheet(true)
+    try {
+      const response = await fetch(`/api/fetch-sheet?url=${encodeURIComponent(sheetUrl.trim())}`)
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({})) as { error?: string }
+        throw new Error(body.error ?? `Request failed (${response.status}).`)
+      }
+      const text = await response.text()
+      const gidMatch = sheetUrl.match(/[?&#]gid=(\d+)/)
+      const gid = gidMatch ? gidMatch[1] : '0'
+      setFileName(`Google Sheet${gid !== '0' ? ` (tab gid=${gid})` : ''}`)
+      setCsvText(text)
+    } catch (error) {
+      setFileError(error instanceof Error ? error.message : 'Failed to fetch Google Sheet.')
+    } finally {
+      setIsFetchingSheet(false)
+    }
+  }
+
   const handleImport = async () => {
     if (!parsed || parsed.rows.length === 0) {
-      showErrorToast('Upload a valid CSV file first.')
+      showErrorToast('Load a valid CSV first.')
+      return
+    }
+
+    // Check if lookup data is loaded
+    if (categoryLookup.length === 0 || brandLookup.length === 0) {
+      showErrorToast('Please wait for categories and brands to load before importing.')
       return
     }
 
     setImportResults(null)
+    const rows = normalizedRows ?? parsed.rows
+    const payload: BulkImportProductsPayload = { mode: importMode, rows }
+
+    // Detailed pre-import validation
+    const validationErrors: string[] = []
+    rows.forEach((row, index) => {
+      const rowNum = index + 1
+      if (!String(row.pd_name ?? '').trim()) validationErrors.push(`Row ${rowNum}: Missing pd_name`)
+      if (!String(row.pd_catid ?? '').trim()) validationErrors.push(`Row ${rowNum}: Missing pd_catid`)
+      if (!String(row.pd_price_srp ?? '').trim()) validationErrors.push(`Row ${rowNum}: Missing pd_price_srp`)
+      if (!String(row.pd_parent_sku ?? '').trim()) validationErrors.push(`Row ${rowNum}: Missing pd_parent_sku`)
+      if (row.pd_type === undefined || row.pd_type === null || row.pd_type === '') validationErrors.push(`Row ${rowNum}: Missing pd_type`)
+      
+      // Validate variants if present
+      if (row.pd_variants && row.pd_variants.length > 0) {
+        row.pd_variants.forEach((variant, vIndex) => {
+          if (!String(variant.pv_sku ?? '').trim()) validationErrors.push(`Row ${rowNum}, Variant ${vIndex + 1}: Missing pv_sku`)
+          if (variant.pv_status === undefined || variant.pv_status === null) validationErrors.push(`Row ${rowNum}, Variant ${vIndex + 1}: Missing pv_status`)
+        })
+      }
+    })
+
+    if (validationErrors.length > 0) {
+      setImportErrorModal({
+        title: 'Validation Failed',
+        details: `Found ${validationErrors.length} validation error(s):\n${validationErrors.join('\n')}`,
+        payload,
+        checklist: buildPayloadChecklist(payload),
+      })
+      return
+    }
 
     try {
-      const rows = normalizedRows ?? parsed.rows
-      const payload = { mode: importMode, rows }
-      const response = await (parsed.isVariantSheet
-        ? importProductsWithVariants(payload)
-        : importProducts(payload)
-      ).unwrap()
+      console.log('[DEBUG] Sending import payload:', JSON.stringify(payload, null, 2))
+      const response = await importProducts(payload).unwrap()
+      console.log('[DEBUG] Import response:', JSON.stringify(response, null, 2))
 
       const { summary, results } = response
       const failedRows = results.filter((r) => r.status === 'failed')
+      const hasFailures = failedRows.length > 0 || summary.failed > 0
 
-      if (failedRows.length > 0) {
+      if (hasFailures) {
         setImportResults(results)
+        const failureDetails = failedRows.map((r) => `Row ${r.row}: ${r.message}`).join('\n')
         showErrorToast(`Import finished with errors: ${summary.created} created, ${summary.updated} updated, ${summary.failed} failed.`)
         if (summary.created > 0 || summary.updated > 0) onImported?.()
+      } else if (summary.created === 0 && summary.updated === 0) {
+        const firstRow = rows[0] as Record<string, unknown> | undefined
+        const fieldSummary = firstRow ? getFieldSummary(firstRow, REQUIRED_IMPORT_FIELDS) : []
+        const missingRequired = fieldSummary.filter((item) => !item.present).map((item) => item.field)
+        const variantRows = rows.filter((row) => (row.pd_variants?.length ?? 0) > 0).length
+        
+        // Additional debugging info
+        const debugInfo = [
+          `Import Mode: ${importMode}`,
+          `Total Rows: ${rows.length}`,
+          `Rows with Variants: ${variantRows}`,
+          `Backend Response: ${JSON.stringify(response)}`,
+        ].join('\n')
+        
+        const details = [
+          `rows sent=${rows.length}`,
+          `variant rows=${variantRows}`,
+          `missing required in first row=${missingRequired.length > 0 ? missingRequired.join(', ') : 'none'}`,
+          `first row=${firstRow ? JSON.stringify(firstRow) : 'n/a'}`,
+          `\n--- DEBUG INFO ---\n${debugInfo}`,
+        ].join(' | ')
+        setImportErrorModal({
+          title: 'Import finished with no processed rows',
+          details: `Import finished: 0 created, 0 updated. No rows were processed.\n${details}`,
+          payload,
+          checklist: buildPayloadChecklist(payload),
+        })
       } else {
         showSuccessToast(`Import finished: ${summary.created} created, ${summary.updated} updated.`)
         onImported?.()
         onClose()
       }
     } catch (error) {
-      const message = (error as { data?: { message?: string } })?.data?.message || 'Bulk import failed.'
-      showErrorToast(message)
+      console.error('[DEBUG] Import error:', error)
+      const errorData = error as { data?: { message?: string; errors?: Record<string, unknown>; status?: number } }
+      const message = errorData?.data?.message || 'Bulk import failed.'
+      const errors = errorData?.data?.errors ? JSON.stringify(errorData.data.errors, null, 2) : 'No additional error details'
+      const status = errorData?.data?.status ? `HTTP ${errorData.data.status}` : 'Unknown status'
+      
+      setImportErrorModal({
+        title: 'Bulk import failed',
+        details: `${message}\n\nStatus: ${status}\n\nError Details:\n${errors}\n\nRaw Error:\n${JSON.stringify(error, null, 2)}`,
+        payload,
+        checklist: buildPayloadChecklist(payload),
+      })
     }
   }
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full flex-col relative">
+      {importErrorModal ? (
+        <div className="absolute inset-0 z-30 flex items-center justify-center bg-slate-950/50 px-4 backdrop-blur-sm">
+          <div className="w-full max-w-2xl rounded-2xl border border-red-200 bg-white shadow-2xl">
+            <div className="flex items-start justify-between gap-4 border-b border-red-100 px-5 py-4">
+              <div>
+                <p className="text-sm font-semibold text-red-800">{importErrorModal.title}</p>
+                <p className="mt-1 text-xs text-red-600">Review the import payload details below.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setImportErrorModal(null)}
+                className="rounded-lg p-1 text-red-400 transition hover:bg-red-50 hover:text-red-600"
+              >
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="max-h-[60vh] overflow-auto px-5 py-4">
+              <div className="space-y-4">
+                <section className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Message</p>
+                  <pre className="mt-2 whitespace-pre-wrap break-words text-xs leading-5 text-slate-700">{importErrorModal.details}</pre>
+                </section>
+
+                {importErrorModal.payload ? (
+                  <section className="rounded-xl border border-slate-200 bg-white p-4">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Request Payload</p>
+                    <pre className="mt-2 max-h-72 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-slate-950 p-4 text-[11px] leading-5 text-slate-100">
+                      {JSON.stringify(importErrorModal.payload, null, 2)}
+                    </pre>
+                  </section>
+                ) : null}
+
+                {importErrorModal.checklist ? (
+                  <section className="rounded-xl border border-slate-200 bg-white p-4">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Type Check</p>
+                    <div className="mt-3 space-y-2">
+                      {importErrorModal.checklist.map((item) => (
+                        <div key={item.label} className="flex items-start justify-between gap-4 rounded-lg border border-slate-100 px-3 py-2">
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-slate-800">{item.label}</p>
+                            <p className="text-xs text-slate-500">{item.detail}</p>
+                          </div>
+                          <span className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold ${item.ok ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
+                            {item.ok ? 'OK' : 'Check'}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                ) : null}
+
+                <section className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">Likely Backend Checks</p>
+                  <ul className="mt-2 space-y-1 text-xs leading-5 text-amber-900 list-disc list-inside">
+                    <li>Confirm the imported row has `pd_parent_sku` and `pd_type` set correctly for create-or-update matching.</li>
+                    <li>Verify the backend accepts nested `pd_variants` in the exact shape shown in the payload.</li>
+                    <li>Check that category, room type, and brand IDs exist in the backend.</li>
+                    <li>Make sure `pd_images` and `pv_images` are accepted as arrays of URLs.</li>
+                    <li>Confirm the backend is not rejecting numeric strings for price and quantity fields.</li>
+                  </ul>
+                </section>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 border-t border-red-100 px-5 py-4">
+              <button
+                type="button"
+                onClick={() => setImportErrorModal(null)}
+                className="rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+      {isLoading && importStats && (
+        <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-4 rounded-2xl bg-white/90 backdrop-blur-sm">
+          <svg className="h-10 w-10 animate-spin text-teal-500" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+          </svg>
+          <div className="text-center space-y-1">
+            <p className="text-base font-bold text-slate-800">Importing products…</p>
+            <p className="text-sm text-slate-500">
+              <span className="font-semibold text-slate-700">{importStats.total}</span> product{importStats.total !== 1 ? 's' : ''} total
+              {importStats.totalVariants > 0 && (
+                <> &mdash; <span className="font-semibold text-violet-600">{importStats.totalVariants}</span> variant{importStats.totalVariants !== 1 ? 's' : ''} across <span className="font-semibold text-violet-600">{importStats.withVariants}</span> product{importStats.withVariants !== 1 ? 's' : ''}</>
+              )}
+            </p>
+            <p className="text-xs text-slate-400">Please wait, this may take a moment for large batches.</p>
+          </div>
+        </div>
+      )}
       <div className="overflow-y-auto px-4 py-4 sm:px-6 sm:py-5 space-y-5">
         <div className="rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-700">
           Upload one CSV file to create many products at once. Required columns: <span className="font-semibold">{PRODUCT_REQUIRED_COLUMNS.join(', ')}</span>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={() => inputRef.current?.click()}
-            className="inline-flex items-center gap-2 rounded-xl bg-teal-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-700"
-          >
-            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
-            </svg>
-            Select CSV File
-          </button>
-          <a
-            href={VIEW_TEMPLATE_NO_VARIANT_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-          >
-            View Template (No Variants)
-          </a>
-          <a
-            href={VIEW_TEMPLATE_VARIANT_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-4 py-2.5 text-sm font-semibold text-violet-700 transition hover:bg-violet-100"
-          >
-            View Template (With Variants)
-          </a>
-          <input
-            ref={inputRef}
-            type="file"
-            accept=".csv,text/csv"
-            className="hidden"
-            onChange={(event) => void handlePickFile(event.target.files?.[0] ?? null)}
-          />
-        </div>
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3">
+          {/* Source toggle */}
+          <div className="flex rounded-xl bg-slate-100 p-1 self-start w-fit">
+            {[
+              { value: 'file', label: 'CSV File' },
+              { value: 'link', label: 'Google Sheet Link' },
+            ].map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => { setImportSource(opt.value as 'file' | 'link'); handleClear() }}
+                className={`rounded-lg px-4 py-2 text-xs font-semibold transition ${
+                  importSource === opt.value ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
 
-        <div className="rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3 text-xs text-amber-700">
-          After filling in your data in the Google Sheet template, download it as <span className="font-semibold">.csv</span> before uploading here.
+          {importSource === 'file' ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => inputRef.current?.click()}
+                className="inline-flex items-center gap-2 rounded-xl bg-teal-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-700"
+              >
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                </svg>
+                Select CSV File
+              </button>
+              <a href={VIEW_TEMPLATE_LOW_END_URL} target="_blank" rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
+                View Template (Low End)
+              </a>
+              {VIEW_TEMPLATE_HIGH_END_URL ? (
+                <a href={VIEW_TEMPLATE_HIGH_END_URL} target="_blank" rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-4 py-2.5 text-sm font-semibold text-violet-700 transition hover:bg-violet-100">
+                  View Template (High End)
+                </a>
+              ) : (
+                <span className="inline-flex items-center gap-2 rounded-xl border border-slate-100 bg-slate-50 px-4 py-2.5 text-sm font-semibold text-slate-300 cursor-not-allowed">
+                  View Template (High End)
+                </span>
+              )}
+              <input
+                ref={inputRef}
+                type="file"
+                accept=".csv,text/csv"
+                className="hidden"
+                onChange={(event) => void handlePickFile(event.target.files?.[0] ?? null)}
+              />
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <p className="text-xs text-slate-500">
+                Paste your Google Sheet URL below. The sheet must be shared as <span className="font-semibold">Anyone with the link can view</span>.
+              </p>
+              <div className="flex gap-2">
+                <input
+                  type="url"
+                  value={sheetUrl}
+                  onChange={(e) => setSheetUrl(e.target.value)}
+                  placeholder="https://docs.google.com/spreadsheets/d/..."
+                  className="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-800 placeholder-slate-400 outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100"
+                />
+                <button
+                  type="button"
+                  onClick={() => void handleFetchSheet()}
+                  disabled={isFetchingSheet || !sheetUrl.trim()}
+                  className="inline-flex items-center gap-2 rounded-xl bg-teal-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-700 disabled:opacity-60"
+                >
+                  {isFetchingSheet ? (
+                    <>
+                      <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                      </svg>
+                      Fetching…
+                    </>
+                  ) : 'Load Sheet'}
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-2 pt-1">
+                <a href={VIEW_TEMPLATE_LOW_END_URL} target="_blank" rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 underline underline-offset-2 hover:text-slate-700">
+                  Template (Low End)
+                </a>
+                <span className="text-slate-300">·</span>
+                {VIEW_TEMPLATE_HIGH_END_URL ? (
+                  <a href={VIEW_TEMPLATE_HIGH_END_URL} target="_blank" rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-violet-500 underline underline-offset-2 hover:text-violet-700">
+                    Template (High End)
+                  </a>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-300 cursor-not-allowed">
+                    Template (High End)
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-4">
@@ -863,16 +1288,35 @@ export default function BulkProductImportPanel({ onClose, onImported }: BulkProd
             </div>
 
             <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
-              <div className="border-b border-slate-100 px-4 py-3">
-                <p className="text-sm font-semibold text-slate-800">Upload Summary</p>
-                <p className="text-xs text-slate-500">Products that will be imported when you proceed.</p>
+              <div className="border-b border-slate-100 px-4 py-3 flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold text-slate-800">Upload Summary</p>
+                  <p className="text-xs text-slate-500">Products that will be imported when you proceed.</p>
+                </div>
+                {importStats && (
+                  <div className="flex flex-wrap gap-2 text-[11px] shrink-0">
+                    <span className="inline-flex items-center rounded-full bg-teal-50 border border-teal-100 px-2.5 py-1 font-semibold text-teal-700">
+                      {importStats.total} product{importStats.total !== 1 ? 's' : ''}
+                    </span>
+                    {importStats.totalVariants > 0 && (
+                      <span className="inline-flex items-center rounded-full bg-violet-50 border border-violet-100 px-2.5 py-1 font-semibold text-violet-700">
+                        {importStats.totalVariants} variant{importStats.totalVariants !== 1 ? 's' : ''}
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
               <div className="max-h-80 overflow-auto divide-y divide-slate-100">
                 {previewRows.map((row) => (
                   <div key={`${row.index}-${row.sku}-${row.name}`} className="px-4 py-3">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="inline-flex rounded-full bg-slate-100 px-2 py-1 text-[11px] font-semibold text-slate-600">Row {row.index}</span>
+                      <span className="inline-flex rounded-full bg-slate-100 px-2 py-1 text-[11px] font-semibold text-slate-600">#{row.index}</span>
                       <p className="text-sm font-semibold text-slate-800">{row.name}</p>
+                      {row.variantCount > 0 && (
+                        <span className="inline-flex rounded-full bg-violet-100 px-2 py-0.5 text-[11px] font-semibold text-violet-700">
+                          {row.variantCount} variant{row.variantCount !== 1 ? 's' : ''}
+                        </span>
+                      )}
                     </div>
                     {parsed.isVariantSheet ? (
                       <div className="mt-1.5 space-y-1">
@@ -880,9 +1324,6 @@ export default function BulkProductImportPanel({ onClose, onImported }: BulkProd
                           <span>SKU: {row.sku}</span>
                           <span>SRP: PHP {row.variantSrpRange}</span>
                           <span>Total Qty: {row.variantTotalQty}</span>
-                          <span className="inline-flex rounded-full bg-violet-100 px-2 py-0.5 text-[11px] font-semibold text-violet-700">
-                            {row.variantCount} variant{row.variantCount !== 1 ? 's' : ''}
-                          </span>
                         </div>
                         {row.variants.length > 0 && (
                           <div className="mt-1 flex flex-col gap-0.5">
@@ -894,6 +1335,7 @@ export default function BulkProductImportPanel({ onClose, onImported }: BulkProd
                                 {v.pv_size && <span>Size: {v.pv_size}</span>}
                                 {v.pv_color && <span>Color: {v.pv_color}</span>}
                                 {Number.isFinite(v.pv_price_srp) && v.pv_price_srp! > 0 && <span>PHP {v.pv_price_srp}</span>}
+                                {Number.isFinite(v.pv_prodpv) && v.pv_prodpv! > 0 && <span className="text-teal-600 font-semibold">PV: {v.pv_prodpv}</span>}
                                 {Number.isFinite(v.pv_qty) && <span>Qty: {v.pv_qty}</span>}
                               </div>
                             ))}
@@ -906,11 +1348,6 @@ export default function BulkProductImportPanel({ onClose, onImported }: BulkProd
                         <span>Category ID: {row.category}</span>
                         <span>SRP: PHP {row.srp}</span>
                         <span>Qty: {row.qty}</span>
-                        {row.variantCount > 0 && (
-                          <span className="inline-flex rounded-full bg-violet-100 px-2 py-0.5 text-[11px] font-semibold text-violet-700">
-                            {row.variantCount} variant{row.variantCount !== 1 ? 's' : ''}
-                          </span>
-                        )}
                       </div>
                     )}
                   </div>
