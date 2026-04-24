@@ -149,13 +149,41 @@ const VARIANT_PREVIEW_COLUMNS = [
   'pd_parent_sku',
   'pd_name',
   'pd_catid',
+  'pd_room_type',
+  'pd_brand_type',
+  'pd_price_srp',
+  'pd_price_dp',
+  'pd_price_member',
+  'pd_prodpv',
+  'pd_pricing_tier',
+  'pd_reversed_pv_multiplier',
+  'pd_qty',
+  'pd_weight',
+  'pd_psweight',
+  'pd_pswidth',
+  'pd_pslenght',
+  'pd_psheight',
+  'pd_description',
+  'pd_specifications',
+  'pd_material',
+  'pd_warranty',
+  'pd_images',
   'pd_type',
+  'pd_status',
+  'pd_musthave',
+  'pd_bestseller',
+  'pd_salespromo',
+  'pd_assembly_required',
+  'pd_verified',
   'pv_sku',
   'pv_name',
-  'pv_style',
-  'pv_size',
   'pv_color',
   'pv_color_hex',
+  'pv_size',
+  'pv_style',
+  'pv_width',
+  'pv_dimension',
+  'pv_height',
   'pv_price_srp',
   'pv_price_dp',
   'pv_price_member',
@@ -624,13 +652,7 @@ export default function BulkProductImportPanel({ onClose, onImported }: BulkProd
 
     try {
       const rows = normalizedRows ?? parsed.rows
-      const variantRows = rows.map((row) => ({
-        pd_parent_sku: row.pd_parent_sku,
-        pd_name: row.pd_name,
-        pd_catid: row.pd_catid,
-        pd_variants: row.pd_variants,
-      }))
-      const payload = { mode: importMode, rows: parsed.isVariantSheet ? variantRows : rows }
+      const payload = { mode: importMode, rows }
       const response = await (parsed.isVariantSheet
         ? importProductsWithVariants(payload)
         : importProducts(payload)
@@ -661,51 +683,33 @@ export default function BulkProductImportPanel({ onClose, onImported }: BulkProd
           Upload one CSV file to create many products at once. Required columns: <span className="font-semibold">{PRODUCT_REQUIRED_COLUMNS.join(', ')}</span>
         </div>
 
-        <div className="flex flex-col gap-2">
-          {/* Without Variants */}
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={() => inputRef.current?.click()}
-              className="inline-flex items-center gap-2 rounded-xl bg-teal-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-700"
-            >
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
-              </svg>
-              Select CSV — Without Variants
-            </button>
-            <a
-              href={VIEW_TEMPLATE_NO_VARIANT_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-            >
-              View Template
-            </a>
-          </div>
-
-          {/* With Variants */}
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={() => inputRef.current?.click()}
-              className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-violet-700"
-            >
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
-              </svg>
-              Select CSV — With Variants
-            </button>
-            <a
-              href={VIEW_TEMPLATE_VARIANT_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-4 py-2.5 text-sm font-semibold text-violet-700 transition hover:bg-violet-100"
-            >
-              View Template
-            </a>
-          </div>
-
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => inputRef.current?.click()}
+            className="inline-flex items-center gap-2 rounded-xl bg-teal-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-700"
+          >
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+            </svg>
+            Select CSV File
+          </button>
+          <a
+            href={VIEW_TEMPLATE_NO_VARIANT_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+          >
+            View Template (No Variants)
+          </a>
+          <a
+            href={VIEW_TEMPLATE_VARIANT_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-4 py-2.5 text-sm font-semibold text-violet-700 transition hover:bg-violet-100"
+          >
+            View Template (With Variants)
+          </a>
           <input
             ref={inputRef}
             type="file"
