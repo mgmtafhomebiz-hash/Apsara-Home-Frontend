@@ -1,10 +1,11 @@
 'use client'
 
 import Image from 'next/image'
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { useMemo, useRef, useState, useEffect } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useSession } from 'next-auth/react'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
+import { Fragment } from 'react'
 import { useGetAdminMeQuery } from '@/store/api/authApi'
 import { Product, ZqCachedProduct, useFetchZqImportPreviewMutation, useGetProductsQuery, useGetPublicProductsQuery, useDeleteProductMutation, useGetZqCachedProductsQuery, useGetZqProductsSummaryQuery, useManualCheckoutApplyMutation, useSyncZqProductsMutation, ProductsResponse } from "@/store/api/productsApi";
 import { useGetAdminGeneralSettingsQuery, useUpdateAdminGeneralSettingsMutation } from "@/store/api/adminSettingsApi";
@@ -17,6 +18,7 @@ import AddProductModal from './AddProductModal'
 import EditProductModal from './EditProductModal'
 import BulkEditProductsModal from './BulkEditProductsModal'
 import ProductActivityLogsModal from './ProductActivityLogsModal'
+import PrimaryButton from '@/components/ui/buttons/PrimaryButton'
 import { showErrorToast, showSuccessToast } from '@/libs/toast'
 import { revalidateStorefront } from '@/libs/revalidateStorefront'
 import { buildStorefrontProductPath } from '@/libs/storefrontRouting'
@@ -28,6 +30,103 @@ interface ProductsPageMainProps {
 
 const NEW_BADGE_DAYS = 7
 const getZqInlineStorageKey = (pathname: string) => `afhome:zq-inline:${pathname}`
+
+const exportToCSV = (products: Product[]) => {
+  if (products.length === 0) {
+    showErrorToast('No products to export')
+    return
+  }
+
+  const headers = [
+    'pd_name',
+    'pd_parent_sku',
+    'pd_catid',
+    'pd_room_type',
+    'pd_brand_type',
+    'pd_catsubid',
+    'pd_price_srp',
+    'pd_price_dp',
+    'pd_price_member',
+    'pd_prodpv',
+    'pd_qty',
+    'pd_weight',
+    'pd_psweight',
+    'pd_pswidth',
+    'pd_pslenght',
+    'pd_psheight',
+    'pd_description',
+    'pd_specifications',
+    'pd_material',
+    'pd_warranty',
+    'pd_assembly_required',
+    'pd_image',
+    'pd_images',
+    'pd_type',
+    'pd_status',
+    'pd_pricing_tier',
+    'pd_reversed_pv_multiplier',
+    'pd_musthave',
+    'pd_bestseller',
+    'pd_salespromo',
+    'pd_verified',
+    'pd_manual_checkout_enabled',
+  ]
+
+  const csvRows = [
+    headers.join(','),
+    ...products.map((product) => {
+      const row = [
+        `"${(product.name || '').replace(/"/g, '""')}"`,
+        product.sku,
+        product.catid,
+        product.roomType || '',
+        product.brandType || '',
+        product.catsubid,
+        product.priceSrp,
+        product.priceDp,
+        product.priceMember || '',
+        product.prodpv || '',
+        product.qty,
+        product.weight,
+        product.psweight || '',
+        product.pswidth || '',
+        product.pslenght || '',
+        product.psheight || '',
+        `"${(product.description || '').replace(/"/g, '""')}"`,
+        `"${(product.specifications || '').replace(/"/g, '""')}"`,
+        product.material || '',
+        product.warranty || '',
+        product.assemblyRequired || '',
+        product.image || '',
+        (product.images || []).join('|'),
+        product.type,
+        product.status,
+        '',
+        '',
+        product.musthave,
+        product.bestseller,
+        product.salespromo,
+        product.verified || '',
+        product.manualCheckoutEnabled || '',
+      ]
+      return row.join(',')
+    }),
+  ]
+
+  const csvContent = csvRows.join('\n')
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+  const link = document.createElement('a')
+  const url = URL.createObjectURL(blob)
+  link.setAttribute('href', url)
+  link.setAttribute('download', `products-export-${new Date().toISOString().split('T')[0]}.csv`)
+  link.style.visibility = 'hidden'
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
+
+  showSuccessToast(`Exported ${products.length} products to CSV`)
+}
 
 const mapCachedZqProductToLocalRow = (product: ZqCachedProduct): Product => ({
   id: -Number(product.id || 0),
@@ -613,11 +712,11 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
   const [productOverrides, setProductOverrides] = useState<Record<number, Product>>({})
   const [createdProducts, setCreatedProducts] = useState<Product[]>([])
   const [useInitialData,  setUseInitialData]  = useState(Boolean(initialData))
+  const [userPerPage, setUserPerPage] = useState(25)
   const defaultPerPage = 25
   const searchPerPage = 500
-  const perPage = debouncedSearch ? searchPerPage : defaultPerPage
-  const canShowZqSupplierSide = !isSupplierPortal || isZqSupplierAccount || isSessionLoading
-  const zqInlineActive = showZqSupplierInline || (isSupplierPortal && isZqSupplierAccount)
+  const perPage = debouncedSearch ? searchPerPage : userPerPage
+  const canShowZqSupplierSide = !isSupplierPortal || isZqSupplierAccount
   const { data: adminGeneralSettingsData } = useGetAdminGeneralSettingsQuery()
   const manualHeaderToggle = Boolean(adminGeneralSettingsData?.settings?.enable_manual_checkout_mode)
 
@@ -1629,6 +1728,49 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
               </div>
             </div>
           )}
+
+          {/* Export section */}
+          <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-2.5 gap-3">
+            <div className="flex items-center gap-2">
+              <div className="h-6 w-6 rounded-lg bg-slate-100 flex items-center justify-center">
+                <svg className="w-3.5 h-3.5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                </svg>
+              </div>
+              <div>
+                <p className="text-sm text-slate-700">
+                  Export products
+                </p>
+                <p className="text-[10px] text-slate-400">
+                  Only filtered products (by category, brand, supplier) will be exported
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <label className="text-xs text-slate-600">Show:</label>
+                <select
+                  value={userPerPage}
+                  onChange={(e) => setUserPerPage(Number(e.target.value))}
+                  className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-700 focus:border-sky-400 focus:outline-none"
+                >
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                  <option value={200}>200</option>
+                  <option value={500}>500</option>
+                  <option value={1000}>1000</option>
+                  <option value="all">All</option>
+                </select>
+              </div>
+              <PrimaryButton onClick={() => exportToCSV(visibleProducts)}>
+                Export CSV
+              </PrimaryButton>
+              <PrimaryButton onClick={() => {}}>
+                Export Spreadsheet
+              </PrimaryButton>
+            </div>
+          </div>
 
           <DataTableShell
             title={zqInlineActive ? 'ZQ Product Table' : undefined}
