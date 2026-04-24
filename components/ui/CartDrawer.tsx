@@ -4,14 +4,18 @@ import { motion, AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useCart } from '@/context/CartContext'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import type { CustomerCheckoutLineItem } from '@/types/CustomerCheckout/types'
 import { useMemo } from 'react'
 import PrimaryButton from '@/components/ui/buttons/PrimaryButton'
 import { resolveCheckoutSource } from '@/libs/checkoutSource'
+import { extractPartnerSlugFromPath } from '@/libs/storefrontRouting'
 
 export default function CartDrawer() {
   const router = useRouter()
+  const pathname = usePathname()
+  const partnerSlug = extractPartnerSlugFromPath(pathname)
+  const checkoutTarget = partnerSlug ? `/${partnerSlug}/checkout/customer` : '/checkout/customer'
   const {
     items,
     selectedIds,
@@ -85,7 +89,7 @@ export default function CartDrawer() {
     }))
 
     setIsOpen(false)
-    router.push('/checkout/customer')
+    router.push(checkoutTarget)
   }
 
   return (

@@ -8,7 +8,7 @@ import { useCart } from '@/context/CartContext';
 import { useGetPublicProductsQuery } from '@/store/api/productsApi';
 import { usePathname } from 'next/navigation';
 import PrimaryButton from '@/components/ui/buttons/PrimaryButton';
-import { buildStorefrontProductPath } from '@/libs/storefrontRouting';
+import { buildStorefrontProductPath, extractPartnerSlugFromPath } from '@/libs/storefrontRouting';
 
 interface CompleteTheLookProps {
   currentCategory: string;
@@ -72,6 +72,8 @@ type BundleItem = {
 const CompleteTheLook = ({ currentCategory, currentCategoryId, currentCategoryLabel, currentProductId }: CompleteTheLookProps) => {
   const { addToCart } = useCart();
   const pathname = usePathname();
+  const partnerSlug = extractPartnerSlugFromPath(pathname);
+  const forceRealPrice = partnerSlug === 'synergy-shop';
   const { title, subtitle } = useMemo(
     () => resolveBundleCopy(currentCategoryLabel, currentCategory),
     [currentCategoryLabel, currentCategory],
@@ -99,7 +101,7 @@ const CompleteTheLook = ({ currentCategory, currentCategoryId, currentCategoryLa
       .map((product) => {
         const srpPrice = Number(product.priceSrp ?? 0) || 0;
         const memberPrice = Number(product.priceMember ?? 0) || 0;
-        const effectivePrice = memberPrice > 0 && memberPrice < srpPrice ? memberPrice : srpPrice;
+        const effectivePrice = !forceRealPrice && memberPrice > 0 && memberPrice < srpPrice ? memberPrice : srpPrice;
 
         return {
           id: product.id,
@@ -110,7 +112,7 @@ const CompleteTheLook = ({ currentCategory, currentCategoryId, currentCategoryLa
           brand: product.brand ?? null,
         };
       });
-  }, [data, currentProductId]);
+  }, [data, currentProductId, forceRealPrice]);
 
   const [selected, setSelected] = useState<Set<number>>(new Set());
 

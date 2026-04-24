@@ -347,6 +347,11 @@ const CustomerCheckoutMain = ({
                 localStorage.setItem('last_checkout_id', data.checkout_id);
                 localStorage.setItem('last_checkout_payment_mode', canSwitchPaymentMode ? (data.payment_mode || effectivePaymentMode) : 'live');
             }
+            if (checkoutData.sourceSlug) {
+                localStorage.setItem('last_checkout_source_slug', checkoutData.sourceSlug);
+            } else {
+                localStorage.removeItem('last_checkout_source_slug');
+            }
             localStorage.removeItem('guest_checkout');
             window.location.href = data.checkout_url;
         } catch (error) {

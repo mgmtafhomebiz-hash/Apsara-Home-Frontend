@@ -45,6 +45,8 @@ const RelatedProducts = ({ products, category }: RelatedProductProps) => {
                         <ItemCard 
                             product={product} 
                             brandName={product.brand || ''} 
+                            hideDiscountBadge
+                            forceRealPrice
                         />
                     </motion.div>
                 ))}
