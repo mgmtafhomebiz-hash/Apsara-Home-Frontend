@@ -1,10 +1,11 @@
 'use client'
 
 import Image from 'next/image'
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { useMemo, useRef, useState, useEffect } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useSession } from 'next-auth/react'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
+import { Fragment } from 'react'
 import { useGetAdminMeQuery } from '@/store/api/authApi'
 import { Product, ZqCachedProduct, useFetchZqImportPreviewMutation, useGetProductsQuery, useGetPublicProductsQuery, useDeleteProductMutation, useGetZqCachedProductsQuery, useGetZqProductsSummaryQuery, useManualCheckoutApplyMutation, useSyncZqProductsMutation, ProductsResponse } from "@/store/api/productsApi";
 import { useGetAdminGeneralSettingsQuery, useUpdateAdminGeneralSettingsMutation } from "@/store/api/adminSettingsApi";
@@ -17,6 +18,7 @@ import AddProductModal from './AddProductModal'
 import EditProductModal from './EditProductModal'
 import BulkEditProductsModal from './BulkEditProductsModal'
 import ProductActivityLogsModal from './ProductActivityLogsModal'
+import PrimaryButton from '@/components/ui/buttons/PrimaryButton'
 import { showErrorToast, showSuccessToast } from '@/libs/toast'
 import { revalidateStorefront } from '@/libs/revalidateStorefront'
 
@@ -547,9 +549,14 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
   const [productOverrides, setProductOverrides] = useState<Record<number, Product>>({})
   const [createdProducts, setCreatedProducts] = useState<Product[]>([])
   const [useInitialData,  setUseInitialData]  = useState(Boolean(initialData))
+  const [userPerPage, setUserPerPage] = useState(25)
+  const [showExportModal, setShowExportModal] = useState(false)
+  const [exportFormat, setExportFormat] = useState('csv')
+  const [exportRecordCount, setExportRecordCount] = useState('25')
+  const [showExportLink, setShowExportLink] = useState(false)
   const defaultPerPage = 25
   const searchPerPage = 500
-  const perPage = debouncedSearch ? searchPerPage : defaultPerPage
+  const perPage = debouncedSearch ? searchPerPage : userPerPage
   const canShowZqSupplierSide = !isSupplierPortal || isZqSupplierAccount
   const { data: adminGeneralSettingsData } = useGetAdminGeneralSettingsQuery()
   const manualHeaderToggle = Boolean(adminGeneralSettingsData?.settings?.enable_manual_checkout_mode)
@@ -1517,6 +1524,152 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
               </div>
             </div>
           )}
+
+          {/* Export section */}
+          <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-2.5 gap-3">
+            <div className="flex items-center gap-2">
+              <div className="h-6 w-6 rounded-lg bg-slate-100 flex items-center justify-center">
+                <svg className="w-3.5 h-3.5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                </svg>
+              </div>
+              <p className="text-sm text-slate-700">
+                Export products
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <label className="text-xs text-slate-600">Show:</label>
+                <select
+                  value={userPerPage}
+                  onChange={(e) => setUserPerPage(Number(e.target.value))}
+                  className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-700 focus:border-sky-400 focus:outline-none"
+                >
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                  <option value={200}>200</option>
+                  <option value={500}>500</option>
+                  <option value={1000}>1000</option>
+                </select>
+              </div>
+              <PrimaryButton onClick={() => setShowExportModal(true)}>
+                Export Data
+              </PrimaryButton>
+            </div>
+          </div>
+
+          {/* Export Modal */}
+          <AnimatePresence>
+            {showExportModal && (
+              <Fragment key="export-modal-content">
+                <motion.div
+                  key="export-modal-backdrop"
+                  initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                  onClick={() => setShowExportModal(false)}
+                  className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
+                />
+
+                <div className="fixed inset-0 z-50 flex items-end justify-center p-0 sm:items-center sm:p-5">
+                  <motion.div
+                    key="export-modal"
+                    initial={{ opacity: 0, scale: 0.95, y: 12 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: 12 }}
+                    transition={{ duration: 0.2, ease: 'easeOut' }}
+                    onClick={e => e.stopPropagation()}
+                    className="w-full max-w-2xl max-h-[90vh] overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900 sm:max-h-[85vh]"
+                  >
+                    <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-5 dark:border-slate-800">
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-teal-600">Export</p>
+                        <h2 className="mt-1 text-lg font-bold text-slate-900 dark:text-white">Export Products</h2>
+                        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                          Choose your export format and data range
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setShowExportModal(false)}
+                        className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                      >
+                        Close
+                      </button>
+                    </div>
+
+                    <div className="p-6 space-y-6">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-2">Export Format</label>
+                          <select 
+                            value={exportFormat}
+                            onChange={(e) => {
+                              setExportFormat(e.target.value)
+                              setShowExportLink(false)
+                            }}
+                            className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 focus:border-sky-400 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                          >
+                            <option value="csv">CSV</option>
+                            <option value="spreadsheet">Spreadsheet</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-2">Number of Records</label>
+                          <select 
+                            value={exportRecordCount}
+                            onChange={(e) => setExportRecordCount(e.target.value)}
+                            className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 focus:border-sky-400 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                          >
+                            <option value={25}>25 records</option>
+                            <option value={50}>50 records</option>
+                            <option value={100}>100 records</option>
+                            <option value={200}>200 records</option>
+                            <option value={500}>500 records</option>
+                            <option value={1000}>1000 records</option>
+                            <option value="all">All records</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        <PrimaryButton 
+                          onClick={() => {
+                            if (exportFormat === 'spreadsheet') {
+                              setShowExportLink(true)
+                            }
+                          }}
+                        >
+                          Export
+                        </PrimaryButton>
+                        {showExportLink && exportFormat === 'spreadsheet' && (
+                          <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-50 border border-emerald-200">
+                            <svg className="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                            </svg>
+                            <a href="#" className="text-sm font-medium text-emerald-700 hover:text-emerald-800">
+                              https://docs.google.com/spreadsheets/d/example-export-link
+                            </a>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex justify-end pt-4 border-t border-slate-100 dark:border-slate-800">
+                        <button
+                          onClick={() => {
+                            setShowExportModal(false)
+                            setShowExportLink(false)
+                          }}
+                          className="rounded-xl border border-slate-200 bg-white px-6 py-3 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+                        >
+                          Close
+                        </button>
+                      </div>
+                    </div>
+                  </motion.div>
+                </div>
+              </Fragment>
+            )}
+          </AnimatePresence>
 
           <DataTableShell
             title={showZqSupplierInline ? 'ZQ Product Table' : undefined}
