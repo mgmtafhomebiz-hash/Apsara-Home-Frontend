@@ -29,6 +29,103 @@ interface ProductsPageMainProps {
 
 const NEW_BADGE_DAYS = 7
 
+const exportToCSV = (products: Product[]) => {
+  if (products.length === 0) {
+    showErrorToast('No products to export')
+    return
+  }
+
+  const headers = [
+    'pd_name',
+    'pd_parent_sku',
+    'pd_catid',
+    'pd_room_type',
+    'pd_brand_type',
+    'pd_catsubid',
+    'pd_price_srp',
+    'pd_price_dp',
+    'pd_price_member',
+    'pd_prodpv',
+    'pd_qty',
+    'pd_weight',
+    'pd_psweight',
+    'pd_pswidth',
+    'pd_pslenght',
+    'pd_psheight',
+    'pd_description',
+    'pd_specifications',
+    'pd_material',
+    'pd_warranty',
+    'pd_assembly_required',
+    'pd_image',
+    'pd_images',
+    'pd_type',
+    'pd_status',
+    'pd_pricing_tier',
+    'pd_reversed_pv_multiplier',
+    'pd_musthave',
+    'pd_bestseller',
+    'pd_salespromo',
+    'pd_verified',
+    'pd_manual_checkout_enabled',
+  ]
+
+  const csvRows = [
+    headers.join(','),
+    ...products.map((product) => {
+      const row = [
+        `"${(product.name || '').replace(/"/g, '""')}"`,
+        product.sku,
+        product.catid,
+        product.roomType || '',
+        product.brandType || '',
+        product.catsubid,
+        product.priceSrp,
+        product.priceDp,
+        product.priceMember || '',
+        product.prodpv || '',
+        product.qty,
+        product.weight,
+        product.psweight || '',
+        product.pswidth || '',
+        product.pslenght || '',
+        product.psheight || '',
+        `"${(product.description || '').replace(/"/g, '""')}"`,
+        `"${(product.specifications || '').replace(/"/g, '""')}"`,
+        product.material || '',
+        product.warranty || '',
+        product.assemblyRequired || '',
+        product.image || '',
+        (product.images || []).join('|'),
+        product.type,
+        product.status,
+        '',
+        '',
+        product.musthave,
+        product.bestseller,
+        product.salespromo,
+        product.verified || '',
+        product.manualCheckoutEnabled || '',
+      ]
+      return row.join(',')
+    }),
+  ]
+
+  const csvContent = csvRows.join('\n')
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+  const link = document.createElement('a')
+  const url = URL.createObjectURL(blob)
+  link.setAttribute('href', url)
+  link.setAttribute('download', `products-export-${new Date().toISOString().split('T')[0]}.csv`)
+  link.style.visibility = 'hidden'
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
+
+  showSuccessToast(`Exported ${products.length} products to CSV`)
+}
+
 const mapCachedZqProductToLocalRow = (product: ZqCachedProduct): Product => ({
   id: -Number(product.id || 0),
   supplierId: 0,
@@ -550,10 +647,6 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
   const [createdProducts, setCreatedProducts] = useState<Product[]>([])
   const [useInitialData,  setUseInitialData]  = useState(Boolean(initialData))
   const [userPerPage, setUserPerPage] = useState(25)
-  const [showExportModal, setShowExportModal] = useState(false)
-  const [exportFormat, setExportFormat] = useState('csv')
-  const [exportRecordCount, setExportRecordCount] = useState('25')
-  const [showExportLink, setShowExportLink] = useState(false)
   const defaultPerPage = 25
   const searchPerPage = 500
   const perPage = debouncedSearch ? searchPerPage : userPerPage
@@ -1533,9 +1626,14 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
                 </svg>
               </div>
-              <p className="text-sm text-slate-700">
-                Export products
-              </p>
+              <div>
+                <p className="text-sm text-slate-700">
+                  Export products
+                </p>
+                <p className="text-[10px] text-slate-400">
+                  Only filtered products (by category, brand, supplier) will be exported
+                </p>
+              </div>
             </div>
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2">
@@ -1551,125 +1649,17 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
                   <option value={200}>200</option>
                   <option value={500}>500</option>
                   <option value={1000}>1000</option>
+                  <option value="all">All</option>
                 </select>
               </div>
-              <PrimaryButton onClick={() => setShowExportModal(true)}>
-                Export Data
+              <PrimaryButton onClick={() => exportToCSV(visibleProducts)}>
+                Export CSV
+              </PrimaryButton>
+              <PrimaryButton onClick={() => {}}>
+                Export Spreadsheet
               </PrimaryButton>
             </div>
           </div>
-
-          {/* Export Modal */}
-          <AnimatePresence>
-            {showExportModal && (
-              <Fragment key="export-modal-content">
-                <motion.div
-                  key="export-modal-backdrop"
-                  initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                  onClick={() => setShowExportModal(false)}
-                  className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
-                />
-
-                <div className="fixed inset-0 z-50 flex items-end justify-center p-0 sm:items-center sm:p-5">
-                  <motion.div
-                    key="export-modal"
-                    initial={{ opacity: 0, scale: 0.95, y: 12 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.95, y: 12 }}
-                    transition={{ duration: 0.2, ease: 'easeOut' }}
-                    onClick={e => e.stopPropagation()}
-                    className="w-full max-w-2xl max-h-[90vh] overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900 sm:max-h-[85vh]"
-                  >
-                    <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-5 dark:border-slate-800">
-                      <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-teal-600">Export</p>
-                        <h2 className="mt-1 text-lg font-bold text-slate-900 dark:text-white">Export Products</h2>
-                        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                          Choose your export format and data range
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setShowExportModal(false)}
-                        className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
-                      >
-                        Close
-                      </button>
-                    </div>
-
-                    <div className="p-6 space-y-6">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-2">Export Format</label>
-                          <select 
-                            value={exportFormat}
-                            onChange={(e) => {
-                              setExportFormat(e.target.value)
-                              setShowExportLink(false)
-                            }}
-                            className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 focus:border-sky-400 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
-                          >
-                            <option value="csv">CSV</option>
-                            <option value="spreadsheet">Spreadsheet</option>
-                          </select>
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-2">Number of Records</label>
-                          <select 
-                            value={exportRecordCount}
-                            onChange={(e) => setExportRecordCount(e.target.value)}
-                            className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 focus:border-sky-400 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
-                          >
-                            <option value={25}>25 records</option>
-                            <option value={50}>50 records</option>
-                            <option value={100}>100 records</option>
-                            <option value={200}>200 records</option>
-                            <option value={500}>500 records</option>
-                            <option value={1000}>1000 records</option>
-                            <option value="all">All records</option>
-                          </select>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-3">
-                        <PrimaryButton 
-                          onClick={() => {
-                            if (exportFormat === 'spreadsheet') {
-                              setShowExportLink(true)
-                            }
-                          }}
-                        >
-                          Export
-                        </PrimaryButton>
-                        {showExportLink && exportFormat === 'spreadsheet' && (
-                          <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-50 border border-emerald-200">
-                            <svg className="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
-                            </svg>
-                            <a href="#" className="text-sm font-medium text-emerald-700 hover:text-emerald-800">
-                              https://docs.google.com/spreadsheets/d/example-export-link
-                            </a>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="flex justify-end pt-4 border-t border-slate-100 dark:border-slate-800">
-                        <button
-                          onClick={() => {
-                            setShowExportModal(false)
-                            setShowExportLink(false)
-                          }}
-                          className="rounded-xl border border-slate-200 bg-white px-6 py-3 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
-                        >
-                          Close
-                        </button>
-                      </div>
-                    </div>
-                  </motion.div>
-                </div>
-              </Fragment>
-            )}
-          </AnimatePresence>
 
           <DataTableShell
             title={showZqSupplierInline ? 'ZQ Product Table' : undefined}
