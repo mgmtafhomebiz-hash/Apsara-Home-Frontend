@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useRef, useState } from 'react'
-import { BulkImportProductsPayload, BulkImportProductsResponse, BulkImportProductsRow, CreateProductVariantPayload, useBulkImportProductsMutation } from '@/store/api/productsApi'
+import { BulkImportProductsPayload, BulkImportProductsResponse, BulkImportProductsRow, CreateProductVariantPayload, useBulkImportProductsMutation, useLazyGetProductsQuery } from '@/store/api/productsApi'
 import { useGetCategoriesQuery } from '@/store/api/categoriesApi'
 import { useGetProductBrandsQuery } from '@/store/api/productBrandsApi'
 import { showErrorToast, showSuccessToast } from '@/libs/toast'
@@ -683,9 +683,11 @@ export default function BulkProductImportPanel({ onClose, onImported }: BulkProd
   const { data: categoryData } = useGetCategoriesQuery({ per_page: 500 })
   const { data: brandData } = useGetProductBrandsQuery({ search: '' })
   const [importProducts, { isLoading }] = useBulkImportProductsMutation()
+  const [fetchProducts, { data: existingProductsData }] = useLazyGetProductsQuery()
 
   const categoryLookup = useMemo(() => categoryData?.categories ?? [], [categoryData])
   const brandLookup = useMemo(() => brandData?.brands ?? [], [brandData])
+  const existingProducts = useMemo(() => existingProductsData?.products ?? [], [existingProductsData])
 
   const parsedResult = useMemo(() => {
     if (!csvText.trim()) return null
@@ -749,6 +751,51 @@ export default function BulkProductImportPanel({ onClose, onImported }: BulkProd
       return normalizedRow as BulkImportProductsRow
     })
   }, [brandLookup, categoryLookup, parsed])
+
+  // Fetch existing products when CSV is loaded
+  useMemo(() => {
+    if (parsed && parsed.rows.length > 0) {
+      fetchProducts({ perPage: 1000 })
+    }
+  }, [parsed, fetchProducts])
+
+  // Analyze import data
+  const importAnalysis = useMemo(() => {
+    if (!parsed || parsed.rows.length === 0) return null
+
+    const rows = normalizedRows ?? parsed.rows
+    const existingSkus = new Set(existingProducts.map((p) => String(p.sku)))
+    
+    let newProducts = 0
+    let updatedProducts = 0
+    let variantsInNewProducts = 0
+    let variantsInUpdatedProducts = 0
+    let totalVariants = 0
+
+    rows.forEach((row) => {
+      const isExisting = existingSkus.has(String(row.pd_parent_sku))
+      const variantCount = row.pd_variants?.length ?? 0
+      
+      if (isExisting) {
+        updatedProducts++
+        variantsInUpdatedProducts += variantCount
+      } else {
+        newProducts++
+        variantsInNewProducts += variantCount
+      }
+      totalVariants += variantCount
+    })
+
+    return {
+      totalRows: rows.length,
+      newProducts,
+      updatedProducts,
+      variantsInNewProducts,
+      variantsInUpdatedProducts,
+      totalVariants,
+      productsWithoutVariants: rows.filter((r) => !r.pd_variants || r.pd_variants.length === 0).length,
+    }
+  }, [parsed, normalizedRows, existingProducts])
 
   const previewRows = useMemo(
     () =>
@@ -1269,23 +1316,52 @@ export default function BulkProductImportPanel({ onClose, onImported }: BulkProd
 
         {parsed ? (
           <div className="space-y-4">
-            <div className="grid gap-3 sm:grid-cols-3">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3">
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Rows Ready</p>
-                <p className="mt-1 text-2xl font-bold text-slate-800">{parsed.rows.length}</p>
-                <p className="text-xs text-slate-500">Products detected in this CSV</p>
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">New Products</p>
+                <p className="mt-1 text-2xl font-bold text-emerald-600">{importAnalysis?.newProducts ?? 0}</p>
+                <p className="text-xs text-slate-500">Will be created</p>
               </div>
               <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3">
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Columns Found</p>
-                <p className="mt-1 text-2xl font-bold text-slate-800">{parsed.headers.length}</p>
-                <p className="text-xs text-slate-500">CSV headers recognized</p>
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Updated Products</p>
+                <p className="mt-1 text-2xl font-bold text-blue-600">{importAnalysis?.updatedProducts ?? 0}</p>
+                <p className="text-xs text-slate-500">Will be updated</p>
+              </div>
+              <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Total Variants</p>
+                <p className="mt-1 text-2xl font-bold text-violet-600">{importAnalysis?.totalVariants ?? 0}</p>
+                <p className="text-xs text-slate-500">Across all products</p>
               </div>
               <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3">
                 <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Mode</p>
                 <p className="mt-1 text-lg font-bold text-slate-800">{importMode === 'create_or_update' ? 'Create or Update' : 'Create Only'}</p>
-                <p className="text-xs text-slate-500">Import behavior for matching SKU</p>
+                <p className="text-xs text-slate-500">Import behavior</p>
               </div>
             </div>
+
+            {importAnalysis && (
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 mb-2">Import Breakdown</p>
+                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4 text-xs">
+                  <div>
+                    <span className="text-slate-600">Variants in new products:</span>
+                    <span className="ml-2 font-semibold text-emerald-600">{importAnalysis.variantsInNewProducts}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-600">Variants in updated products:</span>
+                    <span className="ml-2 font-semibold text-blue-600">{importAnalysis.variantsInUpdatedProducts}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-600">Products without variants:</span>
+                    <span className="ml-2 font-semibold text-slate-700">{importAnalysis.productsWithoutVariants}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-600">Total rows:</span>
+                    <span className="ml-2 font-semibold text-slate-700">{importAnalysis.totalRows}</span>
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
               <div className="border-b border-slate-100 px-4 py-3 flex items-start justify-between gap-3">
