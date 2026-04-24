@@ -19,7 +19,7 @@ export default function Header({ cartCount }: HeaderProps) {
   const { status } = useSession();
   const pathname = usePathname();
   const isHome = pathname === '/';
-  const userHref = status === 'authenticated' ? '/shop' : '/login';
+  const userHref = status === 'authenticated' ? '/profile' : '/login';
 
   useEffect(() => {
     const handleScroll = () => {

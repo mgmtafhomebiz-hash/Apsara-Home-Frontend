@@ -19,6 +19,7 @@ import BulkEditProductsModal from './BulkEditProductsModal'
 import ProductActivityLogsModal from './ProductActivityLogsModal'
 import { showErrorToast, showSuccessToast } from '@/libs/toast'
 import { revalidateStorefront } from '@/libs/revalidateStorefront'
+import { buildStorefrontProductPath } from '@/libs/storefrontRouting'
 
 interface ProductsPageMainProps {
   initialData?: ProductsResponse | null
@@ -1536,13 +1537,15 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
               selectedIds={selectedIds}
               onToggleSelect={handleToggleSelect}
               onToggleSelectAll={handleToggleSelectAll}
-              onViewManualCheckout={(product) => {
+              onViewProduct={(product) => {
                 if (showZqSupplierInline) {
                   const previewBasePath = isSupplierPortal ? '/supplier/products/zq-preview' : '/admin/products/zq-preview'
-                  router.push(`${previewBasePath}/${product.sku}`)
+                  window.open(`${previewBasePath}/${product.sku}`, '_blank', 'noopener,noreferrer')
                   return
                 }
-                openManualSelectionModal([product])
+
+                const productPath = buildStorefrontProductPath(product.name, product.id)
+                window.open(productPath, '_blank', 'noopener,noreferrer')
               }}
               readOnly={showZqSupplierInline}
               isLoading={showZqSupplierInline && (isLoadingZqCached || isFetchingZqCached)}
@@ -1589,13 +1592,17 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
 
 function SkeletonTable() {
   return (
-    <div className="bg-white rounded-2xl border border-slate-100 p-4 animate-pulse space-y-3">
+    <div className="space-y-3 rounded-2xl border border-slate-100 bg-white p-4 animate-pulse dark:border-slate-800 dark:bg-slate-950">
       <div className="grid grid-cols-9 gap-3 mb-3">
-        {Array.from({ length: 9 }).map((_, i) => <div key={i} className="h-3 rounded bg-slate-200"/>)}
+        {Array.from({ length: 9 }).map((_, i) => (
+          <div key={i} className="h-3 rounded bg-slate-200 dark:bg-slate-800" />
+        ))}
       </div>
       {Array.from({ length: 8 }).map((_, ri) => (
         <div key={ri} className="grid grid-cols-9 gap-3">
-          {Array.from({ length: 9 }).map((_, ci) => <div key={ci} className="h-8 rounded bg-slate-100"/>)}
+          {Array.from({ length: 9 }).map((_, ci) => (
+            <div key={ci} className="h-8 rounded bg-slate-100 dark:bg-slate-900" />
+          ))}
         </div>
       ))}
     </div>
