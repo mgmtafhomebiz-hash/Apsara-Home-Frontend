@@ -26,7 +26,7 @@ export default function SupplierLayoutShell({ children }: { children: React.Reac
   const [menuOpen, setMenuOpen] = useState(false)
   const [notificationsOpen, setNotificationsOpen] = useState(false)
   const [readNotificationKeys, setReadNotificationKeys] = useState<string[]>([])
-  const { data: session } = useSession()
+  const { data: session, status } = useSession()
   const router = useRouter()
   const { resolvedTheme, setTheme } = useTheme()
 
@@ -108,6 +108,25 @@ export default function SupplierLayoutShell({ children }: { children: React.Reac
       hour: 'numeric',
       minute: '2-digit',
     })
+  }
+
+  useEffect(() => {
+    if (status !== 'unauthenticated') return
+
+    clearAccessTokenCache()
+    router.replace('/supplier/login?session=expired')
+  }, [router, status])
+
+  if (status === 'loading') {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[linear-gradient(180deg,#f6fbff_0%,#eef4fb_42%,#edf2f7_100%)] text-sm text-slate-500 dark:bg-[radial-gradient(circle_at_top,#14263a_0%,#09111d_42%,#050914_100%)] dark:text-slate-300">
+        Loading supplier workspace...
+      </div>
+    )
+  }
+
+  if (status === 'unauthenticated') {
+    return null
   }
 
   return (

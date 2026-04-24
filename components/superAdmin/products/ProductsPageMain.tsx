@@ -296,6 +296,7 @@ function ZqSyncProgressModal({
   isDiscoveringTotal,
   hasSavedCursor,
   hasImportedProducts,
+  importMode,
   onStartImport,
   onStartRescan,
   onCancel,
@@ -314,6 +315,7 @@ function ZqSyncProgressModal({
   isDiscoveringTotal: boolean
   hasSavedCursor: boolean
   hasImportedProducts: boolean
+  importMode: 'resume' | 'rescan'
   onStartImport: () => void
   onStartRescan: () => void
   onCancel: () => void
@@ -323,11 +325,14 @@ function ZqSyncProgressModal({
   const canResumeImport = hasSavedCursor || hasImportedProducts
 
   const totalProcessed = progress.synced + progress.skipped + progress.failed
+  const isResumeMode = importMode === 'resume'
   const progressPercent = !hasStarted
     ? 0
     : totalToImport > 0
       ? Math.min(100, Math.round((totalProcessed / totalToImport) * 100))
-      : 0
+      : isImporting
+        ? 15
+        : 0
 
   return (
     <AnimatePresence>
@@ -390,13 +395,24 @@ function ZqSyncProgressModal({
                 <span>Discovering total products before import starts</span>
               </div>
             ) : null}
+            {!isDiscoveringTotal && isResumeMode && canResumeImport ? (
+              <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+                <span>Resuming from saved checkpoint</span>
+              </div>
+            ) : null}
           </div>
 
           <div className="space-y-5 px-6 py-6">
             <div className="space-y-2">
               <div className="flex items-center justify-between text-sm font-medium text-slate-600">
                 <span>Progress</span>
-                <span>{hasStarted ? `${progressPercent}%` : (isDiscoveringTotal ? 'Counting...' : 'Ready')}</span>
+                <span>
+                  {hasStarted
+                    ? totalToImport > 0
+                      ? `${progressPercent}%`
+                      : (isResumeMode ? 'Resuming...' : `${progressPercent}%`)
+                    : (isDiscoveringTotal ? 'Counting...' : 'Ready')}
+                </span>
               </div>
               <div className="h-3 overflow-hidden rounded-full bg-slate-100">
                 <motion.div
@@ -459,7 +475,9 @@ function ZqSyncProgressModal({
                 {isDiscoveringTotal
                   ? 'We are scanning every available ZQ page first to get the exact total that will be imported.'
                   : hasStarted
-                  ? 'This modal keeps a running count while we fetch all available ZQ products. Existing products already in tbl_zqproducts are skipped automatically.'
+                  ? (isResumeMode
+                      ? 'Resume mode jumps straight to the saved cursor. Existing products are still skipped if they are encountered again.'
+                      : 'This modal keeps a running count while we fetch all available ZQ products. Existing products already in tbl_zqproducts are skipped automatically.')
                   : canResumeImport
                     ? 'The counter will start from the saved checkpoint instead of repeating the earliest imported pages.'
                     : 'The counter will start moving as soon as you click Start Import.'}
@@ -1112,11 +1130,17 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
 
     zqImportCancelRef.current = false
     setZqImportMode(mode)
-    const total = await discoverZqTotal(mode)
-    if (zqImportCancelRef.current || total <= 0) {
-      setShowZqSyncModal(false)
-      setHasStartedZqImport(false)
-      return
+    let total = 0
+
+    if (mode === 'rescan') {
+      total = await discoverZqTotal(mode)
+      if (zqImportCancelRef.current || total <= 0) {
+        setShowZqSyncModal(false)
+        setHasStartedZqImport(false)
+        return
+      }
+    } else {
+      setZqTotalToImport(0)
     }
 
     setHasStartedZqImport(true)
@@ -1137,7 +1161,7 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
 
         const result = await syncZqProducts({
           cursor: cursor ?? undefined,
-          size: 1,
+          size: mode === 'resume' ? 100 : 1,
           resumeFromSaved: cursor === null && mode === 'resume',
           resetCursor: cursor === null && mode === 'rescan',
         }).unwrap()
@@ -1542,6 +1566,7 @@ export default function ProductsPageMain({ initialData = null, initialBrandType 
         isDiscoveringTotal={isDiscoveringZqTotal}
         hasSavedCursor={Boolean(zqSummaryData?.has_saved_cursor)}
         hasImportedProducts={Number(zqSummaryData?.total ?? 0) > 0}
+        importMode={zqImportMode}
         onStartImport={() => {
           void syncAllZqProducts('resume')
         }}
