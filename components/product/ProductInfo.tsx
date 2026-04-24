@@ -626,9 +626,9 @@ const ProductInfo = ({
     const variantSrp = toPositiveNumber(selectedVariant?.priceSrp) ?? baseSrp;
     const variantMember = toPositiveNumber(selectedVariant?.priceMember) ?? toPositiveNumber(product.priceMember) ?? 0;
     const hasMemberPrice = variantMember > 0 && variantMember < variantSrp;
-    const shouldUseMemberPrice = hasMemberPrice && canUseMemberPrice && !forceRealPrice;
-    const displayPrice = shouldUseMemberPrice ? variantMember : variantSrp;
-    const displayOriginalPrice = shouldUseMemberPrice
+    const shouldDisplayMemberPrice = hasMemberPrice && !forceRealPrice;
+    const displayPrice = shouldDisplayMemberPrice ? variantMember : variantSrp;
+    const displayOriginalPrice = shouldDisplayMemberPrice
         ? variantSrp
         : (!forceRealPrice && product.originalPrice && product.originalPrice > variantSrp ? product.originalPrice : undefined);
     const totalVariantStock = getEffectiveVariantStock(variantOptions);
