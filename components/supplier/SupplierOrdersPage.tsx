@@ -11,14 +11,14 @@ import {
 } from '@/store/api/supplierOrdersApi'
 
 const statConfig = [
-  { key: 'total', label: 'Total Orders', icon: 'clipboard', accent: 'text-slate-500', ring: 'bg-slate-100 border-slate-200' },
-  { key: 'toPay', label: 'To Pay', icon: 'clock', accent: 'text-amber-600', ring: 'bg-amber-50 border-amber-200' },
-  { key: 'toShip', label: 'To Ship', icon: 'sync', accent: 'text-blue-600', ring: 'bg-blue-50 border-blue-200' },
-  { key: 'toReceive', label: 'To Receive', icon: 'box', accent: 'text-indigo-600', ring: 'bg-indigo-50 border-indigo-200' },
-  { key: 'completed', label: 'Completed', icon: 'check', accent: 'text-emerald-600', ring: 'bg-emerald-50 border-emerald-200' },
-  { key: 'cancelled', label: 'Cancelled', icon: 'x', accent: 'text-rose-600', ring: 'bg-rose-50 border-rose-200' },
-  { key: 'return', label: 'Return', icon: 'undo', accent: 'text-teal-600', ring: 'bg-teal-50 border-teal-200' },
-]
+  { key: 'total', label: 'Total Orders', icon: 'clipboard', accent: 'text-slate-500 dark:text-slate-300', ring: 'bg-slate-100 border-slate-200 dark:bg-slate-800 dark:border-slate-700' },
+  { key: 'toPay', label: 'To Pay', icon: 'clock', accent: 'text-amber-600 dark:text-amber-300', ring: 'bg-amber-50 border-amber-200 dark:bg-amber-500/10 dark:border-amber-500/20' },
+  { key: 'toShip', label: 'To Ship', icon: 'sync', accent: 'text-blue-600 dark:text-blue-300', ring: 'bg-blue-50 border-blue-200 dark:bg-blue-500/10 dark:border-blue-500/20' },
+  { key: 'toReceive', label: 'To Receive', icon: 'box', accent: 'text-indigo-600 dark:text-indigo-300', ring: 'bg-indigo-50 border-indigo-200 dark:bg-indigo-500/10 dark:border-indigo-500/20' },
+  { key: 'completed', label: 'Completed', icon: 'check', accent: 'text-emerald-600 dark:text-emerald-300', ring: 'bg-emerald-50 border-emerald-200 dark:bg-emerald-500/10 dark:border-emerald-500/20' },
+  { key: 'cancelled', label: 'Cancelled', icon: 'x', accent: 'text-rose-600 dark:text-rose-300', ring: 'bg-rose-50 border-rose-200 dark:bg-rose-500/10 dark:border-rose-500/20' },
+  { key: 'return', label: 'Return', icon: 'undo', accent: 'text-teal-600 dark:text-teal-300', ring: 'bg-teal-50 border-teal-200 dark:bg-teal-500/10 dark:border-teal-500/20' },
+] as const
 
 const fulfillmentOptions: Array<{ value: SupplierFulfillmentStatus; label: string }> = [
   { value: 'processing', label: 'Processing' },
@@ -251,16 +251,16 @@ export default function SupplierOrdersPage() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+      <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950">
         <div className="mb-5 flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.22em] text-cyan-700">ZQ Supplier Workspace</p>
-            <h1 className="mt-1 text-2xl font-bold text-slate-900">Supplier order fulfillment</h1>
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-500">
+            <h1 className="mt-1 text-2xl font-bold text-slate-900 dark:text-slate-100">Supplier order fulfillment</h1>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-500 dark:text-slate-400">
               Dito i-aacknowledge ng supplier ang paid orders, ilalagay ang courier at tracking number, at ia-update ang fulfillment progress hanggang delivery.
             </p>
           </div>
-          <div className="rounded-2xl border border-cyan-200 bg-cyan-50 px-4 py-3 text-sm text-cyan-900">
+          <div className="rounded-2xl border border-cyan-200 bg-cyan-50 px-4 py-3 text-sm text-cyan-900 dark:border-cyan-500/20 dark:bg-cyan-500/10 dark:text-cyan-100">
             <strong className="block">Workflow</strong>
             <span>Approve sa admin, then supplier na ang bahala sa pack, ship, at tracking.</span>
           </div>
@@ -268,23 +268,23 @@ export default function SupplierOrdersPage() {
 
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
           {statConfig.map((stat) => (
-            <div key={stat.key} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div key={stat.key} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
               <div className="flex items-center gap-3">
                 <div className={`flex h-10 w-10 items-center justify-center rounded-xl border ${stat.ring}`}>
                   <StatIcon name={stat.icon} className={`h-5 w-5 ${stat.accent}`} />
                 </div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{stat.label}</p>
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">{stat.label}</p>
               </div>
-              <p className="mt-3 text-2xl font-bold text-slate-900">{counts[stat.key as keyof typeof counts]}</p>
+              <p className="mt-3 text-2xl font-bold text-slate-900 dark:text-slate-100">{counts[stat.key as keyof typeof counts]}</p>
             </div>
           ))}
         </div>
       </section>
 
-      <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+      <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-950">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex flex-1 items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-            <svg className="h-4 w-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6}>
+          <div className="flex flex-1 items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-900">
+            <svg className="h-4 w-4 text-slate-400 dark:text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6}>
               <circle cx="11" cy="11" r="7" />
               <path d="m20 20-3.5-3.5" />
             </svg>
@@ -292,7 +292,7 @@ export default function SupplierOrdersPage() {
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               placeholder="Search checkout ID, customer, product..."
-              className="w-full bg-transparent text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none"
+              className="w-full bg-transparent text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none dark:text-slate-200 dark:placeholder:text-slate-500"
             />
           </div>
 
@@ -303,7 +303,7 @@ export default function SupplierOrdersPage() {
                 setUserSelectedFilter(true)
                 setFilter(event.target.value)
               }}
-              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-600 shadow-sm"
+              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-600 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
             >
               <option value="to_pay">To Pay</option>
               <option value="to_ship">To Ship</option>
@@ -314,24 +314,24 @@ export default function SupplierOrdersPage() {
               <option value="all">All Orders</option>
             </select>
 
-            <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-500">
+            <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
               {orders.length} orders
             </span>
           </div>
         </div>
       </section>
 
-      <section className="rounded-3xl border border-slate-200 bg-white p-0 shadow-sm">
-        <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
-          <h2 className="text-base font-semibold text-slate-900">Order Queue</h2>
-          <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-500">
+      <section className="rounded-3xl border border-slate-200 bg-white p-0 shadow-sm dark:border-slate-800 dark:bg-slate-950">
+        <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4 dark:border-slate-800">
+          <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">Order Queue</h2>
+          <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
             {orders.length} orders
           </span>
         </div>
 
         <div className="overflow-x-auto">
           <table className="min-w-[1380px] w-full text-left text-sm">
-            <thead className="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-400">
+            <thead className="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-400 dark:bg-slate-900 dark:text-slate-500">
               <tr>
                 <th className="px-6 py-3">Checkout</th>
                 <th className="px-6 py-3">Date</th>
@@ -347,7 +347,7 @@ export default function SupplierOrdersPage() {
             <tbody>
               {isLoading ? (
                 <tr>
-                  <td colSpan={9} className="px-6 py-16 text-center text-sm text-slate-500">
+                  <td colSpan={9} className="px-6 py-16 text-center text-sm text-slate-500 dark:text-slate-400">
                     Loading orders...
                   </td>
                 </tr>
@@ -359,7 +359,7 @@ export default function SupplierOrdersPage() {
                 </tr>
               ) : orders.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="px-6 py-16 text-center text-sm text-slate-500">
+                  <td colSpan={9} className="px-6 py-16 text-center text-sm text-slate-500 dark:text-slate-400">
                     No orders yet. New supplier orders will appear here once customers start checking out.
                   </td>
                 </tr>
@@ -374,56 +374,56 @@ export default function SupplierOrdersPage() {
                   }
 
                   return (
-                    <tr key={order.id} className="border-t border-slate-100 align-top">
+                    <tr key={order.id} className="border-t border-slate-100 align-top dark:border-slate-800">
                       <td className="px-6 py-4">
-                        <p className="font-semibold text-slate-900">{order.checkout_id || `#${order.id}`}</p>
-                        <p className="text-xs text-slate-400">{order.payment_method ?? '—'}</p>
+                        <p className="font-semibold text-slate-900 dark:text-slate-100">{order.checkout_id || `#${order.id}`}</p>
+                        <p className="text-xs text-slate-400 dark:text-slate-500">{order.payment_method ?? '—'}</p>
                       </td>
 
-                      <td className="px-6 py-4 text-sm text-slate-600">
+                      <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">
                         <p>{formatDateTime(order.created_at)}</p>
-                        <p className="mt-1 text-xs text-slate-400">Paid: {formatDateTime(order.paid_at)}</p>
+                        <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">Paid: {formatDateTime(order.paid_at)}</p>
                       </td>
 
                       <td className="px-6 py-4">
-                        <p className="font-semibold text-slate-900">{order.customer_name ?? 'Customer'}</p>
-                        <p className="text-xs text-slate-400">{order.customer_email ?? ''}</p>
-                        <p className="mt-1 text-xs text-slate-400">{order.customer_phone ?? ''}</p>
+                        <p className="font-semibold text-slate-900 dark:text-slate-100">{order.customer_name ?? 'Customer'}</p>
+                        <p className="text-xs text-slate-400 dark:text-slate-500">{order.customer_email ?? ''}</p>
+                        <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">{order.customer_phone ?? ''}</p>
                       </td>
 
                       <td className="px-6 py-4">
-                        <p className="font-semibold text-slate-900">{order.product_name}</p>
-                        <p className="text-xs text-slate-400">Qty: {order.quantity}</p>
-                        <p className="mt-1 text-xs text-slate-400">{order.product_description ?? 'No product description'}</p>
+                        <p className="font-semibold text-slate-900 dark:text-slate-100">{order.product_name}</p>
+                        <p className="text-xs text-slate-400 dark:text-slate-500">Qty: {order.quantity}</p>
+                        <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">{order.product_description ?? 'No product description'}</p>
                       </td>
 
                       <td className="px-6 py-4">
-                        <p className="font-semibold text-slate-900">{formatMoney(order.amount)}</p>
-                        <p className="mt-1 text-xs text-slate-400">{getSupplierStatusLabel(order)}</p>
+                        <p className="font-semibold text-slate-900 dark:text-slate-100">{formatMoney(order.amount)}</p>
+                        <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">{getSupplierStatusLabel(order)}</p>
                       </td>
 
                       <td className="px-6 py-4">
                         <span
                           className={`rounded-full px-3 py-1 text-xs font-semibold ${
                             canManage
-                              ? 'border border-emerald-200 bg-emerald-50 text-emerald-700'
-                              : 'border border-amber-200 bg-amber-50 text-amber-700'
+                              ? 'border border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-200'
+                              : 'border border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-200'
                           }`}
                         >
                           {order.approval_status ?? 'Pending'}
                         </span>
                         {order.approval_notes ? (
-                          <p className="mt-2 max-w-[220px] text-xs leading-5 text-slate-500">{order.approval_notes}</p>
+                          <p className="mt-2 max-w-[220px] text-xs leading-5 text-slate-500 dark:text-slate-400">{order.approval_notes}</p>
                         ) : null}
                       </td>
 
                       <td className="px-6 py-4">
                         <div className="space-y-3">
                           <div>
-                            <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                            <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
                               Current
                             </p>
-                            <p className="text-sm font-semibold capitalize text-slate-900">
+                            <p className="text-sm font-semibold capitalize text-slate-900 dark:text-slate-100">
                               {(order.fulfillment_status ?? 'pending').replace(/_/g, ' ')}
                             </p>
                           </div>
@@ -437,7 +437,7 @@ export default function SupplierOrdersPage() {
                                 [order.id]: event.target.value as SupplierFulfillmentStatus,
                               }))
                             }
-                            className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 disabled:cursor-not-allowed disabled:bg-slate-100"
+                            className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 disabled:cursor-not-allowed disabled:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:disabled:bg-slate-800"
                           >
                             {fulfillmentOptions.map((option) => (
                               <option key={option.value} value={option.value}>
@@ -450,7 +450,7 @@ export default function SupplierOrdersPage() {
                             type="button"
                             disabled={!canManage || isBusy}
                             onClick={() => handleSaveFulfillment(order.id)}
-                            className="w-full rounded-xl bg-slate-900 px-3 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+                            className="w-full rounded-xl bg-slate-900 px-3 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300 dark:bg-cyan-500 dark:text-slate-950 dark:hover:bg-cyan-400 dark:disabled:bg-slate-700 dark:disabled:text-slate-400"
                           >
                             Save status
                           </button>
@@ -473,7 +473,7 @@ export default function SupplierOrdersPage() {
                                 }))
                               }
                               placeholder="Courier e.g. ZQ / J&T / LBC"
-                              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 disabled:cursor-not-allowed disabled:bg-slate-100"
+                              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 disabled:cursor-not-allowed disabled:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:placeholder:text-slate-500 dark:disabled:bg-slate-800"
                             />
 
                             <input
@@ -489,7 +489,7 @@ export default function SupplierOrdersPage() {
                                 }))
                               }
                               placeholder="Tracking number"
-                              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 disabled:cursor-not-allowed disabled:bg-slate-100"
+                              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 disabled:cursor-not-allowed disabled:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:placeholder:text-slate-500 dark:disabled:bg-slate-800"
                             />
 
                             <select
@@ -504,7 +504,7 @@ export default function SupplierOrdersPage() {
                                   },
                                 }))
                               }
-                              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 disabled:cursor-not-allowed disabled:bg-slate-100"
+                              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 disabled:cursor-not-allowed disabled:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:disabled:bg-slate-800"
                             >
                               {shipmentOptions.map((option) => (
                                 <option key={option.value} value={option.value}>
@@ -514,7 +514,7 @@ export default function SupplierOrdersPage() {
                             </select>
                           </div>
 
-                          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-500">
+                          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
                             <p><strong>Current courier:</strong> {order.courier ?? '—'}</p>
                             <p className="mt-1"><strong>Current tracking:</strong> {order.tracking_no ?? '—'}</p>
                             <p className="mt-1"><strong>Shipment status:</strong> {(order.shipment_status ?? '—').replace(/_/g, ' ')}</p>
@@ -528,12 +528,12 @@ export default function SupplierOrdersPage() {
                             type="button"
                             disabled={!canManage || isBusy}
                             onClick={() => handleSaveTracking(order.id)}
-                            className="rounded-xl bg-cyan-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-cyan-500 disabled:cursor-not-allowed disabled:bg-slate-300"
+                            className="rounded-xl bg-cyan-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-cyan-500 disabled:cursor-not-allowed disabled:bg-slate-300 dark:bg-cyan-500 dark:text-slate-950 dark:hover:bg-cyan-400 dark:disabled:bg-slate-700 dark:disabled:text-slate-400"
                           >
                             Save tracking
                           </button>
 
-                          <div className="max-w-[220px] text-right text-xs text-slate-400">
+                          <div className="max-w-[220px] text-right text-xs text-slate-400 dark:text-slate-500">
                             {canManage
                               ? 'Use this after ZQ or your courier provides the tracking details.'
                               : 'Waiting for admin approval before supplier fulfillment can begin.'}
