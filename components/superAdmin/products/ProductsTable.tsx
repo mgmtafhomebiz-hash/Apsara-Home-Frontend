@@ -419,7 +419,7 @@ export default function ProductsTable({
                       key={product.id}
                       id={product.id}
                       className={cn(
-                        'border-b border-slate-100 dark:border-slate-800 transition-colors hover:bg-slate-50/60 dark:border-slate-800/70 dark:hover:bg-slate-800/40',
+                        'border-b border-slate-200 transition-colors hover:bg-white dark:border-slate-700 dark:hover:bg-slate-900',
                         isSelected ? 'bg-teal-50/40 dark:bg-teal-500/10' : '',
                       )}
                     >
