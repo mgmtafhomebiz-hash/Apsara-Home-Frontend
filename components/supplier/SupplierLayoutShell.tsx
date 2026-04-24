@@ -1,12 +1,14 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { signOut, useSession } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
 import { Bell, LogOut, Menu, MoonStar, Sparkles, SunMedium } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import SupplierSidebar from './SupplierSidebar'
 import { clearAccessTokenCache } from '@/store/api/baseApi'
+import { useGetSupplierOrderNotificationsQuery } from '@/store/api/supplierOrdersApi'
 
 function getInitials(name: string) {
   return (
@@ -23,32 +25,90 @@ function getInitials(name: string) {
 export default function SupplierLayoutShell({ children }: { children: React.ReactNode }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [notificationsOpen, setNotificationsOpen] = useState(false)
+  const [readNotificationKeys, setReadNotificationKeys] = useState<string[]>([])
   const { data: session } = useSession()
+  const router = useRouter()
   const { resolvedTheme, setTheme } = useTheme()
 
   const supplierName = session?.user?.supplierName || session?.user?.name || 'Supplier Account'
   const isMainSupplier = Boolean(session?.user?.isMainSupplier)
   const isDark = resolvedTheme === 'dark'
-
-  const notifications = useMemo(
-    () => [
-      {
-        title: isMainSupplier ? 'Team Access Reminder' : 'Workspace Reminder',
-        body: isMainSupplier
-          ? 'Invite separate supplier users instead of sharing one login across your whole team.'
-          : 'Review your assigned categories before adding new products to the catalog.',
-      },
-      {
-        title: 'Catalog Health',
-        body: 'Check inactive and low-stock items regularly so the storefront stays accurate.',
-      },
-      {
-        title: 'Company Profile',
-        body: 'Keep company contact details updated for smoother coordination with the admin team.',
-      },
-    ],
-    [isMainSupplier],
+  const notificationStorageKey = useMemo(
+    () => `afhome:supplier-notifications:read:${session?.user?.email ?? supplierName}`,
+    [session?.user?.email, supplierName],
   )
+  const { data: notificationsData, isFetching: isNotificationsFetching, isError: isNotificationsError } =
+    useGetSupplierOrderNotificationsQuery(undefined, {
+      pollingInterval: 60000,
+      refetchOnFocus: true,
+      refetchOnReconnect: true,
+    })
+
+  const storedReadNotificationKeys = useMemo(() => {
+    if (typeof window === 'undefined') return []
+
+    try {
+      const stored = window.localStorage.getItem(notificationStorageKey)
+      if (!stored) return []
+
+      const parsed = JSON.parse(stored)
+      return Array.isArray(parsed) ? parsed.filter((entry): entry is string => typeof entry === 'string') : []
+    } catch {
+      return []
+    }
+  }, [notificationStorageKey])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    try {
+      const merged = Array.from(new Set([...storedReadNotificationKeys, ...readNotificationKeys]))
+      window.localStorage.setItem(notificationStorageKey, JSON.stringify(merged))
+    } catch {
+      // Ignore localStorage write failures.
+    }
+  }, [notificationStorageKey, readNotificationKeys, storedReadNotificationKeys])
+
+  const getNotificationReadKey = (item: { id: string; updated_at?: string | null }) => `${item.id}:${item.updated_at ?? ''}`
+  const getNotificationTimestamp = (value?: string | null) => {
+    if (!value) return 0
+    const timestamp = new Date(value).getTime()
+    return Number.isNaN(timestamp) ? 0 : timestamp
+  }
+
+  const notifications = useMemo(() => {
+    const items = notificationsData?.items ?? []
+    const mergedReadKeys = new Set([...storedReadNotificationKeys, ...readNotificationKeys])
+    return [...items].sort((a, b) => {
+      const aRead = mergedReadKeys.has(getNotificationReadKey(a)) ? 1 : 0
+      const bRead = mergedReadKeys.has(getNotificationReadKey(b)) ? 1 : 0
+      if (aRead !== bRead) return aRead - bRead
+      return getNotificationTimestamp(b.updated_at) - getNotificationTimestamp(a.updated_at)
+    })
+  }, [notificationsData?.items, readNotificationKeys, storedReadNotificationKeys])
+
+  const unreadNotificationCount = useMemo(
+    () => {
+      const mergedReadKeys = new Set([...storedReadNotificationKeys, ...readNotificationKeys])
+      return notifications.reduce((total, item) => {
+        const isRead = mergedReadKeys.has(getNotificationReadKey(item))
+        return isRead ? total : total + Math.max(1, item.count ?? 0)
+      }, 0)
+    },
+    [notifications, readNotificationKeys, storedReadNotificationKeys],
+  )
+
+  const formatNotificationTime = (value?: string | null) => {
+    if (!value) return ''
+    const parsed = new Date(value)
+    if (Number.isNaN(parsed.getTime())) return ''
+    return parsed.toLocaleString('en-PH', {
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    })
+  }
 
   return (
     <div className="relative flex min-h-screen overflow-hidden bg-[linear-gradient(180deg,#f6fbff_0%,#eef4fb_42%,#edf2f7_100%)] text-slate-900 dark:bg-[radial-gradient(circle_at_top,#14263a_0%,#09111d_42%,#050914_100%)] dark:text-slate-100">
@@ -122,12 +182,27 @@ export default function SupplierLayoutShell({ children }: { children: React.Reac
               <div className="relative">
                 <button
                   type="button"
-                  onClick={() => setNotificationsOpen((prev) => !prev)}
+                  onClick={() => {
+                    const nextOpen = !notificationsOpen
+                    setNotificationsOpen(nextOpen)
+
+                    if (!nextOpen || !notifications.length) return
+
+                    setReadNotificationKeys((current) => {
+                      const next = new Set(current)
+                      notifications.forEach((item) => next.add(getNotificationReadKey(item)))
+                      return Array.from(next)
+                    })
+                  }}
                   aria-label="Notifications"
                   className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200/80 bg-white/80 text-slate-600 shadow-sm transition hover:border-cyan-200 hover:text-cyan-700 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:border-cyan-500/30 dark:hover:text-cyan-300"
                 >
                   <Bell className="h-5 w-5" />
-                  <span className="absolute right-3 top-3 inline-flex h-2.5 w-2.5 rounded-full bg-cyan-500 ring-2 ring-white dark:ring-slate-950" />
+                  {unreadNotificationCount > 0 ? (
+                    <span className="absolute right-2.5 top-2.5 inline-flex min-h-4 min-w-4 items-center justify-center rounded-full bg-cyan-500 px-1 text-[10px] font-bold leading-none text-white ring-2 ring-white dark:ring-slate-950">
+                      {unreadNotificationCount > 9 ? '9+' : unreadNotificationCount}
+                    </span>
+                  ) : null}
                 </button>
 
                 <AnimatePresence>
@@ -141,25 +216,63 @@ export default function SupplierLayoutShell({ children }: { children: React.Reac
                     >
                       <div className="border-b border-slate-200/70 px-5 py-4 dark:border-white/8">
                         <p className="text-sm font-bold text-slate-900 dark:text-white">Notifications</p>
-                        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Supplier workspace reminders and quick alerts.</p>
+                        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Latest brand-matched supplier orders will appear here.</p>
                       </div>
                       <div className="space-y-3 p-4">
-                        {notifications.map((item, index) => (
-                          <div
-                            key={`${item.title}-${index}`}
-                            className="rounded-2xl border border-slate-200/80 bg-slate-50/80 p-4 dark:border-white/8 dark:bg-white/[0.03]"
-                          >
-                            <div className="flex items-start gap-3">
-                              <span className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl bg-cyan-100 text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-300">
-                                <Bell className="h-4 w-4" />
-                              </span>
-                              <div>
-                                <p className="text-sm font-semibold text-slate-900 dark:text-white">{item.title}</p>
-                                <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">{item.body}</p>
-                              </div>
-                            </div>
+                        {isNotificationsFetching ? (
+                          <div className="rounded-2xl border border-slate-200/80 bg-slate-50/80 p-4 text-xs text-slate-500 dark:border-white/8 dark:bg-white/[0.03] dark:text-slate-400">
+                            Loading supplier notifications...
                           </div>
-                        ))}
+                        ) : isNotificationsError ? (
+                          <div className="rounded-2xl border border-rose-200/80 bg-rose-50/80 p-4 text-xs text-rose-600 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300">
+                            We could not load supplier notifications right now.
+                          </div>
+                        ) : notifications.length ? (
+                          notifications.map((item) => {
+                            const isRead = new Set([...storedReadNotificationKeys, ...readNotificationKeys]).has(getNotificationReadKey(item))
+
+                            return (
+                              <button
+                                key={item.id}
+                                type="button"
+                                onClick={() => {
+                                  setNotificationsOpen(false)
+                                  router.push(item.href)
+                                }}
+                                className={`w-full rounded-2xl border p-4 text-left transition ${
+                                  isRead
+                                    ? 'border-slate-200/80 bg-slate-50/80 hover:border-cyan-200 hover:bg-cyan-50/70 dark:border-white/8 dark:bg-white/[0.03] dark:hover:border-cyan-500/20 dark:hover:bg-cyan-500/10'
+                                    : 'border-cyan-200/80 bg-cyan-50/80 hover:border-cyan-300 hover:bg-cyan-50 dark:border-cyan-500/20 dark:bg-cyan-500/10 dark:hover:border-cyan-400/30 dark:hover:bg-cyan-500/15'
+                                }`}
+                              >
+                                <div className="flex items-start gap-3">
+                                  <span className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl bg-cyan-100 text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-300">
+                                    <Bell className="h-4 w-4" />
+                                  </span>
+                                  <div className="min-w-0 flex-1">
+                                    <div className="flex items-start justify-between gap-3">
+                                      <p className="text-sm font-semibold text-slate-900 dark:text-white">{item.title}</p>
+                                      {!isRead ? <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-cyan-500" /> : null}
+                                    </div>
+                                    <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">{item.description}</p>
+                                    <div className="mt-2 flex items-center gap-2 text-[11px] text-slate-400 dark:text-slate-500">
+                                      <span>{formatNotificationTime(item.updated_at) || 'Recent order'}</span>
+                                      {item.count > 1 ? (
+                                        <span className="rounded-full bg-cyan-100 px-1.5 py-0.5 font-semibold text-cyan-700 dark:bg-cyan-500/15 dark:text-cyan-300">
+                                          +{item.count}
+                                        </span>
+                                      ) : null}
+                                    </div>
+                                  </div>
+                                </div>
+                              </button>
+                            )
+                          })
+                        ) : (
+                          <div className="rounded-2xl border border-slate-200/80 bg-slate-50/80 p-4 text-xs text-slate-500 dark:border-white/8 dark:bg-white/[0.03] dark:text-slate-400">
+                            No brand-matched orders yet. New supplier orders will appear here once customers check out.
+                          </div>
+                        )}
                       </div>
                     </motion.div>
                   ) : null}

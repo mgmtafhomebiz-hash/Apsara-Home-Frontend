@@ -339,6 +339,8 @@ export interface ZqImportPreviewPayload {
   size?: number
   keyword?: string
   status?: string
+  resumeFromSaved?: boolean
+  resetCursor?: boolean
   sourceType?: string[]
   ids?: number[]
 }
@@ -346,6 +348,11 @@ export interface ZqImportPreviewPayload {
 export interface ZqImportPreviewResponse {
   message: string
   request?: Record<string, unknown>
+  cursor?: {
+    used?: string | null
+    saved?: string | null
+    resumed?: boolean
+  }
   zq: Record<string, unknown>
 }
 
@@ -408,6 +415,8 @@ export interface ZqSyncProductsPayload {
   size?: number
   keyword?: string
   status?: string
+  resumeFromSaved?: boolean
+  resetCursor?: boolean
   sourceType?: string[]
   ids?: number[]
 }
@@ -417,10 +426,13 @@ export interface ZqSyncProductsResponse {
   summary: {
     requested: number
     synced: number
+    skipped: number
     failed: number
   }
   hasMore: boolean
   nextCursor?: string | null
+  usedCursor?: string | null
+  savedCursor?: string | null
 }
 
 export interface ZqProductsSummaryResponse {
@@ -428,6 +440,8 @@ export interface ZqProductsSummaryResponse {
   active: number
   inactive: number
   low_stock: number
+  saved_cursor?: string | null
+  has_saved_cursor?: boolean
 }
 
 export interface ImportZqToLocalResponse {
@@ -930,7 +944,16 @@ export const productsApi = baseApi.injectEndpoints({
       query: (body) => ({
         url: '/api/admin/products/zq/fetch-preview',
         method: 'POST',
-        body: body ?? {},
+        body: body
+          ? (() => {
+              const { resumeFromSaved, resetCursor, ...rest } = body
+              return {
+                ...rest,
+                resume_from_saved: resumeFromSaved,
+                reset_cursor: resetCursor,
+              }
+            })()
+          : {},
       }),
     }),
     importZqProducts: builder.mutation<ZqImportProductsResponse, { ids: string[] }>({
@@ -976,7 +999,16 @@ export const productsApi = baseApi.injectEndpoints({
       query: (body) => ({
         url: '/api/admin/products/zq/sync',
         method: 'POST',
-        body: body ?? {},
+        body: body
+          ? (() => {
+              const { resumeFromSaved, resetCursor, ...rest } = body
+              return {
+                ...rest,
+                resume_from_saved: resumeFromSaved,
+                reset_cursor: resetCursor,
+              }
+            })()
+          : {},
       }),
       invalidatesTags: ['Products'],
     }),

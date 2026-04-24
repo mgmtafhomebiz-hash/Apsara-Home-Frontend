@@ -73,6 +73,22 @@ export interface SupplierOrdersResponse {
   }
 }
 
+export interface SupplierNotificationItem {
+  id: string
+  title: string
+  description: string
+  count: number
+  href: string
+  updated_at?: string | null
+  payload?: Record<string, unknown> | null
+}
+
+export interface SupplierNotificationsResponse {
+  unread_count: number
+  items: SupplierNotificationItem[]
+  generated_at: string
+}
+
 interface SupplierOrdersQuery {
   filter?: string
   search?: string
@@ -96,6 +112,13 @@ export const supplierOrdersApi = baseApi.injectEndpoints({
       keepUnusedDataFor: 300,
       providesTags: ['Orders'],
     }),
+    getSupplierOrderNotifications: builder.query<SupplierNotificationsResponse, void>({
+      query: () => ({
+        url: '/api/supplier/orders/notifications',
+        method: 'GET',
+      }),
+      providesTags: ['SupplierNotifications'],
+    }),
     updateSupplierOrderFulfillment: builder.mutation<
       { message: string; order: SupplierOrder },
       { id: number; fulfillment_status: SupplierFulfillmentStatus }
@@ -105,7 +128,7 @@ export const supplierOrdersApi = baseApi.injectEndpoints({
         method: 'PATCH',
         body: { fulfillment_status },
       }),
-      invalidatesTags: ['Orders'],
+      invalidatesTags: ['Orders', 'SupplierNotifications'],
     }),
     updateSupplierOrderTracking: builder.mutation<
       { message: string; order: SupplierOrder },
@@ -116,13 +139,14 @@ export const supplierOrdersApi = baseApi.injectEndpoints({
         method: 'PATCH',
         body,
       }),
-      invalidatesTags: ['Orders'],
+      invalidatesTags: ['Orders', 'SupplierNotifications'],
     }),
   }),
 })
 
 export const {
   useGetSupplierOrdersQuery,
+  useGetSupplierOrderNotificationsQuery,
   useUpdateSupplierOrderFulfillmentMutation,
   useUpdateSupplierOrderTrackingMutation,
 } = supplierOrdersApi
