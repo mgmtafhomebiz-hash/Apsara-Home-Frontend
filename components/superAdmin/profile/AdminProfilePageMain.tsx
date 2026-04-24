@@ -99,7 +99,7 @@ export default function AdminProfilePageMain() {
   const adminIdentityKey = sessionAccessToken
     ? `${String((session?.user as { id?: string } | undefined)?.id ?? 'unknown')}:${sessionAccessToken}`
     : undefined
-  const { data: adminMe, isLoading } = useGetAdminMeQuery(adminIdentityKey, { skip: !sessionAccessToken })
+  const { data: adminMe, isLoading, isFetching } = useGetAdminMeQuery(adminIdentityKey, { skip: !sessionAccessToken })
   const [updateAdminMe, { isLoading: isSavingAvatar }] = useUpdateAdminMeMutation()
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
@@ -114,9 +114,10 @@ export default function AdminProfilePageMain() {
     image?: string | null
   } | undefined
 
-  const name = String(adminMe?.name ?? fallbackUser?.name ?? '').trim() || 'Admin User'
-  const email = String(adminMe?.email ?? fallbackUser?.email ?? '').trim() || 'No email on file'
-  const role = adminMe?.role ?? fallbackUser?.role ?? 'admin'
+  const isRefreshingAdminIdentity = Boolean(sessionAccessToken) && !adminMe && (isLoading || isFetching)
+  const name = String(adminMe?.name ?? fallbackUser?.name ?? '').trim() || (isRefreshingAdminIdentity ? 'Refreshing admin profile...' : 'Admin User')
+  const email = String(adminMe?.email ?? fallbackUser?.email ?? '').trim() || (isRefreshingAdminIdentity ? 'Reloading email and permissions...' : 'No email on file')
+  const role = adminMe?.role ?? fallbackUser?.role ?? ''
   const userLevelId = Number(adminMe?.user_level_id ?? fallbackUser?.userLevelId ?? 0)
   const supplierId = adminMe?.supplier_id ?? fallbackUser?.supplierId ?? null
   const avatarUrl = adminMe?.avatar_url || fallbackUser?.image || ''

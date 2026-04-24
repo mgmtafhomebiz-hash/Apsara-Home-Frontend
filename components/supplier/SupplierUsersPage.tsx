@@ -216,7 +216,7 @@ export default function SupplierUsersPage() {
 
   if (supplierId <= 0) {
     return (
-      <div className="rounded-3xl border border-amber-200 bg-amber-50 p-6 text-sm text-amber-800">
+      <div className="rounded-3xl border border-amber-200 bg-amber-50 p-6 text-sm text-amber-800 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-200">
         This supplier account is not linked to a supplier company yet.
       </div>
     )
@@ -224,18 +224,18 @@ export default function SupplierUsersPage() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-3xl border border-cyan-100 bg-[linear-gradient(135deg,_#ecfeff,_#ffffff_55%,_#f0fdfa)] p-6 shadow-sm">
+      <section className="rounded-3xl border border-cyan-100 bg-[linear-gradient(135deg,_#ecfeff,_#ffffff_55%,_#f0fdfa)] p-6 shadow-sm dark:border-cyan-500/20 dark:bg-[linear-gradient(135deg,rgba(8,47,73,0.92),rgba(2,6,23,0.98)_55%,rgba(6,78,59,0.55))]">
         <p className="text-xs font-bold uppercase tracking-[0.24em] text-cyan-700">Supplier Users</p>
-        <h1 className="mt-3 text-3xl font-bold tracking-tight text-slate-900">Manage your supplier team access.</h1>
-        <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
+        <h1 className="mt-3 text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">Manage your supplier team access.</h1>
+        <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-400">
           Give each staff member their own supplier portal login so they can upload and maintain products safely.
         </p>
       </section>
 
       <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
-        <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-          <p className="text-xs font-bold uppercase tracking-[0.24em] text-slate-400">Invite</p>
-          <h2 className="mt-2 text-lg font-bold text-slate-900">
+        <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950">
+          <p className="text-xs font-bold uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500">Invite</p>
+          <h2 className="mt-2 text-lg font-bold text-slate-900 dark:text-slate-100">
             {isMainSupplier ? 'Create Sub-Supplier User' : 'Invite Access'}
           </h2>
           {isMainSupplier ? (
@@ -269,13 +269,13 @@ export default function SupplierUsersPage() {
               {feedback ? <Feedback type={feedback.type} message={feedback.message} /> : null}
 
               {setupUrl ? (
-                <div className="rounded-2xl border border-cyan-200 bg-cyan-50 p-4">
+                <div className="rounded-2xl border border-cyan-200 bg-cyan-50 p-4 dark:border-cyan-500/20 dark:bg-cyan-500/10">
                   <p className="text-xs font-bold uppercase tracking-[0.18em] text-cyan-700">Setup Link</p>
-                  <p className="mt-2 break-all text-sm text-slate-700">{setupUrl}</p>
+                  <p className="mt-2 break-all text-sm text-slate-700 dark:text-slate-200">{setupUrl}</p>
                   <button
                     type="button"
                     onClick={() => void handleCopy()}
-                    className="mt-3 rounded-xl border border-cyan-200 bg-white px-3 py-2 text-xs font-semibold text-cyan-700 transition hover:bg-cyan-100"
+                    className="mt-3 rounded-xl border border-cyan-200 bg-white px-3 py-2 text-xs font-semibold text-cyan-700 transition hover:bg-cyan-100 dark:border-cyan-500/20 dark:bg-slate-950 dark:text-cyan-200 dark:hover:bg-cyan-500/10"
                   >
                     Copy Link
                   </button>
@@ -291,38 +291,38 @@ export default function SupplierUsersPage() {
               </button>
             </form>
           ) : (
-            <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+            <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-200">
               Only the main supplier account can invite sub-supplier users. This account can still manage products under the assigned categories.
             </div>
           )}
         </section>
 
-        <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <p className="text-xs font-bold uppercase tracking-[0.24em] text-slate-400">Current Team</p>
-              <h2 className="mt-2 text-lg font-bold text-slate-900">Supplier Portal Users</h2>
+              <p className="text-xs font-bold uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500">Current Team</p>
+              <h2 className="mt-2 text-lg font-bold text-slate-900 dark:text-slate-100">Supplier Portal Users</h2>
             </div>
-            <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-600">
+            <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
               {users.length} user{users.length === 1 ? '' : 's'}
             </span>
           </div>
 
           {isLoading ? (
-            <p className="mt-5 text-sm text-slate-500">Loading supplier users...</p>
+            <p className="mt-5 text-sm text-slate-500 dark:text-slate-400">Loading supplier users...</p>
           ) : isError ? (
-            <div className="mt-5 rounded-2xl border border-red-200 bg-red-50 px-4 py-4 text-sm text-red-700">
+            <div className="mt-5 rounded-2xl border border-red-200 bg-red-50 px-4 py-4 text-sm text-red-700 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-200">
               <p>{loadErrorMessage}</p>
               <button
                 type="button"
                 onClick={() => refetch()}
-                className="mt-3 rounded-xl border border-red-200 bg-white px-3 py-2 text-xs font-semibold text-red-700 transition hover:bg-red-100"
+                className="mt-3 rounded-xl border border-red-200 bg-white px-3 py-2 text-xs font-semibold text-red-700 transition hover:bg-red-100 dark:border-red-500/20 dark:bg-slate-950 dark:text-red-200 dark:hover:bg-red-500/10"
               >
                 Retry
               </button>
             </div>
           ) : users.length === 0 ? (
-            <p className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            <p className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-200">
               No supplier users yet.
             </p>
           ) : (
@@ -330,23 +330,23 @@ export default function SupplierUsersPage() {
               {users.map((user) => (
                 <div
                   key={user.id}
-                  className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 sm:flex-row sm:items-center sm:justify-between"
+                  className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 sm:flex-row sm:items-center sm:justify-between dark:border-slate-700 dark:bg-slate-900"
                 >
                   <div>
                     <div className="flex flex-wrap items-center gap-2">
-                      <p className="text-sm font-semibold text-slate-900">{user.fullname || user.username}</p>
+                      <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{user.fullname || user.username}</p>
                       <span
                         className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-semibold ${
                           user.is_main_supplier
-                            ? 'border-cyan-200 bg-cyan-50 text-cyan-700'
-                            : 'border-slate-200 bg-white text-slate-600'
+                            ? 'border-cyan-200 bg-cyan-50 text-cyan-700 dark:border-cyan-500/20 dark:bg-cyan-500/10 dark:text-cyan-200'
+                            : 'border-slate-200 bg-white text-slate-600 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300'
                         }`}
                       >
                         {user.role_label || (user.is_main_supplier ? 'Main Supplier' : 'Sub Supplier')}
                       </span>
                     </div>
-                    <p className="mt-1 text-xs text-slate-500">@{user.username}</p>
-                    <p className="mt-1 text-xs text-slate-500">{user.email || 'No email provided'}</p>
+                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">@{user.username}</p>
+                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{user.email || 'No email provided'}</p>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
                     {/*
@@ -358,7 +358,7 @@ export default function SupplierUsersPage() {
                       type="button"
                       onClick={() => openEdit(user)}
                       disabled={!(isMainSupplier || user.id === currentSupplierUserId)}
-                      className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-cyan-300 hover:text-cyan-700 disabled:cursor-not-allowed disabled:opacity-60"
+                      className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-cyan-300 hover:text-cyan-700 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:hover:border-cyan-500/40 dark:hover:text-cyan-200"
                     >
                       Edit
                     </button>
@@ -389,16 +389,16 @@ export default function SupplierUsersPage() {
 
       {editing ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/30 p-4">
-          <div className="w-full max-w-lg rounded-3xl border border-slate-200 bg-white p-6 shadow-xl">
+          <div className="w-full max-w-lg rounded-3xl border border-slate-200 bg-white p-6 shadow-xl dark:border-slate-800 dark:bg-slate-950">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="text-xs font-bold uppercase tracking-[0.24em] text-slate-400">Edit User</p>
-                <h3 className="mt-2 text-lg font-bold text-slate-900">Update supplier portal user details</h3>
+                <p className="text-xs font-bold uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500">Edit User</p>
+                <h3 className="mt-2 text-lg font-bold text-slate-900 dark:text-slate-100">Update supplier portal user details</h3>
               </div>
               <button
                 type="button"
                 onClick={() => setEditing(null)}
-                className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+                className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
               >
                 Close
               </button>
@@ -454,7 +454,7 @@ export default function SupplierUsersPage() {
                 <button
                   type="button"
                   onClick={() => setEditing(null)}
-                  className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                  className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
                 >
                   Cancel
                 </button>
@@ -466,11 +466,11 @@ export default function SupplierUsersPage() {
 
       {confirmDelete ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/30 p-4">
-          <div className="w-full max-w-md rounded-3xl border border-red-100 bg-white p-6 shadow-xl">
+          <div className="w-full max-w-md rounded-3xl border border-red-100 bg-white p-6 shadow-xl dark:border-red-500/20 dark:bg-slate-950">
             <p className="text-xs font-bold uppercase tracking-[0.24em] text-red-500">Confirm Delete</p>
-            <h3 className="mt-2 text-lg font-bold text-slate-900">Remove supplier user?</h3>
-            <p className="mt-2 text-sm text-slate-600">
-              This will remove access for <span className="font-semibold text-slate-900">{confirmDelete.label}</span>.
+            <h3 className="mt-2 text-lg font-bold text-slate-900 dark:text-slate-100">Remove supplier user?</h3>
+            <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+              This will remove access for <span className="font-semibold text-slate-900 dark:text-slate-100">{confirmDelete.label}</span>.
             </p>
 
             {feedback ? (
@@ -491,10 +491,10 @@ export default function SupplierUsersPage() {
               <button
                 type="button"
                 onClick={() => setConfirmDelete(null)}
-                className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-              >
-                Cancel
-              </button>
+                className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+                >
+                  Cancel
+                </button>
             </div>
           </div>
         </div>
@@ -506,7 +506,7 @@ export default function SupplierUsersPage() {
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block">
-      <span className="mb-2 block text-sm font-semibold text-slate-700">{label}</span>
+      <span className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-200">{label}</span>
       {children}
     </label>
   )
@@ -517,8 +517,8 @@ function Feedback({ type, message }: { type: 'success' | 'error'; message: strin
     <div
       className={`rounded-2xl border px-4 py-3 text-sm ${
         type === 'success'
-          ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-          : 'border-red-200 bg-red-50 text-red-700'
+          ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-200'
+          : 'border-red-200 bg-red-50 text-red-700 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-200'
       }`}
     >
       {message}
@@ -527,4 +527,4 @@ function Feedback({ type, message }: { type: 'success' | 'error'; message: strin
 }
 
 const inputClassName =
-  'w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100'
+  'w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:focus:ring-cyan-500/20'

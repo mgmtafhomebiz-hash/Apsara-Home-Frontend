@@ -245,13 +245,14 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
   const adminIdentityKey = sessionAccessToken
     ? `${String((session?.user as { id?: string } | undefined)?.id ?? 'unknown')}:${sessionAccessToken}`
     : undefined
-  const { data: adminMe } = useGetAdminMeQuery(adminIdentityKey, { skip: !sessionAccessToken })
+  const { data: adminMe, isLoading: isAdminMeLoading, isFetching: isAdminMeFetching } = useGetAdminMeQuery(adminIdentityKey, { skip: !sessionAccessToken })
   const orderCountQueryOptions = { skip: !sessionAccessToken }
   const { data: allOrdersData } = useGetAdminOrdersQuery({ filter: 'all', page: 1, perPage: 1 }, orderCountQueryOptions)
   const resolvedAdminMe = adminMe
-  const displayName = String(resolvedAdminMe?.name ?? session?.user?.name ?? '').trim() || 'Admin'
+  const isRefreshingAdminIdentity = Boolean(sessionAccessToken) && !resolvedAdminMe && (isAdminMeLoading || isAdminMeFetching)
+  const displayName = String(resolvedAdminMe?.name ?? session?.user?.name ?? '').trim() || (isRefreshingAdminIdentity ? 'Refreshing admin...' : 'Admin')
   const displayEmail = String(resolvedAdminMe?.email ?? session?.user?.email ?? '').trim()
-  const displayEmailText = displayEmail || 'No email on file'
+  const displayEmailText = displayEmail || (isRefreshingAdminIdentity ? 'Reloading profile details...' : 'No email on file')
   const effectiveRole = String(resolvedAdminMe?.role ?? sessionRole).toLowerCase()
   const effectiveUserLevelId = Number(resolvedAdminMe?.user_level_id ?? sessionUserLevelId)
   const isSuperAdmin = effectiveRole === 'super_admin' || effectiveUserLevelId === 1
