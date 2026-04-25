@@ -228,6 +228,7 @@ const toCategoryProduct = (row: LooseRecord, apiUrl?: string): CategoryProduct =
   return {
     id,
     name,
+    type: toNumber(row.type ?? row.pd_type),
     createdAt: (row.createdAt ?? row.pd_created_at ?? row.created_at) as string | undefined,
     price,
     priceSrp: srp || undefined,
@@ -237,6 +238,8 @@ const toCategoryProduct = (row: LooseRecord, apiUrl?: string): CategoryProduct =
     originalPrice: toOptionalNumber(row.originalPrice ?? row.pd_original_price),
     image: resolveImageUrl(rawImage, apiUrl),
     images,
+    description: (row.description ?? row.pd_description) as string | undefined,
+    specifications: (row.specifications ?? row.pd_specifications) as string | undefined,
     badge,
     verified: Boolean(row.verified ?? row.pd_verified),
     stock,
@@ -364,4 +367,3 @@ export async function getProductPageData(slug: string): Promise<ProductPageData 
     return null
   }
 }
-

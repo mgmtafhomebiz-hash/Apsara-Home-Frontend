@@ -1,8 +1,8 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { showErrorToast, showSuccessToast } from '@/libs/toast'
-import { useDownloadDatabaseExportMutation, useExportDatabaseMutation, useListDatabaseExportsQuery } from '@/store/api/adminDatabaseApi'
+import { useDeleteDatabaseExportMutation, useDownloadDatabaseExportMutation, useExportDatabaseMutation, useListDatabaseExportsQuery } from '@/store/api/adminDatabaseApi'
 
 type ApiErrorLike = {
   data?: {
@@ -36,13 +36,24 @@ const formatDate = (value?: string) => {
 }
 
 export default function DatabaseExportPage() {
-  const { data, isFetching, refetch } = useListDatabaseExportsQuery()
+  const PER_PAGE = 10
+  const [currentPage, setCurrentPage] = useState(1)
+  const { data, isFetching, refetch } = useListDatabaseExportsQuery({ page: currentPage, per_page: PER_PAGE })
   const [exportDatabase, { isLoading }] = useExportDatabaseMutation()
   const [downloadDatabaseExport] = useDownloadDatabaseExportMutation()
+  const [deleteDatabaseExport, { isLoading: isDeleting }] = useDeleteDatabaseExportMutation()
   const [latestExportPreview, setLatestExportPreview] = useState<string>('')
   const [latestSummary, setLatestSummary] = useState<{ name: string; tables: number; rows: number; size: number; generatedAt: string; previewTable: string } | null>(null)
 
   const exportItems = useMemo(() => data?.exports ?? [], [data?.exports])
+  const exportMeta = data?.meta
+
+  useEffect(() => {
+    const lastPage = exportMeta?.last_page ?? 1
+    if (currentPage > lastPage) {
+      setCurrentPage(lastPage)
+    }
+  }, [currentPage, exportMeta?.last_page])
 
   const handleDownload = async (path: string, fileName?: string) => {
     try {
@@ -85,10 +96,25 @@ export default function DatabaseExportPage() {
       }
 
       showSuccessToast(response.message || 'Database exported successfully.')
+      setCurrentPage(1)
       await refetch()
     } catch (error: unknown) {
       const apiError = error as ApiErrorLike
       showErrorToast(apiError?.data?.message || 'Failed to export database.')
+    }
+  }
+
+  const handleDelete = async (path: string, fileName: string) => {
+    const confirmed = window.confirm(`Delete export file "${fileName}"? This cannot be undone.`)
+    if (!confirmed) return
+
+    try {
+      const response = await deleteDatabaseExport({ path }).unwrap()
+      showSuccessToast(response.message || 'Export file deleted successfully.')
+      await refetch()
+    } catch (error: unknown) {
+      const apiError = error as ApiErrorLike
+      showErrorToast(apiError?.data?.message || 'Failed to delete export file.')
     }
   }
 
@@ -135,10 +161,12 @@ export default function DatabaseExportPage() {
 
       <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
         <h2 className="text-lg font-bold text-slate-900">Export History</h2>
+        <p className="mt-1 text-xs text-slate-500">Showing 10 exports per page.</p>
         {exportItems.length === 0 ? (
           <p className="mt-3 text-sm text-slate-500">No exports yet.</p>
         ) : (
-          <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200">
+          <div className="mt-4 space-y-3">
+            <div className="overflow-hidden rounded-2xl border border-slate-200">
             <div className="grid grid-cols-[1.6fr_0.7fr_0.9fr_0.6fr] bg-slate-50 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
               <span>File</span>
               <span>Size</span>
@@ -151,7 +179,7 @@ export default function DatabaseExportPage() {
                   <span className="truncate font-medium">{item.name}</span>
                   <span>{formatBytes(item.size_bytes)}</span>
                   <span>{formatDate(item.last_modified_at)}</span>
-                  <span>
+                  <span className="flex items-center gap-2">
                     <button
                       type="button"
                       onClick={() => handleDownload(item.path, item.download_name)}
@@ -159,9 +187,44 @@ export default function DatabaseExportPage() {
                     >
                       Download
                     </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(item.path, item.name)}
+                      disabled={isDeleting}
+                      className="rounded-lg border border-rose-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-rose-700 transition hover:bg-rose-50 disabled:opacity-50"
+                    >
+                      Delete
+                    </button>
                   </span>
                 </div>
               ))}
+            </div>
+            </div>
+            <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500">
+              <span>
+                {`Showing ${exportMeta?.from ?? 0}-${exportMeta?.to ?? 0} of ${exportMeta?.total ?? 0}`}
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                  disabled={isFetching || (exportMeta?.current_page ?? 1) <= 1}
+                  className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+                >
+                  Previous
+                </button>
+                <span className="text-xs font-semibold text-slate-600">
+                  Page {exportMeta?.current_page ?? 1} of {exportMeta?.last_page ?? 1}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((page) => page + 1)}
+                  disabled={isFetching || (exportMeta?.current_page ?? 1) >= (exportMeta?.last_page ?? 1)}
+                  className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+                >
+                  Next
+                </button>
+              </div>
             </div>
           </div>
         )}

@@ -15,6 +15,14 @@ export interface DatabaseExportItem {
 
 export interface ListDatabaseExportsResponse {
   exports: DatabaseExportItem[]
+  meta: {
+    current_page: number
+    last_page: number
+    per_page: number
+    total: number
+    from: number | null
+    to: number | null
+  }
 }
 
 export interface ExportDatabaseResponse {
@@ -27,12 +35,21 @@ export interface DownloadDatabaseExportPayload {
   download_name?: string
 }
 
+export interface DeleteDatabaseExportPayload {
+  path: string
+}
+
+export interface DeleteDatabaseExportResponse {
+  message: string
+}
+
 export const adminDatabaseApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    listDatabaseExports: builder.query<ListDatabaseExportsResponse, void>({
-      query: () => ({
+    listDatabaseExports: builder.query<ListDatabaseExportsResponse, { page?: number; per_page?: number } | void>({
+      query: (params) => ({
         url: '/api/admin/web-pages/database/exports',
         method: 'GET',
+        params,
       }),
     }),
     exportDatabase: builder.mutation<ExportDatabaseResponse, void>({
@@ -49,6 +66,13 @@ export const adminDatabaseApi = baseApi.injectEndpoints({
         responseHandler: (response) => response.blob(),
       }),
     }),
+    deleteDatabaseExport: builder.mutation<DeleteDatabaseExportResponse, DeleteDatabaseExportPayload>({
+      query: (body) => ({
+        url: '/api/admin/web-pages/database/exports',
+        method: 'DELETE',
+        body,
+      }),
+    }),
   }),
 })
 
@@ -56,4 +80,5 @@ export const {
   useListDatabaseExportsQuery,
   useExportDatabaseMutation,
   useDownloadDatabaseExportMutation,
+  useDeleteDatabaseExportMutation,
 } = adminDatabaseApi

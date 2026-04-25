@@ -105,6 +105,10 @@ function getRecentMemberMeta(joinedAt?: string) {
   }
 }
 
+function formatPhp(value: number) {
+  return `PHP ${Number(value || 0).toLocaleString()}`
+}
+
 interface EditMemberForm {
   id: number
   name: string
@@ -488,11 +492,11 @@ function MemberDetailsModal({
           </div>
           <div className="rounded-xl border border-slate-100 p-3">
             <p className="text-xs text-slate-500">Total Spent</p>
-            <p className="mt-1 font-semibold text-slate-800">PHP {member.totalSpent.toLocaleString()}</p>
+            <p className="mt-1 font-semibold text-slate-800">{formatPhp(member.totalSpent)}</p>
           </div>
           <div className="rounded-xl border border-slate-100 p-3">
             <p className="text-xs text-slate-500">Earnings</p>
-            <p className="mt-1 font-semibold text-teal-700">PHP {member.earnings.toLocaleString()}</p>
+            <p className="mt-1 font-semibold text-teal-700">{formatPhp(member.earnings)}</p>
           </div>
           <div className="rounded-xl border border-slate-100 p-3">
             <p className="text-xs text-slate-500">Wallet Cash Credits</p>
@@ -918,12 +922,12 @@ const MembersTable = ({
 
                     {/* Total Spent */}
                     <td className="px-5 py-3.5 hidden md:table-cell">
-                      <span className="text-slate-800 font-semibold">? {member.totalSpent.toLocaleString()}</span>
+                      <span className="text-slate-800 font-semibold">{formatPhp(member.totalSpent)}</span>
                     </td>
 
                     {/* Earnings */}
                     <td className="px-5 py-3.5 hidden lg:table-cell">
-                      <span className="text-teal-700 font-semibold">? {member.earnings.toLocaleString()}</span>
+                      <span className="text-teal-700 font-semibold">{formatPhp(member.earnings)}</span>
                     </td>
 
                     {/* Wallet Credits */}

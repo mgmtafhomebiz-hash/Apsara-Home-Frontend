@@ -17,19 +17,14 @@ type ApiCategoriesResponse = {
   categories?: Category[]
 }
 
-type ApiProductsResponse = {
-  products?: Product[]
-  meta?: {
-    last_page?: number
-  }
-}
-
 type ApiWebPagesResponse = {
   items?: WebPageItem[]
 }
+type ApiProductResponse = {
+  product?: Product
+}
 
 const REQUEST_TIMEOUT_MS = 12000
-const MAX_PRODUCT_PAGES_PER_CATEGORY = 4
 
 async function fetchWithTimeout(input: string, init?: RequestInit): Promise<Response> {
   const controller = new AbortController()
@@ -140,39 +135,6 @@ export async function generateMetadata({ params }: PageProps) {
   }
 }
 
-async function fetchProductsByCategory(apiUrl: string, categoryId: number): Promise<Product[]> {
-  const perPage = 200
-  const collected: Product[] = []
-  let page = 1
-  let lastPage = 1
-
-  try {
-    while (page <= lastPage && page <= MAX_PRODUCT_PAGES_PER_CATEGORY) {
-      const response = await fetchWithTimeout(`${apiUrl}/api/products?page=${page}&per_page=${perPage}&status=1&cat_id=${categoryId}`, {
-        method: 'GET',
-        headers: { Accept: 'application/json' },
-        cache: 'no-store',
-      })
-
-      if (!response.ok) {
-        break
-      }
-
-      const json = (await response.json()) as ApiProductsResponse
-      collected.push(...(json.products ?? []))
-      lastPage = Number(json.meta?.last_page ?? 1)
-      if (!Number.isFinite(lastPage) || lastPage < 1) {
-        lastPage = 1
-      }
-      page += 1
-    }
-  } catch {
-    return collected
-  }
-
-  return collected
-}
-
 async function getPartnerProductPageData(partnerSlug: string) {
   const apiUrl = process.env.LARAVEL_API_URL ?? process.env.NEXT_PUBLIC_LARAVEL_API_URL
   if (!apiUrl) return null
@@ -216,7 +178,7 @@ async function getPartnerProductPageData(partnerSlug: string) {
     if (!partner) return null
 
     const allowedCategories = filterPartnerCategories(categoriesJson.categories ?? [], partner)
-    const selectedProductIdSet = new Set(partner.featuredProductIds)
+    const selectedProductIds = partner.featuredProductIds
 
     if (allowedCategories.length === 0) {
       return {
@@ -225,24 +187,35 @@ async function getPartnerProductPageData(partnerSlug: string) {
       }
     }
 
-    if (selectedProductIdSet.size === 0) {
+    if (selectedProductIds.length === 0) {
       return {
         categories: allowedCategories,
         products: [] as CategoryProduct[],
       }
     }
 
-    const batches = await Promise.all(allowedCategories.map((category) => fetchProductsByCategory(apiUrl, category.id)))
-    const uniqueProducts = Array.from(
-      batches
-        .flat()
-        .reduce((map, product) => {
-          map.set(product.id, product)
-          return map
-        }, new Map<number, Product>())
-        .values(),
+    const allowedCategoryIdSet = new Set(allowedCategories.map((category) => Number(category.id)))
+    const productEntries = await Promise.all(
+      selectedProductIds.map(async (productId) => {
+        try {
+          const response = await fetchWithTimeout(`${apiUrl}/api/products/${productId}`, {
+            method: 'GET',
+            headers: { Accept: 'application/json' },
+            cache: 'no-store',
+          })
+          if (!response.ok) return null
+          const json = (await response.json()) as ApiProductResponse
+          const product = json.product
+          if (!product) return null
+          if (!allowedCategoryIdSet.has(Number(product.catid))) return null
+          return product
+        } catch {
+          return null
+        }
+      }),
     )
-    const selectedProducts = uniqueProducts.filter((product) => selectedProductIdSet.has(product.id))
+
+    const selectedProducts = productEntries.filter((item): item is Product => Boolean(item))
 
     return {
       categories: allowedCategories,
