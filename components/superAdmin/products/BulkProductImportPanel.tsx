@@ -922,6 +922,15 @@ export default function BulkProductImportPanel({ onClose, onImported }: BulkProd
         </select>
       )
     }
+    if (col === 'pd_type') {
+      return (
+        <select value={cellValue} onChange={(e) => handleCellEdit(rowIndex, col, e.target.value)} className={selectCls}>
+          <option value="">—</option>
+          <option value="0">Simple</option>
+          <option value="1">Has Variants</option>
+        </select>
+      )
+    }
     if (col === 'pd_status' || col === 'pv_status') {
       return (
         <select value={cellValue} onChange={(e) => handleCellEdit(rowIndex, col, e.target.value)} className={selectCls}>
