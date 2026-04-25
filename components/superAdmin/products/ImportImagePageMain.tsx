@@ -1,0 +1,494 @@
+'use client'
+
+import { useEffect, useRef, useState } from 'react'
+import Image from 'next/image'
+import RichTextEditor from '@/components/ui/RichTextEditor'
+
+declare global {
+  interface Window {
+    cloudinary?: {
+      createUploadWidget(
+        options: Record<string, unknown>,
+        callback: (
+          error: { status: string; statusText: string } | null,
+          result: CloudinaryWidgetResult,
+        ) => void,
+      ): CloudinaryWidget
+    }
+  }
+}
+
+type CloudinaryWidgetResult = {
+  event: string
+  info: {
+    secure_url: string
+    original_filename: string
+    bytes: number
+    public_id: string
+    format: string
+    width: number
+    height: number
+  }
+}
+
+type CloudinaryWidget = {
+  open(): void
+  close(): void
+  destroy(): void
+}
+
+interface UploadedImage {
+  url: string
+  filename: string
+  bytes: number
+  publicId: string
+  width: number
+  height: number
+}
+
+const CLOUD_NAME = 'dc05ncs6l'
+const API_KEY = '492967473972197'
+
+// ── Component ────────────────────────────────────────────────────────────────
+
+export default function ImportImagePageMain() {
+  const widgetRef = useRef<CloudinaryWidget | null>(null)
+  const [scriptLoaded, setScriptLoaded] = useState(false)
+  const [images, setImages] = useState<UploadedImage[]>([])
+  const [copied, setCopied] = useState(false)
+  const [copiedIndex, setCopiedIndex] = useState<number | null>(null)
+
+  // Description builder state
+  const [descHtml, setDescHtml] = useState('')
+  const [descCopied, setDescCopied] = useState(false)
+
+  // Load Cloudinary widget script once
+  useEffect(() => {
+    if (document.getElementById('cld-upload-widget')) {
+      setScriptLoaded(true)
+      return
+    }
+    const script = document.createElement('script')
+    script.id = 'cld-upload-widget'
+    script.src = 'https://upload-widget.cloudinary.com/global/all.js'
+    script.onload = () => setScriptLoaded(true)
+    document.head.appendChild(script)
+  }, [])
+
+  // Create widget once script is ready
+  useEffect(() => {
+    if (!scriptLoaded || !window.cloudinary || widgetRef.current) return
+
+    widgetRef.current = window.cloudinary.createUploadWidget(
+      {
+        cloudName: CLOUD_NAME,
+        apiKey: API_KEY,
+        uploadSignature: (
+          callback: (sig: string) => void,
+          paramsToSign: Record<string, unknown>,
+        ) => {
+          void fetch('/api/admin/cloudinary-sign', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ params_to_sign: paramsToSign }),
+          })
+            .then((r) => r.json())
+            .then((data: { signature: string }) => callback(data.signature))
+        },
+        folder: 'apsara/products',
+        multiple: true,
+        sources: [
+          'local',
+          'url',
+          'camera',
+          'image_search',
+          'google_drive',
+          'dropbox',
+          'shutterstock',
+          'getty',
+          'istock',
+          'unsplash',
+        ],
+        resourceType: 'image',
+        clientAllowedFormats: ['jpg', 'jpeg', 'png', 'webp', 'gif'],
+        maxFileSize: 5_000_000,
+        transformation: [
+          { width: 1200, height: 1200, crop: 'limit' },
+          { quality: 'auto', fetch_format: 'auto' },
+        ],
+        styles: {
+          palette: {
+            window: '#FFFFFF',
+            windowBorder: '#E2E8F0',
+            tabIcon: '#0F766E',
+            menuIcons: '#5A616A',
+            textDark: '#1E293B',
+            textLight: '#FFFFFF',
+            link: '#0F766E',
+            action: '#0F766E',
+            inactiveTabIcon: '#94A3B8',
+            error: '#EF4444',
+            inProgress: '#0F766E',
+            complete: '#10B981',
+            sourceBg: '#F8FAFC',
+          },
+          fonts: {
+            "'Inter', sans-serif": {
+              url: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap',
+              active: true,
+            },
+          },
+        },
+      },
+      (error, result) => {
+        if (error) return
+        if (result.event === 'success') {
+          setImages((prev) => [
+            ...prev,
+            {
+              url: result.info.secure_url,
+              filename: result.info.original_filename,
+              bytes: result.info.bytes,
+              publicId: result.info.public_id,
+              width: result.info.width,
+              height: result.info.height,
+            },
+          ])
+        }
+      },
+    )
+
+    return () => {
+      widgetRef.current?.destroy()
+      widgetRef.current = null
+    }
+  }, [scriptLoaded])
+
+  const openWidget = () => widgetRef.current?.open()
+
+  const removeImage = (publicId: string) =>
+    setImages((prev) => prev.filter((img) => img.publicId !== publicId))
+
+  const clearAll = () => {
+    setImages([])
+    setCopied(false)
+    setCopiedIndex(null)
+  }
+
+  const urls = images.map((img) => img.url)
+  const combinedUrl = urls.join('|')
+
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text)
+    } catch {
+      const ta = document.createElement('textarea')
+      ta.value = text
+      ta.style.cssText = 'position:fixed;opacity:0'
+      document.body.appendChild(ta)
+      ta.focus()
+      ta.select()
+      document.execCommand('copy')
+      document.body.removeChild(ta)
+    }
+  }
+
+  const handleCopyAll = async () => {
+    await copyToClipboard(combinedUrl)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  const handleCopyOne = async (url: string, index: number) => {
+    await copyToClipboard(url)
+    setCopiedIndex(index)
+    setTimeout(() => setCopiedIndex(null), 2000)
+  }
+
+  const handleCopyDesc = async () => {
+    if (!descHtml) return
+    await copyToClipboard(descHtml)
+    setDescCopied(true)
+    setTimeout(() => setDescCopied(false), 2000)
+  }
+
+  return (
+    <div className="min-h-screen bg-slate-50 p-6 space-y-6">
+      {/* Header */}
+      <div>
+        <h1 className="text-xl font-bold text-slate-800">Import Image</h1>
+        <p className="text-sm text-slate-500 mt-0.5">
+          Upload images to Cloudinary and copy the resulting URL(s).
+        </p>
+      </div>
+
+      {/* Upload card */}
+      <div className="rounded-2xl border border-slate-200 bg-white flex flex-col items-center justify-center gap-4 px-8 py-10 text-center">
+        <div className="rounded-2xl bg-teal-50 p-4">
+          <svg className="h-8 w-8 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+          </svg>
+        </div>
+        <div>
+          <p className="text-sm font-semibold text-slate-700">
+            {images.length > 0 ? 'Upload more images' : 'Upload images to Cloudinary'}
+          </p>
+          <p className="mt-1 text-xs text-slate-400">
+            Upload from device, camera, Google Drive, Dropbox, Image Search, and more
+          </p>
+        </div>
+
+        {/* Action buttons */}
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          <button
+            type="button"
+            onClick={openWidget}
+            disabled={!scriptLoaded}
+            className="inline-flex items-center gap-2 rounded-xl bg-teal-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm shadow-teal-500/20 transition hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {scriptLoaded ? (
+              <>
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                </svg>
+                {images.length > 0 ? 'Upload More' : 'Upload Images'}
+              </>
+            ) : (
+              <>
+                <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                </svg>
+                Loading widget…
+              </>
+            )}
+          </button>
+
+          {images.length > 0 && (
+            <button
+              type="button"
+              onClick={clearAll}
+              className="inline-flex items-center gap-2 rounded-xl border-2 border-red-300 bg-red-50 px-5 py-2.5 text-sm font-semibold text-red-600 transition hover:bg-red-100 hover:border-red-400"
+            >
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+              Clear &amp; Upload Again
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Image grid */}
+      {images.length > 0 && (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+          {images.map((img) => (
+            <div
+              key={img.publicId}
+              className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
+            >
+              <div className="relative aspect-square w-full bg-slate-100">
+                <Image
+                  src={img.url}
+                  alt={img.filename}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
+                />
+                <div className="absolute top-2 right-2">
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-white shadow">
+                    <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </span>
+                </div>
+              </div>
+              <div className="px-2 py-1.5">
+                <p className="truncate text-[10px] font-medium text-slate-600">{img.filename}</p>
+                <p className="text-[10px] text-slate-400">
+                  {(img.bytes / 1024).toFixed(0)} KB · {img.width}×{img.height}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => removeImage(img.publicId)}
+                className="absolute top-1.5 left-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-white shadow opacity-0 transition-opacity group-hover:opacity-100"
+                title="Remove"
+              >
+                <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Result URL panel */}
+      {urls.length > 0 && (
+        <div className="rounded-2xl border border-emerald-200 bg-white overflow-hidden shadow-sm">
+          <div className="flex items-center justify-between gap-3 border-b border-emerald-100 bg-emerald-50 px-4 py-3">
+            <div>
+              <p className="text-sm font-semibold text-emerald-800">
+                {urls.length === 1 ? 'Image URL' : `Image URLs — ${urls.length} images, pipe-separated`}
+              </p>
+              <p className="text-xs text-emerald-600 mt-0.5">
+                {urls.length > 1
+                  ? 'URLs are joined with | — paste directly into the image field.'
+                  : 'Paste this URL into the image field.'}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleCopyAll}
+              className={`inline-flex shrink-0 items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-semibold transition ${
+                copied ? 'bg-emerald-500 text-white' : 'bg-emerald-600 text-white hover:bg-emerald-700'
+              }`}
+            >
+              {copied ? (
+                <>
+                  <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                  </svg>
+                  Copied!
+                </>
+              ) : (
+                <>
+                  <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                  Copy URL{urls.length > 1 ? 's' : ''}
+                </>
+              )}
+            </button>
+          </div>
+
+          <div className="px-4 py-3 space-y-2">
+            {urls.length > 1 && (
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 mb-1">
+                  Combined (pipe-separated)
+                </p>
+                <div
+                  onClick={handleCopyAll}
+                  className="cursor-pointer select-all break-all rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 font-mono text-[11px] leading-relaxed text-slate-700 hover:border-emerald-300 hover:bg-emerald-50 transition"
+                  title="Click to copy all"
+                >
+                  {combinedUrl}
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-1.5">
+              {urls.length > 1 && (
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                  Individual URLs
+                </p>
+              )}
+              {urls.map((url, i) => (
+                <div key={url} className="flex items-center gap-2">
+                  {urls.length > 1 && (
+                    <span className="shrink-0 text-[10px] font-semibold text-slate-400 w-4 text-right">
+                      {i + 1}.
+                    </span>
+                  )}
+                  <div className="flex-1 flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 group/row hover:border-teal-300 hover:bg-teal-50 transition">
+                    <span className="flex-1 break-all font-mono text-[11px] text-slate-700 select-all">
+                      {url}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => void handleCopyOne(url, i)}
+                      className="shrink-0 rounded-lg p-1 text-slate-400 opacity-0 group-hover/row:opacity-100 transition hover:bg-teal-100 hover:text-teal-600"
+                      title="Copy this URL"
+                    >
+                      {copiedIndex === i ? (
+                        <svg className="h-3.5 w-3.5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                        </svg>
+                      ) : (
+                        <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Description Builder ───────────────────────────────────────────── */}
+      <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm">
+        <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-4 py-3">
+          <div>
+            <p className="text-sm font-semibold text-slate-800">Description Builder</p>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Write and format your product description, then copy the HTML to paste into the product form.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={handleCopyDesc}
+            disabled={!descHtml}
+            className={`inline-flex shrink-0 items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-semibold transition disabled:opacity-40 disabled:cursor-not-allowed ${
+              descCopied
+                ? 'bg-violet-500 text-white'
+                : 'bg-violet-600 text-white hover:bg-violet-700'
+            }`}
+          >
+            {descCopied ? (
+              <>
+                <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                </svg>
+                Copied!
+              </>
+            ) : (
+              <>
+                <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+                Copy HTML
+              </>
+            )}
+          </button>
+        </div>
+
+        <div className="p-4 space-y-3">
+          <RichTextEditor
+            value={descHtml}
+            onChange={(html) => setDescHtml(html === '<p></p>' ? '' : html)}
+            placeholder="Describe this product…"
+          />
+
+          {descHtml && (
+            <div>
+              <div className="flex items-center justify-between gap-2 mb-1.5">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">HTML Output</p>
+                <button
+                  type="button"
+                  onClick={handleCopyDesc}
+                  className={`text-[11px] font-semibold transition ${
+                    descCopied ? 'text-violet-500' : 'text-slate-400 hover:text-violet-600'
+                  }`}
+                >
+                  {descCopied ? '✓ Copied' : 'Copy'}
+                </button>
+              </div>
+              <div
+                onClick={handleCopyDesc}
+                title="Click to copy HTML"
+                className="cursor-pointer select-all rounded-xl border border-slate-200 bg-slate-950 px-4 py-3 font-mono text-[11px] leading-relaxed text-emerald-300 hover:border-violet-400 transition overflow-auto whitespace-pre-wrap break-words max-h-40"
+              >
+                {descHtml}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
