@@ -10,6 +10,7 @@ import { displayColorName } from '@/libs/colorUtils';
 import PrimaryButton from '@/components/ui/buttons/PrimaryButton';
 import OutlineButton from '@/components/ui/buttons/OutlineButton';
 import { useGetPublicGeneralSettingsQuery } from '@/store/api/adminSettingsApi';
+import { usePathname, useRouter } from 'next/navigation';
 
 interface StickyAddToCartProps {
   product: CategoryProduct;
@@ -36,6 +37,8 @@ const StickyAddToCart = ({ product, selectedVariant, forceRealPrice = false }: S
   const [visible, setVisible] = useState(false);
   const { addToCart } = useCart();
   const { data: session } = useSession();
+  const pathname = usePathname();
+  const router = useRouter();
   const { data: publicSettingsData } = useGetPublicGeneralSettingsQuery();
   const isLoggedIn = Boolean(session?.user);
   const role = String((session?.user as { role?: string } | undefined)?.role ?? '').toLowerCase();
@@ -100,6 +103,11 @@ const StickyAddToCart = ({ product, selectedVariant, forceRealPrice = false }: S
   const handleAddToCart = () => {
     if (!isInStock || !isCheckoutAvailable) return;
 
+    if (!isLoggedIn) {
+      router.push(`/login?callback=${encodeURIComponent(pathname || '/shop')}`);
+      return;
+    }
+
     const variantLabel = [
       selectedVariant?.name?.trim(),
       selectedVariant?.style?.trim(),
@@ -111,6 +119,8 @@ const StickyAddToCart = ({ product, selectedVariant, forceRealPrice = false }: S
 
     addToCart({
       id: cartItemId,
+      productId: product.id,
+      variantId: selectedVariant?.id,
       name: variantLabel ? `${product.name} (${variantLabel})` : product.name,
       price: displayPrice,
       originalPrice: !forceRealPrice && hasMemberPrice ? srp : null,

@@ -2,12 +2,13 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useSession } from 'next-auth/react'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAddToCartMutation, useGetCartQuery } from '@/store/api/cartApi'
 import { useGetWishlistQuery, useAddWishlistMutation, useRemoveWishlistMutation } from '@/store/api/wishlistApi'
+import { useLazyGetPublicProductQuery } from '@/store/api/productsApi'
 import { useCart } from '@/context/CartContext'
 import toast from 'react-hot-toast'
 import ShareModal from '@/components/ui/ShareModal'
@@ -94,6 +95,7 @@ const readGuestWishlistItems = (): GuestWishlistItem[] => {
 interface Product {
   id: number
   name: string
+  type?: number
   image?: string | null
   price?: number | null
   priceMember?: number | null
@@ -105,6 +107,24 @@ interface Product {
   bestseller?: boolean
   soldCount?: number
   avgRating?: number
+  variants?: ProductVariant[] | null
+}
+
+interface ProductVariant {
+  id?: number
+  sku?: string
+  name?: string
+  color?: string
+  colorHex?: string
+  size?: string
+  style?: string
+  priceSrp?: number
+  priceDp?: number
+  priceMember?: number
+  prodpv?: number
+  qty?: number
+  status?: number
+  images?: string[]
 }
 
 interface ItemCardProps {
@@ -126,6 +146,7 @@ export default function ItemCard({
 }: ItemCardProps) {
   const slug = toSlug(product.name)
   const pathname = usePathname()
+  const router = useRouter()
   const href = buildStorefrontProductPath(product.name, product.id, pathname)
   const [imageError, setImageError] = useState(false)
   const { data: session, status } = useSession()
@@ -134,6 +155,7 @@ export default function ItemCard({
   const useAccountCart = isLoggedIn && !allowGuestAddToCart
   const useAccountWishlist = isLoggedIn && !allowGuestWishlist
   const [addToCartApi, { isLoading: isAddingToCart }] = useAddToCartMutation()
+  const [loadProductDetails, { isFetching: isFetchingProductDetails }] = useLazyGetPublicProductQuery()
   const { setIsOpen, addToCart: addToLocalCart } = useCart()
   const { refetch: refetchCart } = useGetCartQuery(undefined, { skip: !useAccountCart })
   const [shareModalOpen, setShareModalOpen] = useState(false)
@@ -143,6 +165,35 @@ export default function ItemCard({
   const [addWishlist, { isLoading: isAddingToWishlist }] = useAddWishlistMutation()
   const [removeWishlist, { isLoading: isRemovingFromWishlist }] = useRemoveWishlistMutation()
   const [guestWishlistItems, setGuestWishlistItems] = useState<GuestWishlistItem[]>(() => readGuestWishlistItems())
+  const [variantPickerOpen, setVariantPickerOpen] = useState(false)
+  const [openCartAfterVariantPicker, setOpenCartAfterVariantPicker] = useState(false)
+  const [loadedVariants, setLoadedVariants] = useState<ProductVariant[] | null>(null)
+  const activeVariants = useMemo(
+    () => (loadedVariants ?? product.variants ?? []).filter((variant) => (variant.status ?? 1) === 1),
+    [loadedVariants, product.variants],
+  )
+  const hasVariants = activeVariants.length > 0
+  const [selectedVariantIndex, setSelectedVariantIndex] = useState(0)
+  const selectedVariant = activeVariants[selectedVariantIndex] ?? activeVariants[0]
+  const selectedColor = selectedVariant?.color ?? ''
+  const colorOptions = useMemo(() => {
+    const map = new Map<string, string | undefined>()
+    activeVariants.forEach((variant) => {
+      const color = variant.color?.trim()
+      if (!color) return
+      map.set(color, variant.colorHex)
+    })
+    return Array.from(map.entries()).map(([name, hex]) => ({ name, hex }))
+  }, [activeVariants])
+  const visibleVariants = useMemo(
+    () => selectedColor ? activeVariants.filter((variant) => !variant.color || variant.color === selectedColor) : activeVariants,
+    [activeVariants, selectedColor],
+  )
+
+  useEffect(() => {
+    setSelectedVariantIndex(0)
+    setLoadedVariants(null)
+  }, [product.id])
 
   useEffect(() => {
     if (useAccountWishlist || !allowGuestWishlist || typeof window === 'undefined') return
@@ -163,57 +214,93 @@ export default function ItemCard({
     ? wishlist.some(item => item.productId === product.id)
     : guestWishlistItems.some((item) => item.productId === product.id)
 
+  const addSelectedItemToCart = async (variant?: ProductVariant) => {
+    const shouldWaitForPickerExit = variantPickerOpen
+
+    if (!useAccountCart) {
+      if (allowGuestAddToCart) {
+        const variantLabel = [variant?.name, variant?.style, variant?.size, variant?.color].filter(Boolean).join(' - ')
+        const variantPrice = getVariantDisplayPrice(variant)
+        addToLocalCart({
+          id: variant?.sku ? `${product.id}::${variant.sku}` : String(product.id),
+          productId: product.id,
+          variantId: variant?.id,
+          name: variantLabel ? `${product.name} (${variantLabel})` : product.name,
+          price: variantPrice.display,
+          originalPrice: variantPrice.strike > variantPrice.display ? variantPrice.strike : null,
+          image: variant?.images?.[0] ?? product.image ?? '',
+          prodpv: variantPrice.pv > 0 ? variantPrice.pv : null,
+          brand: brandName || null,
+          selectedColor: variant?.color ?? null,
+          selectedStyle: variant?.style ?? null,
+          selectedSize: variant?.size ?? null,
+          selectedType: variant?.name ?? null,
+          selectedSku: variant?.sku ?? null,
+        })
+        toast.success('Item added to cart successfully')
+        if (shouldWaitForPickerExit) {
+          setOpenCartAfterVariantPicker(true)
+          setVariantPickerOpen(false)
+        } else {
+          setIsOpen(true)
+        }
+        return
+      }
+      router.push(`/login?callback=${encodeURIComponent(pathname || href)}`)
+      return
+    }
+
+    try {
+      await addToCartApi({
+        product_id: product.id,
+        variant_id: variant?.id,
+        quantity: 1,
+        selected_color: variant?.color,
+        selected_size: variant?.size,
+        selected_type: variant?.name || variant?.style,
+      }).unwrap()
+      toast.success('Item added to cart successfully')
+      if (shouldWaitForPickerExit) {
+        setOpenCartAfterVariantPicker(true)
+        setVariantPickerOpen(false)
+      } else {
+        setIsOpen(true)
+      }
+      // Refetch cart to sync with backend
+      refetchCart()
+    } catch (error: any) {
+      const errorMessage = error?.data?.message || error?.message || 'Failed to add item to cart'
+      toast.error(errorMessage)
+    }
+  }
+
   const handleAddToCart = async (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
 
-    if (!useAccountCart) {
-      if (allowGuestAddToCart) {
-        addToLocalCart({
-          id: String(product.id),
-          name: product.name,
-          price: displayPrice,
-          originalPrice: strikePrice > displayPrice ? strikePrice : null,
-          image: product.image ?? '',
-          prodpv: displayPv > 0 ? displayPv : null,
-          brand: brandName || null,
-          selectedColor: null,
-          selectedStyle: null,
-          selectedSize: null,
-          selectedType: null,
-          selectedSku: null,
-        })
-        toast.success('Item added to cart successfully')
-        setIsOpen(true)
-        return
-      }
-      toast.error('Please sign in to add items to cart')
+    if (hasVariants) {
+      setVariantPickerOpen(true)
       return
     }
 
-    console.log('Adding to cart:', { product_id: product.id, quantity: 1 })
+    if (loadedVariants === null) {
+      try {
+        const productDetails = await loadProductDetails(product.id).unwrap()
+        const fetchedVariants = (productDetails.variants ?? []).filter((variant) => (variant.status ?? 1) === 1)
+        setLoadedVariants(fetchedVariants)
 
-    try {
-      const result = await addToCartApi({
-        product_id: product.id,
-        quantity: 1,
-      }).unwrap()
-      console.log('Add to cart result:', result)
-      toast.success('Item added to cart successfully')
-      setIsOpen(true)
-      // Refetch cart to sync with backend
-      refetchCart()
-    } catch (error: any) {
-      console.error('Error adding to cart - Full error object:', JSON.stringify(error, null, 2))
-      console.error('Error properties:', {
-        status: error?.status,
-        data: error?.data,
-        message: error?.message,
-        error: error?.error
-      })
-      const errorMessage = error?.data?.message || error?.message || 'Failed to add item to cart'
-      toast.error(errorMessage)
+        if (fetchedVariants.length > 0) {
+          setSelectedVariantIndex(0)
+          setVariantPickerOpen(true)
+          return
+        }
+      } catch {
+        toast.error('Unable to load product options. Please open the product page to choose a variant.')
+        return
+      }
     }
+
+    await addSelectedItemToCart()
   }
 
   const handleShare = async (e: React.MouseEvent) => {
@@ -292,6 +379,15 @@ export default function ItemCard({
   const displayPrice = showMemberPrice ? memberPrice : srpPrice
   const strikePrice = showMemberPrice ? srpPrice : (product.originalPrice && product.originalPrice > srpPrice ? product.originalPrice : 0)
   const displayPv = Number(product.prodpv ?? 0)
+  const getVariantDisplayPrice = (variant?: ProductVariant) => {
+    const variantSrp = (variant?.priceSrp ? Number(variant.priceSrp) : undefined) ?? srpPrice
+    const variantMember = (variant?.priceMember ? Number(variant.priceMember) : undefined) ?? memberPrice
+    const variantHasMemberPrice = variantMember > 0 && variantMember < variantSrp
+    const variantDisplay = variantHasMemberPrice && !forceRealPrice ? variantMember : variantSrp
+    const variantStrike = variantHasMemberPrice && !forceRealPrice ? variantSrp : 0
+    const variantPv = Number(variant?.prodpv ?? displayPv)
+    return { display: variantDisplay, strike: variantStrike, pv: variantPv }
+  }
   const averageRating = Math.max(0, Math.min(5, Number(product.avgRating ?? 0)))
   const hasRating = averageRating > 0
   const filledStars = Math.floor(averageRating)
@@ -384,15 +480,17 @@ export default function ItemCard({
         {/* Add to Cart Button */}
         <button
           onClick={handleAddToCart}
-          disabled={isAddingToCart}
-          className="absolute bottom-3 right-3 flex items-center justify-center gap-2 rounded-full bg-sky-500 hover:bg-sky-600 px-4 py-2 text-sm font-semibold text-white opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 cursor-pointer hover:cursor-hand disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={isAddingToCart || isFetchingProductDetails}
+          className="absolute bottom-3 right-3 flex h-10 w-10 items-center justify-center rounded-full bg-sky-500 text-white shadow-lg transition-all duration-300 hover:bg-sky-600 sm:h-auto sm:w-auto sm:gap-2 sm:px-4 sm:py-2 sm:text-sm sm:font-semibold sm:opacity-0 sm:translate-y-2 sm:group-hover:opacity-100 sm:group-hover:translate-y-0 cursor-pointer hover:cursor-hand disabled:opacity-50 disabled:cursor-not-allowed"
+          title="Add to Cart"
+          aria-label="Add to Cart"
         >
-          {isAddingToCart ? (
+          {isAddingToCart || isFetchingProductDetails ? (
             <>
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="animate-spin">
                 <path d="M21 12a9 9 0 1 1-6.219-8.56" />
               </svg>
-              Adding...
+              <span className="hidden sm:inline">{isFetchingProductDetails ? 'Loading...' : 'Adding...'}</span>
             </>
           ) : (
             <>
@@ -401,7 +499,7 @@ export default function ItemCard({
                 <circle cx="20" cy="21" r="1" />
                 <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
               </svg>
-              Add to Cart
+              <span className="hidden sm:inline">Add to Cart</span>
             </>
           )}
         </button>
@@ -473,6 +571,148 @@ export default function ItemCard({
       brandName={brandName}
       forceRealPrice={forceRealPrice}
     />
+
+    <AnimatePresence
+      onExitComplete={() => {
+        if (openCartAfterVariantPicker) {
+          setOpenCartAfterVariantPicker(false)
+          setIsOpen(true)
+        }
+      }}
+    >
+      {variantPickerOpen && (
+      <motion.div
+        key="variant-picker-overlay"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.18, ease: 'easeOut' }}
+        className="fixed inset-0 z-[100] flex items-end justify-center bg-black/60 p-0 sm:items-center sm:p-4"
+        onClick={() => setVariantPickerOpen(false)}
+      >
+        <motion.div
+          key="variant-picker-panel"
+          initial={{ y: 36, opacity: 0, scale: 0.98 }}
+          animate={{ y: 0, opacity: 1, scale: 1 }}
+          exit={{ y: 52, opacity: 0, scale: 0.98 }}
+          transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+          className="w-full max-w-lg overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-gray-900"
+          onClick={(event) => event.stopPropagation()}
+        >
+          <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3 dark:border-gray-700">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-widest text-sky-500">Select Variant</p>
+              <h3 className="line-clamp-1 text-base font-bold text-gray-900 dark:text-white">{product.name}</h3>
+            </div>
+            <button
+              type="button"
+              onClick={() => setVariantPickerOpen(false)}
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 text-gray-500 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+              aria-label="Close variant picker"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path d="M18 6 6 18" />
+                <path d="m6 6 12 12" />
+              </svg>
+            </button>
+          </div>
+
+          <div className="max-h-[70vh] overflow-y-auto p-4">
+            {colorOptions.length > 0 && (
+              <div className="mb-4">
+                <p className="mb-2 text-sm font-semibold text-gray-700 dark:text-gray-200">
+                  Color{selectedColor ? `: ${selectedColor}` : ''}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {colorOptions.map((color) => {
+                    const firstIndex = activeVariants.findIndex((variant) => variant.color === color.name)
+                    const isActive = selectedColor === color.name
+                    return (
+                      <button
+                        key={color.name}
+                        type="button"
+                        title={color.name}
+                        onClick={() => setSelectedVariantIndex(Math.max(0, firstIndex))}
+                        className={`h-10 w-10 rounded-full border-2 transition hover:scale-105 ${
+                          isActive ? 'ring-4 ring-sky-400' : 'ring-2 ring-transparent'
+                        }`}
+                        style={{ backgroundColor: color.hex ?? '#E5E7EB', borderColor: '#D1D5DB' }}
+                      />
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
+            <div>
+              <p className="mb-2 text-sm font-semibold text-gray-700 dark:text-gray-200">
+                {visibleVariants.some((variant) => variant.size?.trim()) ? 'Size' : 'Variant'}
+              </p>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                {visibleVariants.map((variant) => {
+                  const realIndex = activeVariants.findIndex((entry) => entry === variant)
+                  const isActive = activeVariants[selectedVariantIndex] === variant
+                  const variantPrice = getVariantDisplayPrice(variant)
+                  const label = variant.size?.trim() || variant.name?.trim() || variant.style?.trim() || variant.sku?.trim() || 'Option'
+                  const meta = [variant.name, variant.style, variant.color, variant.sku].filter(Boolean).join(' - ')
+                  return (
+                    <button
+                      key={`${variant.id ?? variant.sku ?? realIndex}-${realIndex}`}
+                      type="button"
+                      onClick={() => setSelectedVariantIndex(Math.max(0, realIndex))}
+                      className={`rounded-lg border-2 p-2 text-left transition ${
+                        isActive
+                          ? 'border-sky-400 text-sky-600'
+                          : 'border-gray-200 text-gray-700 hover:border-sky-200 dark:border-gray-700 dark:text-gray-300'
+                      }`}
+                    >
+                      <div className="flex gap-2">
+                        <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded border border-gray-200 bg-gray-50 dark:border-gray-700">
+                          <Image
+                            src={variant.images?.[0] || product.image || '/Images/af_home_logo.png'}
+                            alt={label}
+                            fill
+                            className="object-cover"
+                            unoptimized
+                          />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <p className="truncate text-sm font-semibold">{label}</p>
+                            {isActive && <span className="rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-bold text-sky-600">Selected</span>}
+                          </div>
+                          {meta && <p className="mt-0.5 truncate text-[11px] text-gray-400">{meta}</p>}
+                          <p className="mt-1 text-xs font-bold text-sky-500">{'\u20b1'}{variantPrice.display.toLocaleString()}</p>
+                        </div>
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex gap-2 border-t border-gray-200 p-4 dark:border-gray-700">
+            <button
+              type="button"
+              onClick={() => setVariantPickerOpen(false)}
+              className="flex-1 rounded-full border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => addSelectedItemToCart(selectedVariant)}
+              disabled={isAddingToCart || !selectedVariant}
+              className="flex-[1.5] rounded-full bg-sky-500 px-4 py-2 text-sm font-bold text-white hover:bg-sky-600 disabled:opacity-50"
+            >
+              {isAddingToCart ? 'Adding...' : 'Add Selected to Cart'}
+            </button>
+          </div>
+        </motion.div>
+      </motion.div>
+      )}
+    </AnimatePresence>
   </>
   )
 }

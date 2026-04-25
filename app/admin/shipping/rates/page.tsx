@@ -1,5 +1,5 @@
 import { buildPageMetadata } from '@/app/seo'
-import UnderMaintenancePage from '@/components/superAdmin/UnderMaintenancePage'
+import AdminShippingRatesPageMain from '@/components/superAdmin/shipping/AdminShippingRatesPageMain'
 
 export const metadata = buildPageMetadata({
   title: 'Admin Shipping Rates',
@@ -9,10 +9,5 @@ export const metadata = buildPageMetadata({
 })
 
 export default function AdminShippingRatesPage() {
-  return (
-    <UnderMaintenancePage
-      title="Shipping Rates"
-      description="Shipping rate configuration is still under maintenance."
-    />
-  )
+  return <AdminShippingRatesPageMain />
 }

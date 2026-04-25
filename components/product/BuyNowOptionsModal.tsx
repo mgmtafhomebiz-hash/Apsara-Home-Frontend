@@ -16,6 +16,27 @@ import OutlineButton from '@/components/ui/buttons/OutlineButton';
 
 type VariantOption = NonNullable<CategoryProduct['variants']>[number];
 
+const getVariantIdentity = (variant: VariantOption, index: number) => {
+  const sku = variant.sku?.trim();
+  if (sku) return `sku:${sku}`;
+  if (typeof variant.id === 'number') return `id:${variant.id}`;
+  return `row:${index}`;
+};
+
+const isSameVariant = (left?: VariantOption, right?: VariantOption) => {
+  if (!left || !right) return false;
+
+  const leftSku = left.sku?.trim();
+  const rightSku = right.sku?.trim();
+  if (leftSku && rightSku) return leftSku === rightSku;
+
+  if (typeof left.id === 'number' && typeof right.id === 'number') {
+    return left.id === right.id;
+  }
+
+  return left === right;
+};
+
 interface BuyNowOptionsModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -26,6 +47,8 @@ interface BuyNowOptionsModalProps {
   selectedStyle?: string;
   selectedSize?: string;
   selectedType?: string;
+  forceRealPrice?: boolean;
+  onVariantSelect?: (variant: VariantOption) => void;
 }
 
 const toPositiveNumber = (value: unknown) => {
@@ -43,6 +66,8 @@ const BuyNowOptionsModal = ({
   selectedStyle,
   selectedSize,
   selectedType,
+  forceRealPrice = false,
+  onVariantSelect,
 }: BuyNowOptionsModalProps) => {
   const { status } = useSession();
   const { data: publicSettingsData } = useGetPublicGeneralSettingsQuery();
@@ -88,9 +113,27 @@ const BuyNowOptionsModal = ({
   const activeSelectedStyle = activeVariant?.style ?? selectedStyle ?? null;
   const activeSelectedSize = activeVariant?.size ?? selectedSize ?? null;
   const activeSelectedType = activeVariant?.name ?? selectedType ?? null;
-  const unitPrice = toPositiveNumber(activeVariant?.priceSrp) ?? product.price;
+  const baseSrp = toPositiveNumber(product.originalPrice) ?? toPositiveNumber(product.price) ?? 0;
+  const srpPrice = toPositiveNumber(activeVariant?.priceSrp) ?? baseSrp;
+  const memberPrice = toPositiveNumber(activeVariant?.priceMember) ?? toPositiveNumber(product.priceMember) ?? 0;
+  const hasMemberPrice = memberPrice > 0 && memberPrice < srpPrice;
+  const unitPrice = !forceRealPrice && hasMemberPrice ? memberPrice : srpPrice;
   const unitPv = toPositiveNumber(activeVariant?.prodpv) ?? Number(product.prodpv ?? 0);
   const selectedVariantImage = activeVariant?.images?.[0] || product.image;
+  const colorOptions = useMemo(() => {
+    const map = new Map<string, string | undefined>();
+    variantOptions.forEach((variant) => {
+      const color = variant.color?.trim();
+      if (!color) return;
+      map.set(color, variant.colorHex);
+    });
+    return Array.from(map.entries()).map(([name, hex]) => ({ name, hex }));
+  }, [variantOptions]);
+  const visibleVariantChoices = useMemo(() => {
+    if (!activeSelectedColor) return variantOptions;
+    return variantOptions.filter((variant) => !variant.color || variant.color === activeSelectedColor);
+  }, [activeSelectedColor, variantOptions]);
+  const variantChoiceLabel = visibleVariantChoices.some((variant) => variant.size?.trim()) ? 'Size' : 'Variant';
 
   const subtotal = useMemo(() => unitPrice * quantity, [quantity, unitPrice]);
   const totalPv = useMemo(() => unitPv * quantity, [unitPv, quantity]);
@@ -172,6 +215,12 @@ const BuyNowOptionsModal = ({
     persistCheckoutDraft();
     handleClose();
     router.push(checkoutTarget);
+  };
+
+  const handleVariantSelect = (variant: VariantOption) => {
+    setModalSelectedVariantSku(variant.sku ?? '');
+    setNotice('');
+    onVariantSelect?.(variant);
   };
 
   return (
@@ -359,51 +408,88 @@ const BuyNowOptionsModal = ({
                                 transition={{ duration: 0.22, ease: 'easeOut' }}
                                 className="mt-3 overflow-hidden"
                               >
-                                <div className="max-h-64 space-y-2 overflow-y-auto pr-1">
-                                  {variantOptions.map((variant, index) => {
-                                    const isActive = (activeVariant?.sku ?? '') === (variant.sku ?? '');
-                                    const variantLabel = variant.name?.trim() || variant.size?.trim() || `Variant ${index + 1}`;
-                                    const variantMeta = [
-                                      variant.size?.trim() || '',
-                                      variant.color?.trim() || '',
-                                      variant.sku?.trim() || '',
-                                    ].filter(Boolean).join(' ? ');
+                                <div className="space-y-4 rounded-2xl border border-sky-100 bg-white p-3 dark:border-sky-900/50 dark:bg-gray-800">
+                                  {colorOptions.length > 0 ? (
+                                    <div>
+                                      <span className="mb-2 block text-sm font-semibold text-slate-700 dark:text-gray-300">
+                                        Color{activeSelectedColor ? ': ' : ''}
+                                        {activeSelectedColor ? <span className="capitalize text-slate-600 dark:text-gray-400">{activeSelectedColor}</span> : null}
+                                      </span>
+                                      <div className="flex flex-wrap gap-2">
+                                        {colorOptions.map((color) => {
+                                          const colorVariant = variantOptions.find((variant) => variant.color === color.name);
+                                          const isActive = activeSelectedColor === color.name;
 
-                                    return (
-                                      <button
-                                        key={`${variant.sku ?? variant.id ?? index}-${index}`}
-                                        type="button"
-                                        onClick={() => {
-                                          setModalSelectedVariantSku(variant.sku ?? '');
-                                          setVariantPickerOpen(false);
-                                          setNotice('');
-                                        }}
-                                        className={`w-full rounded-2xl border px-3.5 py-3 text-left transition-all ${
-                                          isActive
-                                            ? 'border-sky-400 dark:border-sky-700 bg-white dark:bg-gray-800'
-                                            : 'border-sky-100 dark:border-sky-900/50 bg-white dark:bg-gray-800 hover:border-sky-300 dark:hover:border-sky-700 hover:bg-sky-50 dark:hover:bg-sky-900/10'
-                                        }`}
-                                      >
-                                        <div className="flex items-start gap-3">
-                                          <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-700">
-                                            <Image
-                                              src={variant.images?.[0] || selectedVariantImage}
-                                              alt={variantLabel}
-                                              fill
-                                              className="object-cover"
+                                          return (
+                                            <button
+                                              key={color.name}
+                                              type="button"
+                                              title={color.name}
+                                              onClick={() => {
+                                                if (colorVariant) handleVariantSelect(colorVariant);
+                                              }}
+                                              className={`h-10 w-10 rounded-full border-2 transition-all hover:scale-105 ${
+                                                isActive ? 'ring-4 ring-sky-400 dark:ring-sky-500' : 'ring-2 ring-transparent'
+                                              }`}
+                                              style={{
+                                                backgroundColor: color.hex ?? '#E5E7EB',
+                                                borderColor: '#D1D5DB',
+                                              }}
                                             />
-                                          </div>
-                                          <div className="min-w-0 flex-1">
-                                            <div className="flex items-center gap-2">
-                                              <p className="truncate text-sm font-bold text-gray-800 dark:text-white">{variantLabel}</p>
-                                              {isActive ? <span className="rounded-full bg-sky-100 dark:bg-sky-900/40 px-2 py-0.5 text-[10px] font-bold text-sky-600 dark:text-sky-400">Selected</span> : null}
+                                          );
+                                        })}
+                                      </div>
+                                    </div>
+                                  ) : null}
+
+                                  <div>
+                                    <span className="mb-2 block text-sm font-semibold text-slate-700 dark:text-gray-300">
+                                      {variantChoiceLabel}
+                                    </span>
+                                    <div className="grid max-h-64 grid-cols-1 gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
+                                      {visibleVariantChoices.map((variant, index) => {
+                                        const isActive = isSameVariant(activeVariant, variant);
+                                        const variantLabel = variant.size?.trim() || variant.name?.trim() || `Variant ${index + 1}`;
+                                        const variantMeta = [
+                                          variant.name?.trim() || '',
+                                          variant.style?.trim() || '',
+                                          variant.color?.trim() || '',
+                                          variant.sku?.trim() || '',
+                                        ].filter(Boolean).join(' ? ');
+
+                                        return (
+                                          <button
+                                            key={getVariantIdentity(variant, index)}
+                                            type="button"
+                                            onClick={() => handleVariantSelect(variant)}
+                                            className={`w-full rounded-lg border-2 px-3 py-2 text-left transition-all ${
+                                              isActive
+                                                ? 'border-sky-400 text-sky-600 dark:border-sky-500 dark:text-sky-400'
+                                                : 'border-gray-200 text-slate-600 dark:border-gray-700 dark:text-gray-300 hover:border-sky-200 dark:hover:border-sky-900/50'
+                                            }`}
+                                          >
+                                            <div className="flex items-start gap-2">
+                                              <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-700">
+                                                <Image
+                                                  src={variant.images?.[0] || selectedVariantImage}
+                                                  alt={variantLabel}
+                                                  fill
+                                                  className="object-cover"
+                                                />
+                                              </div>
+                                              <div className="min-w-0 flex-1">
+                                                <div className="flex items-center gap-2">
+                                                  <p className="truncate text-sm font-medium">{variantLabel}</p>
+                                                  {isActive ? <span className="rounded-full bg-sky-100 dark:bg-sky-900/40 px-2 py-0.5 text-[10px] font-bold text-sky-600 dark:text-sky-400">Selected</span> : null}
+                                                </div>
+                                                {variantMeta ? <p className="mt-1 truncate text-[11px] text-slate-400">{variantMeta}</p> : null}
+                                              </div>
                                             </div>
-                                            {variantMeta ? <p className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">{variantMeta}</p> : null}
-                                          </div>
-                                        </div>
-                                      </button>
-                                    );
-                                  })}
+                                          </button>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
                                 </div>
                               </motion.div>
                             )}
@@ -478,7 +564,7 @@ const BuyNowOptionsModal = ({
                               ) : (
                                 <>
                                   <span className="text-xs font-bold text-gray-800 dark:text-white transition-colors group-hover:text-sky-600 dark:group-hover:text-sky-400">Sign In & Checkout</span>
-                                  <span className="text-center text-[10px] leading-tight text-gray-400 dark:text-gray-500">Earn PV  ??  Track orders</span>
+                                  <span className="text-center text-[10px] leading-tight text-gray-400 dark:text-gray-500">Earn PV and track orders</span>
                                 </>
                               )}
                             </button>
@@ -536,7 +622,7 @@ const BuyNowOptionsModal = ({
                               <svg className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 00-2-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                               </svg>
-                              <span>Continue to Checkout  ??  P{total.toLocaleString()}</span>
+                              <span>Continue to Checkout P{total.toLocaleString()}</span>
                             </>
                           )}
                         </PrimaryButton>
@@ -548,7 +634,7 @@ const BuyNowOptionsModal = ({
                     <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                     </svg>
-                    Secured by <span className="font-semibold text-gray-500 dark:text-gray-400">PayMongo</span>  ??  SSL Encrypted  ??  PCI DSS Compliant
+                    Secured by <span className="font-semibold text-gray-500 dark:text-gray-400">PayMongo</span> SSL Encrypted PCI DSS Compliant
                   </p>
                 </div>
               </div>

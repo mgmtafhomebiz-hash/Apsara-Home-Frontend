@@ -1,192 +1,16 @@
+import type { ShippingRate } from '@/store/api/shippingRatesApi';
+
 const normalizeKey = (value: string) =>
   value
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/\([^)]*\)/g, '')
-    .replace(/city|municipality|province/gi, '')
+    .replace(/\bcity of\b/gi, '')
+    .replace(/\b(city|municipality|province)\b/gi, '')
     .replace(/[^a-z0-9]+/g, ' ')
     .trim()
     .replace(/\s+/g, ' ');
-
-type ShippingProvinceRates = Record<string, number>;
-
-const SHIPPING_RATES: Record<string, ShippingProvinceRates> = {
-  manila: {
-    caloocan: 500,
-    'las pinas': 1000,
-    makati: 500,
-    malabon: 500,
-    mandaluyong: 500,
-    manila: 500,
-    marikina: 500,
-    muntinlupa: 1000,
-    navotas: 500,
-    paranaque: 1000,
-    pasay: 500,
-    pasig: 500,
-    'quezon city': 500,
-    'san juan': 500,
-    taguig: 500,
-    valenzuela: 500,
-    pateros: 500,
-  },
-  bulacan: {
-    malolos: 500,
-    meycauayan: 500,
-    'san jose del monte': 500,
-    angat: 500,
-    balagtas: 500,
-    baliuag: 500,
-    bocaue: 500,
-    bulakan: 500,
-    bustos: 500,
-    calumpit: 500,
-    'dona remedios trinidad': 1000,
-    guiguinto: 500,
-    hagonoy: 500,
-    marilao: 500,
-    norzagaray: 500,
-    obando: 500,
-    pandi: 500,
-    paombong: 500,
-    plaridel: 500,
-    pulilan: 500,
-    'san ildefonso': 1500,
-    'san miguel': 1500,
-    'san rafael': 500,
-    'santa maria': 500,
-  },
-  pampanga: {
-    angeles: 1000,
-    'san fernando': 1000,
-    mabalacat: 1800,
-    apalit: 1000,
-    arayat: 1500,
-    bacolor: 1500,
-    candaba: 1500,
-    floridablanca: 1500,
-    guagua: 1500,
-    lubao: 1500,
-    macabebe: 1500,
-    magalang: 1500,
-    masantol: 1000,
-    mexico: 1000,
-    minalin: 1500,
-    porac: 1500,
-    'san luis': 1000,
-    'san simon': 1000,
-    'santa ana': 1000,
-    'santa rita': 1000,
-    'santo tomas': 1000,
-    sasmuan: 1500,
-  },
-  rizal: {
-    angono: 1000,
-    baras: 1500,
-    binangonan: 1000,
-    cainta: 500,
-    cardona: 1500,
-    jalajala: 2000,
-    morong: 1500,
-    pililla: 2000,
-    montalban: 1000,
-    'san mateo': 500,
-    tanay: 1000,
-    taytay: 500,
-    teresa: 1000,
-  },
-  cavite: {
-    bacoor: 1000,
-    cavite: 1000,
-    dasmarinas: 1000,
-    'general trias': 1000,
-    imus: 1000,
-    tagaytay: 2500,
-    'trece martires': 1000,
-    alfonso: 2500,
-    amadeo: 1000,
-    carmona: 1000,
-    'general mariano alvarez': 1000,
-    indang: 1500,
-    kawit: 1000,
-    magallanes: 1500,
-    maragondon: 2000,
-    mendez: 2500,
-    naic: 1500,
-    noveleta: 1000,
-    rosario: 1000,
-    silang: 1500,
-    tanza: 1000,
-    ternate: 2000,
-  },
-  laguna: {
-    binan: 1000,
-    cabuyao: 1000,
-    calamba: 1000,
-    'san pablo': 2500,
-    'san pedro': 1000,
-    'santa rosa': 1000,
-    alaminos: 2500,
-    bay: 1500,
-    calauan: 2500,
-    cavinti: 2300,
-    famy: 2000,
-    kalayaan: 2000,
-    liliw: 2000,
-    'los banos': 1500,
-    luisiana: 2000,
-    lumban: 3500,
-    mabitac: 2000,
-    magdalena: 2000,
-    majayjay: 2000,
-    nagcarlan: 2000,
-    paete: 2000,
-    pagsanjan: 2000,
-    pakil: 2000,
-    pangil: 2000,
-    pila: 2000,
-    rizal: 1500,
-    'santa cruz': 2000,
-    'santa maria': 3500,
-    siniloan: 2500,
-    victoria: 2500,
-  },
-  batangas: {
-    batangas: 3500,
-    lipa: 2500,
-    tanauan: 2000,
-    agoncillo: 2500,
-    alitagtag: 2500,
-    balayan: 3500,
-    balete: 2500,
-    bauan: 2500,
-    calaca: 3500,
-    calatagan: 3500,
-    cuenca: 2000,
-    ibaan: 2000,
-    laurel: 2500,
-    lemery: 2500,
-    lian: 3500,
-    lobo: 2000,
-    mabini: 2500,
-    malvar: 2000,
-    'mataas na kahoy': 2000,
-    nasugbu: 3500,
-    'padre garcia': 2500,
-    rosario: 2500,
-    'san jose': 2000,
-    'san juan': 3500,
-    'san luis': 2500,
-    'san nicolas': 2500,
-    'san pascual': 2500,
-    'santa teresita': 2500,
-    'santo tomas': 2000,
-    taal: 2500,
-    talisay: 2500,
-    tuy: 3000,
-  },
-};
 
 const PROVINCE_ALIASES: Record<string, string> = {
   ncr: 'manila',
@@ -208,12 +32,17 @@ const CITY_ALIASES: Record<string, string> = {
   'sta maria': 'santa maria',
 };
 
-export function resolveShippingFee(province: string, city: string): number {
+export function resolveShippingFee(rates: ShippingRate[], province: string, city: string): number | null {
   const normalizedProvince = PROVINCE_ALIASES[normalizeKey(province)] ?? normalizeKey(province);
   const normalizedCity = CITY_ALIASES[normalizeKey(city)] ?? normalizeKey(city);
 
-  const provinceRates = SHIPPING_RATES[normalizedProvince];
-  if (!provinceRates) return 0;
+  const matchedRate = rates.find((rate) => {
+    if (!rate.status) return false;
+    const rateProvince = PROVINCE_ALIASES[normalizeKey(rate.provinceKey || rate.province)] ?? normalizeKey(rate.provinceKey || rate.province);
+    const rateCity = CITY_ALIASES[normalizeKey(rate.cityKey || rate.city)] ?? normalizeKey(rate.cityKey || rate.city);
 
-  return provinceRates[normalizedCity] ?? 0;
+    return rateProvince === normalizedProvince && rateCity === normalizedCity;
+  });
+
+  return matchedRate?.fee ?? null;
 }

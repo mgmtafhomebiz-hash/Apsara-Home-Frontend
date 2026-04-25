@@ -258,6 +258,8 @@ export default function ProductCard({
 
     addToCart({
       id: itemId,
+      productId: typeof id === 'number' ? id : undefined,
+      variantId: variant?.id,
       name: variantLabel ? `${safeName} (${variantLabel})` : safeName,
       price: variantPrice,
       originalPrice: typeof variantOriginal === 'number' ? variantOriginal : null,

@@ -9,6 +9,7 @@ import {
     useSetDefaultCustomerAddressMutation,
     type CustomerAddress,
 } from "@/store/api/userApi";
+import type { ShippingRate } from "@/store/api/shippingRatesApi";
 import { CheckoutAddressDraft, FormErrors, GuestForm } from "@/types/CustomerCheckout/types";
 import { MapPin, Plus, X, AlertCircle, Check } from 'lucide-react';
 
@@ -17,6 +18,8 @@ interface CustomerCheckoutAddressFormProps {
     errors: FormErrors;
     setField: (key: keyof GuestForm, value: string) => void;
     isLoggedIn?: boolean;
+    shippingRates?: ShippingRate[];
+    restrictToShippingRates?: boolean;
 }
 
 const emptyAddressDraft: CheckoutAddressDraft = {
@@ -31,6 +34,56 @@ const emptyAddressDraft: CheckoutAddressDraft = {
     address_type: 'Home',
     notes: '',
     set_default: true,
+};
+
+const normalizeLocationKey = (value: string) =>
+    value
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/\([^)]*\)/g, '')
+        .replace(/\bcity of\b/g, '')
+        .replace(/\b(city|municipality|province)\b/g, '')
+        .replace(/[^a-z0-9]+/g, ' ')
+        .trim()
+        .replace(/\s+/g, ' ');
+
+const PROVINCE_ALIASES: Record<string, string> = {
+    ncr: 'manila',
+    'metro manila': 'manila',
+    'national capital region': 'manila',
+    'city of manila': 'manila',
+};
+
+const CITY_ALIASES: Record<string, string> = {
+    'san jose del monte': 'sjdm bulacan',
+    'san jose del monte bulacan': 'sjdm bulacan',
+    'las pinas': 'las pinas',
+    'general mariano alvarez': 'general mariano alvarez',
+};
+
+const normalizeProvinceKey = (value: string) =>
+    PROVINCE_ALIASES[normalizeLocationKey(value)] ?? normalizeLocationKey(value);
+
+const normalizeCityKey = (value: string) =>
+    CITY_ALIASES[normalizeLocationKey(value)] ?? normalizeLocationKey(value);
+
+const regionSupportsProvince = (regionName: string, supportedProvinceKeys: Set<string>) => {
+    const region = normalizeLocationKey(regionName);
+
+    if (supportedProvinceKeys.has('manila') && (region.includes('national capital') || region === 'ncr')) return true;
+    if ((supportedProvinceKeys.has('bulacan') || supportedProvinceKeys.has('pampanga')) && region.includes('central luzon')) return true;
+    if (
+        (supportedProvinceKeys.has('rizal') ||
+            supportedProvinceKeys.has('cavite') ||
+            supportedProvinceKeys.has('laguna') ||
+            supportedProvinceKeys.has('batangas')) &&
+        (region.includes('calabarzon') || region.includes('region iv a'))
+    ) {
+        return true;
+    }
+
+    return false;
 };
 
 const Field = ({ label, value, onChange, placeholder, required = false, error, fieldKey, disabled = false }: {
@@ -153,6 +206,8 @@ export default function CustomerCheckoutAddressForm({
     errors,
     setField,
     isLoggedIn = false,
+    shippingRates = [],
+    restrictToShippingRates = false,
 }: CustomerCheckoutAddressFormProps) {
     const ph = usePhAddress({ source: 'auto' });
     const { data, isLoading, error: addressesError } = useCustomerAddressesQuery(undefined, { skip: !isLoggedIn });
@@ -173,6 +228,40 @@ export default function CustomerCheckoutAddressForm({
     const effectiveLoggedIn = isLoggedIn && !forceGuestMode && !hasUnauthorizedAddressAccess;
 
     const addresses = useMemo(() => data?.addresses ?? [], [data?.addresses]);
+    const activeShippingRates = useMemo(() => shippingRates.filter((rate) => rate.status), [shippingRates]);
+    const shouldRestrictToShippingRates = restrictToShippingRates && activeShippingRates.length > 0;
+    const supportedProvinceKeys = useMemo(
+        () => new Set(activeShippingRates.map((rate) => normalizeProvinceKey(rate.provinceKey || rate.province))),
+        [activeShippingRates],
+    );
+    const supportedRegions = useMemo(
+        () => shouldRestrictToShippingRates
+            ? ph.regions.filter((region) => regionSupportsProvince(region.name, supportedProvinceKeys))
+            : ph.regions,
+        [ph.regions, shouldRestrictToShippingRates, supportedProvinceKeys],
+    );
+    const supportedProvinces = useMemo(
+        () => shouldRestrictToShippingRates
+            ? ph.provinces.filter((province) => supportedProvinceKeys.has(normalizeProvinceKey(province.name)))
+            : ph.provinces,
+        [ph.provinces, shouldRestrictToShippingRates, supportedProvinceKeys],
+    );
+    const supportedCities = useMemo(() => {
+        if (!shouldRestrictToShippingRates) return ph.cities;
+
+        const selectedProvinceKey = ph.noProvince
+            ? normalizeProvinceKey(ph.address.region)
+            : normalizeProvinceKey(ph.address.province);
+
+        return ph.cities.filter((city) =>
+            activeShippingRates.some((rate) => {
+                const rateProvinceKey = normalizeProvinceKey(rate.provinceKey || rate.province);
+                const rateCityKey = normalizeCityKey(rate.cityKey || rate.city);
+
+                return rateProvinceKey === selectedProvinceKey && rateCityKey === normalizeCityKey(city.name);
+            }),
+        );
+    }, [activeShippingRates, ph.address.province, ph.address.region, ph.cities, ph.noProvince, shouldRestrictToShippingRates]);
 
     const applyAddressToForm = useCallback((address: CustomerAddress) => {
         setField('name', address.full_name);
@@ -325,7 +414,7 @@ export default function CustomerCheckoutAddressForm({
                             className={`w-full px-3.5 py-2.5 bg-white dark:bg-slate-900 border rounded-xl text-sm text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 transition-all ${errors.region ? 'border-red-300 dark:border-red-600 focus:ring-red-200 dark:focus:ring-red-900 focus:border-red-400 dark:focus:border-red-500' : 'border-slate-200 dark:border-slate-700 focus:ring-orange-200 dark:focus:ring-orange-900 focus:border-orange-400 dark:focus:border-orange-500'}`}
                         >
                             <option value="">- Select Region -</option>
-                            {ph.regions.map((region) => (
+                            {supportedRegions.map((region) => (
                                 <option key={region.code} value={region.code}>{region.name}</option>
                             ))}
                         </select>
@@ -347,7 +436,7 @@ export default function CustomerCheckoutAddressForm({
                                 className={`w-full px-3.5 py-2.5 bg-white dark:bg-slate-900 border rounded-xl text-sm text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 transition-all disabled:opacity-60 ${errors.province ? 'border-red-300 dark:border-red-600 focus:ring-red-200 dark:focus:ring-red-900 focus:border-red-400 dark:focus:border-red-500' : 'border-slate-200 dark:border-slate-700 focus:ring-orange-200 dark:focus:ring-orange-900 focus:border-orange-400 dark:focus:border-orange-500'}`}
                             >
                                 <option value="">{ph.loadingProvinces ? 'Loading provinces...' : '- Select Province -'}</option>
-                                {ph.provinces.map((province) => (
+                                {supportedProvinces.map((province) => (
                                     <option key={province.code} value={province.code}>{province.name}</option>
                                 ))}
                             </select>
@@ -370,7 +459,7 @@ export default function CustomerCheckoutAddressForm({
                                 className={`w-full px-3.5 py-2.5 bg-white dark:bg-slate-900 border rounded-xl text-sm text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 transition-all disabled:opacity-60 ${errors.city ? 'border-red-300 dark:border-red-600 focus:ring-red-200 dark:focus:ring-red-900 focus:border-red-400 dark:focus:border-red-500' : 'border-slate-200 dark:border-slate-700 focus:ring-orange-200 dark:focus:ring-orange-900 focus:border-orange-400 dark:focus:border-orange-500'}`}
                             >
                                 <option value="">{ph.loadingCities || ph.loadingProvinces ? 'Loading cities...' : '- Select City / Municipality -'}</option>
-                                {ph.cities.map((city) => (
+                                {supportedCities.map((city) => (
                                     <option key={city.code} value={city.code}>{city.name}</option>
                                 ))}
                             </select>
@@ -401,7 +490,9 @@ export default function CustomerCheckoutAddressForm({
                     <div className="flex items-start gap-2.5 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-orange-100 dark:border-orange-900/30 mt-1">
                         <AlertCircle className="w-4 h-4 text-orange-500 dark:text-orange-400 mt-0.5 shrink-0" />
                         <p className="text-xs text-orange-700 dark:text-orange-300 leading-relaxed">
-                            Nationwide delivery available. Delivery time may vary per location.
+                            {shouldRestrictToShippingRates
+                                ? 'Only admin-configured delivery locations are available for manual checkout.'
+                                : 'Delivery coverage is still being configured. You can still enter your address while shipping rates are being set up.'}
                         </p>
                     </div>
                 </div>
@@ -577,7 +668,7 @@ export default function CustomerCheckoutAddressForm({
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: 40, scale: 0.97 }}
                             transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-                            className="w-full max-w-2xl rounded-3xl bg-white shadow-2xl border border-slate-100 overflow-hidden max-h-[92vh] flex flex-col"
+                            className="w-full max-w-2xl rounded-3xl bg-white dark:bg-slate-900 shadow-2xl border border-slate-100 dark:border-slate-700 overflow-hidden max-h-[92vh] flex flex-col"
                         >
                             {/* Modal header */}
                             <div className="flex items-start justify-between gap-4 px-6 py-5 border-b border-slate-200 dark:border-slate-700">
@@ -640,9 +731,9 @@ export default function CustomerCheckoutAddressForm({
                                             transition={{ duration: 0.2 }}
                                         >
                                             {addresses.length === 0 ? (
-                                                <div className="rounded-2xl border border-dashed border-orange-200 bg-orange-50 px-4 py-8 text-center">
-                                                    <p className="text-sm font-semibold text-slate-800">No saved addresses yet</p>
-                                                    <p className="text-xs text-slate-500 mt-1">Add one now so you can use it for this order.</p>
+                                                <div className="rounded-2xl border border-dashed border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-900/20 px-4 py-8 text-center">
+                                                    <p className="text-sm font-semibold text-slate-800 dark:text-white">No saved addresses yet</p>
+                                                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Add one now so you can use it for this order.</p>
                                                     <button
                                                         type="button"
                                                         onClick={() => setModalView('add')}
@@ -676,17 +767,17 @@ export default function CustomerCheckoutAddressForm({
                                             transition={{ duration: 0.2 }}
                                             className="space-y-3"
                                         >
-                                            <div className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3">
+                                            <div className="rounded-2xl border border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-4 py-3">
                                                 <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Recipient</p>
-                                                <p className="mt-1.5 text-sm font-semibold text-slate-900">{form.name || 'No name yet'}</p>
-                                                <p className="mt-0.5 text-sm text-slate-500">{form.phone || 'No phone yet'}</p>
-                                                <p className="mt-1.5 text-xs text-slate-400">Uses the name and phone entered in your contact info.</p>
+                                                <p className="mt-1.5 text-sm font-semibold text-slate-900 dark:text-white">{form.name || 'No name yet'}</p>
+                                                <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{form.phone || 'No phone yet'}</p>
+                                                <p className="mt-1.5 text-xs text-slate-400 dark:text-slate-500">Uses the name and phone entered in your contact info.</p>
                                             </div>
 
                                             <Field label="Street / House No." value={draft.address} onChange={v => updateDraft('address', v)} placeholder="Street, building, house no." required />
 
                                             <div>
-                                                <label className="block text-xs font-semibold text-slate-600 mb-1.5">Region<span className="text-red-500 ml-0.5">*</span></label>
+                                                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">Region<span className="text-red-500 ml-0.5">*</span></label>
                                                 <select
                                                     value={ph.regionCode}
                                                     onChange={(e) => {
@@ -694,10 +785,10 @@ export default function CustomerCheckoutAddressForm({
                                                         ph.setRegion(e.target.value, option.text);
                                                         setDraft(prev => ({ ...prev, region: option.text, province: '', city: '', barangay: '' }));
                                                     }}
-                                                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
+                                                    className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-900 focus:border-orange-400 dark:focus:border-orange-500"
                                                 >
                                                     <option value="">- Select Region -</option>
-                                                    {ph.regions.map(region => (
+                                                    {supportedRegions.map(region => (
                                                         <option key={region.code} value={region.code}>{region.name}</option>
                                                     ))}
                                                 </select>
@@ -705,7 +796,7 @@ export default function CustomerCheckoutAddressForm({
 
                                             {!ph.noProvince ? (
                                                 <div>
-                                                    <label className="block text-xs font-semibold text-slate-600 mb-1.5">Province<span className="text-red-500 ml-0.5">*</span></label>
+                                                    <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">Province<span className="text-red-500 ml-0.5">*</span></label>
                                                     <select
                                                         value={ph.provinceCode}
                                                         disabled={!ph.regionCode || ph.loadingProvinces}
@@ -714,10 +805,10 @@ export default function CustomerCheckoutAddressForm({
                                                             ph.setProvince(e.target.value, option.text);
                                                             setDraft(prev => ({ ...prev, province: option.text, city: '', barangay: '' }));
                                                         }}
-                                                        className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-400 disabled:opacity-60"
+                                                        className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-900 focus:border-orange-400 dark:focus:border-orange-500 disabled:opacity-60"
                                                     >
                                                         <option value="">{ph.loadingProvinces ? 'Loading provinces...' : '- Select Province -'}</option>
-                                                        {ph.provinces.map(province => (
+                                                        {supportedProvinces.map(province => (
                                                             <option key={province.code} value={province.code}>{province.name}</option>
                                                         ))}
                                                     </select>
@@ -726,7 +817,7 @@ export default function CustomerCheckoutAddressForm({
 
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                                 <div>
-                                                    <label className="block text-xs font-semibold text-slate-600 mb-1.5">City / Municipality<span className="text-red-500 ml-0.5">*</span></label>
+                                                    <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">City / Municipality<span className="text-red-500 ml-0.5">*</span></label>
                                                     <select
                                                         value={ph.cityCode}
                                                         disabled={ph.noProvince ? !ph.regionCode : (!ph.provinceCode || ph.loadingCities)}
@@ -735,16 +826,16 @@ export default function CustomerCheckoutAddressForm({
                                                             ph.setCity(e.target.value, option.text);
                                                             setDraft(prev => ({ ...prev, city: option.text, barangay: '' }));
                                                         }}
-                                                        className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-400 disabled:opacity-60"
+                                                        className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-900 focus:border-orange-400 dark:focus:border-orange-500 disabled:opacity-60"
                                                     >
                                                         <option value="">{ph.loadingCities || ph.loadingProvinces ? 'Loading cities...' : '- Select City / Municipality -'}</option>
-                                                        {ph.cities.map(city => (
+                                                        {supportedCities.map(city => (
                                                             <option key={city.code} value={city.code}>{city.name}</option>
                                                         ))}
                                                     </select>
                                                 </div>
                                                 <div>
-                                                    <label className="block text-xs font-semibold text-slate-600 mb-1.5">Barangay<span className="text-red-500 ml-0.5">*</span></label>
+                                                    <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">Barangay<span className="text-red-500 ml-0.5">*</span></label>
                                                     <select
                                                         value={draft.barangay}
                                                         disabled={!ph.cityCode || ph.loadingBarangays}
@@ -752,7 +843,7 @@ export default function CustomerCheckoutAddressForm({
                                                             ph.setBarangay(e.target.value);
                                                             setDraft(prev => ({ ...prev, barangay: e.target.value }));
                                                         }}
-                                                        className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-400 disabled:opacity-60"
+                                                        className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-900 focus:border-orange-400 dark:focus:border-orange-500 disabled:opacity-60"
                                                     >
                                                         <option value="">{ph.loadingBarangays ? 'Loading barangays...' : '- Select Barangay -'}</option>
                                                         {ph.barangays.map(barangay => (
@@ -769,14 +860,14 @@ export default function CustomerCheckoutAddressForm({
 
                                             <Field label="Notes" value={draft.notes} onChange={v => updateDraft('notes', v)} placeholder="Landmark or delivery notes" />
 
-                                            <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 cursor-pointer hover:bg-slate-100 transition-colors">
+                                            <label className="flex items-center gap-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-4 py-3 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
                                                 <input
                                                     type="checkbox"
                                                     checked={draft.set_default}
                                                     onChange={(e) => updateDraft('set_default', e.target.checked)}
                                                     className="h-4 w-4 rounded border-slate-300 text-orange-500 focus:ring-orange-200"
                                                 />
-                                                <span className="text-sm text-slate-700 font-medium">Set as my default shipping address</span>
+                                                <span className="text-sm text-slate-700 dark:text-slate-300 font-medium">Set as my default shipping address</span>
                                             </label>
                                         </motion.div>
                                     )}
@@ -788,7 +879,7 @@ export default function CustomerCheckoutAddressForm({
                                             initial={{ opacity: 0, y: -6 }}
                                             animate={{ opacity: 1, y: 0 }}
                                             exit={{ opacity: 0, y: -6 }}
-                                            className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600"
+                                            className="rounded-2xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-600 dark:text-red-400"
                                         >
                                             {actionError}
                                         </motion.div>
@@ -797,13 +888,13 @@ export default function CustomerCheckoutAddressForm({
                             </div>
 
                             {/* Modal footer */}
-                            <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/80 flex items-center justify-end gap-2.5">
+                            <div className="px-6 py-4 border-t border-slate-100 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-800/80 flex items-center justify-end gap-2.5">
                                 <motion.button
                                     type="button"
                                     whileHover={{ scale: 1.02 }}
                                     whileTap={{ scale: 0.97 }}
                                     onClick={() => setIsModalOpen(false)}
-                                    className="px-4 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-600 font-semibold hover:bg-white transition-colors"
+                                    className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm text-slate-600 dark:text-slate-300 font-semibold hover:bg-white dark:hover:bg-slate-700 transition-colors"
                                 >
                                     Cancel
                                 </motion.button>

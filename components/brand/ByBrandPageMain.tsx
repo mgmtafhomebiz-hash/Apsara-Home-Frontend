@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { useMemo, useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSearchParams } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { useGetPublicProductBrandsQuery } from '@/store/api/productBrandsApi'
 import { useGetPublicProductsQuery, useGetProductBrandQuery } from '@/store/api/productsApi'
@@ -257,6 +258,7 @@ function PageHeaderSkeleton() {
 
 export default function ByBrandPageMain() {
   const router = useRouter()
+  const pathname = usePathname()
   const searchParams = useSearchParams()
   const brandParam = searchParams.get('brand')
   const letterFilterParam = searchParams.get('letter')
@@ -308,7 +310,10 @@ export default function ByBrandPageMain() {
     e.stopPropagation()
 
     if (!isLoggedIn) {
-      toast.error('Please sign in to add items to cart')
+      const callbackPath = typeof window !== 'undefined'
+        ? `${window.location.pathname}${window.location.search}`
+        : pathname || '/by-brand'
+      router.push(`/login?callback=${encodeURIComponent(callbackPath)}`)
       return
     }
 
@@ -1052,14 +1057,16 @@ export default function ByBrandPageMain() {
                             <button
                               onClick={(e) => handleAddToCart(product.id, e)}
                               disabled={isAddingToCart}
-                              className="absolute bottom-4 right-4 flex items-center justify-center gap-2 rounded-full bg-sky-500 hover:bg-sky-600 px-4 py-2 text-sm font-semibold text-white opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                              className="mt-2 flex h-9 w-9 items-center justify-center rounded-full bg-sky-500 text-white shadow-sm transition-all duration-300 hover:bg-sky-600 sm:absolute sm:bottom-4 sm:right-4 sm:mt-0 sm:h-auto sm:w-auto sm:gap-2 sm:px-4 sm:py-2 sm:text-sm sm:font-semibold sm:opacity-0 sm:translate-y-2 sm:group-hover:opacity-100 sm:group-hover:translate-y-0 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                              title="Add to Cart"
+                              aria-label="Add to Cart"
                             >
                               {isAddingToCart ? (
                                 <>
                                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="animate-spin">
                                     <path d="M21 12a9 9 0 1 1-6.219-8.56" />
                                   </svg>
-                                  Adding...
+                                  <span className="hidden sm:inline">Adding...</span>
                                 </>
                               ) : (
                                 <>
@@ -1068,7 +1075,7 @@ export default function ByBrandPageMain() {
                                     <circle cx="20" cy="21" r="1" />
                                     <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
                                   </svg>
-                                  Add to Cart
+                                  <span className="hidden sm:inline">Add to Cart</span>
                                 </>
                               )}
                             </button>

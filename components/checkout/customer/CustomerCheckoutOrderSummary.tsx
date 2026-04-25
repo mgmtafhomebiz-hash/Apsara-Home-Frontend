@@ -17,11 +17,27 @@ interface Props {
   onSubmit: () => void;
   voucher?: { code: string; discount: number } | null;
   computedTotal?: number;
-  shippingFee?: number;
+  shippingFee?: number | null;
+  shippingRatePending?: boolean;
+  shippingRateUnavailable?: boolean;
+  shippingAddressLabel?: string;
+  checkoutDisabledReason?: string;
   fullProduct?: CheckoutSummaryProduct | null;
 }
 
-export default function CustomerCheckoutOrderSummary({ checkoutData, loading, onSubmit, voucher, computedTotal, shippingFee, fullProduct }: Props) {
+export default function CustomerCheckoutOrderSummary({
+  checkoutData,
+  loading,
+  onSubmit,
+  voucher,
+  computedTotal,
+  shippingFee,
+  shippingRatePending = false,
+  shippingRateUnavailable = false,
+  shippingAddressLabel = '',
+  checkoutDisabledReason,
+  fullProduct,
+}: Props) {
   const [variantPickerOpen, setVariantPickerOpen] = useState(false);
   const variantOptions = (fullProduct?.variants ?? []).filter((v) =>
     Boolean(v.color || v.style || v.size || v.name || v.sku),
@@ -46,6 +62,7 @@ export default function CustomerCheckoutOrderSummary({ checkoutData, loading, on
   const voucherDiscount = Math.max(0, Number(voucher?.discount ?? 0));
   const displayTotal = typeof computedTotal === 'number' ? computedTotal : total;
   const displayShippingFee = typeof shippingFee === 'number' ? shippingFee : Number(handlingFee ?? 0);
+  const isCheckoutDisabled = loading || Boolean(checkoutDisabledReason);
   const selectedOptions = [
     selectedColor ? { label: 'Color', value: selectedColor } : null,
     selectedStyle ? { label: 'Style', value: selectedStyle } : null,
@@ -186,7 +203,7 @@ export default function CustomerCheckoutOrderSummary({ checkoutData, loading, on
             <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">Selected Items</p>
             <div className="mt-3 space-y-3">
               {items.map((item) => (
-                <div key={item.id} className="flex items-start gap-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-3">
+                <div key={`${item.cartItemId ?? item.id}-${item.selectedSku ?? item.variantId ?? ''}`} className="flex items-start gap-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-3">
                   <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-white dark:bg-slate-800">
                     <Image src={item.image} alt={item.name} fill className="object-cover" />
                   </div>
@@ -231,10 +248,22 @@ export default function CustomerCheckoutOrderSummary({ checkoutData, loading, on
           <div className="flex justify-between text-slate-500 dark:text-slate-400">
             <div className="flex items-center gap-1.5">
               <span>Shipping fee</span>
-              {displayShippingFee === 0 && <span className="text-[9px] px-1.5 py-0.5 bg-green-100 text-green-700 font-bold rounded-full">FREE</span>}
+              {!shippingRatePending && !shippingRateUnavailable && displayShippingFee === 0 && <span className="text-[9px] px-1.5 py-0.5 bg-green-100 text-green-700 font-bold rounded-full">FREE</span>}
             </div>
-            <span className={displayShippingFee === 0 ? 'text-green-600 font-semibold' : 'font-semibold text-slate-700'}>
-              {displayShippingFee === 0 ? 'PHP 0.00' : `PHP ${displayShippingFee.toLocaleString()}`}
+            <span className={
+              shippingRateUnavailable
+                ? 'font-semibold text-rose-500'
+                : displayShippingFee === 0
+                  ? 'text-green-600 font-semibold'
+                  : 'font-semibold text-slate-700 dark:text-slate-300'
+            }>
+              {shippingRatePending
+                ? 'Checking...'
+                : shippingRateUnavailable
+                  ? 'Not available'
+                  : displayShippingFee === 0
+                    ? 'PHP 0.00'
+                    : `PHP ${displayShippingFee.toLocaleString()}`}
             </span>
           </div>
         </div>
@@ -247,7 +276,9 @@ export default function CustomerCheckoutOrderSummary({ checkoutData, loading, on
         <div className="mt-3 flex items-center gap-2 px-3 py-2 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700">
           <svg className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
           <p className="text-xs text-slate-600 dark:text-slate-300 font-medium">
-            Shipping fee updates automatically based on the selected delivery city and province.
+            {shippingRateUnavailable
+              ? `Shipping is not available for this address${shippingAddressLabel ? ` (${shippingAddressLabel})` : ''}.`
+              : 'Shipping fee updates automatically based on the selected delivery city and province.'}
           </p>
         </div>
       </div>
@@ -255,11 +286,13 @@ export default function CustomerCheckoutOrderSummary({ checkoutData, loading, on
       {/* Place Order CTA */}
       <button
         onClick={onSubmit}
-        disabled={loading}
+        disabled={isCheckoutDisabled}
         className="w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-orange-500 hover:bg-orange-600 disabled:opacity-60 text-white py-4 text-sm font-bold transition-all border border-orange-600"
       >
         {loading ? (
           <><Loading size={16} /><span>Processing...</span></>
+        ) : checkoutDisabledReason ? (
+          <span>{checkoutDisabledReason}</span>
         ) : (
           <>
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

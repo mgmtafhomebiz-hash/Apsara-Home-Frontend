@@ -6,7 +6,7 @@ import { CategoryProduct } from "@/libs/CategoryData";
 import { displayColorName } from "@/libs/colorUtils";
 import { extractVariantOptionLabels } from "@/libs/productVariantOptions";
 import { motion } from "framer-motion"
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link2, X as XIcon } from "lucide-react";
 import StarRating from "../ui/StarRating";
 import BuyNowOptionsModal from "./BuyNowOptionsModal";
@@ -627,6 +627,25 @@ const ProductInfo = ({
         onVariantChange?.(selectedVariant);
     }, [selectedVariant, onVariantChange]);
 
+    const handleModalVariantSelect = useCallback((variant: VariantOption) => {
+        if (variant.color) setSelectedColor(variant.color);
+        if (variant.name?.trim()) setSelectedVariantName(variant.name.trim());
+        if (variant.style?.trim()) setSelectedStyle(variant.style.trim());
+        if (variant.size?.trim()) setSelectedSize(variant.size.trim());
+
+        const matchingChoice = groupedVariantChoices.find((choice) =>
+            (choice.groupVariants ?? (choice.variant ? [choice.variant] : [])).some((choiceVariant) => {
+                if (variant.sku && choiceVariant.sku) return choiceVariant.sku === variant.sku;
+                if (typeof variant.id === 'number' && typeof choiceVariant.id === 'number') return choiceVariant.id === variant.id;
+                return choiceVariant === variant;
+            }),
+        );
+
+        if (matchingChoice) {
+            setSelectedSizeKey(matchingChoice.key);
+        }
+    }, [groupedVariantChoices]);
+
     const baseSrp = toPositiveNumber(product.originalPrice) ?? toPositiveNumber(product.price) ?? 0;
     const variantSrp = toPositiveNumber(selectedVariant?.priceSrp) ?? baseSrp;
     const variantMember = toPositiveNumber(selectedVariant?.priceMember) ?? toPositiveNumber(product.priceMember) ?? 0;
@@ -675,6 +694,11 @@ const ProductInfo = ({
     const handleAddToCart = () => {
         if (!isInStock || !isCheckoutAvailable) return;
 
+        if (!isLoggedIn) {
+            router.push(`/login?callback=${encodeURIComponent(pathname || '/shop')}`);
+            return;
+        }
+
         const variantLabel = [
             selectedVariant?.name?.trim(),
             selectedVariant?.style?.trim(),
@@ -687,6 +711,8 @@ const ProductInfo = ({
         for (let i = 0; i < quantity; i++) {
             addToCart({
                 id: cartItemId,
+                productId: product.id,
+                variantId: selectedVariant?.id,
                 name: variantLabel ? `${product.name} (${variantLabel})` : product.name,
                 price: displayPrice,
                 originalPrice: displayOriginalPrice ?? null,
@@ -1141,6 +1167,8 @@ const ProductInfo = ({
                 selectedStyle={selectedVariant?.style?.trim() || selectedStyle}
                 selectedSize={selectedVariant?.size?.trim() || selectedSize}
                 selectedType={selectedVariant?.name?.trim() || undefined}
+                forceRealPrice={forceRealPrice}
+                onVariantSelect={handleModalVariantSelect}
 
             />
 
