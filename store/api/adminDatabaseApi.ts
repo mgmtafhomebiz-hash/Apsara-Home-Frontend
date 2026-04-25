@@ -46,11 +46,14 @@ export interface DeleteDatabaseExportResponse {
 export const adminDatabaseApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     listDatabaseExports: builder.query<ListDatabaseExportsResponse, { page?: number; per_page?: number } | void>({
-      query: (params) => ({
-        url: '/api/admin/web-pages/database/exports',
-        method: 'GET',
-        params,
-      }),
+      query: (params) => {
+        const queryParams = params ?? undefined
+        return {
+          url: '/api/admin/web-pages/database/exports',
+          method: 'GET',
+          ...(queryParams ? { params: queryParams } : {}),
+        }
+      },
     }),
     exportDatabase: builder.mutation<ExportDatabaseResponse, void>({
       query: () => ({
