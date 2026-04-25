@@ -115,12 +115,22 @@ const ZQ_STATUS_STYLES: Record<string, string> = {
 const formatMoney = (value: number) =>
   new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', maximumFractionDigits: 2 }).format(value || 0)
 
+const parseOrderDate = (value?: string | null) => {
+  if (!value) return null
+  const trimmed = value.trim()
+  if (!trimmed) return null
+
+  const normalized = trimmed.includes('T') ? trimmed : trimmed.replace(' ', 'T')
+  const hasTimeZone = /([zZ]|[+-]\d{2}:\d{2})$/.test(normalized)
+  const source = hasTimeZone ? normalized : `${normalized}+08:00`
+  const parsed = new Date(source)
+
+  return Number.isNaN(parsed.getTime()) ? null : parsed
+}
+
 const formatDateOnly = (value?: string | null) => {
-  if (!value) return 'N/A'
-  const hasTimeZone = /([zZ]|[+-]\d{2}:\d{2})$/.test(value.trim())
-  const normalized = value.includes('T') ? value.trim() : value.trim().replace(' ', 'T')
-  const date = new Date(hasTimeZone ? normalized : `${normalized}Z`)
-  if (Number.isNaN(date.getTime())) return 'N/A'
+  const date = parseOrderDate(value)
+  if (!date) return 'N/A'
   return new Intl.DateTimeFormat('en-PH', {
     timeZone: 'Asia/Manila',
     month: 'short',
@@ -130,11 +140,8 @@ const formatDateOnly = (value?: string | null) => {
 }
 
 const formatTimeOnly = (value?: string | null) => {
-  if (!value) return 'N/A'
-  const hasTimeZone = /([zZ]|[+-]\d{2}:\d{2})$/.test(value.trim())
-  const normalized = value.includes('T') ? value.trim() : value.trim().replace(' ', 'T')
-  const date = new Date(hasTimeZone ? normalized : `${normalized}Z`)
-  if (Number.isNaN(date.getTime())) return 'N/A'
+  const date = parseOrderDate(value)
+  if (!date) return 'N/A'
   return new Intl.DateTimeFormat('en-PH', {
     timeZone: 'Asia/Manila',
     hour: 'numeric',
@@ -150,10 +157,9 @@ const formatDuration = (minutes: number | null | undefined) => {
 }
 
 const getOrderSortTimestamp = (value?: string | null) => {
-  if (!value) return 0
-  const normalized = value.includes('T') ? value.trim() : value.trim().replace(' ', 'T')
-  const hasTimeZone = /([zZ]|[+-]\d{2}:\d{2})$/.test(normalized)
-  const parsed = new Date(hasTimeZone ? normalized : `${normalized}Z`).getTime()
+  const parsedDate = parseOrderDate(value)
+  if (!parsedDate) return 0
+  const parsed = parsedDate.getTime()
   return Number.isNaN(parsed) ? 0 : parsed
 }
 
@@ -170,9 +176,8 @@ const getPaginationPages = (currentPage: number, totalPages: number) => {
 }
 
 const isNewOrder = (value?: string | null) => {
-  if (!value) return false
-  const createdAt = new Date(value)
-  if (Number.isNaN(createdAt.getTime())) return false
+  const createdAt = parseOrderDate(value)
+  if (!createdAt) return false
   return Date.now() - createdAt.getTime() <= 24 * 60 * 60 * 1000
 }
 
