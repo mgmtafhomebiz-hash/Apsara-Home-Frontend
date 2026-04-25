@@ -14,6 +14,7 @@ import CustomerCheckoutPaymentMethod from "./CustomerCheckoutPaymentMethod";
 import CustomerCheckoutOrderSummary from "./CustomerCheckoutOrderSummary";
 import { CheckoutOnlineBankingProvider, useCreateCheckoutSessionMutation, useValidateVoucherMutation } from "@/store/api/paymentApi";
 import { useGetPublicGeneralSettingsQuery } from "@/store/api/adminSettingsApi";
+import { useGetPublicShippingRatesQuery } from "@/store/api/shippingRatesApi";
 import { getStoredReferralCode } from "@/libs/referral";
 import { normalizeReferralCode } from "@/libs/referral";
 import { useMeQuery } from "@/store/api/userApi";
@@ -51,15 +52,20 @@ const LOCAL_PAYMENT_MODE_HOSTS = new Set(['localhost', '127.0.0.1']);
 
 function PartnerOrderFooter({ partnerName }: { partnerName: string }) {
     return (
-        <footer className="border-t border-slate-200 bg-white">
-            <div className="mx-auto max-w-7xl px-4 py-6 text-center text-sm text-slate-500 sm:px-6 lg:px-8">
-                Orders from <span className="font-semibold text-slate-800">{partnerName}</span> are still processed through AF Home.
+        <footer className="border-t border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950">
+            <div className="mx-auto max-w-7xl px-4 py-6 text-center text-sm text-slate-500 dark:text-slate-400 sm:px-6 lg:px-8">
+                Orders from <span className="font-semibold text-slate-800 dark:text-slate-200">{partnerName}</span> are still processed through AF Home.
             </div>
         </footer>
     );
 }
 
 type DraftCheckoutItem = NonNullable<CustomerCheckoutData['items']>[number];
+
+const toPositiveDraftNumber = (value: unknown): number | undefined => {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
+};
 
 function readCheckoutDraft(): CustomerCheckoutData | null {
     if (typeof window === 'undefined') return null;
@@ -70,14 +76,24 @@ function readCheckoutDraft(): CustomerCheckoutData | null {
 
         const parsed = JSON.parse(raw) as CustomerCheckoutData & {
             product?: CustomerCheckoutData['product'] & { id?: number | string };
-            items?: Array<DraftCheckoutItem & { id?: number | string }>;
+            items?: Array<DraftCheckoutItem & {
+                id?: number | string;
+                cartItemId?: number | string;
+                productId?: number | string;
+                variantId?: number | string;
+            }>;
         };
 
-        const normalizedProductId = Number(parsed?.product?.id);
+        const normalizedProductId = toPositiveDraftNumber(parsed?.product?.id)
+            ?? toPositiveDraftNumber(parsed?.items?.[0]?.productId)
+            ?? toPositiveDraftNumber(parsed?.items?.[0]?.id);
         const normalizedItems = Array.isArray(parsed.items)
             ? parsed.items.map((item) => ({
                 ...item,
                 id: String(item.id),
+                cartItemId: toPositiveDraftNumber(item.cartItemId),
+                productId: toPositiveDraftNumber(item.productId),
+                variantId: toPositiveDraftNumber(item.variantId),
             }))
             : parsed.items;
 
@@ -86,7 +102,7 @@ function readCheckoutDraft(): CustomerCheckoutData | null {
             product: parsed.product
                 ? {
                     ...parsed.product,
-                    id: Number.isFinite(normalizedProductId) ? normalizedProductId : undefined,
+                    id: normalizedProductId,
                 }
                 : parsed.product,
             items: normalizedItems,
@@ -117,6 +133,7 @@ const CustomerCheckoutMain = ({
     const isLoggedIn = isCustomerSession;
     const { data: meData } = useMeQuery(undefined, { skip: !isCustomerSession });
     const { data: publicSettingsData } = useGetPublicGeneralSettingsQuery();
+    const { data: shippingRatesData, isLoading: shippingRatesLoading, isFetching: shippingRatesFetching } = useGetPublicShippingRatesQuery();
     const [fetchProduct, { data: fullProductData }] = useLazyGetPublicProductQuery();
     const [checkoutRefreshTrigger, setCheckoutRefreshTrigger] = useState(0);
     const normalizedPartner = (storefrontPartner ?? '').trim().toLowerCase();
@@ -197,15 +214,21 @@ const CustomerCheckoutMain = ({
     }), [effectiveReferral, formOverrides, isLoggedIn, meData]);
 
     const shippingFee = useMemo(() => {
-        if (!form.province.trim() || !form.city.trim()) return 0;
-        return resolveShippingFee(form.province, form.city);
-    }, [form.city, form.province]);
+        if (!manualCheckoutModeEnabledByAdmin) return 0;
+        if (!form.province.trim() || !form.city.trim()) return null;
+        return resolveShippingFee(shippingRatesData?.rates ?? [], form.province, form.city);
+    }, [form.city, form.province, manualCheckoutModeEnabledByAdmin, shippingRatesData?.rates]);
+    const hasShippingAddress = Boolean(form.province.trim() && form.city.trim());
+    const shippingAddressLabel = [form.city.trim(), form.province.trim()].filter(Boolean).join(', ');
+    const isShippingRatePending = manualCheckoutModeEnabledByAdmin && hasShippingAddress && (shippingRatesLoading || shippingRatesFetching);
+    const isShippingRateUnavailable = manualCheckoutModeEnabledByAdmin && hasShippingAddress && !isShippingRatePending && shippingFee === null;
+    const resolvedShippingFee = shippingFee ?? 0;
 
     const voucherDiscount = useMemo(() => Math.max(0, Number(voucherInfo?.discount ?? 0)), [voucherInfo?.discount]);
     const computedTotal = useMemo(() => {
         if (!checkoutData) return 0;
-        return Math.max(0, checkoutData.subtotal - voucherDiscount) + shippingFee;
-    }, [checkoutData, shippingFee, voucherDiscount]);
+        return Math.max(0, checkoutData.subtotal - voucherDiscount) + resolvedShippingFee;
+    }, [checkoutData, resolvedShippingFee, voucherDiscount]);
 
     useEffect(() => {
         if (checkoutData) return;
@@ -304,6 +327,14 @@ const CustomerCheckoutMain = ({
         }
 
         if (!checkoutData) return;
+        if (isShippingRatePending) {
+            alert('Shipping fee is still loading. Please wait a moment.');
+            return;
+        }
+        if (isShippingRateUnavailable) {
+            alert('No shipping rate is configured for the selected province and city.');
+            return;
+        }
         if (form.voucher_coupon.trim() && !voucherInfo) {
             setVoucherError(voucherError || 'Voucher code is invalid or expired.');
             return;
@@ -344,7 +375,7 @@ const CustomerCheckoutMain = ({
                     selected_size: checkoutData.selectedSize ?? null,
                     selected_type: checkoutData.selectedType ?? null,
                     subtotal: checkoutData.subtotal,
-                    handling_fee: shippingFee,
+                    handling_fee: resolvedShippingFee,
                 },
             }).unwrap();
 
@@ -402,7 +433,7 @@ const CustomerCheckoutMain = ({
     }
 
     const checkoutContent = (
-        <main className="flex-1">
+        <main className="flex-1 bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
                 <div className="bg-white dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800">
                     <div className="container mx-auto px-4 py-4 flex items-center justify-between">
                         <div className="flex items-center gap-3">
@@ -444,6 +475,8 @@ const CustomerCheckoutMain = ({
                                 errors={errors}
                                 setField={setField}
                                 isLoggedIn={isLoggedIn}
+                                shippingRates={shippingRatesData?.rates ?? []}
+                                restrictToShippingRates={manualCheckoutModeEnabledByAdmin}
                             />
 
                             <CustomerCheckoutPaymentMethod
@@ -471,6 +504,16 @@ const CustomerCheckoutMain = ({
                                 voucher={voucherInfo ? { code: voucherInfo.code, discount: voucherInfo.discount } : null}
                                 computedTotal={computedTotal}
                                 shippingFee={shippingFee}
+                                shippingRatePending={isShippingRatePending}
+                                shippingRateUnavailable={isShippingRateUnavailable}
+                                shippingAddressLabel={shippingAddressLabel}
+                                checkoutDisabledReason={
+                                    isShippingRatePending
+                                        ? 'Checking shipping rate...'
+                                        : isShippingRateUnavailable
+                                            ? 'No shipping rate for selected location'
+                                            : undefined
+                                }
                                 fullProduct={fullProductData ?? null}
                             />
                         </div>

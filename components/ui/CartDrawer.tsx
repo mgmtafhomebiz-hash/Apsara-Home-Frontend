@@ -43,7 +43,10 @@ export default function CartDrawer() {
     return map
   }, new Map<string, typeof items>()), [items])
   const checkoutItems: CustomerCheckoutLineItem[] = selectedItems.map((item) => ({
-    id: item.id,
+    id: String(item.productId ?? item.id),
+    cartItemId: item.cartItemId,
+    productId: item.productId,
+    variantId: item.variantId,
     name: item.name,
     image: item.image,
     price: item.price,
@@ -61,11 +64,12 @@ export default function CartDrawer() {
 
     const handlingFee = 0
     const firstItem = checkoutItems[0]
+    const firstProductId = Number(firstItem.productId ?? firstItem.id)
     const checkoutSource = resolveCheckoutSource()
 
     localStorage.setItem('guest_checkout', JSON.stringify({
       product: {
-        id: checkoutItems.length === 1 ? firstItem.id : firstItem.id,
+        id: Number.isFinite(firstProductId) ? firstProductId : undefined,
         name: checkoutItems.length === 1 ? firstItem.name : `${checkoutItems.length} selected items from AF Home`,
         image: firstItem.image,
         price: selectedTotal,
@@ -90,6 +94,12 @@ export default function CartDrawer() {
 
     setIsOpen(false)
     router.push(checkoutTarget)
+  }
+
+  const handleDeleteSelected = () => {
+    if (selectedIds.length === 0) return
+
+    selectedIds.forEach((id) => removeFromCart(id))
   }
 
   return (
@@ -284,6 +294,22 @@ export default function CartDrawer() {
 
             {items.length > 0 && (
               <div className="space-y-3 border-t border-gray-100 dark:border-gray-700 p-5">
+                {selectedIds.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleDeleteSelected}
+                    className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-semibold text-red-600 transition hover:border-red-300 hover:bg-red-100 dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/30"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <polyline points="3 6 5 6 21 6" />
+                      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                      <path d="M10 11v6" />
+                      <path d="M14 11v6" />
+                      <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+                    </svg>
+                    Delete Selected ({selectedIds.length})
+                  </button>
+                )}
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-500 dark:text-gray-400">Subtotal</span>
                   <span className="text-xl font-bold text-slate-900 dark:text-white">{'\u20b1'}{selectedTotal.toLocaleString()}</span>

@@ -3,7 +3,7 @@
 import { ReactNode, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useAppDispatch, useAppSelector } from '@/store/hooks'
-import { useGetCartQuery } from '@/store/api/cartApi'
+import { useGetCartQuery, useRemoveCartItemMutation, useUpdateCartItemMutation } from '@/store/api/cartApi'
 import {
   addToCart as addToCartAction,
   removeFromCart as removeFromCartAction,
@@ -16,6 +16,9 @@ import {
 
 export interface CartItem {
   id: string
+  cartItemId?: number
+  productId?: number
+  variantId?: number
   name: string
   price: number
   originalPrice?: number | null
@@ -63,12 +66,17 @@ export function useCart(): CartContextType {
   const { data: cartData, isLoading: isCartLoading } = useGetCartQuery(undefined, {
     skip: !isLoggedIn,
   })
+  const [updateCartItemApi] = useUpdateCartItemMutation()
+  const [removeCartItemApi] = useRemoveCartItemMutation()
 
   // Sync cart items from backend when logged in
   useEffect(() => {
     if (isLoggedIn && cartData?.cart_items) {
       const backendItems: CartItem[] = cartData.cart_items.map((item) => ({
-        id: String(item.crt_product_id),
+        id: String(item.crt_id),
+        cartItemId: item.crt_id,
+        productId: item.crt_product_id,
+        variantId: item.crt_variant_id,
         name: item.product_name || `Product ${item.crt_product_id}`,
         price: Number(item.crt_unit_price),
         originalPrice: item.product_price_srp ? Number(item.product_price_srp) : null,
@@ -92,10 +100,33 @@ export function useCart(): CartContextType {
 
   const removeFromCart = (id: string) => {
     dispatch(removeFromCartAction(id))
+
+    if (isLoggedIn) {
+      const cartItemId = items.find((item) => item.id === id)?.cartItemId ?? Number(id)
+      if (Number.isFinite(cartItemId)) {
+        void removeCartItemApi(cartItemId).unwrap().catch(() => {
+          // RTK Query invalidation will restore the server state if the request fails.
+        })
+      }
+    }
   }
 
   const updateQuantity = (id: string, qty: number) => {
+    if (qty <= 0) {
+      removeFromCart(id)
+      return
+    }
+
     dispatch(updateQuantityAction({ id, quantity: qty }))
+
+    if (isLoggedIn) {
+      const cartItemId = items.find((item) => item.id === id)?.cartItemId ?? Number(id)
+      if (Number.isFinite(cartItemId)) {
+        void updateCartItemApi({ id: cartItemId, quantity: qty }).unwrap().catch(() => {
+          // RTK Query invalidation will restore the server state if the request fails.
+        })
+      }
+    }
   }
 
   const setIsOpen = (open: boolean) => {

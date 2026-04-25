@@ -38,6 +38,9 @@ export interface CustomerCheckoutProduct {
 
 export interface CustomerCheckoutLineItem {
   id: string;
+  cartItemId?: number;
+  productId?: number;
+  variantId?: number;
   name: string;
   image: string;
   price: number;

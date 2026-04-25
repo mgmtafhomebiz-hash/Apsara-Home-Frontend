@@ -148,6 +148,7 @@ const CompleteTheLook = ({ currentCategory, currentCategoryId, currentCategoryLa
     selectedItems.forEach((item) => {
       addToCart({
         id: String(item.id),
+        productId: item.id,
         name: item.name,
         price: item.price,
         originalPrice: typeof item.originalPrice === 'number' ? item.originalPrice : null,
