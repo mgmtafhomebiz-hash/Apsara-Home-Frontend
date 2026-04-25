@@ -569,6 +569,10 @@ const parseCsvText = (text: string): ParsedCsv => {
     throw new Error(`Missing required column(s): ${missing.join(', ')}`)
   }
 
+  // Propagate pd_parent_sku to variant-only rows where the user left it blank
+  // (common in spreadsheets: first row has name/sku/category, subsequent variant rows don't)
+  let lastParentSku = ''
+
   const rows = lines.slice(1).map((line) => {
     const values = normalizeCsvValues(headers, parseCsvLine(line, delimiter))
     const raw: Record<string, string> = {}
@@ -576,6 +580,23 @@ const parseCsvText = (text: string): ParsedCsv => {
       raw[header] = values[index] ?? ''
     })
     return normalizeRow(raw)
+  }).map((row) => {
+    const sku = (row.pd_parent_sku ?? '').trim()
+    if (sku) {
+      lastParentSku = sku
+      return row
+    }
+    // Variant row with no parent SKU — inherit from the last seen product row
+    if ((row.pv_sku ?? '').trim() && lastParentSku) {
+      return { ...row, pd_parent_sku: lastParentSku }
+    }
+    return row
+  }).filter((row) => {
+    // Skip rows that have no product info AND no variant SKU — these are truly blank rows
+    const name = (row.pd_name ?? '').trim()
+    const sku = (row.pd_parent_sku ?? '').trim()
+    const variantSku = (row.pv_sku ?? '').trim()
+    return name !== '' || sku !== '' || variantSku !== ''
   })
 
   return { headers: headers.filter((header) => IMPORT_COLUMNS.includes(header)), rows, isVariantSheet }
