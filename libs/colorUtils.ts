@@ -143,6 +143,21 @@ export function displayColorName(name: string, _hex?: string): string {
   return name
 }
 
+/** Returns every color in the palette */
+export function getAllColors(): { name: string; hex: string }[] {
+  return COLOR_PALETTE.map((c) => ({ name: c.name, hex: c.hex }))
+}
+
+/** Returns palette entries whose name includes the query (case-insensitive) */
+export function searchColorsByName(query: string): { name: string; hex: string }[] {
+  const q = query.trim().toLowerCase()
+  if (!q) return getAllColors()
+  return COLOR_PALETTE.filter((c) => c.name.toLowerCase().includes(q)).map((c) => ({
+    name: c.name,
+    hex: c.hex,
+  }))
+}
+
 const normalizeColorName = (value: string) =>
   value.trim().toLowerCase().replace(/[^a-z0-9]+/g, ' ')
 
