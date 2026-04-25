@@ -440,59 +440,59 @@ export default function ProductsTable({
             </tr>
           </thead>
 
-          <tbody className="bg-white dark:bg-slate-950">
+          <tbody>
             {isLoading ? (
-              <tr>
-                <td colSpan={columnCount} className="px-4 py-2">
+              <tr key="loading">
+                <td colSpan={columnCount} className="px-4 py-10">
                   <LoadingProductsState />
                 </td>
               </tr>
             ) : sortedRows.length === 0 ? (
-              <tr>
-                <td colSpan={columnCount} className="px-4 py-2">
+              <tr key="empty">
+                <td colSpan={columnCount} className="px-4 py-10">
                   <EmptyProductsState />
                 </td>
               </tr>
             ) : (
-              sortedRows.map((product) => {
-                const effectiveStockQty = getEffectiveStockQty(product)
-                const isSelected = selectedIds.includes(product.id)
-                const variantCount = getVariantCount(product)
-                const statusLabel = isActiveStatus(product.status) ? 'Active' : 'Inactive'
+                sortedRows.map((product) => {
+                  const effectiveStockQty = getEffectiveStockQty(product)
+                  const isSelected = selectedIds.includes(product.id)
+                  const variantCount = getVariantCount(product)
+                  const statusLabel = isActiveStatus(product.status) ? 'Active' : 'Inactive'
 
-                return (
-                  <tr
-                    key={product.id}
-                    className={cn(
-                      'transition-colors hover:bg-slate-50/80 dark:hover:bg-slate-900/80',
-                      isSelected ? 'bg-sky-50/70 dark:bg-sky-500/10' : 'bg-white dark:bg-slate-950',
-                    )}
-                  >
-                    <td className="border-b border-slate-100 px-4 py-4 align-top dark:border-slate-800/70">
-                      {!readOnly ? (
-                        <input
-                          type="checkbox"
-                          aria-label={`Select product ${product.name}`}
-                          checked={isSelected}
-                          onChange={() => onToggleSelect(product.id)}
-                          className="mt-1 h-4 w-4 rounded border-slate-300 bg-white text-sky-600 focus:ring-sky-500 dark:border-slate-600 dark:bg-slate-900"
-                        />
-                      ) : null}
-                    </td>
+                  return (
+                    <tr
+                      key={product.id}
+                      className={cn(
+                        'border-b border-slate-200 transition-colors hover:bg-white dark:border-slate-700 dark:hover:bg-slate-900',
+                        isSelected ? 'bg-teal-50/40 dark:bg-teal-500/10' : '',
+                      )}
+                    >
+                      <td className="w-12 border-b border-slate-100 px-4 py-4 pr-0 dark:border-slate-800/70">
+                        {!readOnly ? (
+                          <input
+                            type="checkbox"
+                            aria-label={`Select product ${product.name}`}
+                            checked={isSelected}
+                            onChange={() => onToggleSelect(product.id)}
+                            className="h-4 w-4 rounded border-slate-300 bg-white text-sky-600 focus:ring-sky-500 dark:border-slate-600 dark:bg-slate-900"
+                          />
+                        ) : null}
+                      </td>
 
-                    <td className="border-b border-slate-100 px-4 py-4 dark:border-slate-800/70">
-                      <div className="relative h-11 w-11 overflow-hidden rounded-xl border border-slate-200 bg-slate-100 dark:border-slate-700 dark:bg-slate-800">
-                        {product.image ? (
-                          <Image src={product.image} alt={product.name} fill className="object-cover" unoptimized />
-                        ) : (
-                          <div className="flex h-full w-full items-center justify-center">
-                            <svg className="h-5 w-5 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                          </div>
-                        )}
-                      </div>
-                    </td>
+                      <td className="border-b border-slate-100 px-4 py-4 dark:border-slate-800/70">
+                        <div className="relative h-11 w-11 overflow-hidden rounded-xl border border-slate-200 bg-slate-100 dark:border-slate-700 dark:bg-slate-800">
+                          {product.image ? (
+                            <Image src={product.image} alt={product.name} fill className="object-cover" unoptimized />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center">
+                              <svg className="h-5 w-5 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                              </svg>
+                            </div>
+                          )}
+                        </div>
+                      </td>
 
                     <td className="border-b border-slate-100 px-4 py-4 dark:border-slate-800/70">
                       <div className="min-w-0">

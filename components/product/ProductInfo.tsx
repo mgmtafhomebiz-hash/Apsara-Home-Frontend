@@ -631,9 +631,9 @@ const ProductInfo = ({
     const variantSrp = toPositiveNumber(selectedVariant?.priceSrp) ?? baseSrp;
     const variantMember = toPositiveNumber(selectedVariant?.priceMember) ?? toPositiveNumber(product.priceMember) ?? 0;
     const hasMemberPrice = variantMember > 0 && variantMember < variantSrp;
-    const shouldUseMemberPrice = hasMemberPrice && canUseMemberPrice && !forceRealPrice;
-    const displayPrice = shouldUseMemberPrice ? variantMember : variantSrp;
-    const displayOriginalPrice = shouldUseMemberPrice
+    const shouldDisplayMemberPrice = hasMemberPrice && !forceRealPrice;
+    const displayPrice = shouldDisplayMemberPrice ? variantMember : variantSrp;
+    const displayOriginalPrice = shouldDisplayMemberPrice
         ? variantSrp
         : (!forceRealPrice && product.originalPrice && product.originalPrice > variantSrp ? product.originalPrice : undefined);
     const totalVariantStock = getEffectiveVariantStock(variantOptions);
@@ -641,12 +641,13 @@ const ProductInfo = ({
         ? selectedVariant.qty
         : (typeof totalVariantStock === 'number' ? totalVariantStock : product.stock);
     const productType = Number(product.type ?? 0);
-    const isVariantProduct = productType === 1;
-    const hasRealVariants = isVariantProduct && variantOptions.length > 0;
+    const hasRealVariants = variantOptions.length > 0;
     const variantPv = hasRealVariants
         ? (toPositiveNumber(selectedVariant?.prodpv) ?? 0)
         : basePv;
-    const productTypeLabel = PRODUCT_TYPE_LABELS[productType] ?? 'Regular';
+    const productTypeLabel = hasRealVariants
+        ? 'Variant'
+        : (PRODUCT_TYPE_LABELS[productType] ?? 'Regular');
     const displaySku = (selectedVariant?.sku && selectedVariant.sku.trim().length > 0)
         ? selectedVariant.sku
         : (product.sku && product.sku.trim().length > 0 ? product.sku : '');

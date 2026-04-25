@@ -916,7 +916,7 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                     <th className="min-w-[150px] px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-300">Checkout</th>
                     <th className="min-w-[150px] px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-300">Source</th>
                     <th className="min-w-[140px] px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-300">Date</th>
-                    <th className="min-w-[200px] px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-300">Customer</th>
+                          <th className="min-w-[260px] px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-300">Customer / Delivery</th>
                     <th className="min-w-[120px] px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-300">Amount</th>
                     <th className="min-w-[110px] px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-300">Approval</th>
                     <th className="min-w-[110px] px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-300">SLA</th>
@@ -1056,6 +1056,17 @@ export default function AdminOrdersPageMain({ initialFilter = 'all' }: Props) {
                               <div className="min-w-0 space-y-1">
                                 <p className="line-clamp-1 text-[15px] font-semibold leading-5 text-slate-800 dark:text-slate-100">{order.customer_name || 'N/A'}</p>
                                 <p className="line-clamp-1 text-[12px] leading-4 text-slate-400 dark:text-slate-500">{order.customer_email || 'No email provided'}</p>
+                                <p className="line-clamp-1 text-[12px] leading-4 text-slate-500 dark:text-slate-400">
+                                  {order.customer_phone || 'No phone provided'}
+                                </p>
+                                <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-800/70">
+                                  <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                                    Delivery Address
+                                  </p>
+                                  <p className="mt-1 line-clamp-3 text-[12px] leading-5 text-slate-600 dark:text-slate-300">
+                                    {order.customer_address || 'No delivery address provided'}
+                                  </p>
+                                </div>
                               </div>
                             </div>
                           </td>
