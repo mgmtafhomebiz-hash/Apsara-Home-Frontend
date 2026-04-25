@@ -122,7 +122,7 @@ const ProductTabs = ({ product, reviews = [], reviewSummary }: ProductTabsProps)
                     if (product.pswidth  && product.pswidth  > 0) dimParts.push(`W: ${product.pswidth} cm`)
                     if (product.pslenght && product.pslenght > 0) dimParts.push(`D: ${product.pslenght} cm`)
                     if (product.psheight && product.psheight > 0) dimParts.push(`H: ${product.psheight} cm`)
-                    const dimensions = dimParts.length > 0 ? dimParts.join(' ?? ') : null
+                    const dimensions = dimParts.length > 0 ? dimParts.join(' x ') : null
 
                     const colorSet = new Set<string>()
                     product.variants?.forEach(v => { if (v.color) colorSet.add(displayColorName(v.color, v.colorHex)) })

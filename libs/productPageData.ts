@@ -228,6 +228,7 @@ const toCategoryProduct = (row: LooseRecord, apiUrl?: string): CategoryProduct =
   return {
     id,
     name,
+    type: toNumber(row.type ?? row.pd_type),
     createdAt: (row.createdAt ?? row.pd_created_at ?? row.created_at) as string | undefined,
     price,
     priceSrp: srp || undefined,
@@ -366,4 +367,3 @@ export async function getProductPageData(slug: string): Promise<ProductPageData 
     return null
   }
 }
-
