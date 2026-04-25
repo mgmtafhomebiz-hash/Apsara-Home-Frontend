@@ -2,24 +2,15 @@
 
 import { CategoryProduct } from "@/libs/CategoryData";
 import { displayColorName } from "@/libs/colorUtils";
-import { useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 import StarRating from "../ui/StarRating";
 import type { ProductReview, ProductReviewSummary } from "@/store/api/productsApi";
 
 interface ProductTabsProps {
     product: CategoryProduct;
-    defaultTab?: 'description' | 'specs' | 'reviews';
-    onTabChange?: (tab: string) => void;
     reviews?: ProductReview[];
     reviewSummary?: ProductReviewSummary | null;
 }
-
-const tabs: { id: 'description' | 'specs' | 'reviews'; label: string }[] = [
-    { id: 'description', label: 'Description' },
-    { id: 'specs', label: 'Specifications' },
-    { id: 'reviews', label: 'Reviews' },
-];
 
 const decodeHtmlEntities = (value: string) =>
     value
@@ -57,14 +48,23 @@ const cleanProductDescription = (value: string) => {
         .trim();
 };
 
-const ProductTabs = ({ product, defaultTab = 'description', onTabChange, reviews = [], reviewSummary }: ProductTabsProps) => {
-    const [activeTab, setActiveTab] = useState<'description' | 'specs' | 'reviews'>(defaultTab);
-    const cleanedDescription = product.description ? cleanProductDescription(product.description) : '';
+const sanitizeProductDescriptionHtml = (value: string) => {
+    let decoded = value.trim();
 
-    const handleTabChange = (tab: 'description' | 'specs' | 'reviews') => {
-        setActiveTab(tab);
-        onTabChange?.(tab);
-    };
+    for (let i = 0; i < 3; i += 1) {
+        const next = decodeHtmlEntities(decoded);
+        if (next === decoded) break;
+        decoded = next;
+    }
+
+    return decoded
+        .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '')
+        .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, '');
+};
+
+const ProductTabs = ({ product, reviews = [], reviewSummary }: ProductTabsProps) => {
+    const cleanedDescription = product.description ? cleanProductDescription(product.description) : '';
+    const sanitizedDescriptionHtml = product.description ? sanitizeProductDescriptionHtml(product.description) : '';
 
     const reviewCount = reviewSummary?.count ?? reviews.length ?? 0;
     const avgRatingValue = typeof reviewSummary?.average === 'number'
@@ -96,13 +96,18 @@ const ProductTabs = ({ product, defaultTab = 'description', onTabChange, reviews
             {/* Description Section */}
             <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
                 <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-3">Description</h3>
-                {cleanedDescription ? (
+                {sanitizedDescriptionHtml ? (
+                    <div
+                        className="prose prose-sm max-w-none text-gray-600 dark:prose-invert dark:text-gray-300 prose-headings:scroll-mt-24 prose-p:my-2 prose-ul:my-2 prose-ol:my-2 prose-li:my-0"
+                        dangerouslySetInnerHTML={{ __html: sanitizedDescriptionHtml }}
+                    />
+                ) : cleanedDescription ? (
                     <div className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
-                        {cleanedDescription.split(/\n{2,}/).map((paragraph, index) => (
-                            <p key={`${index}-${paragraph.slice(0, 24)}`} className="whitespace-pre-line">
-                                {paragraph.trim()}
-                            </p>
-                        ))}
+                            {cleanedDescription.split(/\n{2,}/).map((paragraph, index) => (
+                                <p key={`${index}-${paragraph.slice(0, 24)}`} className="whitespace-pre-line">
+                                    {paragraph.trim()}
+                                </p>
+                            ))}
                     </div>
                 ) : (
                     <p className="text-gray-400 dark:text-gray-500 italic">No description available.</p>
@@ -134,7 +139,7 @@ const ProductTabs = ({ product, defaultTab = 'description', onTabChange, reviews
 
                     return rows.length > 0 ? (
                         <div className="space-y-2">
-                            {rows.map((spec, index) => (
+                            {rows.map((spec) => (
                                 <div
                                     key={spec.label}
                                     className="flex items-center justify-between px-4 py-2 text-sm border-b border-gray-100 dark:border-gray-700 last:border-b-0 bg-gray-50 dark:bg-gray-700/50 rounded"
@@ -186,12 +191,12 @@ const ProductTabs = ({ product, defaultTab = 'description', onTabChange, reviews
                     </div>
 
                     {reviews.length > 0 ? (
-                        reviews.map((review, index) => (
+                        reviews.map((review) => (
                             <motion.div
-                                key={review.id ?? index}
+                                key={review.id}
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: index * 0.05 }}
+                                transition={{ duration: 0.2 }}
                                 className="border border-gray-100 dark:border-gray-700 rounded-xl p-4 hover:border-sky-100 dark:hover:border-sky-900/50 transition-all"
                             >
                                 <div className="flex items-start gap-3 mb-2">
