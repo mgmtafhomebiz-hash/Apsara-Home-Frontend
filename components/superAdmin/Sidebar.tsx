@@ -131,6 +131,7 @@ const navItems: NavItem[] = [
       { label: 'Brands', path: '/admin/products/brands' },
       { label: 'Inventory', path: '/admin/products/inventory' },
       { label: 'Reviews', path: '/admin/products/reviews' },
+      { label: 'Import Image', path: '/admin/products/import-image' },
     ],
   },
   {
